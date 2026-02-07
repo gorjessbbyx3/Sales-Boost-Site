@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { motion } from "framer-motion";
+import { motion, useInView, useMotionValue, useTransform, animate } from "framer-motion";
 import {
   CreditCard,
   Globe,
@@ -22,23 +22,41 @@ import {
   Award,
   Menu,
   XIcon,
+  CircleDollarSign,
+  Percent,
+  Receipt,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
 };
 
 const staggerContainer = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
+  visible: { transition: { staggerChildren: 0.12 } },
 };
 
 const scaleIn = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: "easeOut" } },
+  hidden: { opacity: 0, scale: 0.92 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" } },
 };
+
+function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (v) => `${prefix}${Math.round(v).toLocaleString()}${suffix}`);
+
+  useEffect(() => {
+    if (inView) {
+      animate(count, target, { duration, ease: "easeOut" });
+    }
+  }, [inView, target, duration, count]);
+
+  return <motion.span ref={ref}>{rounded}</motion.span>;
+}
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -61,7 +79,7 @@ function Navbar() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-background/90 backdrop-blur-lg border-b border-border"
+          ? "bg-background/80 backdrop-blur-xl border-b border-border"
           : "bg-transparent"
       }`}
       data-testid="navbar"
@@ -70,13 +88,13 @@ function Navbar() {
         <div className="flex items-center justify-between gap-4 h-16">
           <a
             href="#"
-            className="font-bold text-xl tracking-tight flex items-center gap-2"
+            className="font-bold text-xl tracking-tight flex items-center gap-2.5"
             data-testid="link-logo"
           >
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary-foreground" />
+            <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center">
+              <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span>Edify</span>
+            <span className="text-foreground">Edify</span>
           </a>
 
           <div className="hidden md:flex items-center gap-1">
@@ -119,12 +137,12 @@ function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden bg-background/95 backdrop-blur-lg border-b border-border px-4 pb-4">
+        <div className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border px-4 pb-4">
           {links.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="block px-3 py-2 text-sm text-muted-foreground"
+              className="block px-3 py-2.5 text-sm text-muted-foreground"
               onClick={() => setMobileOpen(false)}
               data-testid={`link-mobile-${l.label.toLowerCase().replace(/\s/g, "-")}`}
             >
@@ -147,53 +165,55 @@ function Navbar() {
 function HeroSection() {
   return (
     <section
-      className="relative overflow-hidden pt-24 pb-16 sm:pt-32 sm:pb-24"
+      className="relative overflow-hidden pt-28 pb-20 sm:pt-40 sm:pb-32"
       data-testid="section-hero"
     >
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/3" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-primary/3 blur-3xl translate-y-1/2 -translate-x-1/4" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />
+        <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full bg-primary/10 blur-[120px]" />
+        <div className="absolute bottom-[-100px] right-[-200px] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[100px]" />
+        <div className="absolute top-1/3 left-[-100px] w-[300px] h-[300px] rounded-full bg-chart-4/5 blur-[80px]" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
-          className="max-w-3xl mx-auto text-center"
+          className="max-w-4xl mx-auto text-center"
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
         >
           <motion.div variants={fadeUp}>
-            <Badge variant="secondary" className="mb-6">
-              <DollarSign className="w-3 h-3 mr-1" />
+            <Badge variant="outline" className="mb-8 py-1.5 px-4 text-primary border-primary/30 bg-primary/5">
+              <CircleDollarSign className="w-3.5 h-3.5 mr-1.5" />
               Save $3,600 - $5,400 Per Year
             </Badge>
           </motion.div>
 
           <motion.h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6"
+            className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-8"
             variants={fadeUp}
             data-testid="text-hero-title"
           >
             Stop Paying{" "}
             <span className="relative inline-block">
-              <span className="relative z-10 text-primary">Processing Fees</span>
-              <span className="absolute bottom-1 left-0 right-0 h-3 bg-primary/15 rounded-sm -z-0" />
+              <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
+                Processing Fees
+              </span>
             </span>
           </motion.h1>
 
           <motion.p
-            className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto"
+            className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto"
             variants={fadeUp}
             data-testid="text-hero-subtitle"
           >
             $500 for a payment terminal. No monthly fees. No processing fees.
             Your customers cover the small surcharge — you keep{" "}
-            <strong className="text-foreground">100% of every sale</strong>.
+            <span className="text-primary font-semibold">100% of every sale</span>.
           </motion.p>
 
           <motion.div
-            className="flex flex-col sm:flex-row items-center justify-center gap-3"
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
             variants={fadeUp}
           >
             <Button size="lg" asChild>
@@ -211,7 +231,7 @@ function HeroSection() {
           </motion.div>
 
           <motion.div
-            className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground"
+            className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground"
             variants={fadeUp}
           >
             <div className="flex items-center gap-2">
@@ -230,41 +250,27 @@ function HeroSection() {
         </motion.div>
 
         <motion.div
-          className="mt-16 max-w-4xl mx-auto"
-          initial={{ opacity: 0, y: 40 }}
+          className="mt-20 max-w-4xl mx-auto"
+          initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
+          transition={{ delay: 0.6, duration: 0.7 }}
         >
-          <Card className="overflow-visible">
-            <CardContent className="p-6 sm:p-8">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-                <div>
-                  <div className="text-3xl sm:text-4xl font-extrabold text-primary mb-1" data-testid="text-stat-savings">
-                    $5,400+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            {[
+              { value: 5400, prefix: "$", suffix: "+", label: "Saved Per Year", color: "text-primary" },
+              { value: 0, prefix: "$", suffix: "", label: "Monthly Fees", color: "text-foreground" },
+              { value: 100, prefix: "", suffix: "%", label: "Revenue Kept", color: "text-foreground" },
+            ].map((stat, i) => (
+              <Card key={stat.label} className="overflow-visible text-center border-primary/10">
+                <CardContent className="p-6 sm:p-8">
+                  <div className={`text-3xl sm:text-4xl lg:text-5xl font-extrabold ${stat.color} mb-2`} data-testid={`text-stat-${i}`}>
+                    <AnimatedCounter target={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    Saved Per Year
-                  </div>
-                </div>
-                <div>
-                  <div className="text-3xl sm:text-4xl font-extrabold text-foreground mb-1" data-testid="text-stat-fee">
-                    $0
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Monthly Fees
-                  </div>
-                </div>
-                <div>
-                  <div className="text-3xl sm:text-4xl font-extrabold text-foreground mb-1" data-testid="text-stat-keep">
-                    100%
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Revenue Kept
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="text-sm text-muted-foreground">{stat.label}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>
@@ -280,8 +286,9 @@ function SocialProofBar() {
   ];
 
   return (
-    <section className="py-12 border-y border-border bg-card/50" data-testid="section-social-proof">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-16 relative" data-testid="section-social-proof">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <motion.div
           className="grid grid-cols-2 lg:grid-cols-4 gap-8"
           variants={staggerContainer}
@@ -295,8 +302,10 @@ function SocialProofBar() {
               className="text-center"
               variants={fadeUp}
             >
-              <stat.icon className="w-5 h-5 text-primary mx-auto mb-2" />
-              <div className="text-2xl sm:text-3xl font-bold mb-1" data-testid={`text-proof-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
+              <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <stat.icon className="w-5 h-5 text-primary" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-extrabold text-foreground mb-1" data-testid={`text-proof-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
                 {stat.value}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
@@ -318,6 +327,7 @@ function HowItWorksSection() {
       description:
         "One-time purchase for your payment terminal. No contracts, no commitments, no monthly bills.",
       icon: CreditCard,
+      accent: "from-primary/20 to-primary/5",
     },
     {
       step: "02",
@@ -325,6 +335,7 @@ function HowItWorksSection() {
       description:
         "We set up and train you on your terminal. Accept cards in-store and online from day one.",
       icon: Zap,
+      accent: "from-chart-2/20 to-chart-2/5",
     },
     {
       step: "03",
@@ -332,32 +343,42 @@ function HowItWorksSection() {
       description:
         "Your customers cover the small processing surcharge. You receive the full sale amount — no deductions.",
       icon: DollarSign,
+      accent: "from-chart-3/20 to-chart-3/5",
     },
   ];
 
   return (
     <section
       id="how-it-works"
-      className="py-20 sm:py-28"
+      className="py-24 sm:py-32 relative"
       data-testid="section-how-it-works"
     >
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-20"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
           <motion.div variants={fadeUp}>
-            <Badge variant="secondary" className="mb-4">How It Works</Badge>
+            <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
+              How It Works
+            </Badge>
           </motion.div>
           <motion.h2
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4"
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
             variants={fadeUp}
             data-testid="text-hiw-title"
           >
-            Three Simple Steps to Zero Fees
+            Three Steps to{" "}
+            <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
+              Zero Fees
+            </span>
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-lg"
@@ -378,17 +399,18 @@ function HowItWorksSection() {
         >
           {steps.map((s, i) => (
             <motion.div key={s.step} variants={scaleIn}>
-              <Card className="h-full relative overflow-visible">
-                <CardContent className="p-6 sm:p-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                      <s.icon className="w-5 h-5 text-primary" />
+              <Card className="h-full relative overflow-visible border-primary/10">
+                <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
+                <CardContent className="p-7 sm:p-8 relative">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-12 h-12 rounded-md bg-primary/15 flex items-center justify-center shrink-0">
+                      <s.icon className="w-6 h-6 text-primary" />
                     </div>
-                    <span className="text-xs font-bold text-primary uppercase tracking-widest">
+                    <div className="text-xs font-bold text-primary uppercase tracking-[0.2em]">
                       Step {s.step}
-                    </span>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-bold mb-2" data-testid={`text-step-title-${i}`}>
+                  <h3 className="text-xl font-bold mb-3 text-foreground" data-testid={`text-step-title-${i}`}>
                     {s.title}
                   </h3>
                   <p className="text-muted-foreground leading-relaxed">
@@ -406,44 +428,53 @@ function HowItWorksSection() {
 
 function PricingComparisonSection() {
   const traditional = [
-    { label: "Terminal Cost", value: "$200 - $800" },
-    { label: "Monthly Fee", value: "$25 - $100/mo" },
-    { label: "Processing Fee", value: "2.5% - 3.5% per sale" },
-    { label: "On $10,000/mo Sales", value: "-$250 to -$350 lost", highlight: true },
-    { label: "Annual Cost", value: "$3,600 - $5,400" },
+    { label: "Terminal Cost", value: "$200 - $800", icon: CreditCard },
+    { label: "Monthly Fee", value: "$25 - $100/mo", icon: Receipt },
+    { label: "Processing Fee", value: "2.5% - 3.5%", icon: Percent },
+    { label: "On $10K/mo Sales", value: "-$250 to -$350", highlight: true, icon: TrendingUp },
+    { label: "Annual Cost", value: "$3,600 - $5,400", icon: DollarSign },
   ];
 
   const edify = [
-    { label: "Terminal Cost", value: "$500 (one-time)" },
-    { label: "Monthly Fee", value: "$0" },
-    { label: "Processing Fee", value: "$0 (customer pays)" },
-    { label: "On $10,000/mo Sales", value: "You keep $10,000", highlight: true },
-    { label: "Annual Cost", value: "$0 after terminal" },
+    { label: "Terminal Cost", value: "$500 (one-time)", icon: CreditCard },
+    { label: "Monthly Fee", value: "$0", icon: Receipt },
+    { label: "Processing Fee", value: "$0", icon: Percent },
+    { label: "On $10K/mo Sales", value: "Keep $10,000", highlight: true, icon: TrendingUp },
+    { label: "Annual Cost", value: "$0 after terminal", icon: DollarSign },
   ];
 
   return (
     <section
       id="pricing"
-      className="py-20 sm:py-28 bg-card/30"
+      className="py-24 sm:py-32 relative"
       data-testid="section-pricing"
     >
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-card/50 to-transparent" />
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-20"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
           <motion.div variants={fadeUp}>
-            <Badge variant="secondary" className="mb-4">Pricing</Badge>
+            <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
+              Pricing
+            </Badge>
           </motion.div>
           <motion.h2
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4"
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
             variants={fadeUp}
             data-testid="text-pricing-title"
           >
-            See the Difference
+            See the{" "}
+            <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
+              Difference
+            </span>
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-lg"
@@ -456,32 +487,37 @@ function PricingComparisonSection() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.6 }}
           >
-            <Card className="h-full overflow-visible relative">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <X className="w-5 h-5 text-destructive" />
+            <Card className="h-full overflow-visible relative border-destructive/20 bg-destructive/[0.03]">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="w-8 h-8 rounded-md bg-destructive/15 flex items-center justify-center">
+                    <X className="w-4 h-4 text-destructive" />
+                  </div>
                   <CardTitle className="text-lg" data-testid="text-traditional-title">
                     Traditional Processor
                   </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-1">
                 {traditional.map((row) => (
                   <div
                     key={row.label}
-                    className={`flex items-center justify-between gap-4 py-2.5 border-b border-border last:border-0 ${
+                    className={`flex items-center justify-between gap-4 py-3 border-b border-border/50 last:border-0 ${
                       row.highlight ? "font-semibold" : ""
                     }`}
                   >
-                    <span className="text-sm text-muted-foreground">{row.label}</span>
+                    <div className="flex items-center gap-2.5">
+                      <row.icon className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+                      <span className="text-sm text-muted-foreground">{row.label}</span>
+                    </div>
                     <span
-                      className={`text-sm text-right ${
-                        row.highlight ? "text-destructive" : ""
+                      className={`text-sm text-right font-medium ${
+                        row.highlight ? "text-destructive font-bold" : "text-foreground/80"
                       }`}
                       data-testid={`text-trad-${row.label.toLowerCase().replace(/[\s/]/g, "-")}`}
                     >
@@ -489,40 +525,53 @@ function PricingComparisonSection() {
                     </span>
                   </div>
                 ))}
+                <div className="pt-4">
+                  <div className="rounded-md bg-destructive/10 p-3 text-center">
+                    <span className="text-xs text-destructive font-medium">
+                      You lose $3,600 - $5,400 every year
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 40 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.6 }}
           >
-            <Card className="h-full overflow-visible relative border-primary/30 bg-primary/[0.03] dark:bg-primary/[0.05]">
+            <Card className="h-full overflow-visible relative border-primary/30">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/8 to-transparent" />
               <div className="absolute -top-3 left-6">
-                <Badge>Recommended</Badge>
+                <Badge className="shadow-lg shadow-primary/20">Recommended</Badge>
               </div>
-              <CardHeader className="pb-2 pt-8">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Check className="w-5 h-5 text-primary" />
+              <CardHeader className="pb-3 pt-8 relative">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="w-8 h-8 rounded-md bg-primary/15 flex items-center justify-center">
+                    <Check className="w-4 h-4 text-primary" />
+                  </div>
                   <CardTitle className="text-lg" data-testid="text-edify-title">
                     Edify Payment Processing
                   </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-1 relative">
                 {edify.map((row) => (
                   <div
                     key={row.label}
-                    className={`flex items-center justify-between gap-4 py-2.5 border-b border-border last:border-0 ${
+                    className={`flex items-center justify-between gap-4 py-3 border-b border-border/50 last:border-0 ${
                       row.highlight ? "font-semibold" : ""
                     }`}
                   >
-                    <span className="text-sm text-muted-foreground">{row.label}</span>
+                    <div className="flex items-center gap-2.5">
+                      <row.icon className="w-4 h-4 text-primary/50 shrink-0" />
+                      <span className="text-sm text-muted-foreground">{row.label}</span>
+                    </div>
                     <span
-                      className={`text-sm text-right ${
-                        row.highlight ? "text-primary font-bold" : ""
+                      className={`text-sm text-right font-medium ${
+                        row.highlight ? "text-primary font-bold text-base" : "text-foreground/80"
                       }`}
                       data-testid={`text-edify-${row.label.toLowerCase().replace(/[\s/]/g, "-")}`}
                     >
@@ -530,20 +579,27 @@ function PricingComparisonSection() {
                     </span>
                   </div>
                 ))}
+                <div className="pt-4">
+                  <div className="rounded-md bg-primary/10 p-3 text-center">
+                    <span className="text-xs text-primary font-medium">
+                      You keep every dollar you earn
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
         </div>
 
         <motion.p
-          className="text-center text-muted-foreground text-sm mt-8 max-w-2xl mx-auto"
+          className="text-center text-muted-foreground text-sm mt-10 max-w-2xl mx-auto"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           data-testid="text-savings-summary"
         >
           On $10,000/month in sales, you could save{" "}
-          <strong className="text-foreground">$3,600 - $5,400 per year</strong>{" "}
+          <strong className="text-primary">$3,600 - $5,400 per year</strong>{" "}
           compared to traditional processors.
         </motion.p>
       </div>
@@ -556,60 +612,66 @@ function FeaturesSection() {
     {
       icon: CreditCard,
       title: "In-Store Terminal",
-      description:
-        "Professional countertop terminal that accepts swipe, chip, and tap payments.",
+      description: "Professional countertop terminal that accepts swipe, chip, and tap payments.",
+      gradient: "from-primary/15 to-primary/5",
     },
     {
       icon: Globe,
       title: "Online Payments",
-      description:
-        "Accept payments through your website with a secure online gateway.",
+      description: "Accept payments through your website with a secure online gateway.",
+      gradient: "from-chart-2/15 to-chart-2/5",
     },
     {
       icon: Smartphone,
       title: "Digital Wallets",
-      description:
-        "Accept Apple Pay, Google Pay, and other contactless payment methods.",
+      description: "Accept Apple Pay, Google Pay, and other contactless payment methods.",
+      gradient: "from-chart-4/15 to-chart-4/5",
     },
     {
       icon: ShieldCheck,
       title: "PCI Compliant",
-      description:
-        "Bank-level security protects every transaction and customer data.",
+      description: "Bank-level security protects every transaction and customer data.",
+      gradient: "from-chart-3/15 to-chart-3/5",
     },
     {
       icon: Banknote,
       title: "Next-Day Deposits",
-      description:
-        "Funds deposited to your bank account by the next business day.",
+      description: "Funds deposited to your bank account by the next business day.",
+      gradient: "from-primary/15 to-primary/5",
     },
     {
       icon: BarChart3,
       title: "Transaction Dashboard",
-      description:
-        "Real-time reporting to track sales, refunds, and daily totals.",
+      description: "Real-time reporting to track sales, refunds, and daily totals.",
+      gradient: "from-chart-2/15 to-chart-2/5",
     },
   ];
 
   return (
     <section
       id="features"
-      className="py-20 sm:py-28"
+      className="py-24 sm:py-32 relative"
       data-testid="section-features"
     >
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-chart-4/5 blur-[100px]" />
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-20"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
           <motion.div variants={fadeUp}>
-            <Badge variant="secondary" className="mb-4">Features</Badge>
+            <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
+              Features
+            </Badge>
           </motion.div>
           <motion.h2
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4"
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
             variants={fadeUp}
             data-testid="text-features-title"
           >
@@ -633,12 +695,13 @@ function FeaturesSection() {
         >
           {features.map((f, i) => (
             <motion.div key={f.title} variants={scaleIn}>
-              <Card className="h-full overflow-visible hover-elevate transition-all duration-200">
-                <CardContent className="p-6">
-                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mb-4">
-                    <f.icon className="w-5 h-5 text-primary" />
+              <Card className="h-full overflow-visible hover-elevate transition-all duration-300 border-primary/10">
+                <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${f.gradient} opacity-40`} />
+                <CardContent className="p-7 relative">
+                  <div className="w-12 h-12 rounded-md bg-primary/15 flex items-center justify-center mb-5">
+                    <f.icon className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="font-bold text-lg mb-2" data-testid={`text-feature-title-${i}`}>
+                  <h3 className="font-bold text-lg mb-2 text-foreground" data-testid={`text-feature-title-${i}`}>
                     {f.title}
                   </h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
@@ -674,54 +737,62 @@ function DetailSections() {
   ];
 
   return (
-    <section className="py-20 sm:py-28 bg-card/30" data-testid="section-details">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-20">
+    <section className="py-24 sm:py-32 relative" data-testid="section-details">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
         <motion.div
-          className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
         >
           <motion.div variants={fadeUp}>
-            <Badge variant="secondary" className="mb-4">
-              <CreditCard className="w-3 h-3 mr-1" />
+            <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
+              <CreditCard className="w-3 h-3 mr-1.5" />
               In-Store
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4" data-testid="text-instore-title">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-5" data-testid="text-instore-title">
               In-Store Payments
             </h2>
-            <p className="text-muted-foreground text-lg leading-relaxed mb-6">
+            <p className="text-muted-foreground text-lg leading-relaxed mb-8">
               Your terminal handles everything at the counter — credit cards,
               debit cards, chip, swipe, and contactless tap. Quick setup and
               training included so you're accepting payments on day one.
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               {instoreFeatures.map((f) => (
-                <div key={f} className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-primary shrink-0" />
-                  <span className="text-sm" data-testid={`text-instore-${f.toLowerCase().replace(/[\s&/]/g, "-")}`}>{f}</span>
+                <div key={f} className="flex items-center gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 text-primary" />
+                  </div>
+                  <span className="text-sm text-foreground/90" data-testid={`text-instore-${f.toLowerCase().replace(/[\s&/]/g, "-")}`}>{f}</span>
                 </div>
               ))}
             </div>
           </motion.div>
 
           <motion.div variants={scaleIn}>
-            <Card className="overflow-visible">
-              <CardContent className="p-8 sm:p-10">
+            <Card className="overflow-visible border-primary/10">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/10 to-transparent" />
+              <CardContent className="p-10 sm:p-12 relative">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                    <CreditCard className="w-10 h-10 text-primary" />
+                  <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6">
+                    <CreditCard className="w-12 h-12 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">Accept Every Card</h3>
-                  <p className="text-muted-foreground text-sm">
+                  <h3 className="text-xl font-bold mb-2 text-foreground">Accept Every Card</h3>
+                  <p className="text-muted-foreground text-sm mb-6">
                     Visa, Mastercard, Amex, Discover, and all major debit cards
                   </p>
-                  <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
-                    <Badge variant="outline">Visa</Badge>
-                    <Badge variant="outline">Mastercard</Badge>
-                    <Badge variant="outline">Amex</Badge>
-                    <Badge variant="outline">Discover</Badge>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {["Visa", "Mastercard", "Amex", "Discover"].map((card) => (
+                      <Badge key={card} variant="outline" className="text-foreground/80 border-border/60">
+                        {card}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               </CardContent>
@@ -730,27 +801,30 @@ function DetailSections() {
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
         >
           <motion.div className="order-2 lg:order-1" variants={scaleIn}>
-            <Card className="overflow-visible">
-              <CardContent className="p-8 sm:p-10">
+            <Card className="overflow-visible border-chart-2/10">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-chart-2/10 to-transparent" />
+              <CardContent className="p-10 sm:p-12 relative">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                    <Globe className="w-10 h-10 text-primary" />
+                  <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-chart-2/20 to-chart-2/5 flex items-center justify-center mb-6">
+                    <Globe className="w-12 h-12 text-chart-2" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">Sell Anywhere Online</h3>
-                  <p className="text-muted-foreground text-sm">
+                  <h3 className="text-xl font-bold mb-2 text-foreground">Sell Anywhere Online</h3>
+                  <p className="text-muted-foreground text-sm mb-6">
                     E-commerce, invoices, payment links, and recurring billing
                   </p>
-                  <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
-                    <Badge variant="outline">Shopify</Badge>
-                    <Badge variant="outline">WooCommerce</Badge>
-                    <Badge variant="outline">Custom</Badge>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {["Shopify", "WooCommerce", "Custom"].map((platform) => (
+                      <Badge key={platform} variant="outline" className="text-foreground/80 border-border/60">
+                        {platform}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               </CardContent>
@@ -758,23 +832,25 @@ function DetailSections() {
           </motion.div>
 
           <motion.div className="order-1 lg:order-2" variants={fadeUp}>
-            <Badge variant="secondary" className="mb-4">
-              <Globe className="w-3 h-3 mr-1" />
+            <Badge variant="outline" className="mb-5 text-chart-2 border-chart-2/30 bg-chart-2/5">
+              <Globe className="w-3 h-3 mr-1.5" />
               Online
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4" data-testid="text-online-title">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-5" data-testid="text-online-title">
               Online Payments
             </h2>
-            <p className="text-muted-foreground text-lg leading-relaxed mb-6">
+            <p className="text-muted-foreground text-lg leading-relaxed mb-8">
               Sell online with our secure payment gateway. Whether you have an
               e-commerce store or just need to take deposits remotely, we've got
               you covered — same zero-fee model.
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               {onlineFeatures.map((f) => (
-                <div key={f} className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-primary shrink-0" />
-                  <span className="text-sm" data-testid={`text-online-${f.toLowerCase().replace(/[\s-]/g, "-")}`}>{f}</span>
+                <div key={f} className="flex items-center gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-chart-2/15 flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 text-chart-2" />
+                  </div>
+                  <span className="text-sm text-foreground/90" data-testid={`text-online-${f.toLowerCase().replace(/[\s-]/g, "-")}`}>{f}</span>
                 </div>
               ))}
             </div>
@@ -792,27 +868,32 @@ function SavingsCalculator() {
   const annualLoss = Math.round((monthly * rate + monthlyFee) * 12);
 
   return (
-    <section className="py-20 sm:py-28" data-testid="section-calculator">
+    <section className="py-24 sm:py-32 relative" data-testid="section-calculator">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/8 blur-[120px]" />
+      </div>
+
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
-          className="text-center mb-12"
+          className="text-center mb-14"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
           <motion.div variants={fadeUp}>
-            <Badge variant="secondary" className="mb-4">
-              <TrendingUp className="w-3 h-3 mr-1" />
+            <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
+              <TrendingUp className="w-3 h-3 mr-1.5" />
               Savings Calculator
             </Badge>
           </motion.div>
           <motion.h2
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4"
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
             variants={fadeUp}
             data-testid="text-calc-title"
           >
-            How Much Are You Losing?
+            How Much Are You{" "}
+            <span className="text-destructive">Losing</span>?
           </motion.h2>
           <motion.p
             className="text-muted-foreground text-lg"
@@ -823,20 +904,19 @@ function SavingsCalculator() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <Card className="overflow-visible">
-            <CardContent className="p-6 sm:p-8">
-              <div className="mb-6">
-                <label className="text-sm font-medium mb-2 block">
+          <Card className="overflow-visible border-primary/10">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
+            <CardContent className="p-7 sm:p-10 relative">
+              <div className="mb-8">
+                <label className="text-sm font-semibold mb-3 block text-foreground">
                   Monthly Sales Volume
                 </label>
-                <div className="flex items-center gap-4">
-                  <span className="text-2xl font-bold text-foreground" data-testid="text-calc-amount">
-                    ${monthly.toLocaleString()}
-                  </span>
+                <div className="text-4xl sm:text-5xl font-extrabold text-primary mb-4" data-testid="text-calc-amount">
+                  ${monthly.toLocaleString()}
                 </div>
                 <input
                   type="range"
@@ -845,38 +925,123 @@ function SavingsCalculator() {
                   step={1000}
                   value={monthly}
                   onChange={(e) => setMonthly(Number(e.target.value))}
-                  className="w-full mt-3 accent-primary cursor-pointer"
+                  className="w-full accent-primary cursor-pointer h-2"
                   data-testid="input-calc-slider"
                 />
-                <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground mt-1">
+                <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground mt-2">
                   <span>$2,000</span>
                   <span>$100,000</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border">
-                <div className="text-center p-4 rounded-md bg-destructive/5 dark:bg-destructive/10">
-                  <div className="text-sm text-muted-foreground mb-1">
-                    Lost to Traditional Fees
-                  </div>
-                  <div className="text-2xl sm:text-3xl font-extrabold text-destructive" data-testid="text-calc-loss">
-                    -${annualLoss.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">per year</div>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card className="overflow-visible border-destructive/20">
+                  <CardContent className="p-5 text-center">
+                    <div className="text-sm text-muted-foreground mb-2">
+                      Lost to Traditional Fees
+                    </div>
+                    <div className="text-3xl sm:text-4xl font-extrabold text-destructive" data-testid="text-calc-loss">
+                      -${annualLoss.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">per year</div>
+                  </CardContent>
+                </Card>
 
-                <div className="text-center p-4 rounded-md bg-primary/5 dark:bg-primary/10">
-                  <div className="text-sm text-muted-foreground mb-1">
-                    You Save With Edify
-                  </div>
-                  <div className="text-2xl sm:text-3xl font-extrabold text-primary" data-testid="text-calc-savings">
-                    ${annualLoss.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">per year</div>
-                </div>
+                <Card className="overflow-visible border-primary/20">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
+                  <CardContent className="p-5 text-center relative">
+                    <div className="text-sm text-muted-foreground mb-2">
+                      You Save With Edify
+                    </div>
+                    <div className="text-3xl sm:text-4xl font-extrabold text-primary" data-testid="text-calc-savings">
+                      ${annualLoss.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">per year</div>
+                  </CardContent>
+                </Card>
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function TestimonialSection() {
+  const testimonials = [
+    {
+      quote: "Switching to Edify saved us over $4,800 last year. We wish we'd done it sooner.",
+      name: "Marcus Johnson",
+      role: "Owner, Johnson's Auto Repair",
+      rating: 5,
+    },
+    {
+      quote: "Zero monthly fees means we actually keep what we earn. The setup was incredibly fast.",
+      name: "Sarah Chen",
+      role: "Manager, Golden Lotus Restaurant",
+      rating: 5,
+    },
+    {
+      quote: "The online payment gateway is seamless. Our customers love the convenience.",
+      name: "David Okafor",
+      role: "Founder, Okafor Consulting",
+      rating: 5,
+    },
+  ];
+
+  return (
+    <section className="py-24 sm:py-32 relative" data-testid="section-testimonials">
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-16"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Badge variant="outline" className="mb-5 text-chart-3 border-chart-3/30 bg-chart-3/5">
+              <Star className="w-3 h-3 mr-1.5" />
+              Testimonials
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
+            variants={fadeUp}
+          >
+            Businesses Love Edify
+          </motion.h2>
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          {testimonials.map((t, i) => (
+            <motion.div key={i} variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-3/10">
+                <CardContent className="p-7">
+                  <div className="flex items-center gap-0.5 mb-4">
+                    {Array.from({ length: t.rating }).map((_, j) => (
+                      <Star key={j} className="w-4 h-4 fill-chart-3 text-chart-3" />
+                    ))}
+                  </div>
+                  <p className="text-foreground/90 mb-5 leading-relaxed italic">
+                    "{t.quote}"
+                  </p>
+                  <div>
+                    <div className="font-semibold text-sm text-foreground">{t.name}</div>
+                    <div className="text-xs text-muted-foreground">{t.role}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </motion.div>
       </div>
     </section>
@@ -916,22 +1081,24 @@ function FAQSection() {
   return (
     <section
       id="faq"
-      className="py-20 sm:py-28 bg-card/30"
+      className="py-24 sm:py-32 relative"
       data-testid="section-faq"
     >
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
-          className="text-center mb-12"
+          className="text-center mb-14"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
           <motion.div variants={fadeUp}>
-            <Badge variant="secondary" className="mb-4">FAQ</Badge>
+            <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
+              FAQ
+            </Badge>
           </motion.div>
           <motion.h2
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4"
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
             variants={fadeUp}
             data-testid="text-faq-title"
           >
@@ -955,24 +1122,24 @@ function FAQSection() {
           {faqs.map((faq, i) => (
             <motion.div key={i} variants={fadeUp}>
               <Card
-                className="overflow-visible cursor-pointer hover-elevate"
+                className="overflow-visible cursor-pointer hover-elevate border-primary/5"
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
                 data-testid={`button-faq-${i}`}
               >
-                <CardContent className="p-4 sm:p-5">
+                <CardContent className="p-5 sm:p-6">
                   <div className="flex items-start justify-between gap-4">
-                    <h3 className="font-semibold text-sm sm:text-base" data-testid={`text-faq-q-${i}`}>
+                    <h3 className="font-semibold text-sm sm:text-base text-foreground" data-testid={`text-faq-q-${i}`}>
                       {faq.q}
                     </h3>
                     <ChevronRight
-                      className={`w-4 h-4 text-muted-foreground shrink-0 mt-0.5 transition-transform duration-200 ${
+                      className={`w-4 h-4 text-primary shrink-0 mt-0.5 transition-transform duration-200 ${
                         openIndex === i ? "rotate-90" : ""
                       }`}
                     />
                   </div>
                   {openIndex === i && (
                     <motion.p
-                      className="text-muted-foreground text-sm mt-3 leading-relaxed"
+                      className="text-muted-foreground text-sm mt-4 leading-relaxed"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       data-testid={`text-faq-a-${i}`}
@@ -992,61 +1159,63 @@ function FAQSection() {
 
 function CTASection() {
   return (
-    <section className="py-20 sm:py-28" data-testid="section-cta">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-24 sm:py-32 relative" data-testid="section-cta">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-primary/10 blur-[120px]" />
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.6 }}
         >
-          <Card className="overflow-visible bg-primary text-primary-foreground border-primary-border">
-            <CardContent className="p-8 sm:p-12 lg:p-16 text-center">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4" data-testid="text-cta-title">
-                Ready to Keep More of Your Money?
-              </h2>
-              <p className="text-primary-foreground/80 text-lg sm:text-xl mb-8 max-w-2xl mx-auto leading-relaxed">
-                Get your $500 terminal and start accepting payments with zero
-                ongoing fees. Setup takes minutes, not weeks.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  asChild
-                >
-                  <a href="https://edifylimited.tech/contact" data-testid="link-cta-get-terminal">
-                    Get Your Terminal Today
-                    <ArrowRight className="w-4 h-4" />
-                  </a>
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="bg-transparent text-primary-foreground border-primary-foreground/30"
-                  asChild
-                >
-                  <a href="https://edifylimited.tech/contact" data-testid="link-cta-talk">
-                    Have Questions? Let's Talk
-                  </a>
-                </Button>
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-primary-foreground/70">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>Same-Day Setup</span>
+          <div className="relative rounded-xl overflow-visible p-[1px]">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-emerald-300/30 to-primary/50" />
+            <div className="relative rounded-xl bg-gradient-to-b from-card via-card to-background p-8 sm:p-12 lg:p-16 text-center">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/10 to-transparent" />
+              <div className="relative">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5 text-foreground" data-testid="text-cta-title">
+                  Ready to Keep More of{" "}
+                  <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
+                    Your Money
+                  </span>?
+                </h2>
+                <p className="text-muted-foreground text-lg sm:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+                  Get your $500 terminal and start accepting payments with zero
+                  ongoing fees. Setup takes minutes, not weeks.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <Button size="lg" asChild>
+                    <a href="https://edifylimited.tech/contact" data-testid="link-cta-get-terminal">
+                      Get Your Terminal Today
+                      <ArrowRight className="w-4 h-4" />
+                    </a>
+                  </Button>
+                  <Button size="lg" variant="outline" asChild>
+                    <a href="https://edifylimited.tech/contact" data-testid="link-cta-talk">
+                      Have Questions? Let's Talk
+                    </a>
+                  </Button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>PCI Compliant</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  <span>Zero Monthly Fees</span>
+                <div className="flex flex-wrap items-center justify-center gap-8 mt-10 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span>Same-Day Setup</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                    <span>PCI Compliant</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-primary" />
+                    <span>Zero Monthly Fees</span>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </motion.div>
       </div>
     </section>
@@ -1055,15 +1224,15 @@ function CTASection() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border py-12" data-testid="section-footer">
+    <footer className="border-t border-border/50 py-14 relative" data-testid="section-footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="md:col-span-2">
-            <div className="font-bold text-lg flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-                <Zap className="w-3.5 h-3.5 text-primary-foreground" />
+            <div className="font-bold text-lg flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
+                <Zap className="w-4 h-4 text-primary-foreground" />
               </div>
-              Edify Limited
+              <span className="text-foreground">Edify Limited</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
               Payment processing solutions that let you keep 100% of every
@@ -1072,8 +1241,8 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm mb-3">Quick Links</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
+            <h4 className="font-semibold text-sm mb-4 text-foreground">Quick Links</h4>
+            <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
                 <a href="#how-it-works" className="transition-colors" data-testid="link-footer-how">
                   How It Works
@@ -1098,8 +1267,8 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm mb-3">Contact</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
+            <h4 className="font-semibold text-sm mb-4 text-foreground">Contact</h4>
+            <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
                 <a
                   href="https://edifylimited.tech/contact"
@@ -1122,7 +1291,7 @@ function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border mt-8 pt-8 text-center text-xs text-muted-foreground">
+        <div className="border-t border-border/50 mt-10 pt-8 text-center text-xs text-muted-foreground">
           &copy; {new Date().getFullYear()} Edify Limited. All rights reserved.
         </div>
       </div>
@@ -1142,6 +1311,7 @@ export default function Home() {
         <FeaturesSection />
         <DetailSections />
         <SavingsCalculator />
+        <TestimonialSection />
         <FAQSection />
         <CTASection />
       </main>
