@@ -43,9 +43,9 @@
   --chart-3: 162 73% 32%;
   --chart-4: 282 65% 42%;
   --chart-5: 340 82% 38%;
-  --font-sans: Open Sans, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Inter', sans-serif;
   --font-serif: Georgia, serif;
-  --font-mono: Menlo, monospace;
+  --font-mono: 'JetBrains Mono', monospace;
   --radius: .5rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(210 5% 50% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(210 5% 50% / 0.00);
@@ -168,6 +168,10 @@
 @layer base {
   * {
     @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
