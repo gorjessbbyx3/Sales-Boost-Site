@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a marketing/landing page website for **Edify Limited's Payment Processing** service. The site promotes a zero-fee payment processing terminal product ($500 one-time cost, no monthly or processing fees). It's built as a full-stack TypeScript application with a React frontend and Express backend, though the current functionality is primarily a static marketing page with minimal backend logic.
+This is a marketing/landing page website for **Edify Limited's Payment Processing** service. The site promotes a zero-fee payment processing terminal product ($500 one-time cost, no monthly or processing fees). Edify also offers free custom websites for businesses using their payment processor, premium website packages, and custom software solutions. It's built as a full-stack TypeScript application with a React frontend and Express backend, featuring an AI chatbot powered by Anthropic's Claude API and an admin config page.
 
 ## User Preferences
 
@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 - **Schema Validation**: drizzle-zod generates Zod schemas from Drizzle table definitions
 - **Migrations**: Output to `./migrations` directory
 - **Push Command**: `npm run db:push` to sync schema to database
-- **Current Schema**: Simple `users` table with `id` (UUID), `username`, and `password` fields
+- **Current Schema**: `users` table (id, username, password) and `ai_config` table (id, enabled, model, systemPrompt, welcomeMessage, maxTokens)
 - **Connection**: Requires `DATABASE_URL` environment variable
 
 ### Project Structure
@@ -73,4 +73,10 @@ script/           → Build scripts
 - **Google Fonts** — Plus Jakarta Sans and Inter font families loaded via CDN
 - **Replit Plugins** — `@replit/vite-plugin-runtime-error-modal`, `@replit/vite-plugin-cartographer`, `@replit/vite-plugin-dev-banner` for development experience on Replit
 - **Radix UI** — Headless UI primitives powering shadcn/ui components
-- **No external API integrations currently active** — The build script allowlist includes packages like `stripe`, `openai`, `@google/generative-ai`, `nodemailer`, and `passport`, suggesting planned integrations, but none are currently wired up in routes
+- **Anthropic Claude API** — Powers the AI chatbot (requires `ANTHROPIC_API_KEY` secret). Uses `@anthropic-ai/sdk` package.
+
+### AI Chatbot System
+- **Admin Config Page**: `/ai-config` — toggle agent on/off, select model, edit system prompt, set welcome message, configure max tokens
+- **Chat Widget**: Floating chatbot bubble on landing page (only visible when AI is enabled via config)
+- **API Routes**: `GET /api/ai-config`, `PATCH /api/ai-config`, `POST /api/chat`
+- **Business Context**: The AI knows about Edify's payment processing, free websites (for payment processor customers only), premium website packages, and custom software solutions

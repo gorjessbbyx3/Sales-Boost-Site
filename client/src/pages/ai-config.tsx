@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Bot, Save, Zap, Settings, MessageSquare } from "lucide-react";
+import { ArrowLeft, Bot, Save, Zap, Settings, MessageSquare, Lock, LogOut } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { useState, useEffect } from "react";
 
@@ -18,7 +18,126 @@ const MODELS = [
   { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (Fast)" },
 ];
 
+function AdminLogin({ onLogin }: { onLogin: () => void }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const { toast } = useToast();
+
+  const loginMutation = useMutation({
+    mutationFn: async (pw: string) => {
+      const res = await apiRequest("POST", "/api/admin/login", { password: pw });
+      return res.json();
+    },
+    onSuccess: () => {
+      onLogin();
+      toast({ title: "Logged in", description: "Welcome to the admin panel." });
+    },
+    onError: () => {
+      setError("Invalid password. Please try again.");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    loginMutation.mutate(password);
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <Card className="w-full max-w-sm overflow-visible border-primary/10">
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
+        <CardHeader className="text-center relative">
+          <div className="w-14 h-14 rounded-md bg-primary/15 flex items-center justify-center mx-auto mb-3">
+            <Lock className="w-7 h-7 text-primary" />
+          </div>
+          <CardTitle className="text-xl" data-testid="text-login-title">Admin Access</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">Enter your admin password to continue</p>
+        </CardHeader>
+        <CardContent className="relative">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-muted rounded-md px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50"
+                placeholder="Enter admin password"
+                data-testid="input-admin-password"
+              />
+            </div>
+            {error && <p className="text-destructive text-sm" data-testid="text-login-error">{error}</p>}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loginMutation.isPending || !password}
+              data-testid="button-admin-login"
+            >
+              {loginMutation.isPending ? "Logging in..." : "Log In"}
+            </Button>
+          </form>
+          <div className="mt-4 text-center">
+            <Button variant="ghost" size="sm" asChild>
+              <a href="/" data-testid="link-login-back">Back to Home</a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function AiConfigPage() {
+  const { toast } = useToast();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  const { data: authStatus } = useQuery<{ authenticated: boolean }>({
+    queryKey: ["/api/admin/check"],
+  });
+
+  useEffect(() => {
+    if (authStatus !== undefined) {
+      setIsAuthenticated(authStatus.authenticated);
+      setAuthChecked(true);
+    }
+  }, [authStatus]);
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/admin/logout");
+    },
+    onSuccess: () => {
+      setIsAuthenticated(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/check"] });
+    },
+  });
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AdminLogin
+        onLogin={() => {
+          setIsAuthenticated(true);
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/check"] });
+        }}
+      />
+    );
+  }
+
+  return <ConfigPanel onLogout={() => logoutMutation.mutate()} />;
+}
+
+function ConfigPanel({ onLogout }: { onLogout: () => void }) {
   const { toast } = useToast();
 
   const { data: config, isLoading } = useQuery<AiConfig>({
@@ -68,6 +187,9 @@ export default function AiConfigPage() {
         description: data.enabled ? "The chatbot is now live on your landing page." : "The chatbot has been turned off.",
       });
     },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
   });
 
   const handleSave = () => {
@@ -98,6 +220,10 @@ export default function AiConfigPage() {
             </h1>
             <p className="text-sm text-muted-foreground mt-1">Configure your AI chatbot powered by Anthropic Claude</p>
           </div>
+          <Button variant="ghost" size="sm" onClick={onLogout} data-testid="button-admin-logout">
+            <LogOut className="w-4 h-4" />
+            Log Out
+          </Button>
         </div>
 
         <div className="space-y-6">

@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { updateAiConfigSchema } from "@shared/schema";
@@ -10,20 +10,71 @@ import Anthropic from "@anthropic-ai/sdk";
  * If the user doesn't specify a model, always prefer using "claude-sonnet-4-20250514".
  */
 
+const ALLOWED_MODELS = [
+  "claude-sonnet-4-20250514",
+  "claude-3-7-sonnet-20250219",
+  "claude-3-5-haiku-20241022",
+];
+
+const MAX_HISTORY_LENGTH = 20;
+const MAX_ALLOWED_TOKENS = 4096;
+
+declare module "express-session" {
+  interface SessionData {
+    isAdmin?: boolean;
+  }
+}
+
+function requireAdminSession(req: Request, res: Response, next: NextFunction) {
+  if (req.session?.isAdmin) {
+    return next();
+  }
+  return res.status(401).json({ error: "Unauthorized" });
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  app.post("/api/admin/login", (req: Request, res: Response) => {
+    const { password } = req.body;
+    const adminPassword = process.env.SESSION_SECRET;
+    if (!adminPassword) {
+      return res.status(500).json({ error: "Admin access not configured." });
+    }
+    if (password === adminPassword) {
+      req.session.isAdmin = true;
+      return res.json({ success: true });
+    }
+    return res.status(401).json({ error: "Invalid password." });
+  });
+
+  app.post("/api/admin/logout", (req: Request, res: Response) => {
+    req.session.isAdmin = false;
+    return res.json({ success: true });
+  });
+
+  app.get("/api/admin/check", (req: Request, res: Response) => {
+    const isAdmin = !!req.session?.isAdmin;
+    return res.json({ authenticated: isAdmin });
+  });
 
   app.get("/api/ai-config", async (_req, res) => {
     const config = await storage.getAiConfig();
     res.json(config);
   });
 
-  app.patch("/api/ai-config", async (req, res) => {
+  app.patch("/api/ai-config", requireAdminSession, async (req, res) => {
     const parsed = updateAiConfigSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.message });
+    }
+    if (parsed.data.model && !ALLOWED_MODELS.includes(parsed.data.model)) {
+      return res.status(400).json({ error: "Invalid model selection." });
+    }
+    if (parsed.data.maxTokens && parsed.data.maxTokens > MAX_ALLOWED_TOKENS) {
+      parsed.data.maxTokens = MAX_ALLOWED_TOKENS;
     }
     const config = await storage.updateAiConfig(parsed.data);
     res.json(config);
@@ -42,28 +93,31 @@ export async function registerRoutes(
     }
 
     const { message, history } = req.body;
-    if (!message || typeof message !== "string") {
-      return res.status(400).json({ error: "Message is required." });
+    if (!message || typeof message !== "string" || message.length > 2000) {
+      return res.status(400).json({ error: "Message is required and must be under 2000 characters." });
     }
 
     const messages: { role: "user" | "assistant"; content: string }[] = [];
 
     if (Array.isArray(history)) {
-      for (const h of history) {
-        if (h.role && h.content) {
-          messages.push({ role: h.role, content: h.content });
+      const trimmedHistory = history.slice(-MAX_HISTORY_LENGTH);
+      for (const h of trimmedHistory) {
+        if (h.role && h.content && typeof h.content === "string") {
+          messages.push({ role: h.role, content: h.content.slice(0, 2000) });
         }
       }
     }
 
     messages.push({ role: "user", content: message });
 
+    const safeMaxTokens = Math.min(config.maxTokens, MAX_ALLOWED_TOKENS);
+
     try {
       const anthropic = new Anthropic({ apiKey });
 
       const response = await anthropic.messages.create({
         model: config.model,
-        max_tokens: config.maxTokens,
+        max_tokens: safeMaxTokens,
         system: config.systemPrompt,
         messages,
       });
