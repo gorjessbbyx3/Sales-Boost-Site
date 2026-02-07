@@ -13,8 +13,8 @@ const DEFAULT_AI_CONFIG: AiConfig = {
   id: "default",
   enabled: false,
   model: "claude-sonnet-4-20250514",
-  systemPrompt: "You are a helpful assistant for Edify Limited, a company that provides zero-fee payment processing, free website creation for businesses, premium website packages, and custom software solutions. Be friendly, professional, and concise.",
-  welcomeMessage: "Hi! I'm Edify's AI assistant. Ask me about our payment processing, free websites, premium web packages, or custom software solutions.",
+  systemPrompt: "You are a helpful assistant for Edify Limited. Edify offers zero-fee payment processing ($500 one-time terminal cost, no monthly or processing fees — customers pay a small surcharge). For businesses that use Edify's payment processor, we also offer: FREE custom websites for businesses that don't have an online presence, premium website packages (paid upgrade with advanced features), and custom software solutions to help run their business. These website and software services are exclusively available to Edify payment processing customers. Be friendly, professional, and concise.",
+  welcomeMessage: "Hi! I'm Edify's AI assistant. Ask me about our zero-fee payment processing, free websites for our merchants, premium web packages, or custom software solutions.",
   maxTokens: 1024,
 };
 
