@@ -216,12 +216,12 @@ function HowItWorksSection() {
   const steps = [
     {
       step: "01",
-      title: "Choose Your Plan",
-      description: "Pick in-store terminal for face-to-face payments, or go online-only with a free website. Zero processing fees either way.",
+      title: "Customer Pays With Card",
+      description: "Your customer swipes, taps, or inserts their card at checkout — just like any normal transaction.",
       details: [
-        "In-Store Terminal — $399 one-time",
-        "30-Day Free Trial available",
-        "OR Online-Only — FREE website + gateway",
+        "Accept all major credit & debit cards",
+        "Tap, swipe, or chip — all supported",
+        "Fast, seamless checkout experience",
       ],
       image: "/images/step-choose-plan.png",
       icon: CreditCard,
@@ -232,12 +232,12 @@ function HowItWorksSection() {
     },
     {
       step: "02",
-      title: "We Set Everything Up",
-      description: "Same-day setup. We configure your terminal, connect it to your bank, train you, and provide compliance signage.",
+      title: "3-4% Fee Added to Total",
+      description: "A small processing fee of 3-4% is automatically added to the customer's total — not taken from your sale.",
       details: [
-        "Terminal programming & configuration",
-        "Bank account connection",
-        "Hands-on training & compliance signage",
+        "Fee is added to customer's total at checkout",
+        "Fully transparent — shown on receipt",
+        "100% legal & PCI compliant",
       ],
       image: "/images/step-setup.png",
       icon: Zap,
@@ -248,12 +248,12 @@ function HowItWorksSection() {
     },
     {
       step: "03",
-      title: "Keep 100% of Every Sale",
-      description: "A small surcharge is passed to card-paying customers at checkout. You keep 100% of the listed price, deposited by next business day.",
+      title: "You Get 100% Deposited",
+      description: "You keep every dollar of your sale. The full amount is deposited directly into your bank account in 1-2 business days.",
       details: [
-        "Customer pays small card surcharge",
-        "You keep 100% of the listed price",
-        "Next-day deposits & real-time dashboard",
+        "100% of your sale goes to you",
+        "Deposited in 1-2 business days",
+        "Track everything on your dashboard",
       ],
       image: "/images/step-keep-revenue.png",
       icon: DollarSign,
