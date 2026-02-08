@@ -2529,6 +2529,18 @@ export default function Home() {
       <TestimonialSection />
       <CTASection />
     </Layout>
+export default function Home() {
+  return (
+    <Layout>
+      <HeroSection />
+      <SocialProofBar />
+      <HowItWorksSection />
+      <PricingComparisonSection />
+      <PromoSection />
+      <SavingsCalculator />
+      <TestimonialSection />
+      <CTASection />
+    </Layout>
 function Footer() {
   return (
     <footer className="border-t border-border/50 py-14 relative" data-testid="section-footer">
