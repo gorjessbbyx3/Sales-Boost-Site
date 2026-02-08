@@ -277,61 +277,85 @@ const dollarIcons = [
 ];
 
 function FallingDollars({ containerRef }: { containerRef: React.RefObject<HTMLElement | null> }) {
-  const isInView = useInView(containerRef, { once: false, margin: "-10% 0px -10% 0px" });
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start start", "end start"],
+    offset: ["start end", "end start"],
     layoutEffect: false,
   });
-  const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
+  const sectionOpacity = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [0, 1, 1, 0]);
 
   const dollars = useMemo(() => {
-    return Array.from({ length: 24 }, (_, i) => ({
+    const leftSide = Array.from({ length: 14 }, (_, i) => ({
       id: i,
-      left: `${Math.random() * 96 + 2}%`,
-      size: 20 + Math.random() * 28,
-      delay: Math.random() * 4,
-      duration: 4 + Math.random() * 5,
-      opacity: 0.2 + Math.random() * 0.4,
-      sway: (Math.random() - 0.5) * 80,
-      rotation: Math.random() * 360,
+      left: `${Math.random() * 12}%`,
+      landingBottom: 4 + Math.random() * 20,
+      size: 22 + Math.random() * 26,
+      delay: Math.random() * 2.5,
+      fallDuration: 1.8 + Math.random() * 1.2,
+      peakOpacity: 0.55 + Math.random() * 0.35,
+      sway: (Math.random() - 0.5) * 40,
+      rotation: (Math.random() - 0.5) * 90,
+      repeatDelay: 1 + Math.random() * 2,
       icon: dollarIcons[Math.floor(Math.random() * dollarIcons.length)],
     }));
+    const rightSide = Array.from({ length: 14 }, (_, i) => ({
+      id: i + 14,
+      left: `${88 + Math.random() * 12}%`,
+      landingBottom: 4 + Math.random() * 20,
+      size: 22 + Math.random() * 26,
+      delay: Math.random() * 2.5,
+      fallDuration: 1.8 + Math.random() * 1.2,
+      peakOpacity: 0.55 + Math.random() * 0.35,
+      sway: (Math.random() - 0.5) * 40,
+      rotation: (Math.random() - 0.5) * 90,
+      repeatDelay: 1 + Math.random() * 2,
+      icon: dollarIcons[Math.floor(Math.random() * dollarIcons.length)],
+    }));
+    return [...leftSide, ...rightSide];
   }, []);
-
-  if (!isInView) return null;
 
   return (
     <motion.div
-      className="absolute inset-0 pointer-events-none z-[2] overflow-hidden"
-      style={{ opacity }}
+      className="absolute inset-0 pointer-events-none z-[50] overflow-hidden"
+      style={{ opacity: sectionOpacity }}
     >
-      {dollars.map((d) => (
-        <motion.img
-          key={d.id}
-          src={d.icon}
-          alt=""
-          className="absolute select-none"
-          style={{
-            left: d.left,
-            width: d.size,
-            height: d.size,
-          }}
-          initial={{ y: -50, x: 0, opacity: 0, rotate: 0 }}
-          animate={{
-            y: ["0%", "110%"],
-            x: [0, d.sway, 0],
-            opacity: [0, d.opacity, d.opacity, 0],
-            rotate: [0, d.rotation],
-          }}
-          transition={{
-            duration: d.duration,
-            delay: d.delay,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
-      ))}
+      {dollars.map((d) => {
+        const totalDuration = d.fallDuration + 3;
+        const fallFraction = d.fallDuration / totalDuration;
+        return (
+          <motion.img
+            key={d.id}
+            src={d.icon}
+            alt=""
+            className="absolute select-none"
+            style={{
+              left: d.left,
+              width: d.size,
+              height: d.size,
+              top: 0,
+            }}
+            initial={{ y: -60, opacity: 0, rotate: 0, x: 0 }}
+            animate={{
+              y: [
+                -60,
+                `calc(100% - ${d.landingBottom + d.size}px)`,
+                `calc(100% - ${d.landingBottom + d.size}px)`,
+              ],
+              opacity: [0, d.peakOpacity, d.peakOpacity, d.peakOpacity * 0.7],
+              rotate: [0, d.rotation, d.rotation * 0.8],
+              x: [0, d.sway, d.sway * 0.9],
+            }}
+            transition={{
+              duration: totalDuration,
+              delay: d.delay,
+              repeat: Infinity,
+              repeatDelay: d.repeatDelay,
+              times: [0, fallFraction, 0.85, 1],
+              ease: "easeIn",
+            }}
+          />
+        );
+      })}
     </motion.div>
   );
 }
