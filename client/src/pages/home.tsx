@@ -74,7 +74,8 @@ function HeroSection() {
             </motion.div>
 
             <motion.h1
-              className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-6 text-white drop-shadow-lg"
+              className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-6 text-white"
+              style={{ WebkitTextStroke: "1px rgba(0,0,0,0.5)", textShadow: "0 2px 8px rgba(0,0,0,0.6), 0 0 2px rgba(0,0,0,0.8)" }}
               variants={fadeUp}
               data-testid="text-hero-title"
             >
@@ -86,7 +87,8 @@ function HeroSection() {
             </motion.h1>
 
             <motion.p
-              className="text-sm sm:text-lg text-white/80 leading-relaxed mb-6 sm:mb-8 max-w-xl drop-shadow-md"
+              className="text-sm sm:text-lg text-white/90 leading-relaxed mb-6 sm:mb-8 max-w-xl"
+              style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7), 0 0 2px rgba(0,0,0,0.9)" }}
               variants={fadeUp}
               data-testid="text-hero-subtitle"
             >
