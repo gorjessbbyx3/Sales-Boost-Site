@@ -586,9 +586,9 @@ export default function WebDesignPage() {
   return (
     <Layout>
       <WebDesignHero />
-      <BeforeAfterSection />
       <WebFeaturesSection />
       <PortfolioSection />
+      <BeforeAfterSection />
       <SubscriptionTiersSection />
       <WebDesignCTA />
     </Layout>
