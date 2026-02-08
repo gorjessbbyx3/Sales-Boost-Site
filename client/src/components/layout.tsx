@@ -49,7 +49,7 @@ function Navbar() {
             className="font-bold text-xl tracking-tight flex items-center gap-2.5"
             data-testid="link-logo"
           >
-            <img src="/images/logo.svg" alt="Edify Limited" className="w-9 h-9" />
+            <img src="/images/IMG_6304.png" alt="Edify Limited" className="w-9 h-9 rounded" />
             <span className="text-foreground">Edify</span>
           </Link>
 
@@ -155,7 +155,7 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
           <div className="col-span-2 md:col-span-1">
             <div className="font-bold text-base sm:text-lg flex items-center gap-2 mb-3">
-              <img src="/images/logo.svg" alt="Edify Limited" className="w-7 h-7 sm:w-8 sm:h-8" />
+              <img src="/images/IMG_6304.png" alt="Edify Limited" className="w-7 h-7 sm:w-8 sm:h-8 rounded" />
               <span className="text-foreground">Edify Limited</span>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-sm mb-3">
