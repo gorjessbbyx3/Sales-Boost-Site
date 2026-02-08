@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { motion, useInView, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion, useInView, useMotionValue, useTransform, animate, useScroll, AnimatePresence } from "framer-motion";
 import {
   CreditCard,
   Globe,
@@ -21,7 +21,7 @@ import {
   MapPin,
   BarChart3,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
@@ -267,7 +267,65 @@ function SocialProofBar() {
   );
 }
 
+function FallingDollars({ containerRef }: { containerRef: React.RefObject<HTMLElement | null> }) {
+  const isInView = useInView(containerRef, { once: false, margin: "-10% 0px -10% 0px" });
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+    layoutEffect: false,
+  });
+  const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
+
+  const dollars = useMemo(() => {
+    return Array.from({ length: 28 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      size: 14 + Math.random() * 20,
+      delay: Math.random() * 3,
+      duration: 3 + Math.random() * 4,
+      opacity: 0.15 + Math.random() * 0.35,
+      sway: (Math.random() - 0.5) * 60,
+    }));
+  }, []);
+
+  if (!isInView) return null;
+
+  return (
+    <motion.div
+      className="absolute inset-0 pointer-events-none z-[2] overflow-hidden"
+      style={{ opacity }}
+    >
+      {dollars.map((d) => (
+        <motion.span
+          key={d.id}
+          className="absolute text-primary font-bold select-none"
+          style={{
+            left: d.left,
+            fontSize: d.size,
+            opacity: d.opacity,
+          }}
+          initial={{ y: -40, x: 0, opacity: 0 }}
+          animate={{
+            y: ["0%", "110%"],
+            x: [0, d.sway, 0],
+            opacity: [0, d.opacity, d.opacity, 0],
+          }}
+          transition={{
+            duration: d.duration,
+            delay: d.delay,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        >
+          $
+        </motion.span>
+      ))}
+    </motion.div>
+  );
+}
+
 function HowItWorksSection() {
+  const sectionRef = useRef<HTMLElement>(null);
   const steps = [
     {
       step: "01",
@@ -322,7 +380,8 @@ function HowItWorksSection() {
   ];
 
   return (
-    <section className="py-12 sm:py-24 relative overflow-hidden bg-[#0a1628]" data-testid="section-how-it-works">
+    <section ref={sectionRef} className="py-12 sm:py-24 relative overflow-hidden bg-[#0a1628]" data-testid="section-how-it-works">
+      <FallingDollars containerRef={sectionRef} />
       <div className="absolute inset-0 -z-0">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-blue-600/10 blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-emerald-600/8 blur-[100px]" />
