@@ -77,7 +77,7 @@ function FAQSection() {
   return (
     <section
       id="faq"
-      className="relative pt-28 pb-16 sm:pt-36 sm:pb-20"
+      className="relative pt-20 pb-10 sm:pt-36 sm:pb-20"
       data-testid="section-faq"
     >
       <div className="absolute inset-0 -z-10">
@@ -97,7 +97,7 @@ function FAQSection() {
             </Badge>
           </motion.div>
           <motion.h1
-            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
+            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3 sm:mb-5"
             variants={fadeUp}
             data-testid="text-faq-title"
           >
@@ -406,7 +406,7 @@ function ContactSection() {
                       >
                         <option value="bundle-terminal">Terminal + Free Website ($399)</option>
                         <option value="bundle-trial">Free Trial + Website ($199 add-on)</option>
-                        <option value="online-only">Online-Only Package ($499)</option>
+                        <option value="online-only">Online-Only Package (FREE)</option>
                         <option value="high-risk">High-Risk Merchant Account</option>
                         <option value="website-only">Website Design Only</option>
                         <option value="premium-web">Premium Web Package + Maintenance</option>

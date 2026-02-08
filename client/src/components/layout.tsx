@@ -23,14 +23,12 @@ function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isHome = location === "/";
-
   const links = [
-    { label: "How It Works", href: isHome ? "#how-it-works" : "/#how-it-works", isPage: false },
-    { label: "Pricing", href: isHome ? "#pricing" : "/#pricing", isPage: false },
-    { label: "Web Design", href: "/web-design", isPage: true },
-    { label: "High-Risk", href: "/high-risk", isPage: true },
-    { label: "FAQ", href: "/contact", isPage: true },
+    { label: "How It Works", href: "/how-it-works" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "Our Work", href: "/our-work" },
+    { label: "High-Risk", href: "/high-risk" },
+    { label: "FAQ", href: "/contact" },
   ];
 
   return (
@@ -49,32 +47,23 @@ function Navbar() {
             className="font-bold text-xl tracking-tight flex items-center gap-2.5"
             data-testid="link-logo"
           >
-            <img src="/images/logo.svg" alt="Edify Limited" className="w-9 h-9" />
+            <img src="/images/IMG_6304.png" alt="Edify Limited" className="w-9 h-9 rounded" />
             <span className="text-foreground">Edify</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
-            {links.map((l) =>
-              l.isPage ? (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="px-3 py-2 text-sm text-muted-foreground transition-colors rounded-md hover:text-foreground"
-                  data-testid={`link-nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-                >
-                  {l.label}
-                </Link>
-              ) : (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  className="px-3 py-2 text-sm text-muted-foreground transition-colors rounded-md hover:text-foreground"
-                  data-testid={`link-nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-                >
-                  {l.label}
-                </a>
-              )
-            )}
+            {links.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={`px-3 py-2 text-sm transition-colors rounded-md hover:text-foreground ${
+                  location === l.href ? "text-foreground font-medium" : "text-muted-foreground"
+                }`}
+                data-testid={`link-nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
+              >
+                {l.label}
+              </Link>
+            ))}
           </div>
 
           <div className="hidden md:flex items-center gap-2">
@@ -105,35 +94,32 @@ function Navbar() {
 
       {mobileOpen && (
         <div className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border px-4 pb-4">
-          {links.map((l) =>
-            l.isPage ? (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="block px-3 py-2.5 text-sm text-muted-foreground"
-                onClick={() => setMobileOpen(false)}
-                data-testid={`link-mobile-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-              >
-                {l.label}
-              </Link>
-            ) : (
-              <a
-                key={l.href}
-                href={l.href}
-                className="block px-3 py-2.5 text-sm text-muted-foreground"
-                onClick={() => setMobileOpen(false)}
-                data-testid={`link-mobile-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-              >
-                {l.label}
-              </a>
-            )
-          )}
+          {links.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`block px-3 py-2.5 text-sm ${
+                location === l.href ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}
+              onClick={() => setMobileOpen(false)}
+              data-testid={`link-mobile-${l.label.toLowerCase().replace(/\s/g, "-")}`}
+            >
+              {l.label}
+            </Link>
+          ))}
           <div className="mt-3 flex flex-col gap-2">
             <Button size="sm" asChild className="w-full">
               <Link href="/contact" data-testid="link-mobile-get-terminal">
                 Get Your Terminal
               </Link>
             </Button>
+            <a
+              href="tel:+18087675460"
+              className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Phone className="w-4 h-4 text-primary" />
+              (808) 767-5460
+            </a>
           </div>
         </div>
       )}
@@ -143,16 +129,16 @@ function Navbar() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border/50 py-14 relative" data-testid="section-footer">
+    <footer className="border-t border-border/50 py-8 sm:py-14 relative" data-testid="section-footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          <div className="md:col-span-1">
-            <div className="font-bold text-lg flex items-center gap-2.5 mb-4">
-              <img src="/images/logo.svg" alt="Edify Limited" className="w-8 h-8" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
+          <div className="col-span-2 md:col-span-1">
+            <div className="font-bold text-base sm:text-lg flex items-center gap-2 mb-3">
+              <img src="/images/IMG_6304.png" alt="Edify Limited" className="w-7 h-7 sm:w-8 sm:h-8 rounded" />
               <span className="text-foreground">Edify Limited</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mb-4">
-              Hawai'i's trusted payment processing and web design company. Zero processing fees, zero monthly fees — plus free websites for every merchant.
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-sm mb-3">
+              Hawai'i's trusted payment processing and web design company. Zero fees — plus free websites for every merchant.
             </p>
             <div className="space-y-2.5 text-sm text-muted-foreground">
               <a href="tel:+18087675460" className="flex items-center gap-2 transition-colors hover:text-foreground">
@@ -178,13 +164,13 @@ function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-foreground">Services</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
-                <a href="/#pricing" className="transition-colors hover:text-foreground" data-testid="link-footer-pricing">
+                <Link href="/pricing" className="transition-colors hover:text-foreground" data-testid="link-footer-pricing">
                   Payment Processing
-                </a>
+                </Link>
               </li>
               <li>
-                <Link href="/web-design" className="transition-colors hover:text-foreground" data-testid="link-footer-web-design">
-                  Website Design
+                <Link href="/our-work" className="transition-colors hover:text-foreground" data-testid="link-footer-our-work">
+                  Our Work
                 </Link>
               </li>
               <li>
@@ -193,9 +179,9 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="/#how-it-works" className="transition-colors hover:text-foreground" data-testid="link-footer-features">
+                <Link href="/how-it-works" className="transition-colors hover:text-foreground" data-testid="link-footer-features">
                   How It Works
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -204,9 +190,9 @@ function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-foreground">Quick Links</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
-                <a href="/#how-it-works" className="transition-colors hover:text-foreground" data-testid="link-footer-how">
+                <Link href="/how-it-works" className="transition-colors hover:text-foreground" data-testid="link-footer-how">
                   How It Works
-                </a>
+                </Link>
               </li>
               <li>
                 <Link href="/contact" className="transition-colors hover:text-foreground" data-testid="link-footer-faq">
