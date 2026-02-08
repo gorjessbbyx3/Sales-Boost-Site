@@ -12,16 +12,12 @@ import {
   Zap,
   Clock,
   DollarSign,
-  TrendingUp,
-  Star,
-  Users,
-  Award,
   CircleDollarSign,
   Palette,
   MapPin,
   BarChart3,
 } from "lucide-react";
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
@@ -44,20 +40,10 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
 function HeroSection() {
   return (
     <section
-      className="relative overflow-hidden pt-20 pb-16 sm:pt-32 sm:pb-28 bg-transparent"
-      style={{ backgroundColor: "transparent" }}
+      className="relative overflow-hidden pt-20 pb-16 sm:pt-32 sm:pb-28"
       data-testid="section-hero"
     >
-      <video
-        src="/images/hero-background.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover z-0"
-      />
-      <div className="absolute inset-0 bg-black/40 z-[1]" />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background z-[1]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5 z-0" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -74,24 +60,19 @@ function HeroSection() {
             </motion.div>
 
             <motion.h1
-              className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-6 text-white"
-              style={{ WebkitTextStroke: "1px rgba(0,0,0,0.5)", textShadow: "0 2px 8px rgba(0,0,0,0.6), 0 0 2px rgba(0,0,0,0.8)" }}
+              className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-6 text-foreground"
               variants={fadeUp}
               data-testid="text-hero-title"
             >
               Keep{" "}
-              <span
-                className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent"
-                style={{ WebkitTextStroke: "0px transparent", textShadow: "0 0 20px rgba(16,185,129,0.6), 0 0 40px rgba(16,185,129,0.3)" }}
-              >
+              <span className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
                 100%
               </span>{" "}
               of Every Sale
             </motion.h1>
 
             <motion.p
-              className="text-sm sm:text-lg text-white/90 leading-relaxed mb-6 sm:mb-8 max-w-xl"
-              style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7), 0 0 2px rgba(0,0,0,0.9)" }}
+              className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-8 max-w-xl"
               variants={fadeUp}
               data-testid="text-hero-subtitle"
             >
@@ -118,7 +99,7 @@ function HeroSection() {
             </motion.div>
 
             <motion.div
-              className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm text-white/60"
+              className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm text-muted-foreground"
               variants={fadeUp}
             >
               <div className="flex items-center gap-1.5">
@@ -232,21 +213,22 @@ function HeroSection() {
 
 
 function HowItWorksSection() {
-  const sectionRef = useRef<HTMLElement>(null);
   const steps = [
     {
       step: "01",
       title: "Choose Your Plan",
       description: "Pick in-store terminal for face-to-face payments, or go online-only with a free website. Zero processing fees either way.",
       details: [
-        "In-Store Terminal — $399 one-time, own it immediately",
-        "30-Day Trial — free to try, $599 if you keep it",
-        "OR Online-Only — FREE website + payment gateway",
+        "In-Store Terminal — $399 one-time",
+        "30-Day Free Trial available",
+        "OR Online-Only — FREE website + gateway",
       ],
+      image: "/images/step-choose-plan.png",
       icon: CreditCard,
-      color: "text-primary",
-      border: "border-primary/20",
-      accent: "from-primary/20 to-primary/5",
+      accent: "border-blue-500/30",
+      numberColor: "text-blue-400",
+      checkColor: "text-blue-400",
+      iconBg: "bg-blue-500/15 border-blue-500/30",
     },
     {
       step: "02",
@@ -255,43 +237,38 @@ function HowItWorksSection() {
       details: [
         "Terminal programming & configuration",
         "Bank account connection",
-        "Hands-on training (remote or on-site)",
-        "Compliance signage provided",
+        "Hands-on training & compliance signage",
       ],
+      image: "/images/step-setup.png",
       icon: Zap,
-      color: "text-chart-2",
-      border: "border-chart-2/20",
-      accent: "from-chart-2/20 to-chart-2/5",
+      accent: "border-amber-500/30",
+      numberColor: "text-amber-400",
+      checkColor: "text-amber-400",
+      iconBg: "bg-amber-500/15 border-amber-500/30",
     },
     {
       step: "03",
       title: "Keep 100% of Every Sale",
       description: "A small surcharge is passed to card-paying customers at checkout. You keep 100% of the listed price, deposited by next business day.",
       details: [
-        "Customer pays small surcharge on card transactions",
-        "Cash-paying customers get the listed price",
-        "100% of your sale deposited next business day",
-        "Real-time dashboard to track all transactions",
+        "Customer pays small card surcharge",
+        "You keep 100% of the listed price",
+        "Next-day deposits & real-time dashboard",
       ],
+      image: "/images/step-keep-revenue.png",
       icon: DollarSign,
-      color: "text-chart-3",
-      border: "border-chart-3/20",
-      accent: "from-chart-3/20 to-chart-3/5",
+      accent: "border-emerald-500/30",
+      numberColor: "text-emerald-400",
+      checkColor: "text-emerald-400",
+      iconBg: "bg-emerald-500/15 border-emerald-500/30",
     },
   ];
 
-  const stepColors = [
-    { bg: "from-blue-500/20 to-blue-600/5", glow: "bg-blue-500/20", number: "text-blue-400", icon: "bg-blue-500/15 border-blue-500/30", check: "text-blue-400" },
-    { bg: "from-amber-500/20 to-amber-600/5", glow: "bg-amber-500/20", number: "text-amber-400", icon: "bg-amber-500/15 border-amber-500/30", check: "text-amber-400" },
-    { bg: "from-emerald-500/20 to-emerald-600/5", glow: "bg-emerald-500/20", number: "text-emerald-400", icon: "bg-emerald-500/15 border-emerald-500/30", check: "text-emerald-400" },
-  ];
-
   return (
-    <section ref={sectionRef} className="py-12 sm:py-24 relative overflow-clip bg-[#0a1628]" data-testid="section-how-it-works">
-      <div className="absolute inset-0 -z-0">
+    <section className="py-12 sm:py-24 relative overflow-clip bg-[#0a1628]" data-testid="section-how-it-works">
+      <div className="absolute inset-0">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-blue-600/10 blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-emerald-600/8 blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-primary/5 blur-[150px]" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -325,77 +302,69 @@ function HowItWorksSection() {
           </motion.p>
         </motion.div>
 
-        <motion.div
-          className="lg:hidden flex items-center justify-center"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <img
-            src="/images/how-it-works-visual.png"
-            alt="How Edify zero-fee payment processing works — Step 1: Choose your plan, Step 2: We set everything up, Step 3: Keep 100% of every sale"
-            className="w-full max-w-lg object-contain rounded-xl"
-            data-testid="img-how-it-works-steps-mobile"
-          />
-        </motion.div>
-
-        <div className="hidden lg:grid lg:grid-cols-3 gap-6">
-          {steps.map((s, i) => {
-            const colors = stepColors[i];
-            return (
-              <motion.div
-                key={s.step}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-              >
-                <Card className="h-full border-white/10 bg-white/5 backdrop-blur-sm" data-testid={`card-step-${s.step}`}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className={`text-4xl font-black ${colors.number} opacity-80 leading-none`}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          {steps.map((s, i) => (
+            <motion.div
+              key={s.step}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.15 }}
+            >
+              <Card className={`h-full bg-white/5 backdrop-blur-sm ${s.accent} overflow-visible`} data-testid={`card-step-${s.step}`}>
+                <CardContent className="p-0">
+                  <div className="relative overflow-hidden rounded-t-md">
+                    <img
+                      src={s.image}
+                      alt={s.title}
+                      className="w-full h-48 sm:h-56 object-cover"
+                      data-testid={`img-step-${s.step}`}
+                    />
+                    <div className="absolute top-3 left-3">
+                      <div className={`text-2xl font-black ${s.numberColor} bg-black/50 backdrop-blur-sm rounded-md px-2.5 py-1`}>
                         {s.step}
                       </div>
-                      <div className={`w-10 h-10 rounded-lg ${colors.icon} border flex items-center justify-center shrink-0 mt-1`}>
-                        <s.icon className={`w-5 h-5 ${colors.check}`} />
-                      </div>
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-2">
-                      {s.title}
-                    </h3>
+                  </div>
+                  <div className="p-5 sm:p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-9 h-9 rounded-lg ${s.iconBg} border flex items-center justify-center shrink-0`}>
+                        <s.icon className={`w-4 h-4 ${s.checkColor}`} />
+                      </div>
+                      <h3 className="text-lg font-bold text-white">{s.title}</h3>
+                    </div>
                     <p className="text-sm text-slate-300 leading-relaxed mb-4">
                       {s.description}
                     </p>
                     <ul className="space-y-2">
                       {s.details.map((detail) => (
                         <li key={detail} className="flex items-start gap-2 text-sm">
-                          <Check className={`w-4 h-4 ${colors.check} shrink-0 mt-0.5`} />
+                          <Check className={`w-4 h-4 ${s.checkColor} shrink-0 mt-0.5`} />
                           <span className="text-slate-200">{detail}</span>
                         </li>
                       ))}
                     </ul>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
 
         <motion.div
-          className="hidden lg:flex items-center justify-center gap-6 mt-12"
+          className="flex items-center justify-center gap-4 sm:gap-6 mt-10 sm:mt-12 flex-wrap"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.5 }}
           data-testid="banner-zero-fees-tagline"
         >
-          <div className="flex items-center gap-3 px-5 py-2.5 rounded-lg border border-blue-400/20 bg-blue-500/10" data-testid="badge-zero-processing-fees">
+          <div className="flex items-center gap-3 px-4 sm:px-5 py-2.5 rounded-md border border-blue-400/20 bg-blue-500/10" data-testid="badge-zero-processing-fees">
             <ShieldCheck className="w-4 h-4 text-blue-300" />
             <span className="text-sm font-semibold text-blue-200">Zero Processing Fees</span>
           </div>
-          <div className="w-px h-6 bg-white/20" />
-          <div className="flex items-center gap-3 px-5 py-2.5 rounded-lg border border-emerald-400/20 bg-emerald-500/10" data-testid="badge-legally-compliantly">
+          <div className="w-px h-6 bg-white/20 hidden sm:block" />
+          <div className="flex items-center gap-3 px-4 sm:px-5 py-2.5 rounded-md border border-emerald-400/20 bg-emerald-500/10" data-testid="badge-legally-compliantly">
             <Check className="w-4 h-4 text-emerald-300" />
             <span className="text-sm font-semibold text-emerald-200">Legally & Compliantly</span>
           </div>
