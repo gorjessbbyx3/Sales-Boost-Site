@@ -40,169 +40,142 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
 function HeroSection() {
   return (
     <section
-      className="relative overflow-hidden pt-20 pb-16 sm:pt-32 sm:pb-28"
+      className="relative overflow-hidden pt-24 pb-20 sm:pt-36 sm:pb-32"
       data-testid="section-hero"
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5 z-0" />
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-primary/3" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full bg-primary/6 blur-[140px]" />
+      </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div variants={fadeUp}>
+            <Badge variant="outline" className="mb-6 sm:mb-8 py-1.5 px-4 text-xs sm:text-sm text-primary border-primary/30 bg-primary/10">
+              <MapPin className="w-3 h-3 mr-1.5" />
+              Proudly Serving Hawai'i
+            </Badge>
+          </motion.div>
+
+          <motion.h1
+            className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6 sm:mb-8 text-foreground"
+            variants={fadeUp}
+            data-testid="text-hero-title"
           >
-            <motion.div variants={fadeUp}>
-              <Badge variant="outline" className="mb-4 sm:mb-5 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/10 backdrop-blur-sm">
-                <MapPin className="w-3 h-3 mr-1" />
-                Proudly Serving Hawai'i
-              </Badge>
-            </motion.div>
+            Two Paths to{" "}
+            <span className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
+              Zero Fees
+            </span>
+          </motion.h1>
 
-            <motion.h1
-              className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-6 text-foreground"
-              variants={fadeUp}
-              data-testid="text-hero-title"
-            >
-              Keep{" "}
-              <span className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-                100%
-              </span>{" "}
-              of Every Sale
-            </motion.h1>
+          <motion.p
+            className="text-base sm:text-xl text-muted-foreground leading-relaxed mb-10 sm:mb-14 max-w-2xl mx-auto"
+            variants={fadeUp}
+            data-testid="text-hero-subtitle"
+          >
+            Whether you sell face-to-face or online, keep 100% of every sale. No processing fees. No monthly fees. Ever.
+          </motion.p>
+        </motion.div>
 
-            <motion.p
-              className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-8 max-w-xl"
-              variants={fadeUp}
-              data-testid="text-hero-subtitle"
-            >
-              Zero processing fees. Zero monthly fees. Get an in-store terminal starting at $399 — or go online-only with a{" "}
-              <span className="text-primary font-semibold">free custom website</span>.
-            </motion.p>
-
-            <motion.div
-              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-8"
-              variants={fadeUp}
-            >
-              <Button size="lg" className="w-full sm:w-auto" asChild>
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 mb-12 sm:mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+        >
+          <Card className="border-primary/20 relative group" data-testid="card-hero-terminal">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/8 to-transparent rounded-md" />
+            <CardContent className="relative p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 rounded-md bg-primary/15 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-foreground">In-Store Terminal</h3>
+                  <p className="text-xs text-muted-foreground">Face-to-face payments</p>
+                </div>
+              </div>
+              <ul className="space-y-2.5 mb-6">
+                {["Payment terminal — buy or try free", "Chip, tap, & swipe accepted", "No website needed"].map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-baseline gap-2 mb-5">
+                <span className="text-3xl font-extrabold text-primary">$399</span>
+                <span className="text-sm text-muted-foreground">or 30-day free trial</span>
+              </div>
+              <Button className="w-full" asChild>
                 <Link href="/contact" data-testid="link-hero-get-terminal">
-                  Get Your Terminal
+                  Schedule a Call
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
-              <Button variant="outline" size="lg" className="w-full sm:w-auto backdrop-blur-sm" asChild>
-                <Link href="/online-processing" data-testid="link-hero-learn-more">
-                  Go Online
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-500/20 relative group" data-testid="card-hero-online">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/8 to-transparent rounded-md" />
+            <CardContent className="relative p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 rounded-md bg-blue-500/15 flex items-center justify-center shrink-0">
+                  <Globe className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-foreground">Online Processing</h3>
+                  <p className="text-xs text-muted-foreground">Sell online with a free website</p>
+                </div>
+              </div>
+              <ul className="space-y-2.5 mb-6">
+                {["Free custom website built for you", "Payment gateway included", "No physical terminal needed"].map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Check className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-baseline gap-2 mb-5">
+                <span className="text-3xl font-extrabold text-blue-400">FREE</span>
+                <span className="text-sm text-muted-foreground">website + gateway included</span>
+              </div>
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/online-processing" data-testid="link-hero-go-online">
+                  Learn More
                   <Globe className="w-4 h-4" />
                 </Link>
               </Button>
-            </motion.div>
-
-            <motion.div
-              className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm text-muted-foreground"
-              variants={fadeUp}
-            >
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                <span>PCI Compliant</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-primary" />
-                <span>Same-Day Setup</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-primary" />
-                <span>Zero Fees</span>
-              </div>
-            </motion.div>
-          </motion.div>
-
-          <motion.div
-            className="hidden lg:block"
-            initial={{ opacity: 0, x: 40, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ delay: 0.3, duration: 0.7 }}
-          >
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <Card className="border-primary/20 bg-primary/5" data-testid="card-hero-terminal">
-                  <CardContent className="p-5">
-                    <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center mb-3">
-                      <CreditCard className="w-5 h-5 text-primary" />
-                    </div>
-                    <h3 className="font-bold text-foreground mb-1">In-Store Terminal</h3>
-                    <p className="text-xs text-muted-foreground mb-3">Face-to-face payments with zero fees</p>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-extrabold text-primary">$399</span>
-                      <span className="text-xs text-muted-foreground">or try free</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-emerald-500/20 bg-emerald-500/5" data-testid="card-hero-savings">
-                  <CardContent className="p-5 text-center">
-                    <div className="text-3xl font-extrabold text-primary mb-1">
-                      <AnimatedCounter target={5400} prefix="$" suffix="+" />
-                    </div>
-                    <div className="text-xs text-muted-foreground">Saved Per Year</div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-4 pt-8">
-                <Card className="border-blue-500/20 bg-blue-500/5" data-testid="card-hero-online">
-                  <CardContent className="p-5">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center mb-3">
-                      <Globe className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <h3 className="font-bold text-foreground mb-1">Online Processing</h3>
-                    <p className="text-xs text-muted-foreground mb-3">Free website + payment gateway</p>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-extrabold text-blue-400">FREE</span>
-                      <span className="text-xs text-muted-foreground">website included</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-amber-500/20 bg-amber-500/5" data-testid="card-hero-trial">
-                  <CardContent className="p-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-                        <Zap className="w-5 h-5 text-amber-400" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-sm">30-Day Free Trial</h3>
-                        <p className="text-xs text-muted-foreground">Try before you buy</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         <motion.div
-          className="mt-10 sm:mt-16 lg:hidden"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
+          className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-xs sm:text-sm text-muted-foreground"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
         >
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: 5400, prefix: "$", suffix: "+", label: "Saved/Year", color: "text-primary" },
-              { value: 0, prefix: "$", suffix: "", label: "Monthly Fees", color: "text-foreground" },
-              { value: 100, prefix: "", suffix: "%", label: "Revenue Kept", color: "text-foreground" },
-            ].map((stat) => (
-              <Card key={stat.label} className="text-center border-primary/10" data-testid={`card-hero-stat-${stat.label}`}>
-                <CardContent className="p-3 sm:p-5">
-                  <div className={`text-xl sm:text-3xl font-extrabold ${stat.color} mb-1`}>
-                    <AnimatedCounter target={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">{stat.label}</div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            <span>PCI Compliant</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-4 h-4 text-primary" />
+            <span>Same-Day Setup</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <DollarSign className="w-4 h-4 text-primary" />
+            <span>Zero Fees</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-primary" />
+            <span>Local Hawai'i Support</span>
           </div>
         </motion.div>
       </div>
