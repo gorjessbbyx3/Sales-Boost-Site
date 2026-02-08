@@ -25,6 +25,12 @@ import {
   CircleDollarSign,
   Percent,
   Receipt,
+  Tag,
+  Gift,
+  Sparkles,
+  Copy,
+  CheckCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -71,7 +77,8 @@ function Navbar() {
   const links = [
     { label: "How It Works", href: "#how-it-works" },
     { label: "Pricing", href: "#pricing" },
-    { label: "Features", href: "#features" },
+    { label: "Promos", href: "#promos" },
+    { label: "High-Risk", href: "#high-risk" },
     { label: "FAQ", href: "#faq" },
   ];
 
@@ -607,6 +614,297 @@ function PricingComparisonSection() {
   );
 }
 
+function PromoSection() {
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const handleCopy = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const promos = [
+    {
+      code: "FREETRIAL",
+      title: "Try 1 Month Free",
+      description: "Get your terminal and process payments for one full month at no cost. No commitment required.",
+      icon: Gift,
+      highlight: "Free Trial",
+      gradient: "from-chart-4/20 to-chart-4/5",
+      iconColor: "text-chart-4",
+      badgeColor: "text-chart-4 border-chart-4/30 bg-chart-4/5",
+      details: ["Full terminal access", "Zero upfront cost for 30 days", "Cancel anytime, no questions asked"],
+    },
+    {
+      code: "SAVE200",
+      title: "Start for Just $300",
+      description: "Save $200 on your terminal today. Same zero-fee processing, lower entry price. Online exclusive.",
+      icon: Tag,
+      highlight: "$200 Off",
+      gradient: "from-primary/20 to-primary/5",
+      iconColor: "text-primary",
+      badgeColor: "text-primary border-primary/30 bg-primary/5",
+      details: ["$300 instead of $500", "Same zero monthly fees", "Same zero processing fees"],
+    },
+  ];
+
+  return (
+    <section id="promos" className="py-24 sm:py-32 relative" data-testid="section-promos">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-chart-4/8 blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-primary/8 blur-[100px]" />
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-14"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Badge variant="outline" className="mb-5 text-chart-4 border-chart-4/30 bg-chart-4/5">
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              Limited Time Offers
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
+            variants={fadeUp}
+            data-testid="text-promo-title"
+          >
+            Online{" "}
+            <span className="bg-gradient-to-r from-chart-4 to-primary bg-clip-text text-transparent">
+              Exclusive Deals
+            </span>
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground max-w-2xl mx-auto text-lg"
+            variants={fadeUp}
+          >
+            Choose the offer that works best for your business. Use a promo code when you get in touch.
+          </motion.p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {promos.map((promo, i) => (
+            <motion.div
+              key={promo.code}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.15 }}
+            >
+              <Card className="h-full overflow-visible relative border-primary/10">
+                <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${promo.gradient}`} />
+                <div className="absolute -top-3 right-6">
+                  <Badge className="shadow-lg shadow-primary/20">{promo.highlight}</Badge>
+                </div>
+                <CardHeader className="relative pt-8 pb-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className={`w-10 h-10 rounded-md bg-gradient-to-b ${promo.gradient} flex items-center justify-center`}>
+                      <promo.icon className={`w-5 h-5 ${promo.iconColor}`} />
+                    </div>
+                    <CardTitle className="text-lg" data-testid={`text-promo-title-${i}`}>
+                      {promo.title}
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="relative space-y-4">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {promo.description}
+                  </p>
+
+                  <ul className="space-y-2">
+                    {promo.details.map((detail) => (
+                      <li key={detail} className="flex items-center gap-2 text-sm">
+                        <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span className="text-foreground/80">{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="flex items-center gap-2 flex-wrap pt-2">
+                    <div className="flex-1 rounded-md bg-muted px-3 py-2 font-mono text-sm tracking-wider text-foreground text-center" data-testid={`text-promo-code-${i}`}>
+                      {promo.code}
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => handleCopy(promo.code)}
+                      data-testid={`button-copy-code-${i}`}
+                    >
+                      {copiedCode === promo.code ? (
+                        <CheckCheck className="w-4 h-4 text-primary" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+
+                  <Button className="w-full" asChild>
+                    <a href={`https://edifylimited.tech/contact?promo=${promo.code}`} data-testid={`link-promo-claim-${i}`}>
+                      Claim This Offer
+                      <ArrowRight className="w-4 h-4" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.p
+          className="text-center text-muted-foreground text-xs mt-8 max-w-xl mx-auto"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          data-testid="text-promo-disclaimer"
+        >
+          Offers available for new customers only. Mention the promo code when you contact us. Cannot be combined with other promotions.
+        </motion.p>
+      </div>
+    </section>
+  );
+}
+
+function HighRiskSection() {
+  const industries = [
+    "CBD & Hemp",
+    "Vape & E-Cigarette",
+    "Firearms & Ammunition",
+    "Nutraceuticals",
+    "Travel & Tourism",
+    "Debt Collection",
+    "Online Gaming",
+    "Adult Entertainment",
+    "Subscription Services",
+    "Tech Support",
+    "Telemarketing",
+    "E-Commerce",
+  ];
+
+  return (
+    <section id="high-risk" className="py-24 sm:py-32 relative" data-testid="section-high-risk">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-14"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Badge variant="outline" className="mb-5 text-chart-2 border-chart-2/30 bg-chart-2/5">
+              <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
+              High-Risk Merchants Welcome
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
+            variants={fadeUp}
+            data-testid="text-high-risk-title"
+          >
+            High-Risk{" "}
+            <span className="bg-gradient-to-r from-chart-2 to-primary bg-clip-text text-transparent">
+              Payment Processing
+            </span>
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed"
+            variants={fadeUp}
+          >
+            Turned down by other processors? We specialize in high-risk merchant accounts with the same zero-fee processing and no hidden charges.
+          </motion.p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <Card className="h-full overflow-visible border-chart-2/20">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-2/5 to-transparent" />
+              <CardHeader className="relative">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="w-10 h-10 rounded-md bg-chart-2/15 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5 text-chart-2" />
+                  </div>
+                  <CardTitle className="text-lg">Why Merchants Choose Us</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="relative space-y-3">
+                {[
+                  "No application denials based on industry type",
+                  "Same zero processing fees as standard merchants",
+                  "No reserve requirements or fund holds",
+                  "Fast approval — often same-day setup",
+                  "Dedicated support for high-risk industries",
+                  "Chargeback prevention tools included",
+                  "PCI-compliant secure transactions",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-2.5">
+                    <Check className="w-4 h-4 text-chart-2 shrink-0 mt-0.5" />
+                    <span className="text-sm text-foreground/80">{item}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <Card className="h-full overflow-visible border-primary/10">
+              <CardHeader>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">Industries We Serve</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {industries.map((industry) => (
+                    <Badge
+                      key={industry}
+                      variant="outline"
+                      className="text-muted-foreground border-border/60"
+                      data-testid={`badge-industry-${industry.toLowerCase().replace(/[\s&]/g, "-")}`}
+                    >
+                      {industry}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground mt-5 leading-relaxed">
+                  Don't see your industry? Contact us — we work with nearly every business type that other processors reject.
+                </p>
+                <Button className="w-full mt-5" asChild>
+                  <a href="https://edifylimited.tech/contact" data-testid="link-high-risk-apply">
+                    Apply for High-Risk Account
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FeaturesSection() {
   const features = [
     {
@@ -1074,6 +1372,14 @@ function FAQSection() {
       q: "When do I receive my funds?",
       a: "Funds are deposited to your bank account by the next business day. You can track all deposits and transactions through your real-time dashboard.",
     },
+    {
+      q: "Do you accept high-risk merchants?",
+      a: "Yes. We specialize in high-risk merchant accounts including CBD, vape, firearms, nutraceuticals, travel, online gaming, adult entertainment, and more. Same zero-fee processing, no excessive reserves, and fast approvals.",
+    },
+    {
+      q: "How do the promo codes work?",
+      a: "Simply mention the promo code (FREETRIAL for a free first month, or SAVE200 for $200 off your terminal) when you contact us. These are online-exclusive offers for new customers and cannot be combined.",
+    },
   ];
 
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -1308,7 +1614,9 @@ export default function Home() {
         <SocialProofBar />
         <HowItWorksSection />
         <PricingComparisonSection />
+        <PromoSection />
         <FeaturesSection />
+        <HighRiskSection />
         <DetailSections />
         <SavingsCalculator />
         <TestimonialSection />
