@@ -48,12 +48,15 @@ function HeroSection() {
       data-testid="section-hero"
     >
       <div className="absolute inset-0 -z-10">
-        <img
-          src="/images/hero-banner.jpg"
-          alt="Eliminate Credit Card Fees — Edify Hawaii"
-          className="w-full h-full object-cover object-center opacity-20"
+        <video
+          src="/images/hero-background.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover object-center opacity-25"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/75 to-background" />
         <div className="absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full bg-primary/8 blur-[150px]" />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-blue-600/8 blur-[120px]" />
       </div>
