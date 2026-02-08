@@ -67,26 +67,26 @@ function HeroSection() {
             animate="visible"
           >
             <motion.div variants={fadeUp}>
-              <Badge variant="outline" className="mb-4 sm:mb-5 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
+              <Badge variant="outline" className="mb-4 sm:mb-5 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/10 backdrop-blur-sm">
                 <MapPin className="w-3 h-3 mr-1" />
                 Proudly Serving Hawai'i
               </Badge>
             </motion.div>
 
             <motion.h1
-              className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-6"
+              className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-6 text-white drop-shadow-lg"
               variants={fadeUp}
               data-testid="text-hero-title"
             >
               Keep{" "}
-              <span className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent drop-shadow-none">
                 100%
               </span>{" "}
               of Every Sale
             </motion.h1>
 
             <motion.p
-              className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-8 max-w-xl"
+              className="text-sm sm:text-lg text-white/80 leading-relaxed mb-6 sm:mb-8 max-w-xl drop-shadow-md"
               variants={fadeUp}
               data-testid="text-hero-subtitle"
             >
@@ -104,7 +104,7 @@ function HeroSection() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
-              <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto backdrop-blur-sm" asChild>
                 <Link href="/online-processing" data-testid="link-hero-learn-more">
                   Go Online
                   <Globe className="w-4 h-4" />
@@ -113,7 +113,7 @@ function HeroSection() {
             </motion.div>
 
             <motion.div
-              className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm text-muted-foreground"
+              className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm text-white/60"
               variants={fadeUp}
             >
               <div className="flex items-center gap-1.5">
