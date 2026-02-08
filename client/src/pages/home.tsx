@@ -80,7 +80,10 @@ function HeroSection() {
               data-testid="text-hero-title"
             >
               Keep{" "}
-              <span className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent drop-shadow-none">
+              <span
+                className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent"
+                style={{ WebkitTextStroke: "0px transparent", textShadow: "0 0 20px rgba(16,185,129,0.6), 0 0 40px rgba(16,185,129,0.3)" }}
+              >
                 100%
               </span>{" "}
               of Every Sale
