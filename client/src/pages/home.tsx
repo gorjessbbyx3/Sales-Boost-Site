@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { motion, useInView, useMotionValue, useTransform, animate, useScroll, AnimatePresence } from "framer-motion";
+import { motion, useInView, useMotionValue, useTransform, animate } from "framer-motion";
 import {
   CreditCard,
   Globe,
@@ -230,31 +230,6 @@ function HeroSection() {
 }
 
 
-function FallingDollars({ containerRef }: { containerRef: React.RefObject<HTMLElement | null> }) {
-  const isInView = useInView(containerRef, { once: true, amount: 0.15 });
-
-  return (
-    <div className="absolute inset-0 pointer-events-none z-[50]">
-      <motion.div
-        className="absolute left-[3%] sm:left-[5%] bottom-0"
-        initial={{ y: -600, opacity: 0 }}
-        animate={isInView ? { y: 0, opacity: 0.85 } : { y: -600, opacity: 0 }}
-        transition={{ duration: 1.4, ease: [0.34, 1.56, 0.64, 1], delay: 0.2 }}
-      >
-        <DollarSign className="w-16 h-16 sm:w-24 sm:h-24 text-primary drop-shadow-[0_0_20px_rgba(16,185,129,0.6)]" strokeWidth={2.5} />
-      </motion.div>
-
-      <motion.div
-        className="absolute right-[3%] sm:right-[5%] bottom-0"
-        initial={{ y: -600, opacity: 0 }}
-        animate={isInView ? { y: 0, opacity: 0.85 } : { y: -600, opacity: 0 }}
-        transition={{ duration: 1.4, ease: [0.34, 1.56, 0.64, 1], delay: 0.5 }}
-      >
-        <DollarSign className="w-16 h-16 sm:w-24 sm:h-24 text-primary drop-shadow-[0_0_20px_rgba(16,185,129,0.6)]" strokeWidth={2.5} />
-      </motion.div>
-    </div>
-  );
-}
 
 function HowItWorksSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -313,7 +288,6 @@ function HowItWorksSection() {
 
   return (
     <section ref={sectionRef} className="py-12 sm:py-24 relative overflow-clip bg-[#0a1628]" data-testid="section-how-it-works">
-      <FallingDollars containerRef={sectionRef} />
       <div className="absolute inset-0 -z-0">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-blue-600/10 blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-emerald-600/8 blur-[100px]" />
@@ -359,9 +333,9 @@ function HowItWorksSection() {
           transition={{ duration: 0.6 }}
         >
           <img
-            src="/images/cash-discount-infographic-mobile.jpeg"
-            alt="How Edify zero-fee payment processing works — Step 1: Customer pays with card, Step 2: Small non-cash adjustment of 3-4%, Step 3: Business keeps 100% of payment"
-            className="w-full max-w-md object-contain rounded-xl"
+            src="/images/how-it-works-visual.png"
+            alt="How Edify zero-fee payment processing works — Step 1: Choose your plan, Step 2: We set everything up, Step 3: Keep 100% of every sale"
+            className="w-full max-w-lg object-contain rounded-xl"
             data-testid="img-how-it-works-steps-mobile"
           />
         </motion.div>
