@@ -44,24 +44,22 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
 function HeroSection() {
   return (
     <section
-      className="relative overflow-hidden pt-20 pb-16 sm:pt-32 sm:pb-28"
+      className="relative overflow-hidden pt-20 pb-16 sm:pt-32 sm:pb-28 bg-transparent"
+      style={{ backgroundColor: "transparent" }}
       data-testid="section-hero"
     >
-      <div className="absolute inset-0 -z-10">
-        <video
-          src="/images/hero-background.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover object-center opacity-25"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/75 to-background" />
-        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full bg-primary/8 blur-[150px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-blue-600/8 blur-[120px]" />
-      </div>
+      <video
+        src="/images/hero-background.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      />
+      <div className="absolute inset-0 bg-black/40 z-[1]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background z-[1]" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <motion.div
             variants={staggerContainer}
