@@ -378,7 +378,7 @@ function QuickPricingPreview() {
             },
             {
               title: "Online-Only",
-              price: "$499",
+              price: "$50/mo",
               note: "Website + Payment Gateway",
               icon: Globe,
               color: "text-chart-2",

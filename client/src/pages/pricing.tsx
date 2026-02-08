@@ -266,10 +266,8 @@ function PricingCardsSection() {
                 <div className="text-center py-2">
                   <div className="text-xs text-muted-foreground mb-1">Website + Gateway</div>
                   <div className="flex items-baseline justify-center gap-1.5">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-chart-2">$499</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    or free with processing commitment
+                    <span className="text-3xl sm:text-4xl font-extrabold text-chart-2">$50</span>
+                    <span className="text-sm text-muted-foreground">/month</span>
                   </div>
                 </div>
 

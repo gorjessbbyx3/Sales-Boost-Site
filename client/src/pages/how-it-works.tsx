@@ -81,7 +81,7 @@ function StepsSection() {
       details: [
         "In-Store Terminal — $399 one-time, own it immediately",
         "30-Day Trial — free to try, $599 if you keep it",
-        "Online-Only — $499 for website + payment gateway",
+        "Online-Only — $50/month for website + payment gateway",
       ],
       icon: CreditCard,
       accent: "from-primary/20 to-primary/5",

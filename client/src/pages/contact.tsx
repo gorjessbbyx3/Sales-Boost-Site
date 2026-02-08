@@ -406,7 +406,7 @@ function ContactSection() {
                       >
                         <option value="bundle-terminal">Terminal + Free Website ($399)</option>
                         <option value="bundle-trial">Free Trial + Website ($199 add-on)</option>
-                        <option value="online-only">Online-Only Package ($499)</option>
+                        <option value="online-only">Online-Only Package ($50/mo)</option>
                         <option value="high-risk">High-Risk Merchant Account</option>
                         <option value="website-only">Website Design Only</option>
                         <option value="premium-web">Premium Web Package + Maintenance</option>
