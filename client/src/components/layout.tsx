@@ -8,6 +8,7 @@ import {
   Phone,
   Mail,
   Clock,
+  MessageSquare,
   ShieldCheck,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -28,7 +29,7 @@ function Navbar() {
     { label: "Pricing", href: "/pricing" },
     { label: "Services & FAQ", href: "/services-faq" },
     { label: "Online Processing", href: "/online-processing" },
-    { label: "High-Risk", href: "/high-risk" },
+    { label: "High-Risk Merchants", href: "/high-risk" },
   ];
 
   return (
@@ -72,11 +73,9 @@ function Navbar() {
                 Contact
               </Link>
             </Button>
-            <Button size="sm" asChild className="text-xs h-9 shadow-lg shadow-primary/20">
-              <Link href="/contact" data-testid="link-nav-get-terminal">
-                Get Started
-                <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Link>
+            <Button size="sm" className="text-xs h-9 shadow-lg shadow-primary/20" data-testid="button-nav-ai-chat" onClick={() => window.dispatchEvent(new CustomEvent("open-chat-widget"))}>
+              <MessageSquare className="w-3.5 h-3.5 mr-1" />
+              AI Chat Intake
             </Button>
           </div>
 
@@ -183,7 +182,7 @@ function Footer() {
               </li>
               <li>
                 <Link href="/high-risk" className="transition-colors hover:text-primary" data-testid="link-footer-high-risk">
-                  High-Risk Solutions
+                  High-Risk Merchants
                 </Link>
               </li>
             </ul>
