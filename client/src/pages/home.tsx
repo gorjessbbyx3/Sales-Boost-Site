@@ -229,46 +229,6 @@ function HeroSection() {
   );
 }
 
-function SocialProofBar() {
-  const stats = [
-    { icon: Users, value: "500+", label: "Hawai'i Businesses" },
-    { icon: Star, value: "4.9/5", label: "Customer Rating" },
-    { icon: TrendingUp, value: "$12M+", label: "Revenue Protected" },
-    { icon: Award, value: "99.9%", label: "Uptime" },
-  ];
-
-  return (
-    <section className="py-12 sm:py-20 relative bg-muted/30" data-testid="section-social-proof">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          {stats.map((stat) => (
-            <motion.div
-              key={stat.label}
-              className="text-center group p-4 rounded-xl hover:bg-background transition-colors shadow-sm shadow-transparent hover:shadow-primary/5"
-              variants={fadeUp}
-            >
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <stat.icon className="w-6 h-6 text-primary" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-extrabold text-foreground mb-1">
-                {stat.value}
-              </div>
-              <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                {stat.label}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
 
 const dollarIcons = [
   "/images/dollar-icon-1.png",
@@ -827,7 +787,7 @@ export default function Home() {
   return (
     <Layout>
       <HeroSection />
-      <SocialProofBar />
+
       <HowItWorksSection />
       <WhyEdifySection />
       <QuickPricingPreview />
