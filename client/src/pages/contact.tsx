@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import {
-  Zap,
   ArrowRight,
   Check,
   Phone,
@@ -11,6 +10,7 @@ import {
   Clock,
   ShieldCheck,
   MapPin,
+  CalendarCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
@@ -23,7 +23,8 @@ function ContactSection() {
     phone: "",
     businessName: "",
     monthlyVolume: "",
-    interest: "bundle-terminal",
+    interest: "in-store-terminal",
+    preferredTime: "",
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
@@ -49,8 +50,8 @@ function ContactSection() {
         >
           <motion.div className="flex flex-wrap items-center justify-center gap-3" variants={fadeUp}>
             <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5 px-3 py-1">
-              <Zap className="w-3.5 h-3.5 mr-2" />
-              Free — No Commitment
+              <CalendarCheck className="w-3.5 h-3.5 mr-2" />
+              Free Consultation
             </Badge>
           </motion.div>
           <motion.h1
@@ -58,16 +59,16 @@ function ContactSection() {
             variants={fadeUp}
             data-testid="text-contact-title"
           >
-            Get Your Free Mockup +{" "}
+            Schedule a{" "}
             <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">
-              Savings Analysis
+              Call
             </span>
           </motion.h1>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed"
             variants={fadeUp}
           >
-            Our team will prepare a custom website mockup and a detailed analysis of how much you'll save by switching to zero-fee processing.
+            Fill out the form and our team will reach out to discuss how zero-fee processing can work for your business.
           </motion.p>
         </motion.div>
 
@@ -75,10 +76,10 @@ function ContactSection() {
           <div className="lg:col-span-1 space-y-4">
             <motion.a
               href="tel:+18087675460"
-              className="flex items-center gap-3 p-4 rounded-xl border border-primary/10 bg-card/50 hover:border-primary/30 transition-all hover:shadow-md group"
+              className="flex items-center gap-3 p-4 rounded-md border border-primary/10 bg-card/50 hover-elevate group"
               variants={fadeUp}
             >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                 <Phone className="w-5 h-5 text-primary" />
               </div>
               <div>
@@ -88,10 +89,10 @@ function ContactSection() {
             </motion.a>
             <motion.a
               href="mailto:edifyhawaii@gmail.com"
-              className="flex items-center gap-3 p-4 rounded-xl border border-primary/10 bg-card/50 hover:border-primary/30 transition-all hover:shadow-md group"
+              className="flex items-center gap-3 p-4 rounded-md border border-primary/10 bg-card/50 hover-elevate group"
               variants={fadeUp}
             >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                 <Mail className="w-5 h-5 text-primary" />
               </div>
               <div>
@@ -100,7 +101,7 @@ function ContactSection() {
               </div>
             </motion.a>
             <motion.div
-              className="p-4 rounded-xl border border-primary/10 bg-card/50"
+              className="p-4 rounded-md border border-primary/10 bg-card/50"
               variants={fadeUp}
             >
               <div className="flex items-center gap-3 mb-3">
@@ -127,13 +128,13 @@ function ContactSection() {
                       <Check className="w-10 h-10 text-primary" />
                     </div>
                     <h3 className="text-2xl font-bold text-foreground mb-4" data-testid="text-contact-success">
-                      Mahalo! We've Received Your Request.
+                      Mahalo! We'll Be in Touch Soon.
                     </h3>
                     <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
-                      Our team is already working on your personalized website mockup and savings analysis. We'll be in touch within one business day.
+                      Our team will call you at your preferred time to discuss zero-fee processing for your business. Expect to hear from us within one business day.
                     </p>
                     <Button variant="outline" className="mt-8" onClick={() => setSubmitted(false)} data-testid="button-send-another">
-                      Send Another Request
+                      Submit Another Request
                     </Button>
                   </div>
                 ) : (
@@ -146,7 +147,7 @@ function ContactSection() {
                           required
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full rounded-xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                          className="w-full rounded-md border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                           placeholder="Your Name"
                           data-testid="input-contact-name"
                         />
@@ -158,7 +159,7 @@ function ContactSection() {
                           required
                           value={formData.businessName}
                           onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                          className="w-full rounded-xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                          className="w-full rounded-md border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                           placeholder="Business Name LLC"
                           data-testid="input-contact-business"
                         />
@@ -167,79 +168,78 @@ function ContactSection() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
+                        <label className="text-sm font-bold text-foreground ml-1">Phone Number</label>
+                        <input
+                          type="tel"
+                          required
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          className="w-full rounded-md border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                          placeholder="(808) 000-0000"
+                          data-testid="input-contact-phone"
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <label className="text-sm font-bold text-foreground ml-1">Email Address</label>
                         <input
                           type="email"
                           required
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className="w-full rounded-xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                          className="w-full rounded-md border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                           placeholder="name@company.com"
                           data-testid="input-contact-email"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-foreground ml-1">Phone Number</label>
-                        <input
-                          type="tel"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          className="w-full rounded-xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
-                          placeholder="(808) 000-0000"
-                          data-testid="input-contact-phone"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-foreground ml-1">Monthly Sales Volume</label>
-                        <select
-                          value={formData.monthlyVolume}
-                          onChange={(e) => setFormData({ ...formData, monthlyVolume: e.target.value })}
-                          className="w-full rounded-xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none"
-                          data-testid="select-contact-volume"
-                        >
-                          <option value="">Select volume...</option>
-                          <option value="under-5k">Under $5,000</option>
-                          <option value="5k-10k">$5,000 - $10,000</option>
-                          <option value="10k-25k">$10,000 - $25,000</option>
-                          <option value="25k-50k">$25,000 - $50,000</option>
-                          <option value="50k-100k">$50,000 - $100,000</option>
-                          <option value="100k+">$100,000+</option>
-                        </select>
-                      </div>
-                      <div className="space-y-2">
                         <label className="text-sm font-bold text-foreground ml-1">I'm Interested In</label>
                         <select
                           value={formData.interest}
                           onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
-                          className="w-full rounded-xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none"
+                          className="w-full rounded-md border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none"
                           data-testid="select-contact-interest"
                         >
-                          <option value="bundle-terminal">In-Store Terminal ($399)</option>
-                          <option value="bundle-trial">30-Day Risk-Free Trial</option>
+                          <option value="in-store-terminal">In-Store Terminal ($399)</option>
+                          <option value="30-day-trial">30-Day Free Trial</option>
                           <option value="online-only">Online-Only (Free Website + Gateway)</option>
                           <option value="high-risk">High-Risk Merchant Account</option>
                           <option value="questions">Just Have Questions</option>
                         </select>
                       </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-foreground ml-1">Best Time to Call</label>
+                        <select
+                          value={formData.preferredTime}
+                          onChange={(e) => setFormData({ ...formData, preferredTime: e.target.value })}
+                          className="w-full rounded-md border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none"
+                          data-testid="select-contact-preferred-time"
+                        >
+                          <option value="">Select a time...</option>
+                          <option value="morning">Morning (8 AM - 11 AM)</option>
+                          <option value="midday">Midday (11 AM - 1 PM)</option>
+                          <option value="afternoon">Afternoon (1 PM - 5 PM)</option>
+                          <option value="asap">Call Me ASAP</option>
+                        </select>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-foreground ml-1">Any specific requirements?</label>
+                      <label className="text-sm font-bold text-foreground ml-1">Anything else we should know?</label>
                       <textarea
                         rows={3}
                         value={formData.message}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                        className="w-full rounded-xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none resize-none"
-                        placeholder="Tell us a little more about what you need..."
+                        className="w-full rounded-md border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none resize-none"
+                        placeholder="Tell us a little more about your business..."
                         data-testid="input-contact-message"
                       />
                     </div>
 
                     <Button type="submit" size="lg" className="w-full h-14 text-base shadow-xl shadow-primary/20" data-testid="button-contact-submit">
-                      Get My Free Mockup + Quote
+                      Schedule My Call
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Button>
 
