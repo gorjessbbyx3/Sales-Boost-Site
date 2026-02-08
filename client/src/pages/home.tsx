@@ -19,11 +19,7 @@ import {
   CircleDollarSign,
   Palette,
   MapPin,
-  AlertTriangle,
-  ShoppingCart,
-  Calendar,
-  Image,
-  Sparkles,
+  BarChart3,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
@@ -114,8 +110,8 @@ function HeroSection() {
               </Link>
             </Button>
             <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
-              <Link href="/how-it-works" data-testid="link-hero-learn-more">
-                See How It Works
+              <Link href="/services-faq" data-testid="link-hero-learn-more">
+                Learn More
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </Button>
@@ -168,7 +164,7 @@ function HeroSection() {
               { value: 5400, prefix: "$", suffix: "+", label: "Saved/Year", color: "text-primary" },
               { value: 0, prefix: "$", suffix: "", label: "Monthly Fees", color: "text-foreground" },
               { value: 100, prefix: "", suffix: "%", label: "Revenue Kept", color: "text-foreground" },
-            ].map((stat, i) => (
+            ].map((stat) => (
               <Card key={stat.label} className="overflow-visible text-center border-primary/10">
                 <CardContent className="p-3 sm:p-6">
                   <div className={`text-xl sm:text-3xl lg:text-5xl font-extrabold ${stat.color} mb-1`}>
@@ -196,20 +192,8 @@ function SocialProofBar() {
   return (
     <section className="py-12 sm:py-20 relative bg-muted/30" data-testid="section-social-proof">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-12 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground mb-6">
-            Trusted by Businesses Across the Islands
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-16 opacity-40 grayscale hover:grayscale-0 transition-all duration-500">
-            <img src="/images/IMG_6304.png" alt="Trusted Partner" className="h-8 sm:h-10 w-auto" />
-            <img src="/images/IMG_6304.png" alt="Trusted Partner" className="h-8 sm:h-10 w-auto" />
-            <img src="/images/IMG_6304.png" alt="Trusted Partner" className="h-8 sm:h-10 w-auto" />
-            <img src="/images/IMG_6304.png" alt="Trusted Partner" className="h-8 sm:h-10 w-auto" />
-          </div>
-        </div>
-
         <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10 border-t border-border/50 pt-12"
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -238,57 +222,61 @@ function SocialProofBar() {
   );
 }
 
-function ServicesOverview() {
-  const services = [
+function HowItWorksSection() {
+  const steps = [
     {
+      step: "01",
+      title: "Choose Your Plan",
+      description: "Buy outright for $399 (best value) or start a 30-day risk-free trial. Both include zero processing fees forever.",
+      details: [
+        "In-Store Terminal — $399 one-time, own it immediately",
+        "30-Day Trial — free to try, $599 if you keep it",
+        "Online-Only — FREE website + payment gateway",
+      ],
       icon: CreditCard,
-      title: "Payment Processing",
-      description: "Zero-fee terminals starting at $399. Keep 100% of every sale with no monthly fees and no contracts.",
-      href: "/pricing",
-      cta: "See Pricing",
       color: "text-primary",
       border: "border-primary/20",
-      accent: "from-primary/10 to-transparent",
+      accent: "from-primary/20 to-primary/5",
     },
     {
+      step: "02",
+      title: "We Set Everything Up",
+      description: "Same-day setup. We configure your terminal, connect it to your bank, train you, and provide compliance signage.",
+      details: [
+        "Terminal programming & configuration",
+        "Bank account connection",
+        "Hands-on training (remote or on-site)",
+        "Compliance signage provided",
+      ],
       icon: Zap,
-      title: "How It Works",
-      description: "Three simple steps: choose your plan, we set everything up same-day, and you keep every dollar.",
-      href: "/how-it-works",
-      cta: "Learn More",
       color: "text-chart-2",
       border: "border-chart-2/20",
-      accent: "from-chart-2/10 to-transparent",
+      accent: "from-chart-2/20 to-chart-2/5",
     },
     {
-      icon: Globe,
-      title: "Free Custom Website",
-      description: "Every Edify merchant gets a professional business website — mobile-optimized and SEO-ready.",
-      href: "/our-work",
-      cta: "See Examples",
+      step: "03",
+      title: "Keep 100% of Every Sale",
+      description: "A small surcharge is passed to card-paying customers at checkout. You keep 100% of the listed price, deposited by next business day.",
+      details: [
+        "Customer pays small surcharge on card transactions",
+        "Cash-paying customers get the listed price",
+        "100% of your sale deposited next business day",
+        "Real-time dashboard to track all transactions",
+      ],
+      icon: DollarSign,
       color: "text-chart-3",
       border: "border-chart-3/20",
-      accent: "from-chart-3/10 to-transparent",
-    },
-    {
-      icon: ShieldCheck,
-      title: "High-Risk Merchants",
-      description: "CBD, vape, firearms, gaming & more — same zero-fee processing with fast approvals.",
-      href: "/high-risk",
-      cta: "Learn More",
-      color: "text-chart-4",
-      border: "border-chart-4/20",
-      accent: "from-chart-4/10 to-transparent",
+      accent: "from-chart-3/20 to-chart-3/5",
     },
   ];
 
   return (
-    <section className="py-12 sm:py-24 relative">
+    <section className="py-12 sm:py-24 relative" data-testid="section-how-it-works">
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center mb-10 sm:mb-16"
           variants={staggerContainer}
@@ -298,50 +286,160 @@ function ServicesOverview() {
         >
           <motion.div variants={fadeUp}>
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              Our Services
+              <CircleDollarSign className="w-3 h-3 mr-1.5" />
+              How It Works
             </Badge>
           </motion.div>
           <motion.h2
             className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
             variants={fadeUp}
           >
-            Everything Your Business Needs
+            Three Steps to{" "}
+            <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
+              Zero Fees
+            </span>
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg"
             variants={fadeUp}
           >
-            Payment processing, websites, and support — all from one trusted Hawai'i company.
+            Traditional processors take 2-4% of every sale. Our model flips that — you keep every dollar.
           </motion.p>
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-5xl mx-auto"
+          className="mt-8 rounded-xl overflow-hidden bg-muted/30 max-w-2xl mx-auto mb-10 sm:mb-14"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <img
+            src="/images/How_it_works.png"
+            alt="How Edify zero-fee payment processing works"
+            className="w-full max-h-[50vh] object-contain"
+          />
+        </motion.div>
+
+        <div className="space-y-6 sm:space-y-10">
+          {steps.map((s, i) => (
+            <motion.div
+              key={s.step}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+            >
+              <Card className={`overflow-visible relative ${s.border}`}>
+                <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
+                <CardContent className="p-5 sm:p-8 relative">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <s.icon className={`w-6 h-6 ${s.color}`} />
+                    </div>
+                    <div>
+                      <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
+                        Step {s.step}
+                      </div>
+                      <h3 className="text-lg sm:text-2xl font-bold text-foreground">
+                        {s.title}
+                      </h3>
+                    </div>
+                  </div>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4">
+                    {s.description}
+                  </p>
+                  <ul className="space-y-2">
+                    {s.details.map((detail) => (
+                      <li key={detail} className="flex items-start gap-2 text-sm">
+                        <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
+                        <span className="text-foreground/80">{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WhyEdifySection() {
+  const benefits = [
+    {
+      icon: DollarSign,
+      title: "Zero Processing Fees",
+      description: "You keep 100% of every sale. No 2-4% taken from your revenue.",
+    },
+    {
+      icon: Clock,
+      title: "Same-Day Setup",
+      description: "Start accepting payments today with full training and support.",
+    },
+    {
+      icon: Palette,
+      title: "Free Custom Website",
+      description: "Every merchant gets a professional business website — $997 value included.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "PCI Compliant & Secure",
+      description: "End-to-end encryption, tokenization, and full PCI compliance.",
+    },
+    {
+      icon: BarChart3,
+      title: "Real-Time Dashboard",
+      description: "Track every transaction, deposit, and refund from your dashboard.",
+    },
+    {
+      icon: MapPin,
+      title: "Local Hawai'i Support",
+      description: "Based in Honolulu with on-site support available. We know your market.",
+    },
+  ];
+
+  return (
+    <section className="py-12 sm:py-24 relative" data-testid="section-why-edify">
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-8 sm:mb-14"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
-          {services.map((s, i) => (
+          <motion.div variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+              Why Edify
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-2xl sm:text-4xl font-extrabold tracking-tight"
+            variants={fadeUp}
+          >
+            Why Hawai'i Businesses Choose Us
+          </motion.h2>
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          {benefits.map((b, i) => (
             <motion.div key={i} variants={scaleIn}>
-              <Card className={`h-full overflow-visible ${s.border}`}>
-                <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent}`} />
-                <CardContent className="p-5 sm:p-7 relative">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                      <s.icon className={`w-5 h-5 ${s.color}`} />
-                    </div>
-                    <h3 className="text-base sm:text-lg font-bold text-foreground">{s.title}</h3>
+              <Card className="h-full overflow-visible border-primary/10">
+                <CardContent className="p-5 sm:p-6">
+                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mb-3">
+                    <b.icon className="w-5 h-5 text-primary" />
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                    {s.description}
-                  </p>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={s.href}>
-                      {s.cta}
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </Button>
+                  <h3 className="font-bold text-foreground mb-1">{b.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{b.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -352,208 +450,9 @@ function ServicesOverview() {
   );
 }
 
-function PortfolioShowcase() {
-  const portfolioItems = [
-    {
-      type: "Restaurant & Food",
-      description: "Online menu, ordering, reservations & payments",
-      pages: "Home, Menu, Order Online, About, Contact",
-      icon: ShoppingCart,
-      color: "text-chart-3",
-      bgColor: "bg-chart-3/15",
-      borderColor: "border-chart-3/20",
-    },
-    {
-      type: "Salon & Beauty",
-      description: "Appointment booking, gallery & service pricing",
-      pages: "Home, Services, Book Now, Gallery, Contact",
-      icon: Calendar,
-      color: "text-chart-4",
-      bgColor: "bg-chart-4/15",
-      borderColor: "border-chart-4/20",
-    },
-    {
-      type: "Retail & E-Commerce",
-      description: "Product catalog, shopping cart & secure checkout",
-      pages: "Home, Shop, Cart, About, Contact",
-      icon: ShoppingCart,
-      color: "text-chart-2",
-      bgColor: "bg-chart-2/15",
-      borderColor: "border-chart-2/20",
-    },
-    {
-      type: "Services & Trades",
-      description: "Quote requests, service areas & testimonials",
-      pages: "Home, Services, Get a Quote, Reviews, Contact",
-      icon: Globe,
-      color: "text-primary",
-      bgColor: "bg-primary/15",
-      borderColor: "border-primary/20",
-    },
-    {
-      type: "Tourism & Activities",
-      description: "Tour booking, trip calendars & photo galleries",
-      pages: "Home, Tours, Book Now, Gallery, Contact",
-      icon: Image,
-      color: "text-chart-3",
-      bgColor: "bg-chart-3/15",
-      borderColor: "border-chart-3/20",
-    },
-    {
-      type: "CBD & Wellness",
-      description: "Age-gated storefront, lab results & compliance",
-      pages: "Home, Products, Lab Results, About, Contact",
-      icon: Zap,
-      color: "text-chart-2",
-      bgColor: "bg-chart-2/15",
-      borderColor: "border-chart-2/20",
-    },
-  ];
-
-  return (
-    <section className="py-12 sm:py-24 relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          variants={staggerContainer}
-        >
-          <motion.div className="text-center mb-8 sm:mb-14" variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-chart-4 border-chart-4/30 bg-chart-4/5">
-              <Palette className="w-3 h-3 mr-1.5" />
-              Free Custom Websites
-            </Badge>
-            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Websites We Build for Every Industry
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-lg">
-              Every Edify merchant gets a free custom website — here's what yours could look like.
-            </p>
-          </motion.div>
-
-          <motion.div
-            className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5 max-w-5xl mx-auto"
-            variants={staggerContainer}
-          >
-            {portfolioItems.map((item) => (
-              <motion.div key={item.type} variants={scaleIn}>
-                <Card className={`h-full overflow-visible ${item.borderColor}`}>
-                  <CardContent className="p-4 sm:p-5">
-                    <div className={`w-full h-20 sm:h-28 rounded-md ${item.bgColor} flex items-center justify-center mb-3`}>
-                      <item.icon className={`w-8 h-8 sm:w-10 sm:h-10 ${item.color} opacity-60`} />
-                    </div>
-                    <h4 className={`font-semibold text-sm sm:text-base ${item.color} mb-1`}>
-                      {item.type}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      {item.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <motion.div className="text-center mt-6 sm:mt-10" variants={fadeUp}>
-            <Button variant="outline" size="lg" asChild>
-              <Link href="/our-work">
-                See Our Work
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-          </motion.div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-function WebsiteUpkeepOverview() {
-  return (
-    <section className="py-12 sm:py-24 relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          variants={staggerContainer}
-        >
-          <motion.div className="text-center mb-8 sm:mb-14" variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-chart-4 border-chart-4/30 bg-chart-4/5">
-              <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
-              After the Build
-            </Badge>
-            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Website Upkeep — Your Choice
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg">
-              The website is 100% free to get started. After that, upkeep is 100% your choice.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
-            <motion.div variants={scaleIn}>
-              <Card className="h-full overflow-visible border-chart-2/20">
-                <CardContent className="p-5 sm:p-6 text-center">
-                  <div className="w-10 h-10 rounded-md bg-chart-2/15 flex items-center justify-center mx-auto mb-3">
-                    <Zap className="w-5 h-5 text-chart-2" />
-                  </div>
-                  <h3 className="font-bold text-chart-2 mb-1">Manage It Yourself</h3>
-                  <div className="text-2xl font-extrabold text-chart-2 mb-2">FREE</div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Take full ownership — host and maintain the site yourself
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-            <motion.div variants={scaleIn}>
-              <Card className="h-full overflow-visible border-chart-3/20">
-                <CardContent className="p-5 sm:p-6 text-center">
-                  <div className="w-10 h-10 rounded-md bg-chart-3/15 flex items-center justify-center mx-auto mb-3">
-                    <DollarSign className="w-5 h-5 text-chart-3" />
-                  </div>
-                  <h3 className="font-bold text-chart-3 mb-1">One-Off Updates</h3>
-                  <div className="text-2xl font-extrabold text-chart-3 mb-2">From $40</div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Pay only when you need changes — prices, photos, new pages
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-            <motion.div variants={scaleIn}>
-              <Card className="h-full overflow-visible border-primary/20">
-                <CardContent className="p-5 sm:p-6 text-center">
-                  <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center mx-auto mb-3">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                  </div>
-                  <h3 className="font-bold text-primary mb-1">Maintenance Plans</h3>
-                  <div className="text-2xl font-extrabold text-primary mb-2">$99–$399/mo</div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Hands-off — we handle hosting, security, SEO & updates
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-
-          <motion.div className="text-center mt-6 sm:mt-10" variants={fadeUp}>
-            <Button variant="outline" size="lg" asChild>
-              <Link href="/our-work">
-                See Full Plan Details
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-          </motion.div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
 function QuickPricingPreview() {
   return (
-    <section className="py-12 sm:py-24 relative">
+    <section className="py-12 sm:py-24 relative" data-testid="section-pricing-preview">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
@@ -588,7 +487,7 @@ function QuickPricingPreview() {
             {
               title: "In-Store Terminal",
               price: "$399",
-              note: "One-time · Best Value",
+              note: "One-time - Best Value",
               icon: CreditCard,
               color: "text-primary",
               border: "border-primary/20",
@@ -616,7 +515,7 @@ function QuickPricingPreview() {
             <motion.div key={i} variants={scaleIn}>
               <Card className={`h-full overflow-visible ${plan.border}`}>
                 <CardContent className="p-5 sm:p-6 text-center">
-                  <div className={`w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-3`}>
+                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <plan.icon className={`w-5 h-5 ${plan.color}`} />
                   </div>
                   <h3 className="font-bold text-foreground mb-1">{plan.title}</h3>
@@ -643,90 +542,11 @@ function QuickPricingPreview() {
           viewport={{ once: true }}
         >
           <Button size="lg" asChild>
-            <Link href="/pricing">
+            <Link href="/pricing" data-testid="link-compare-pricing">
               Compare All Options
               <ArrowRight className="w-4 h-4" />
             </Link>
           </Button>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-function TestimonialSection() {
-  const testimonials = [
-    {
-      quote: "Switching to Edify saved us over $4,800 last year. The free website brings in new customers every week.",
-      name: "Marcus Kalani",
-      role: "Kalani's Auto Repair — Honolulu",
-      rating: 5,
-    },
-    {
-      quote: "Zero monthly fees means we keep what we earn. Setup was same day and they built us a beautiful website.",
-      name: "Sarah Chen",
-      role: "Golden Lotus Restaurant — Maui",
-      rating: 5,
-    },
-    {
-      quote: "As a high-risk CBD merchant, nobody would work with us. Edify got us approved same day with zero fees.",
-      name: "David Kealoha",
-      role: "Island Wellness CBD — Kona",
-      rating: 5,
-    },
-  ];
-
-  return (
-    <section className="py-12 sm:py-24 relative" data-testid="section-testimonials">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-8 sm:mb-16"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-chart-3 border-chart-3/30 bg-chart-3/5">
-              <Star className="w-3 h-3 mr-1.5" />
-              Testimonials
-            </Badge>
-          </motion.div>
-          <motion.h2
-            className="text-2xl sm:text-4xl font-extrabold tracking-tight"
-            variants={fadeUp}
-          >
-            Hawai'i Businesses Love Edify
-          </motion.h2>
-        </motion.div>
-
-        <motion.div
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          {testimonials.map((t, i) => (
-            <motion.div key={i} variants={scaleIn}>
-              <Card className="h-full overflow-visible border-chart-3/10">
-                <CardContent className="p-5 sm:p-7">
-                  <div className="flex items-center gap-0.5 mb-3">
-                    {Array.from({ length: t.rating }).map((_, j) => (
-                      <Star key={j} className="w-3.5 h-3.5 fill-chart-3 text-chart-3" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-foreground/90 mb-4 leading-relaxed italic">
-                    "{t.quote}"
-                  </p>
-                  <div>
-                    <div className="font-semibold text-xs sm:text-sm text-foreground">{t.name}</div>
-                    <div className="text-[10px] sm:text-xs text-muted-foreground">{t.role}</div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
         </motion.div>
       </div>
     </section>
@@ -768,14 +588,14 @@ function CTASection() {
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Button size="lg" className="w-full sm:w-auto" asChild>
-                    <Link href="/contact">
+                    <Link href="/contact" data-testid="link-cta-mockup">
                       Get Free Mockup + Savings Quote
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </Button>
                   <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-                    <Link href="/contact">
-                      Have Questions? Let's Talk
+                    <Link href="/services-faq" data-testid="link-cta-questions">
+                      Have Questions? Learn More
                     </Link>
                   </Button>
                 </div>
@@ -807,11 +627,9 @@ export default function Home() {
     <Layout>
       <HeroSection />
       <SocialProofBar />
-      <ServicesOverview />
+      <HowItWorksSection />
+      <WhyEdifySection />
       <QuickPricingPreview />
-      <PortfolioShowcase />
-      <WebsiteUpkeepOverview />
-      <TestimonialSection />
       <CTASection />
     </Layout>
   );

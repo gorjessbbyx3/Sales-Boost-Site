@@ -25,11 +25,10 @@ function Navbar() {
   }, []);
 
   const links = [
-    { label: "How It Works", href: "/how-it-works" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Our Work", href: "/our-work" },
+    { label: "Services & FAQ", href: "/services-faq" },
+    { label: "Online Processing", href: "/online-processing" },
     { label: "High-Risk", href: "/high-risk" },
-    { label: "FAQ", href: "/contact" },
   ];
 
   return (
@@ -164,18 +163,18 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/our-work" className="transition-colors hover:text-primary" data-testid="link-footer-our-work">
-                  Custom Web Design
+                <Link href="/services-faq" className="transition-colors hover:text-primary" data-testid="link-footer-services-faq">
+                  Services & FAQ
+                </Link>
+              </li>
+              <li>
+                <Link href="/online-processing" className="transition-colors hover:text-primary" data-testid="link-footer-online">
+                  Online Processing
                 </Link>
               </li>
               <li>
                 <Link href="/high-risk" className="transition-colors hover:text-primary" data-testid="link-footer-high-risk">
                   High-Risk Solutions
-                </Link>
-              </li>
-              <li>
-                <Link href="/how-it-works" className="transition-colors hover:text-primary" data-testid="link-footer-features">
-                  Cash Discount Program
                 </Link>
               </li>
             </ul>

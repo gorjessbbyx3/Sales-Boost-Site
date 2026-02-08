@@ -61,11 +61,23 @@ script/           → Build scripts
 - **Development**: `npm run dev` runs the Express server with Vite middleware for HMR. The Vite dev server handles frontend assets and hot module replacement.
 - **Production**: `npm run build` builds the React app with Vite (output to `dist/public/`) and bundles the server with esbuild (output to `dist/index.cjs`). `npm start` runs the production bundle.
 
+### Page Structure (Feb 2026)
+- **/** — Home page: Hero, Social Proof, How It Works (3-step guide), Why Edify, Pricing Preview, CTA
+- **/pricing** — Detailed pricing comparison
+- **/services-faq** — Services overview, FAQ accordion, customer reviews/testimonials
+- **/online-processing** — Online payment gateway, website portfolio by industry, case study
+- **/high-risk** — High-risk merchant solutions
+- **/contact** — Simplified contact form with phone/email sidebar
+- **/how-it-works** — Dedicated How It Works detail page (also integrated into home)
+- **/our-work** — Web design portfolio detail page
+- **/ai-config** — Admin AI chatbot configuration
+
 ### Key Design Decisions
 1. **Monorepo structure** — Client, server, and shared code in one repo with path aliases for clean imports.
 2. **In-memory storage as default** — The storage layer uses an interface pattern, making it easy to swap `MemStorage` for a `DatabaseStorage` class backed by Drizzle/PostgreSQL.
 3. **Shared schema** — Database types and validation schemas are defined once in `shared/schema.ts` and used by both frontend and backend.
 4. **shadcn/ui component library** — Components are copied into the project (not installed as a package), allowing full customization. Uses the "new-york" style variant.
+5. **Vite async config** — `vite.config.ts` uses an async factory function; `server/vite.ts` resolves it before spreading into `createViteServer`.
 
 ## External Dependencies
 

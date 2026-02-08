@@ -10,6 +10,8 @@ import HowItWorksPage from "@/pages/how-it-works";
 import WebDesignPage from "@/pages/web-design";
 import HighRiskPage from "@/pages/high-risk";
 import ContactPage from "@/pages/contact";
+import ServicesFaqPage from "@/pages/services-faq";
+import OnlineProcessingPage from "@/pages/online-processing";
 import AiConfigPage from "@/pages/ai-config";
 import NotFound from "@/pages/not-found";
 import { ChatWidget } from "@/components/chat-widget";
@@ -35,6 +37,8 @@ function Router() {
         <Route path="/our-work" component={WebDesignPage} />
         <Route path="/high-risk" component={HighRiskPage} />
         <Route path="/contact" component={ContactPage} />
+        <Route path="/services-faq" component={ServicesFaqPage} />
+        <Route path="/online-processing" component={OnlineProcessingPage} />
         <Route path="/ai-config" component={AiConfigPage} />
         <Route component={NotFound} />
       </Switch>
