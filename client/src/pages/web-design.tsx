@@ -26,7 +26,7 @@ import { Link } from "wouter";
 
 function WebDesignHero() {
   return (
-    <section className="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-20">
+    <section className="relative overflow-hidden pt-20 pb-10 sm:pt-36 sm:pb-20">
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-chart-4/8 via-chart-4/3 to-transparent" />
         <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full bg-chart-4/10 blur-[120px]" />
@@ -39,44 +39,52 @@ function WebDesignHero() {
           initial="hidden"
           animate="visible"
         >
-          <motion.div className="flex flex-wrap items-center justify-center gap-3" variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-chart-4 border-chart-4/30 bg-chart-4/5">
-              <Code className="w-3.5 h-3.5 mr-1.5" />
+          <motion.div className="flex flex-wrap items-center justify-center gap-2" variants={fadeUp}>
+            <Badge variant="outline" className="mb-3 text-xs sm:text-sm text-chart-4 border-chart-4/30 bg-chart-4/5">
+              <Code className="w-3 h-3 mr-1" />
               Website Design
             </Badge>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              <MapPin className="w-3.5 h-3.5 mr-1.5" />
+            <Badge variant="outline" className="mb-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
+              <MapPin className="w-3 h-3 mr-1" />
               Honolulu, HI
             </Badge>
           </motion.div>
 
           <motion.h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-6"
+            className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-4 sm:mb-6"
             variants={fadeUp}
           >
             Get a{" "}
             <span className="bg-gradient-to-r from-chart-4 to-primary bg-clip-text text-transparent">
               FREE Custom Website
             </span>{" "}
-            When You Switch Processing
+            When You Switch
           </motion.h1>
 
+          {/* Before/After showcase image */}
+          <motion.div className="mb-6 sm:mb-8 rounded-xl overflow-hidden" variants={fadeUp}>
+            <img
+              src="/images/website-before-after.jpg"
+              alt="FREE Custom Website — Before and After: Lisa's Salon to Aloha Beauty Salon"
+              className="w-full h-auto rounded-xl shadow-lg"
+            />
+          </motion.div>
+
           <motion.p
-            className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto"
+            className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto"
             variants={fadeUp}
           >
-            Online orders, bookings, and more — we build it all. Every Edify merchant gets a professional website
-            included. Premium upgrades available for businesses ready to grow faster.
+            Online orders, bookings, and more — we build it all. Every Edify merchant gets a professional website included.
           </motion.p>
 
-          <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-4" variants={fadeUp}>
-            <Button size="lg" asChild>
+          <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
+            <Button size="lg" className="w-full sm:w-auto" asChild>
               <Link href="/contact">
                 Get My Free Mockup
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
-            <Button variant="outline" size="lg" asChild>
+            <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
               <a href="/#pricing">
                 See Pricing
               </a>
@@ -123,28 +131,28 @@ function WebFeaturesSection() {
   ];
 
   return (
-    <section className="py-20 sm:py-24 relative">
+    <section className="py-12 sm:py-24 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
-          className="text-center mb-14"
+          className="text-center mb-8 sm:mb-14"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
           <motion.h2
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-5"
+            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
             variants={fadeUp}
           >
             What You Get
           </motion.h2>
-          <motion.p className="text-muted-foreground max-w-2xl mx-auto text-lg" variants={fadeUp}>
+          <motion.p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg" variants={fadeUp}>
             Every website we build is custom-designed for your business, not a template.
           </motion.p>
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -224,7 +232,7 @@ function BeforeAfterSection() {
   ];
 
   return (
-    <section className="py-20 sm:py-24 relative">
+    <section className="py-12 sm:py-24 relative">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
@@ -233,24 +241,24 @@ function BeforeAfterSection() {
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
         >
-          <motion.div className="text-center mb-14" variants={fadeUp}>
-            <Badge variant="outline" className="mb-5 text-chart-4 border-chart-4/30 bg-chart-4/5">
-              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+          <motion.div className="text-center mb-8 sm:mb-14" variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-chart-4 border-chart-4/30 bg-chart-4/5">
+              <Sparkles className="w-3 h-3 mr-1" />
               Before & After
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-3" data-testid="text-portfolio-title">
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-foreground mb-2" data-testid="text-portfolio-title">
               Real Hawai'i Businesses We've Transformed
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Every Edify merchant gets a free custom website. Here's what that looks like in practice.
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg">
+              Every Edify merchant gets a free custom website.
             </p>
           </motion.div>
 
-          <div className="space-y-8">
+          <div className="space-y-4 sm:space-y-8">
             {transformations.map((t, i) => (
               <motion.div key={t.business} variants={scaleIn}>
                 <Card className={`overflow-visible ${t.borderColor}`}>
-                  <CardContent className="p-6 sm:p-8">
+                  <CardContent className="p-4 sm:p-8">
                     <div className="flex flex-col sm:flex-row items-start gap-6">
                       <div className="flex-1 w-full">
                         <div className="flex items-center gap-3 mb-4 flex-wrap">

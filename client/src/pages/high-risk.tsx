@@ -20,7 +20,7 @@ import { Link } from "wouter";
 
 function HighRiskHero() {
   return (
-    <section className="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-20">
+    <section className="relative overflow-hidden pt-20 pb-10 sm:pt-36 sm:pb-20">
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-chart-2/8 via-chart-2/3 to-transparent" />
         <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full bg-chart-2/10 blur-[120px]" />
@@ -45,7 +45,7 @@ function HighRiskHero() {
           </motion.div>
 
           <motion.h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-6"
+            className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-4 sm:mb-6"
             variants={fadeUp}
           >
             High-Risk{" "}
@@ -55,13 +55,13 @@ function HighRiskHero() {
           </motion.h1>
 
           <motion.p
-            className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto"
+            className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto"
             variants={fadeUp}
           >
-            Turned down by other processors? We specialize in high-risk merchant accounts with the same zero-fee processing and no hidden charges.
+            Turned down by other processors? We specialize in high-risk merchant accounts with zero-fee processing.
           </motion.p>
 
-          <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-4" variants={fadeUp}>
+          <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
             <Button size="lg" asChild>
               <Link href="/contact">
                 Apply for High-Risk Account
@@ -97,7 +97,7 @@ function HighRiskDetailsSection() {
   ];
 
   return (
-    <section className="py-20 sm:py-24 relative" data-testid="section-high-risk">
+    <section className="py-12 sm:py-24 relative" data-testid="section-high-risk">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
           <motion.div
@@ -211,7 +211,7 @@ function CustomerPsychologySection() {
   ];
 
   return (
-    <section className="py-20 sm:py-24 relative" data-testid="section-psychology">
+    <section className="py-12 sm:py-24 relative" data-testid="section-psychology">
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 right-1/4 w-[400px] h-[400px] rounded-full bg-chart-2/8 blur-[120px]" />
         <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
@@ -232,20 +232,20 @@ function CustomerPsychologySection() {
             </Badge>
           </motion.div>
           <motion.h2
-            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
+            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
             variants={fadeUp}
             data-testid="text-psychology-title"
           >
             Will My Customers{" "}
             <span className="bg-gradient-to-r from-chart-2 to-primary bg-clip-text text-transparent">
-              Actually Accept This
+              Accept This
             </span>?
           </motion.h2>
           <motion.p
-            className="text-muted-foreground max-w-2xl mx-auto text-lg"
+            className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg"
             variants={fadeUp}
           >
-            The short answer: yes. Here's why businesses across the country are making the switch without losing a single customer.
+            The short answer: yes. Here's why businesses are making the switch.
           </motion.p>
         </motion.div>
 

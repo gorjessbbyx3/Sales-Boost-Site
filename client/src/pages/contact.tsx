@@ -77,7 +77,7 @@ function FAQSection() {
   return (
     <section
       id="faq"
-      className="relative pt-28 pb-16 sm:pt-36 sm:pb-20"
+      className="relative pt-20 pb-10 sm:pt-36 sm:pb-20"
       data-testid="section-faq"
     >
       <div className="absolute inset-0 -z-10">
@@ -97,7 +97,7 @@ function FAQSection() {
             </Badge>
           </motion.div>
           <motion.h1
-            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
+            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3 sm:mb-5"
             variants={fadeUp}
             data-testid="text-faq-title"
           >

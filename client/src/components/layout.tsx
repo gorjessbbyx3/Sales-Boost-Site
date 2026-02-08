@@ -134,6 +134,13 @@ function Navbar() {
                 Get Your Terminal
               </Link>
             </Button>
+            <a
+              href="tel:+18087675460"
+              className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Phone className="w-4 h-4 text-primary" />
+              (808) 767-5460
+            </a>
           </div>
         </div>
       )}
@@ -143,16 +150,16 @@ function Navbar() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border/50 py-14 relative" data-testid="section-footer">
+    <footer className="border-t border-border/50 py-8 sm:py-14 relative" data-testid="section-footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          <div className="md:col-span-1">
-            <div className="font-bold text-lg flex items-center gap-2.5 mb-4">
-              <img src="/images/logo.svg" alt="Edify Limited" className="w-8 h-8" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
+          <div className="col-span-2 md:col-span-1">
+            <div className="font-bold text-base sm:text-lg flex items-center gap-2 mb-3">
+              <img src="/images/logo.svg" alt="Edify Limited" className="w-7 h-7 sm:w-8 sm:h-8" />
               <span className="text-foreground">Edify Limited</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mb-4">
-              Hawai'i's trusted payment processing and web design company. Zero processing fees, zero monthly fees — plus free websites for every merchant.
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-sm mb-3">
+              Hawai'i's trusted payment processing and web design company. Zero fees — plus free websites for every merchant.
             </p>
             <div className="space-y-2.5 text-sm text-muted-foreground">
               <a href="tel:+18087675460" className="flex items-center gap-2 transition-colors hover:text-foreground">
