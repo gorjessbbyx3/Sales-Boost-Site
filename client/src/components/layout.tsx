@@ -147,9 +147,6 @@ function Footer() {
               />
             </div>
             <div className="flex-1">
-              <Link href="/" className="font-bold text-lg flex items-center gap-2.5 mb-4 group">
-                <img src="/images/edify-logo-full.png" alt="Edify Limited" className="h-14 sm:h-16 rounded-md group-hover:scale-105 transition-transform" />
-              </Link>
               <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                 Hawai'i's trusted partner for zero-fee payment processing and professional web design. We help local businesses keep more of their revenue.
               </p>
