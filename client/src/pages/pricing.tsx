@@ -255,7 +255,7 @@ function PricingCardsSection() {
         </motion.div>
 
         <motion.div
-          className="text-center mb-8"
+          className="text-center mb-8 max-w-lg mx-auto"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -265,7 +265,7 @@ function PricingCardsSection() {
             Path 2: Online Processing
           </Badge>
           <h2 className="text-xl sm:text-2xl font-bold text-foreground">Free Website + Payment Gateway</h2>
-          <p className="text-sm text-muted-foreground mt-2 max-w-lg mx-auto">No terminal needed. We build you a custom website with built-in payment processing.</p>
+          <p className="text-sm text-muted-foreground mt-2">No terminal needed. We build you a custom website with built-in payment processing.</p>
         </motion.div>
 
         <div className="max-w-lg mx-auto">

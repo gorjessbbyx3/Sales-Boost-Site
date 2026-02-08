@@ -133,39 +133,39 @@ function Footer() {
   return (
     <footer className="border-t border-border/50 py-12 sm:py-20 relative bg-black" data-testid="section-footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-16">
-          <div className="col-span-2 flex flex-col sm:flex-row items-start gap-6">
-            <div className="w-full sm:w-48 shrink-0">
-              <video
-                src="/images/edify-footer-video.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full rounded-lg"
-                data-testid="video-footer-branding"
-              />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Hawai'i's trusted partner for zero-fee payment processing and professional web design. We help local businesses keep more of their revenue.
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 text-primary">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <span className="text-xs font-medium text-foreground">4.9/5 Rating</span>
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-12">
+          <div className="w-48 shrink-0">
+            <video
+              src="/images/edify-footer-video.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full rounded-lg"
+              data-testid="video-footer-branding"
+            />
+          </div>
+          <div className="text-center sm:text-left">
+            <p className="text-sm text-slate-400 leading-relaxed mb-4">
+              Hawai'i's trusted partner for zero-fee payment processing and professional web design. We help local businesses keep more of their revenue.
+            </p>
+            <div className="flex items-center justify-center sm:justify-start gap-3">
+              <div className="flex items-center gap-1 text-primary">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
               </div>
+              <span className="text-xs font-medium text-white">4.9/5 Rating</span>
             </div>
           </div>
+        </div>
 
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-10 lg:gap-16">
           <div>
-            <h4 className="font-bold text-sm mb-6 uppercase tracking-wider text-foreground">Services</h4>
-            <ul className="space-y-4 text-sm text-muted-foreground">
+            <h4 className="font-bold text-sm mb-6 uppercase tracking-wider text-white">Services</h4>
+            <ul className="space-y-4 text-sm text-slate-400">
               <li>
                 <Link href="/pricing" className="transition-colors hover:text-primary" data-testid="link-footer-pricing">
                   Zero-Fee Processing
@@ -190,8 +190,8 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="font-bold text-sm mb-6 uppercase tracking-wider text-foreground">Contact</h4>
-            <ul className="space-y-4 text-sm text-muted-foreground">
+            <h4 className="font-bold text-sm mb-6 uppercase tracking-wider text-white">Contact</h4>
+            <ul className="space-y-4 text-sm text-slate-400">
               <li className="flex items-start gap-3">
                 <Phone className="w-4 h-4 text-primary shrink-0" />
                 <a href="tel:+18087675460" className="transition-colors hover:text-primary">(808) 767-5460</a>
@@ -212,8 +212,8 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="font-bold text-sm mb-6 uppercase tracking-wider text-foreground">Legal & Security</h4>
-            <ul className="space-y-4 text-sm text-muted-foreground">
+            <h4 className="font-bold text-sm mb-6 uppercase tracking-wider text-white">Legal & Security</h4>
+            <ul className="space-y-4 text-sm text-slate-400">
               <li className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
                 <span>PCI Compliant</span>
@@ -232,11 +232,11 @@ function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border mt-16 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+        <div className="border-t border-white/10 mt-16 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>&copy; {new Date().getFullYear()} Edify Limited. All rights reserved. Proudly locally owned and operated in Hawai'i.</p>
           <div className="flex items-center gap-6">
-            <Link href="/contact" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-            <Link href="/contact" className="hover:text-foreground transition-colors">Terms of Service</Link>
+            <Link href="/contact" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/contact" className="hover:text-white transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>
