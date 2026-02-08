@@ -263,6 +263,10 @@ function HeroSection() {
               <DollarSign className="w-4 h-4 text-primary" />
               <span data-testid="text-trust-fees">Zero Monthly Fees</span>
             </div>
+            <div className="flex items-center gap-2">
+              <Palette className="w-4 h-4 text-primary" />
+              <span>Free Custom Website</span>
+            </div>
           </motion.div>
         </motion.div>
 
@@ -559,6 +563,17 @@ function PricingComparisonSection() {
     "Zero processing fees — forever",
   ];
 
+  const option3Features = [
+    "Virtual payment gateway setup",
+    "Payment links, buttons & invoices",
+    "Custom professional website (5-10 pages)",
+    "Online ordering / booking integration",
+    "Mobile-optimized & SEO-ready",
+    "Full setup & training included",
+    "Zero processing fees — forever",
+    "Perfect for e-commerce & services",
+  ];
+
   return (
     <section
       id="pricing"
@@ -588,7 +603,7 @@ function PricingComparisonSection() {
             variants={fadeUp}
             data-testid="text-pricing-title"
           >
-            Two Ways to{" "}
+            Three Ways to{" "}
             <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
               Get Started
             </span>
@@ -597,17 +612,18 @@ function PricingComparisonSection() {
             className="text-muted-foreground max-w-2xl mx-auto text-lg"
             variants={fadeUp}
           >
-            Whether you want to buy outright and save, or try risk-free first — we've got you covered.
-            Retail terminals sell for $800+. Our pricing is a fraction of that.
+            In-store terminal, risk-free trial, or online-only — pick the path that fits your Hawai'i business.
+            Every option includes zero processing fees and a free custom website.
           </motion.p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {/* Option 1: Outright Purchase */}
           <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5, delay: 0 }}
           >
             <Card className="h-full overflow-visible relative border-primary/30">
               <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/8 to-transparent" />
@@ -617,11 +633,11 @@ function PricingComparisonSection() {
               <CardHeader className="pb-3 pt-8 relative">
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5 text-primary" />
+                    <CreditCard className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <CardTitle className="text-lg" data-testid="text-option1-title">
-                      Option 1: Outright Purchase
+                      In-Store Terminal
                     </CardTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">Own it from day one</p>
                   </div>
@@ -648,9 +664,16 @@ function PricingComparisonSection() {
                   ))}
                 </ul>
 
+                <div className="pt-2 border-t border-primary/10">
+                  <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                    <Palette className="w-4 h-4" />
+                    <span>+ FREE Custom Website ($997 value)</span>
+                  </div>
+                </div>
+
                 <Button className="w-full" size="lg" asChild>
                   <a href="#contact" data-testid="link-option1-cta">
-                    Get Your Terminal
+                    Get Terminal + Free Website
                     <ArrowRight className="w-4 h-4" />
                   </a>
                 </Button>
@@ -658,11 +681,12 @@ function PricingComparisonSection() {
             </Card>
           </motion.div>
 
+          {/* Option 2: 30-Day Trial */}
           <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
           >
             <Card className="h-full overflow-visible relative border-chart-4/30">
               <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-4/8 to-transparent" />
@@ -676,7 +700,7 @@ function PricingComparisonSection() {
                   </div>
                   <div>
                     <CardTitle className="text-lg" data-testid="text-option2-title">
-                      Option 2: 30-Day Risk-Free Trial
+                      30-Day Risk-Free Trial
                     </CardTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">Try before you buy</p>
                   </div>
@@ -702,9 +726,78 @@ function PricingComparisonSection() {
                   ))}
                 </ul>
 
+                <div className="pt-2 border-t border-chart-4/10">
+                  <div className="flex items-center gap-2 text-sm text-chart-4 font-medium">
+                    <Palette className="w-4 h-4" />
+                    <span>+ Custom Website for $199 (when you keep)</span>
+                  </div>
+                </div>
+
                 <Button className="w-full" size="lg" variant="outline" asChild>
                   <a href="#contact" data-testid="link-option2-cta">
                     Start Free Trial
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Option 3: Online-Only */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="h-full overflow-visible relative border-chart-2/30">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-2/8 to-transparent" />
+              <div className="absolute -top-3 left-6">
+                <Badge variant="outline" className="text-chart-2 border-chart-2/30 bg-chart-2/5 shadow-lg" data-testid="badge-online-only">Online-Only</Badge>
+              </div>
+              <CardHeader className="pb-3 pt-8 relative">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="w-10 h-10 rounded-md bg-chart-2/15 flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-chart-2" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg" data-testid="text-option3-title">
+                      Online Business Package
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">No physical terminal needed</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="relative space-y-5">
+                <div className="text-center py-4">
+                  <div className="text-sm text-muted-foreground mb-1">Website + Gateway</div>
+                  <div className="flex items-baseline justify-center gap-1.5">
+                    <span className="text-4xl sm:text-5xl font-extrabold text-chart-2" data-testid="text-option3-price">$499</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    or free with processing commitment
+                  </div>
+                </div>
+
+                <ul className="space-y-2.5">
+                  {option3Features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2.5 text-sm">
+                      <Check className="w-4 h-4 text-chart-2 shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="pt-2 border-t border-chart-2/10">
+                  <div className="flex items-center gap-2 text-sm text-chart-2 font-medium">
+                    <Code className="w-4 h-4" />
+                    <span>Custom website included in price</span>
+                  </div>
+                </div>
+
+                <Button className="w-full" size="lg" variant="outline" asChild>
+                  <a href="#contact" data-testid="link-option3-cta">
+                    Go Online with Edify
                     <ArrowRight className="w-4 h-4" />
                   </a>
                 </Button>
@@ -731,7 +824,7 @@ function PricingComparisonSection() {
                     Meanwhile, traditional processors cost you $3,600 - $5,400 per year
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    On $10K/month in sales, you're losing $250-$350 every month to processing fees, plus $25-$100/month in service charges. With Edify, you keep every dollar.
+                    On $10K/month in sales, you're losing $250-$350 every month to processing fees, plus $25-$100/month in service charges. With Edify, you keep every dollar — and get a professional website to grow your business.
                   </p>
                 </div>
               </div>
@@ -746,8 +839,8 @@ function PricingComparisonSection() {
           viewport={{ once: true }}
           data-testid="text-pricing-disclaimer"
         >
-          Minimum $5K monthly processing volume required to qualify. Only 4 trial spots available per month.
-          Trial includes a simple 1-page agreement. Terminal auto-bills at $599 on day 31 unless canceled.
+          Minimum $5K monthly processing volume required for terminal options. Only 4 trial spots available per month.
+          All plans include zero processing fees forever. Website valued at $997 — free with in-store terminal purchase.
         </motion.p>
       </div>
     </section>
@@ -1050,6 +1143,94 @@ function WebDesignSection() {
     },
   ];
 
+  const portfolioItems = [
+    {
+      type: "Restaurant & Food",
+      description: "Online menu, ordering, reservations & payments",
+      pages: "Home, Menu, Order Online, About, Contact",
+      color: "text-chart-3",
+      bgColor: "bg-chart-3/15",
+      borderColor: "border-chart-3/20",
+    },
+    {
+      type: "Salon & Beauty",
+      description: "Appointment booking, gallery & service pricing",
+      pages: "Home, Services, Book Now, Gallery, Contact",
+      color: "text-chart-4",
+      bgColor: "bg-chart-4/15",
+      borderColor: "border-chart-4/20",
+    },
+    {
+      type: "Retail & E-Commerce",
+      description: "Product catalog, shopping cart & secure checkout",
+      pages: "Home, Shop, Cart, About, Contact",
+      color: "text-chart-2",
+      bgColor: "bg-chart-2/15",
+      borderColor: "border-chart-2/20",
+    },
+    {
+      type: "Services & Trades",
+      description: "Quote requests, service areas & testimonials",
+      pages: "Home, Services, Get a Quote, Reviews, Contact",
+      color: "text-primary",
+      bgColor: "bg-primary/15",
+      borderColor: "border-primary/20",
+    },
+  ];
+
+  const subscriptionTiers = [
+    {
+      name: "Basic",
+      price: "$99",
+      period: "/month",
+      description: "Keep your site running smoothly",
+      features: [
+        "Hosting & SSL security",
+        "Monthly backups",
+        "Basic content changes (hours, prices, photos)",
+        "Uptime monitoring",
+        "Email support",
+      ],
+      color: "text-muted-foreground",
+      borderColor: "border-border",
+      popular: false,
+    },
+    {
+      name: "Pro",
+      price: "$199",
+      period: "/month",
+      description: "Grow your online presence",
+      features: [
+        "Everything in Basic",
+        "Monthly content updates & blog posts",
+        "Google Business optimization",
+        "Monthly SEO tweaks",
+        "Performance reporting",
+        "Priority support",
+      ],
+      color: "text-primary",
+      borderColor: "border-primary/30",
+      popular: true,
+    },
+    {
+      name: "Premium",
+      price: "$399",
+      period: "/month",
+      description: "Full business growth partner",
+      features: [
+        "Everything in Pro",
+        "Custom backend (inventory, CRM, booking)",
+        "Automated emails & invoicing",
+        "Processing data integration & reporting",
+        "Unlimited content changes",
+        "Dedicated account manager",
+      ],
+      color: "text-chart-4",
+      borderColor: "border-chart-4/30",
+      popular: false,
+    },
+  ];
+
   return (
     <section id="web-design" className="py-24 sm:py-32 relative" data-testid="section-web-design">
       <div className="absolute inset-0 -z-10">
@@ -1058,6 +1239,7 @@ function WebDesignSection() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
         <motion.div
           className="text-center mb-14"
           variants={staggerContainer}
@@ -1080,21 +1262,24 @@ function WebDesignSection() {
             variants={fadeUp}
             data-testid="text-web-design-title"
           >
-            Free Website for{" "}
+            Get a{" "}
             <span className="bg-gradient-to-r from-chart-4 to-primary bg-clip-text text-transparent">
-              Every Merchant
-            </span>
+              FREE Custom Website
+            </span>{" "}
+            When You Switch Processing
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-lg"
             variants={fadeUp}
           >
-            No website? No problem. Every Edify payment processing merchant in Hawai'i gets a free custom-built business website. Need more? Premium packages with e-commerce and custom software are available too.
+            Online orders, bookings, and more — we build it all. Every Edify merchant gets a professional website
+            included. Premium upgrades available for businesses ready to grow faster.
           </motion.p>
         </motion.div>
 
+        {/* Features Grid */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-20"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -1120,6 +1305,108 @@ function WebDesignSection() {
           ))}
         </motion.div>
 
+        {/* Portfolio Showcase */}
+        <motion.div
+          className="mb-20"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+        >
+          <motion.div className="text-center mb-10" variants={fadeUp}>
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-3" data-testid="text-portfolio-title">
+              Websites We Build for Hawai'i Businesses
+            </h3>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              From restaurants to retail — here's what your free custom site could look like.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+            variants={staggerContainer}
+          >
+            {portfolioItems.map((item, i) => (
+              <motion.div key={item.type} variants={scaleIn}>
+                <Card className={`h-full overflow-visible ${item.borderColor}`}>
+                  <CardContent className="p-5">
+                    <div className={`w-full h-32 rounded-md ${item.bgColor} flex items-center justify-center mb-4`}>
+                      <Monitor className={`w-12 h-12 ${item.color} opacity-60`} />
+                    </div>
+                    <h4 className={`font-semibold ${item.color} mb-1.5`} data-testid={`text-portfolio-${i}`}>
+                      {item.type}
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {item.description}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70">
+                      {item.pages}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
+
+        {/* Subscription Tiers */}
+        <motion.div
+          className="mb-16"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+        >
+          <motion.div className="text-center mb-10" variants={fadeUp}>
+            <Badge variant="outline" className="mb-5 text-chart-4 border-chart-4/30 bg-chart-4/5">
+              <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
+              Ongoing Growth
+            </Badge>
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-3" data-testid="text-subscriptions-title">
+              We Handle the Tech — You Focus on Business
+            </h3>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              After your free website is built, choose an optional maintenance plan to keep it growing. Cancel anytime.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {subscriptionTiers.map((tier, i) => (
+              <motion.div key={tier.name} variants={scaleIn}>
+                <Card className={`h-full overflow-visible relative ${tier.borderColor}`}>
+                  {tier.popular && (
+                    <>
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/8 to-transparent" />
+                      <div className="absolute -top-3 left-6">
+                        <Badge className="shadow-lg shadow-primary/20">Most Popular</Badge>
+                      </div>
+                    </>
+                  )}
+                  <CardContent className={`p-6 relative ${tier.popular ? "pt-8" : ""}`}>
+                    <h4 className={`text-lg font-bold ${tier.color} mb-1`} data-testid={`text-tier-name-${i}`}>
+                      {tier.name}
+                    </h4>
+                    <p className="text-xs text-muted-foreground mb-4">{tier.description}</p>
+                    <div className="flex items-baseline gap-1 mb-5">
+                      <span className={`text-3xl font-extrabold ${tier.color}`}>{tier.price}</span>
+                      <span className="text-sm text-muted-foreground">{tier.period}</span>
+                    </div>
+                    <ul className="space-y-2.5">
+                      {tier.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2.5 text-sm">
+                          <Check className={`w-4 h-4 ${tier.color} shrink-0 mt-0.5`} />
+                          <span className="text-foreground/80">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* CTA */}
         <motion.div
           className="max-w-3xl mx-auto"
           initial={{ opacity: 0, y: 20 }}
@@ -1130,14 +1417,14 @@ function WebDesignSection() {
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-chart-4/5 via-primary/5 to-chart-4/5" />
             <CardContent className="p-8 relative text-center">
               <h3 className="text-2xl font-bold text-foreground mb-3" data-testid="text-web-design-cta-title">
-                Get Your Payment Terminal + Free Website
+                Claim Your Free Website Mockup + Processing Savings Quote
               </h3>
               <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-                Sign up for Edify payment processing and we'll build your business website at no cost. It's our way of helping Hawai'i businesses grow online.
+                Tell us about your business and we'll send you a personalized website mockup showing exactly what yours could look like — plus a savings analysis on your current processing fees. No commitment.
               </p>
               <Button size="lg" asChild>
                 <a href="#contact" data-testid="link-web-design-cta">
-                  Get Started Today
+                  Get My Free Mockup + Quote
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </Button>
@@ -1845,8 +2132,10 @@ function ContactSection() {
     email: "",
     phone: "",
     businessName: "",
+    businessType: "",
     monthlyVolume: "",
-    interest: "purchase",
+    interest: "bundle-terminal",
+    hasWebsite: "",
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
@@ -1870,10 +2159,10 @@ function ContactSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
-          <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
+          <motion.div className="flex flex-wrap items-center justify-center gap-3" variants={fadeUp}>
+            <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
               <Zap className="w-3.5 h-3.5 mr-1.5" />
-              Get Started
+              Free — No Commitment
             </Badge>
           </motion.div>
           <motion.h2
@@ -1881,16 +2170,17 @@ function ContactSection() {
             variants={fadeUp}
             data-testid="text-contact-title"
           >
-            Get Your{" "}
+            Free Website Mockup +{" "}
             <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-              Terminal Today
+              Savings Quote
             </span>
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-lg"
             variants={fadeUp}
           >
-            Fill out the form below and our team will get back to you within a few hours to get you set up.
+            Tell us about your business and we'll send you a personalized website mockup showing what yours could look like
+            — plus a free savings analysis on your current processing fees. No strings attached.
           </motion.p>
         </motion.div>
 
@@ -1909,10 +2199,10 @@ function ContactSection() {
                     <Check className="w-8 h-8 text-primary" />
                   </div>
                   <h3 className="text-2xl font-bold text-foreground mb-3" data-testid="text-contact-success">
-                    We've Got Your Info!
+                    Your Mockup & Quote Are On the Way!
                   </h3>
                   <p className="text-muted-foreground max-w-md mx-auto">
-                    Our team will reach out shortly to get you set up with your terminal. Keep an eye on your email and phone.
+                    We're preparing your personalized website mockup and processing savings analysis. Our team will reach out within a few hours — keep an eye on your email and phone.
                   </p>
                 </div>
               ) : (
@@ -1981,6 +2271,29 @@ function ContactSection() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-foreground mb-1.5 block">
+                        Business Type *
+                      </label>
+                      <select
+                        required
+                        value={formData.businessType}
+                        onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
+                        className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        data-testid="select-contact-type"
+                      >
+                        <option value="">Select type...</option>
+                        <option value="restaurant">Restaurant / Food Service</option>
+                        <option value="retail">Retail Store</option>
+                        <option value="salon">Salon / Beauty</option>
+                        <option value="auto">Auto / Repair</option>
+                        <option value="professional">Professional Services</option>
+                        <option value="ecommerce">E-Commerce / Online-Only</option>
+                        <option value="cbd-vape">CBD / Vape / High-Risk</option>
+                        <option value="tourism">Tourism / Travel</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">
                         Monthly Sales Volume
                       </label>
                       <select
@@ -1990,6 +2303,7 @@ function ContactSection() {
                         data-testid="select-contact-volume"
                       >
                         <option value="">Select volume...</option>
+                        <option value="under-5k">Under $5,000</option>
                         <option value="5k-10k">$5,000 - $10,000</option>
                         <option value="10k-25k">$10,000 - $25,000</option>
                         <option value="25k-50k">$25,000 - $50,000</option>
@@ -1997,6 +2311,9 @@ function ContactSection() {
                         <option value="100k+">$100,000+</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-foreground mb-1.5 block">
                         I'm Interested In
@@ -2007,38 +2324,67 @@ function ContactSection() {
                         className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         data-testid="select-contact-interest"
                       >
-                        <option value="purchase">Outright Purchase ($399)</option>
-                        <option value="trial">30-Day Free Trial</option>
+                        <option value="bundle-terminal">Terminal + Free Website ($399)</option>
+                        <option value="bundle-trial">Free Trial + Website ($199 add-on)</option>
+                        <option value="online-only">Online-Only Package ($499)</option>
                         <option value="high-risk">High-Risk Merchant Account</option>
-                        <option value="website">Website Design</option>
-                        <option value="bundle">Payment Processing + Website</option>
+                        <option value="website-only">Website Design Only</option>
+                        <option value="premium-web">Premium Web Package + Maintenance</option>
                         <option value="questions">Just Have Questions</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">
+                        Do You Have a Website?
+                      </label>
+                      <select
+                        value={formData.hasWebsite}
+                        onChange={(e) => setFormData({ ...formData, hasWebsite: e.target.value })}
+                        className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        data-testid="select-contact-website"
+                      >
+                        <option value="">Select...</option>
+                        <option value="no">No — I need one built</option>
+                        <option value="outdated">Yes, but it needs a redesign</option>
+                        <option value="yes-basic">Yes, but no online payments</option>
+                        <option value="yes-good">Yes, and it works well</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
                     <label className="text-sm font-medium text-foreground mb-1.5 block">
-                      Anything Else?
+                      Tell Us About Your Business
                     </label>
                     <textarea
                       rows={3}
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
-                      placeholder="Tell us about your business, industry, or any questions you have..."
+                      placeholder="What does your business do? What would you want on your website? (e.g., online menu, booking calendar, product shop, contact form...)"
                       data-testid="input-contact-message"
                     />
                   </div>
 
                   <Button type="submit" size="lg" className="w-full" data-testid="button-contact-submit">
-                    Get Started
+                    Get My Free Mockup + Savings Quote
                     <ArrowRight className="w-4 h-4" />
                   </Button>
 
-                  <p className="text-xs text-muted-foreground text-center">
-                    No commitment required. We'll reach out to discuss the best option for your business.
-                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-primary" />
+                      <span>100% free — no commitment</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-primary" />
+                      <span>Personalized mockup</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-primary" />
+                      <span>Savings analysis included</span>
+                    </div>
+                  </div>
                 </form>
               )}
             </CardContent>
@@ -2069,19 +2415,20 @@ function CTASection() {
               <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/10 to-transparent" />
               <div className="relative">
                 <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5 text-foreground" data-testid="text-cta-title">
-                  Ready to Keep More of{" "}
+                  Processing Savings + Professional Website ={" "}
                   <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-                    Your Money
-                  </span>?
+                    More Customers & Profit
+                  </span>
                 </h2>
                 <p className="text-muted-foreground text-lg sm:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
-                  Get your terminal starting at $399 — or try free for 30 days.
-                  Zero ongoing fees, ever. Setup takes minutes, not weeks.
+                  Stop losing money to processing fees and missing out on online customers.
+                  Get your terminal starting at $399 — plus a free custom website. Or go online-only from $499.
+                  Setup takes minutes, not weeks.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Button size="lg" asChild>
                     <a href="#contact" data-testid="link-cta-get-terminal">
-                      Get Your Terminal Today
+                      Get Free Mockup + Savings Quote
                       <ArrowRight className="w-4 h-4" />
                     </a>
                   </Button>
@@ -2097,12 +2444,16 @@ function CTASection() {
                     <span>Same-Day Setup</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-primary" />
-                    <span>PCI Compliant</span>
+                    <Palette className="w-4 h-4 text-primary" />
+                    <span>Free Custom Website</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-primary" />
-                    <span>Zero Monthly Fees</span>
+                    <span>Zero Processing Fees</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    <span>Serving All of Hawai'i</span>
                   </div>
                 </div>
               </div>

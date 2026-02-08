@@ -86,14 +86,14 @@
         "itemListElement": [
           {
             "@type": "OfferCatalog",
-            "name": "Payment Processing",
+            "name": "In-Store Payment Processing",
             "itemListElement": [
               {
                 "@type": "Offer",
                 "itemOffered": {
                   "@type": "Service",
-                  "name": "Payment Terminal — Outright Purchase",
-                  "description": "Professional countertop payment terminal with zero monthly fees and zero processing fees. Includes chip, swipe, contactless/NFC, online gateway, setup, training, and compliance signage."
+                  "name": "In-Store Terminal + Free Website",
+                  "description": "Professional countertop payment terminal with zero monthly and processing fees, plus a free custom business website ($997 value). Includes chip, swipe, contactless/NFC, online gateway, setup, training, and compliance signage."
                 },
                 "price": "399.00",
                 "priceCurrency": "USD"
@@ -103,7 +103,7 @@
                 "itemOffered": {
                   "@type": "Service",
                   "name": "30-Day Risk-Free Trial",
-                  "description": "Try a payment terminal free for 30 days with live processing. Auto-purchases at $599 on day 31 unless canceled. Return shipping covered."
+                  "description": "Try a payment terminal free for 30 days with live processing. Add a custom website for $199 when you keep the terminal. Auto-purchases at $599 on day 31 unless canceled."
                 },
                 "price": "0",
                 "priceCurrency": "USD",
@@ -113,26 +113,57 @@
           },
           {
             "@type": "OfferCatalog",
-            "name": "Website Design",
+            "name": "Online Business Package",
             "itemListElement": [
               {
                 "@type": "Offer",
                 "itemOffered": {
                   "@type": "Service",
-                  "name": "Free Custom Business Website",
-                  "description": "Free custom-built business website exclusively for Edify payment processing merchants in Hawai'i. Professional design, mobile-optimized, and SEO-ready."
+                  "name": "Online-Only: Website + Payment Gateway",
+                  "description": "Custom professional website with integrated payment gateway for online-only and hybrid Hawai'i businesses. Includes payment links, invoicing, online ordering, and booking integration. No physical terminal needed."
                 },
-                "price": "0",
+                "price": "499.00",
                 "priceCurrency": "USD",
-                "eligibleCustomerType": "Edify Payment Processing Customers"
+                "description": "$499 one-time or free with processing commitment"
+              }
+            ]
+          },
+          {
+            "@type": "OfferCatalog",
+            "name": "Website Maintenance Subscriptions",
+            "itemListElement": [
+              {
+                "@type": "Offer",
+                "itemOffered": {
+                  "@type": "Service",
+                  "name": "Basic Website Maintenance",
+                  "description": "Hosting, SSL security, monthly backups, basic content changes, and uptime monitoring for your Hawai'i business website."
+                },
+                "price": "99.00",
+                "priceCurrency": "USD",
+                "description": "$99/month — hosting, security, basic changes"
               },
               {
                 "@type": "Offer",
                 "itemOffered": {
                   "@type": "Service",
-                  "name": "Premium Website Package",
-                  "description": "Advanced website with e-commerce integration, custom features, and premium design for Hawai'i businesses."
-                }
+                  "name": "Pro Website Growth",
+                  "description": "Everything in Basic plus monthly content updates, blog posts, Google Business optimization, SEO tweaks, and performance reporting."
+                },
+                "price": "199.00",
+                "priceCurrency": "USD",
+                "description": "$199/month — content, SEO, Google Business"
+              },
+              {
+                "@type": "Offer",
+                "itemOffered": {
+                  "@type": "Service",
+                  "name": "Premium Business Suite",
+                  "description": "Full-service digital management including custom backend (inventory, CRM, booking), automated emails and invoicing, processing data integration, unlimited content changes, and dedicated account manager."
+                },
+                "price": "399.00",
+                "priceCurrency": "USD",
+                "description": "$399+/month — custom backend, CRM, full management"
               }
             ]
           }
@@ -211,10 +242,11 @@
       "offers": [
         {
           "@type": "Offer",
-          "name": "Outright Purchase",
+          "name": "In-Store Terminal + Free Website",
           "price": "399.00",
           "priceCurrency": "USD",
-          "availability": "https://schema.org/InStock"
+          "availability": "https://schema.org/InStock",
+          "description": "Terminal + free custom website ($997 value)"
         },
         {
           "@type": "Offer",
@@ -222,7 +254,15 @@
           "price": "599.00",
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
-          "description": "Free for 30 days, then $599 if you keep it"
+          "description": "Free for 30 days, then $599 if you keep it. Add website for $199."
+        },
+        {
+          "@type": "Offer",
+          "name": "Online-Only Business Package",
+          "price": "499.00",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "description": "Custom website + payment gateway for online-only businesses. No terminal needed."
         }
       ],
       "aggregateRating": {
@@ -301,6 +341,22 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "Setup can be completed the same day. We configure your terminal, connect it to your bank, and train you remotely or on-site (Honolulu area). Neighbor island merchants get full remote setup with the same level of support."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need a physical terminal for online-only businesses?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Our Online Business Package ($499 or free with processing commitment) includes a custom professional website with an integrated virtual payment gateway. Perfect for e-commerce, service businesses, delivery, and hybrid businesses that take payments online via payment links, invoices, and shopping carts."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What are the website maintenance subscription options?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "After your free website is built, choose an optional maintenance plan: Basic ($99/month) for hosting, backups, and basic changes; Pro ($199/month) adds monthly content, SEO, and Google Business optimization; Premium ($399+/month) includes custom backend with inventory, CRM, booking calendar, automated emails, and a dedicated account manager. Cancel anytime."
           }
         }
       ]
