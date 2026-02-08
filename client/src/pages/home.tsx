@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import infographicImg from "@assets/IMG_6315_1770557117649.png";
 import { motion, useInView, useMotionValue, useTransform, animate } from "framer-motion";
 import {
   CreditCard,
@@ -308,23 +307,24 @@ function HowItWorksSection() {
           </motion.p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center">
           <motion.div
-            className="rounded-xl overflow-hidden bg-muted/30 flex items-center justify-center p-4 sm:p-6"
-            initial={{ opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            className="flex items-center justify-center mx-auto max-w-[280px] sm:max-w-sm lg:max-w-none lg:sticky lg:top-24"
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
             <img
-              src={infographicImg}
+              src="/images/cash-discount-infographic.png"
               alt="How Edify zero-fee payment processing works — Step 1: Customer pays with card, Step 2: Small non-cash adjustment of 3-4%, Step 3: Business keeps 100% of payment"
-              className="w-full max-w-md mx-auto object-contain"
+              className="w-full object-contain drop-shadow-2xl"
+              style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.3))" }}
               data-testid="img-how-it-works-infographic"
             />
           </motion.div>
 
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {steps.map((s, i) => (
               <motion.div
                 key={s.step}
@@ -336,26 +336,26 @@ function HowItWorksSection() {
                 <Card className={`overflow-visible relative ${s.border}`}>
                   <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
                   <CardContent className="p-4 sm:p-6 relative">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <s.icon className={`w-5 h-5 ${s.color}`} />
+                    <div className="flex items-center gap-3 mb-2 sm:mb-3">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <s.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${s.color}`} />
                       </div>
                       <div>
-                        <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
+                        <div className={`text-[10px] sm:text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
                           Step {s.step}
                         </div>
-                        <h3 className="text-base sm:text-xl font-bold text-foreground">
+                        <h3 className="text-sm sm:text-xl font-bold text-foreground">
                           {s.title}
                         </h3>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mb-2 sm:mb-3">
                       {s.description}
                     </p>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-1 sm:space-y-1.5">
                       {s.details.map((detail) => (
-                        <li key={detail} className="flex items-start gap-2 text-sm">
-                          <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
+                        <li key={detail} className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                          <Check className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${s.color} shrink-0 mt-0.5`} />
                           <span className="text-foreground/80">{detail}</span>
                         </li>
                       ))}
