@@ -31,6 +31,10 @@ import {
   HeartHandshake,
   Megaphone,
   ThumbsUp,
+  MapPin,
+  Code,
+  Palette,
+  Monitor,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -77,7 +81,7 @@ function Navbar() {
   const links = [
     { label: "How It Works", href: "#how-it-works" },
     { label: "Pricing", href: "#pricing" },
-    { label: "Qualifications", href: "#promos" },
+    { label: "Web Design", href: "#web-design" },
     { label: "High-Risk", href: "#high-risk" },
     { label: "FAQ", href: "#faq" },
   ];
@@ -190,7 +194,11 @@ function HeroSection() {
           animate="visible"
         >
           <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-8 py-1.5 px-4 text-primary border-primary/30 bg-primary/5">
+            <Badge variant="outline" className="mb-4 py-1.5 px-4 text-primary border-primary/30 bg-primary/5">
+              <MapPin className="w-3.5 h-3.5 mr-1.5" />
+              Proudly Serving Hawai'i
+            </Badge>
+            <Badge variant="outline" className="mb-8 ml-2 py-1.5 px-4 text-primary border-primary/30 bg-primary/5">
               <CircleDollarSign className="w-3.5 h-3.5 mr-1.5" />
               Save $3,600 - $5,400 Per Year
             </Badge>
@@ -201,12 +209,13 @@ function HeroSection() {
             variants={fadeUp}
             data-testid="text-hero-title"
           >
-            Stop Paying{" "}
+            Hawai'i's #1{" "}
             <span className="relative inline-block">
               <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-                Processing Fees
+                Zero-Fee
               </span>
-            </span>
+            </span>{" "}
+            Payment Processor
           </motion.h1>
 
           <motion.p
@@ -214,9 +223,10 @@ function HeroSection() {
             variants={fadeUp}
             data-testid="text-hero-subtitle"
           >
-            Starting at $399 for a payment terminal — or try free for 30 days. No monthly fees. No processing fees.
+            Serving Honolulu, Maui, Kona & all Hawaiian Islands. Starting at $399 for a payment terminal — or try free for 30 days. No monthly fees. No processing fees.
             Your customers cover the small surcharge — you keep{" "}
-            <span className="text-primary font-semibold">100% of every sale</span>, deposited into your account by the next business day.
+            <span className="text-primary font-semibold">100% of every sale</span>. Plus, get a{" "}
+            <span className="text-primary font-semibold">free custom website</span> when you sign up.
           </motion.p>
 
           <motion.div
@@ -286,7 +296,7 @@ function HeroSection() {
 
 function SocialProofBar() {
   const stats = [
-    { icon: Users, value: "500+", label: "Businesses Trust Us" },
+    { icon: Users, value: "500+", label: "Hawai'i Businesses Trust Us" },
     { icon: Star, value: "4.9/5", label: "Customer Rating" },
     { icon: TrendingUp, value: "$12M+", label: "Revenue Protected" },
     { icon: Award, value: "99.9%", label: "Uptime Guaranteed" },
@@ -340,8 +350,8 @@ function TrustAuthoritySection() {
     },
     {
       icon: Clock,
-      title: "Same-Day Setup",
-      description: "Most merchants are processing payments within hours, not weeks. We configure your terminal, connect your bank, and train you on-site or remotely.",
+      title: "Same-Day Setup Across Hawai'i",
+      description: "Most Hawai'i merchants are processing payments within hours, not weeks. We configure your terminal, connect your bank, and train you on-site in Honolulu or remotely for neighbor islands.",
     },
     {
       icon: BadgeCheck,
@@ -1006,6 +1016,139 @@ function HighRiskSection() {
   );
 }
 
+function WebDesignSection() {
+  const webFeatures = [
+    {
+      icon: Palette,
+      title: "Custom Design",
+      description: "Professionally designed to match your brand. No cookie-cutter templates — every site is built from scratch for your Hawai'i business.",
+    },
+    {
+      icon: Smartphone,
+      title: "Mobile-Optimized",
+      description: "Looks perfect on every device. Over 60% of local searches happen on mobile — your site will be ready.",
+    },
+    {
+      icon: Globe,
+      title: "SEO-Ready",
+      description: "Built with search engine optimization so customers in Honolulu, Maui, Kona, and across Hawai'i can find you online.",
+    },
+    {
+      icon: Code,
+      title: "E-Commerce & Custom Software",
+      description: "Need online ordering, booking, or custom tools? Our premium packages include full e-commerce and custom software solutions.",
+    },
+    {
+      icon: Monitor,
+      title: "Hosting & Maintenance",
+      description: "We handle hosting, updates, and security so you can focus on running your business.",
+    },
+    {
+      icon: Zap,
+      title: "Fast Turnaround",
+      description: "Most business websites are live within 1-2 weeks. Premium and custom projects scoped individually.",
+    },
+  ];
+
+  return (
+    <section id="web-design" className="py-24 sm:py-32 relative" data-testid="section-web-design">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full bg-chart-4/8 blur-[120px]" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-14"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.div className="flex flex-wrap items-center justify-center gap-3" variants={fadeUp}>
+            <Badge variant="outline" className="text-chart-4 border-chart-4/30 bg-chart-4/5">
+              <Code className="w-3.5 h-3.5 mr-1.5" />
+              Website Design
+            </Badge>
+            <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
+              <MapPin className="w-3.5 h-3.5 mr-1.5" />
+              Honolulu, HI
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
+            variants={fadeUp}
+            data-testid="text-web-design-title"
+          >
+            Free Website for{" "}
+            <span className="bg-gradient-to-r from-chart-4 to-primary bg-clip-text text-transparent">
+              Every Merchant
+            </span>
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground max-w-2xl mx-auto text-lg"
+            variants={fadeUp}
+          >
+            No website? No problem. Every Edify payment processing merchant in Hawai'i gets a free custom-built business website. Need more? Premium packages with e-commerce and custom software are available too.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          {webFeatures.map((f, i) => (
+            <motion.div key={f.title} variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-4/10">
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-4/5 to-transparent" />
+                <CardContent className="p-6 relative">
+                  <div className="w-10 h-10 rounded-md bg-chart-4/15 flex items-center justify-center mb-4">
+                    <f.icon className="w-5 h-5 text-chart-4" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2" data-testid={`text-web-feature-${i}`}>
+                    {f.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {f.description}
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.div
+          className="max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Card className="overflow-visible border-chart-4/20">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-chart-4/5 via-primary/5 to-chart-4/5" />
+            <CardContent className="p-8 relative text-center">
+              <h3 className="text-2xl font-bold text-foreground mb-3" data-testid="text-web-design-cta-title">
+                Get Your Payment Terminal + Free Website
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
+                Sign up for Edify payment processing and we'll build your business website at no cost. It's our way of helping Hawai'i businesses grow online.
+              </p>
+              <Button size="lg" asChild>
+                <a href="#contact" data-testid="link-web-design-cta">
+                  Get Started Today
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function CustomerPsychologySection() {
   const points = [
     {
@@ -1482,21 +1625,21 @@ function SavingsCalculator() {
 function TestimonialSection() {
   const testimonials = [
     {
-      quote: "Switching to Edify saved us over $4,800 last year. We wish we'd done it sooner.",
-      name: "Marcus Johnson",
-      role: "Owner, Johnson's Auto Repair",
+      quote: "Switching to Edify saved us over $4,800 last year. The free website they built for our shop brings in new customers every week. Best decision we made for our Honolulu business.",
+      name: "Marcus Kalani",
+      role: "Owner, Kalani's Auto Repair — Honolulu, HI",
       rating: 5,
     },
     {
-      quote: "Zero monthly fees means we actually keep what we earn. The setup was incredibly fast.",
+      quote: "Zero monthly fees means we actually keep what we earn. Setup was done the same day and they even built us a beautiful website. Our Maui customers love the online ordering.",
       name: "Sarah Chen",
-      role: "Manager, Golden Lotus Restaurant",
+      role: "Manager, Golden Lotus Restaurant — Kahului, Maui",
       rating: 5,
     },
     {
-      quote: "The online payment gateway is seamless. Our customers love the convenience.",
-      name: "David Okafor",
-      role: "Founder, Okafor Consulting",
+      quote: "As a high-risk CBD merchant on the Big Island, nobody would work with us. Edify got us approved the same day with zero fees. The website they built drives most of our online sales now.",
+      name: "David Kealoha",
+      role: "Founder, Island Wellness CBD — Kailua-Kona, HI",
       rating: 5,
     },
   ];
@@ -1522,7 +1665,7 @@ function TestimonialSection() {
             className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
             variants={fadeUp}
           >
-            Businesses Love Edify
+            Hawai'i Businesses Love Edify
           </motion.h2>
         </motion.div>
 
@@ -1582,10 +1725,6 @@ function FAQSection() {
       a: "Setup can be completed the same day. We configure your terminal, connect it to your bank, and train you on how to use it so you can start accepting payments immediately.",
     },
     {
-      q: "Is the surcharge legal?",
-      a: "Yes. Surcharging is legal in most US states and fully compliant with Visa and Mastercard rules. We handle all the compliance requirements — including proper signage, receipt disclosures, and registration — so you're always in the clear.",
-    },
-    {
       q: "When do I receive my funds?",
       a: "Funds are deposited to your bank account by the next business day. You can track all deposits and transactions through your real-time dashboard.",
     },
@@ -1604,6 +1743,18 @@ function FAQSection() {
     {
       q: "Do I need a minimum sales volume?",
       a: "Yes — we require a minimum of $5,000-$10,000 in monthly processing volume to qualify. This ensures the zero-fee model delivers meaningful savings for your business.",
+    },
+    {
+      q: "Does Edify offer website design for Hawai'i businesses?",
+      a: "Yes. Every Edify payment processing merchant gets a free custom-built business website — no templates, no extra cost. We also offer premium website packages with e-commerce integration, online ordering, booking systems, and custom software. All websites are mobile-optimized, SEO-ready, and built to help your Hawai'i business get found online.",
+    },
+    {
+      q: "What areas in Hawai'i does Edify serve?",
+      a: "We serve businesses across all Hawaiian Islands — O'ahu (Honolulu, Kailua, Pearl City), Maui (Kahului, Lahaina, Kihei), the Big Island (Kona, Hilo), Kaua'i, Moloka'i, and Lana'i. We offer same-day setup with remote training, and on-site support is available in the Honolulu area.",
+    },
+    {
+      q: "Is the surcharge legal in Hawai'i?",
+      a: "Yes. Surcharging is legal in Hawai'i and fully compliant with Visa and Mastercard rules. We handle all the compliance requirements — signage, receipt disclosures, and card brand registration — so your business is always in the clear.",
     },
   ];
 
@@ -1859,6 +2010,8 @@ function ContactSection() {
                         <option value="purchase">Outright Purchase ($399)</option>
                         <option value="trial">30-Day Free Trial</option>
                         <option value="high-risk">High-Risk Merchant Account</option>
+                        <option value="website">Website Design</option>
+                        <option value="bundle">Payment Processing + Website</option>
                         <option value="questions">Just Have Questions</option>
                       </select>
                     </div>
@@ -1966,17 +2119,46 @@ function Footer() {
     <footer className="border-t border-border/50 py-14 relative" data-testid="section-footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <div className="font-bold text-lg flex items-center gap-2.5 mb-4">
               <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
                 <Zap className="w-4 h-4 text-primary-foreground" />
               </div>
               <span className="text-foreground">Edify Limited</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-              Payment processing solutions that let you keep 100% of every
-              sale. No monthly fees, no processing fees, no contracts.
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mb-3">
+              Hawai'i's trusted payment processing and web design company. Zero processing fees, zero monthly fees — plus free websites for every merchant.
             </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="w-3.5 h-3.5 text-primary" />
+              <span>Honolulu, Hawai'i</span>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-sm mb-4 text-foreground">Services</h4>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li>
+                <a href="#pricing" className="transition-colors" data-testid="link-footer-pricing">
+                  Payment Processing
+                </a>
+              </li>
+              <li>
+                <a href="#web-design" className="transition-colors" data-testid="link-footer-web-design">
+                  Website Design
+                </a>
+              </li>
+              <li>
+                <a href="#high-risk" className="transition-colors" data-testid="link-footer-high-risk">
+                  High-Risk Merchants
+                </a>
+              </li>
+              <li>
+                <a href="#features" className="transition-colors" data-testid="link-footer-features">
+                  Features
+                </a>
+              </li>
+            </ul>
           </div>
 
           <div>
@@ -1988,44 +2170,30 @@ function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#pricing" className="transition-colors" data-testid="link-footer-pricing">
-                  Pricing
-                </a>
-              </li>
-              <li>
-                <a href="#features" className="transition-colors" data-testid="link-footer-features">
-                  Features
-                </a>
-              </li>
-              <li>
                 <a href="#faq" className="transition-colors" data-testid="link-footer-faq">
                   FAQ
+                </a>
+              </li>
+              <li>
+                <a href="#contact" className="transition-colors" data-testid="link-footer-contact">
+                  Contact Us
+                </a>
+              </li>
+              <li>
+                <a href="#" className="transition-colors" data-testid="link-footer-top">
+                  Back to Top
                 </a>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm mb-4 text-foreground">Contact</h4>
+            <h4 className="font-semibold text-sm mb-4 text-foreground">Serving Hawai'i</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li>
-                <a
-                  href="#contact"
-                  className="transition-colors"
-                  data-testid="link-footer-contact"
-                >
-                  Get In Touch
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="transition-colors"
-                  data-testid="link-footer-website"
-                >
-                  Back to Top
-                </a>
-              </li>
+              <li>Honolulu & O'ahu</li>
+              <li>Maui</li>
+              <li>Big Island (Kona & Hilo)</li>
+              <li>Kaua'i & Neighbor Islands</li>
             </ul>
           </div>
         </div>
@@ -2051,6 +2219,7 @@ export default function Home() {
         <PromoSection />
         <FeaturesSection />
         <HighRiskSection />
+        <WebDesignSection />
         <CustomerPsychologySection />
         <DetailSections />
         <SavingsCalculator />
