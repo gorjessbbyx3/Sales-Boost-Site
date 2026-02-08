@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import infographicImg from "@assets/IMG_6315_1770557117649.png";
 import { motion, useInView, useMotionValue, useTransform, animate } from "framer-motion";
 import {
   CreditCard,
@@ -276,7 +277,7 @@ function HowItWorksSection() {
         <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center mb-10 sm:mb-16"
           variants={staggerContainer}
@@ -307,59 +308,63 @@ function HowItWorksSection() {
           </motion.p>
         </motion.div>
 
-        <motion.div
-          className="mt-8 rounded-xl overflow-hidden bg-muted/30 max-w-2xl mx-auto mb-10 sm:mb-14"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <img
-            src="/images/How_it_works.png"
-            alt="How Edify zero-fee payment processing works"
-            className="w-full max-h-[50vh] object-contain"
-          />
-        </motion.div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <motion.div
+            className="rounded-xl overflow-hidden bg-muted/30 flex items-center justify-center p-4 sm:p-6"
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <img
+              src={infographicImg}
+              alt="How Edify zero-fee payment processing works — Step 1: Customer pays with card, Step 2: Small non-cash adjustment of 3-4%, Step 3: Business keeps 100% of payment"
+              className="w-full max-w-md mx-auto object-contain"
+              data-testid="img-how-it-works-infographic"
+            />
+          </motion.div>
 
-        <div className="space-y-6 sm:space-y-10">
-          {steps.map((s, i) => (
-            <motion.div
-              key={s.step}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-            >
-              <Card className={`overflow-visible relative ${s.border}`}>
-                <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
-                <CardContent className="p-5 sm:p-8 relative">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <s.icon className={`w-6 h-6 ${s.color}`} />
-                    </div>
-                    <div>
-                      <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
-                        Step {s.step}
+          <div className="space-y-5">
+            {steps.map((s, i) => (
+              <motion.div
+                key={s.step}
+                initial={{ opacity: 0, x: 40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.12 }}
+              >
+                <Card className={`overflow-visible relative ${s.border}`}>
+                  <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
+                  <CardContent className="p-4 sm:p-6 relative">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <s.icon className={`w-5 h-5 ${s.color}`} />
                       </div>
-                      <h3 className="text-lg sm:text-2xl font-bold text-foreground">
-                        {s.title}
-                      </h3>
+                      <div>
+                        <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
+                          Step {s.step}
+                        </div>
+                        <h3 className="text-base sm:text-xl font-bold text-foreground">
+                          {s.title}
+                        </h3>
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4">
-                    {s.description}
-                  </p>
-                  <ul className="space-y-2">
-                    {s.details.map((detail) => (
-                      <li key={detail} className="flex items-start gap-2 text-sm">
-                        <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
-                        <span className="text-foreground/80">{detail}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                      {s.description}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {s.details.map((detail) => (
+                        <li key={detail} className="flex items-start gap-2 text-sm">
+                          <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
+                          <span className="text-foreground/80">{detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
