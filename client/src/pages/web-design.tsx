@@ -85,9 +85,9 @@ function WebDesignHero() {
               </Link>
             </Button>
             <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
-              <a href="/#pricing">
+              <Link href="/pricing">
                 See Pricing
-              </a>
+              </Link>
             </Button>
           </motion.div>
         </motion.div>

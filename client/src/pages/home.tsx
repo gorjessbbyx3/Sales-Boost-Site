@@ -20,6 +20,10 @@ import {
   Palette,
   MapPin,
   AlertTriangle,
+  ShoppingCart,
+  Calendar,
+  Image,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
@@ -236,7 +240,7 @@ function ServicesOverview() {
       icon: Globe,
       title: "Free Custom Website",
       description: "Every Edify merchant gets a professional business website — mobile-optimized and SEO-ready.",
-      href: "/web-design",
+      href: "/our-work",
       cta: "See Examples",
       color: "text-chart-3",
       border: "border-chart-3/20",
@@ -318,6 +322,217 @@ function ServicesOverview() {
               </Card>
             </motion.div>
           ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function PortfolioShowcase() {
+  const portfolioItems = [
+    {
+      type: "Restaurant & Food",
+      description: "Online menu, ordering, reservations & payments",
+      pages: "Home, Menu, Order Online, About, Contact",
+      icon: ShoppingCart,
+      color: "text-chart-3",
+      bgColor: "bg-chart-3/15",
+      borderColor: "border-chart-3/20",
+    },
+    {
+      type: "Salon & Beauty",
+      description: "Appointment booking, gallery & service pricing",
+      pages: "Home, Services, Book Now, Gallery, Contact",
+      icon: Calendar,
+      color: "text-chart-4",
+      bgColor: "bg-chart-4/15",
+      borderColor: "border-chart-4/20",
+    },
+    {
+      type: "Retail & E-Commerce",
+      description: "Product catalog, shopping cart & secure checkout",
+      pages: "Home, Shop, Cart, About, Contact",
+      icon: ShoppingCart,
+      color: "text-chart-2",
+      bgColor: "bg-chart-2/15",
+      borderColor: "border-chart-2/20",
+    },
+    {
+      type: "Services & Trades",
+      description: "Quote requests, service areas & testimonials",
+      pages: "Home, Services, Get a Quote, Reviews, Contact",
+      icon: Globe,
+      color: "text-primary",
+      bgColor: "bg-primary/15",
+      borderColor: "border-primary/20",
+    },
+    {
+      type: "Tourism & Activities",
+      description: "Tour booking, trip calendars & photo galleries",
+      pages: "Home, Tours, Book Now, Gallery, Contact",
+      icon: Image,
+      color: "text-chart-3",
+      bgColor: "bg-chart-3/15",
+      borderColor: "border-chart-3/20",
+    },
+    {
+      type: "CBD & Wellness",
+      description: "Age-gated storefront, lab results & compliance",
+      pages: "Home, Products, Lab Results, About, Contact",
+      icon: Zap,
+      color: "text-chart-2",
+      bgColor: "bg-chart-2/15",
+      borderColor: "border-chart-2/20",
+    },
+  ];
+
+  return (
+    <section className="py-12 sm:py-24 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+        >
+          <motion.div className="text-center mb-8 sm:mb-14" variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-chart-4 border-chart-4/30 bg-chart-4/5">
+              <Palette className="w-3 h-3 mr-1.5" />
+              Free Custom Websites
+            </Badge>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+              Websites We Build for Every Industry
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-lg">
+              Every Edify merchant gets a free custom website — here's what yours could look like.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5 max-w-5xl mx-auto"
+            variants={staggerContainer}
+          >
+            {portfolioItems.map((item) => (
+              <motion.div key={item.type} variants={scaleIn}>
+                <Card className={`h-full overflow-visible ${item.borderColor}`}>
+                  <CardContent className="p-4 sm:p-5">
+                    <div className={`w-full h-20 sm:h-28 rounded-md ${item.bgColor} flex items-center justify-center mb-3`}>
+                      <item.icon className={`w-8 h-8 sm:w-10 sm:h-10 ${item.color} opacity-60`} />
+                    </div>
+                    <h4 className={`font-semibold text-sm sm:text-base ${item.color} mb-1`}>
+                      {item.type}
+                    </h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div className="text-center mt-6 sm:mt-10" variants={fadeUp}>
+            <Button variant="outline" size="lg" asChild>
+              <Link href="/our-work">
+                See Our Work
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </Button>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function WebsiteMaintenanceTiers() {
+  const tiers = [
+    {
+      name: "Basic",
+      price: "$99",
+      description: "Keep your site running smoothly",
+      features: ["Hosting & SSL security", "Monthly backups", "Basic content changes", "Uptime monitoring", "Email support"],
+      color: "text-muted-foreground",
+      borderColor: "border-border",
+      popular: false,
+    },
+    {
+      name: "Pro",
+      price: "$199",
+      description: "Grow your online presence",
+      features: ["Everything in Basic", "Monthly content updates & blog posts", "Google Business optimization", "Monthly SEO tweaks", "Priority support"],
+      color: "text-primary",
+      borderColor: "border-primary/30",
+      popular: true,
+    },
+    {
+      name: "Premium",
+      price: "$399",
+      description: "Full business growth partner",
+      features: ["Everything in Pro", "Custom backend (inventory, CRM, booking)", "Automated emails & invoicing", "Unlimited content changes", "Dedicated account manager"],
+      color: "text-chart-4",
+      borderColor: "border-chart-4/30",
+      popular: false,
+    },
+  ];
+
+  return (
+    <section className="py-12 sm:py-24 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+        >
+          <motion.div className="text-center mb-8 sm:mb-14" variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-chart-4 border-chart-4/30 bg-chart-4/5">
+              <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
+              Ongoing Growth
+            </Badge>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+              Website Maintenance Plans
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-lg">
+              After your free website is built, choose an optional maintenance plan to keep it growing. Cancel anytime.
+            </p>
+            <p className="text-sm text-primary font-medium mt-3">
+              Don't need a plan? Extra content updates start at just $40.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
+            {tiers.map((tier) => (
+              <motion.div key={tier.name} variants={scaleIn}>
+                <Card className={`h-full overflow-visible relative ${tier.borderColor}`}>
+                  {tier.popular && (
+                    <>
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/8 to-transparent" />
+                      <div className="absolute -top-3 left-6">
+                        <Badge className="shadow-lg shadow-primary/20">Most Popular</Badge>
+                      </div>
+                    </>
+                  )}
+                  <CardContent className={`p-5 sm:p-6 relative ${tier.popular ? "pt-8" : ""}`}>
+                    <h4 className={`text-lg font-bold ${tier.color} mb-1`}>{tier.name}</h4>
+                    <p className="text-xs text-muted-foreground mb-3">{tier.description}</p>
+                    <div className="flex items-baseline gap-1 mb-4">
+                      <span className={`text-2xl sm:text-3xl font-extrabold ${tier.color}`}>{tier.price}</span>
+                      <span className="text-sm text-muted-foreground">/month</span>
+                    </div>
+                    <ul className="space-y-2">
+                      {tier.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2 text-sm">
+                          <Check className={`w-4 h-4 ${tier.color} shrink-0 mt-0.5`} />
+                          <span className="text-foreground/80">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>
@@ -582,6 +797,8 @@ export default function Home() {
       <SocialProofBar />
       <ServicesOverview />
       <QuickPricingPreview />
+      <PortfolioShowcase />
+      <WebsiteMaintenanceTiers />
       <TestimonialSection />
       <CTASection />
     </Layout>
