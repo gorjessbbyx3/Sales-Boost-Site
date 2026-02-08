@@ -75,7 +75,7 @@ function Navbar() {
             </Button>
             <Button size="sm" className="text-xs h-9 shadow-lg shadow-primary/20" data-testid="button-nav-ai-chat" onClick={() => window.dispatchEvent(new CustomEvent("open-chat-widget"))}>
               <MessageSquare className="w-3.5 h-3.5 mr-1" />
-              AI Chat Intake
+              Chat With Us
             </Button>
           </div>
 
