@@ -216,7 +216,7 @@ function HeroSection() {
           >
             $500 for a payment terminal. No monthly fees. No processing fees.
             Your customers cover the small surcharge — you keep{" "}
-            <span className="text-primary font-semibold">100% of every sale</span>.
+            <span className="text-primary font-semibold">100% of every sale</span>, deposited into your account by the next business day.
           </motion.p>
 
           <motion.div
@@ -348,7 +348,7 @@ function HowItWorksSection() {
       step: "03",
       title: "Keep 100% of Sales",
       description:
-        "Your customers cover the small processing surcharge. You receive the full sale amount — no deductions.",
+        "Your customers cover the small processing surcharge. You get 100% of your sale deposited into your account by the next business day.",
       icon: DollarSign,
       accent: "from-chart-3/20 to-chart-3/5",
     },
@@ -1350,7 +1350,7 @@ function FAQSection() {
   const faqs = [
     {
       q: "How does zero-fee payment processing work?",
-      a: "Instead of the merchant paying 2-4% processing fees on every sale, a small surcharge is passed to the customer at checkout. The merchant keeps 100% of the sale amount with no deductions.",
+      a: "Instead of the merchant paying 2-4% processing fees on every sale, a small surcharge is passed to the customer at checkout. The merchant keeps 100% of the sale amount — deposited into their account by the next business day, with no deductions.",
     },
     {
       q: "What does the $500 terminal include?",
