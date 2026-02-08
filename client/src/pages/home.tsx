@@ -231,28 +231,26 @@ function HeroSection() {
 
 
 function FallingDollars({ containerRef }: { containerRef: React.RefObject<HTMLElement | null> }) {
-  const isInView = useInView(containerRef, { once: true, margin: "-30% 0px" });
+  const isInView = useInView(containerRef, { once: true, amount: 0.15 });
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-[50] overflow-visible">
+    <div className="absolute inset-0 pointer-events-none z-[50]">
       <motion.div
-        className="absolute left-[3%] sm:left-[5%]"
-        style={{ bottom: 0 }}
-        initial={{ y: "-120%", opacity: 0 }}
-        animate={isInView ? { y: 0, opacity: 0.75 } : {}}
-        transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+        className="absolute left-[3%] sm:left-[5%] bottom-0"
+        initial={{ y: -600, opacity: 0 }}
+        animate={isInView ? { y: 0, opacity: 0.85 } : { y: -600, opacity: 0 }}
+        transition={{ duration: 1.4, ease: [0.34, 1.56, 0.64, 1], delay: 0.2 }}
       >
-        <DollarSign className="w-16 h-16 sm:w-24 sm:h-24 text-primary drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]" strokeWidth={2.5} />
+        <DollarSign className="w-16 h-16 sm:w-24 sm:h-24 text-primary drop-shadow-[0_0_20px_rgba(16,185,129,0.6)]" strokeWidth={2.5} />
       </motion.div>
 
       <motion.div
-        className="absolute right-[3%] sm:right-[5%]"
-        style={{ bottom: 0 }}
-        initial={{ y: "-120%", opacity: 0 }}
-        animate={isInView ? { y: 0, opacity: 0.75 } : {}}
-        transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}
+        className="absolute right-[3%] sm:right-[5%] bottom-0"
+        initial={{ y: -600, opacity: 0 }}
+        animate={isInView ? { y: 0, opacity: 0.85 } : { y: -600, opacity: 0 }}
+        transition={{ duration: 1.4, ease: [0.34, 1.56, 0.64, 1], delay: 0.5 }}
       >
-        <DollarSign className="w-16 h-16 sm:w-24 sm:h-24 text-primary drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]" strokeWidth={2.5} />
+        <DollarSign className="w-16 h-16 sm:w-24 sm:h-24 text-primary drop-shadow-[0_0_20px_rgba(16,185,129,0.6)]" strokeWidth={2.5} />
       </motion.div>
     </div>
   );
@@ -314,7 +312,7 @@ function HowItWorksSection() {
   ];
 
   return (
-    <section ref={sectionRef} className="py-12 sm:py-24 relative overflow-hidden bg-[#0a1628]" data-testid="section-how-it-works">
+    <section ref={sectionRef} className="py-12 sm:py-24 relative overflow-clip bg-[#0a1628]" data-testid="section-how-it-works">
       <FallingDollars containerRef={sectionRef} />
       <div className="absolute inset-0 -z-0">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-blue-600/10 blur-[120px]" />
