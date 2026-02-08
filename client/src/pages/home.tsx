@@ -270,6 +270,12 @@ function SocialProofBar() {
   );
 }
 
+const dollarIcons = [
+  "/images/dollar-icon-1.png",
+  "/images/dollar-icon-2.png",
+  "/images/dollar-icon-3.png",
+];
+
 function FallingDollars({ containerRef }: { containerRef: React.RefObject<HTMLElement | null> }) {
   const isInView = useInView(containerRef, { once: false, margin: "-10% 0px -10% 0px" });
   const { scrollYProgress } = useScroll({
@@ -280,14 +286,16 @@ function FallingDollars({ containerRef }: { containerRef: React.RefObject<HTMLEl
   const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
 
   const dollars = useMemo(() => {
-    return Array.from({ length: 28 }, (_, i) => ({
+    return Array.from({ length: 24 }, (_, i) => ({
       id: i,
-      left: `${Math.random() * 100}%`,
-      size: 14 + Math.random() * 20,
-      delay: Math.random() * 3,
-      duration: 3 + Math.random() * 4,
-      opacity: 0.15 + Math.random() * 0.35,
-      sway: (Math.random() - 0.5) * 60,
+      left: `${Math.random() * 96 + 2}%`,
+      size: 20 + Math.random() * 28,
+      delay: Math.random() * 4,
+      duration: 4 + Math.random() * 5,
+      opacity: 0.2 + Math.random() * 0.4,
+      sway: (Math.random() - 0.5) * 80,
+      rotation: Math.random() * 360,
+      icon: dollarIcons[Math.floor(Math.random() * dollarIcons.length)],
     }));
   }, []);
 
@@ -299,19 +307,22 @@ function FallingDollars({ containerRef }: { containerRef: React.RefObject<HTMLEl
       style={{ opacity }}
     >
       {dollars.map((d) => (
-        <motion.span
+        <motion.img
           key={d.id}
-          className="absolute text-primary font-bold select-none"
+          src={d.icon}
+          alt=""
+          className="absolute select-none"
           style={{
             left: d.left,
-            fontSize: d.size,
-            opacity: d.opacity,
+            width: d.size,
+            height: d.size,
           }}
-          initial={{ y: -40, x: 0, opacity: 0 }}
+          initial={{ y: -50, x: 0, opacity: 0, rotate: 0 }}
           animate={{
             y: ["0%", "110%"],
             x: [0, d.sway, 0],
             opacity: [0, d.opacity, d.opacity, 0],
+            rotate: [0, d.rotation],
           }}
           transition={{
             duration: d.duration,
@@ -319,9 +330,7 @@ function FallingDollars({ containerRef }: { containerRef: React.RefObject<HTMLEl
             repeat: Infinity,
             ease: "linear",
           }}
-        >
-          $
-        </motion.span>
+        />
       ))}
     </motion.div>
   );
