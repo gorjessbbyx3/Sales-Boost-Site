@@ -264,6 +264,13 @@ function PricingCardsSection() {
                 </div>
               </CardHeader>
               <CardContent className="relative space-y-4">
+                <div className="rounded-lg overflow-hidden bg-muted/30">
+                  <img
+                    src="/images/IMG_6308.jpeg"
+                    alt="Online business package — website and payment gateway"
+                    className="w-full aspect-[16/10] object-contain rounded-lg"
+                  />
+                </div>
                 <div className="text-center py-2">
                   <div className="text-xs text-muted-foreground mb-1">Website + Gateway</div>
                   <div className="flex items-baseline justify-center gap-1.5">
