@@ -23,13 +23,6 @@ import {
   Menu,
   XIcon,
   CircleDollarSign,
-  Percent,
-  Receipt,
-  Tag,
-  Gift,
-  Sparkles,
-  Copy,
-  CheckCheck,
   AlertTriangle,
   Timer,
   BadgeCheck,
@@ -84,7 +77,7 @@ function Navbar() {
   const links = [
     { label: "How It Works", href: "#how-it-works" },
     { label: "Pricing", href: "#pricing" },
-    { label: "Promos", href: "#promos" },
+    { label: "Qualifications", href: "#promos" },
     { label: "High-Risk", href: "#high-risk" },
     { label: "FAQ", href: "#faq" },
   ];
@@ -221,7 +214,7 @@ function HeroSection() {
             variants={fadeUp}
             data-testid="text-hero-subtitle"
           >
-            $500 for a payment terminal. No monthly fees. No processing fees.
+            Starting at $399 for a payment terminal — or try free for 30 days. No monthly fees. No processing fees.
             Your customers cover the small surcharge — you keep{" "}
             <span className="text-primary font-semibold">100% of every sale</span>, deposited into your account by the next business day.
           </motion.p>
@@ -430,9 +423,9 @@ function HowItWorksSection() {
   const steps = [
     {
       step: "01",
-      title: "Pay $500 Once",
+      title: "Choose Your Plan",
       description:
-        "One-time purchase for your payment terminal. No contracts, no commitments, no monthly bills.",
+        "Buy outright for $399 (best value) or start a 30-day risk-free trial. No contracts, no commitments.",
       icon: CreditCard,
       accent: "from-primary/20 to-primary/5",
     },
@@ -534,20 +527,26 @@ function HowItWorksSection() {
 }
 
 function PricingComparisonSection() {
-  const traditional = [
-    { label: "Terminal Cost", value: "$200 - $800", icon: CreditCard },
-    { label: "Monthly Fee", value: "$25 - $100/mo", icon: Receipt },
-    { label: "Processing Fee", value: "2.5% - 3.5%", icon: Percent },
-    { label: "On $10K/mo Sales", value: "-$250 to -$350", highlight: true, icon: TrendingUp },
-    { label: "Annual Cost", value: "$3,600 - $5,400", icon: DollarSign },
+  const option1Features = [
+    "Professional countertop terminal",
+    "Chip, swipe & contactless/NFC payments",
+    "Online payment gateway access",
+    "Full setup & programming included",
+    "Free compliance signage kit",
+    "Free statement analysis",
+    "Zero monthly fees — forever",
+    "Zero processing fees — forever",
   ];
 
-  const edify = [
-    { label: "Terminal Cost", value: "$500 (one-time)", icon: CreditCard },
-    { label: "Monthly Fee", value: "$0", icon: Receipt },
-    { label: "Processing Fee", value: "$0", icon: Percent },
-    { label: "On $10K/mo Sales", value: "Keep $10,000", highlight: true, icon: TrendingUp },
-    { label: "Annual Cost", value: "$0 after terminal", icon: DollarSign },
+  const option2Features = [
+    "Free terminal loan for 30 days",
+    "Live processing — real transactions",
+    "Full setup & training included",
+    "Return anytime within 30 days",
+    "We cover return shipping",
+    "Auto-purchase on day 31 ($599)",
+    "Zero monthly fees after purchase",
+    "Zero processing fees — forever",
   ];
 
   return (
@@ -562,7 +561,7 @@ function PricingComparisonSection() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
-          className="text-center mb-20"
+          className="text-center mb-16"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -570,6 +569,7 @@ function PricingComparisonSection() {
         >
           <motion.div variants={fadeUp}>
             <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
+              <DollarSign className="w-3.5 h-3.5 mr-1.5" />
               Pricing
             </Badge>
           </motion.div>
@@ -578,17 +578,17 @@ function PricingComparisonSection() {
             variants={fadeUp}
             data-testid="text-pricing-title"
           >
-            See the{" "}
+            Two Ways to{" "}
             <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-              Difference
+              Get Started
             </span>
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-lg"
             variants={fadeUp}
           >
-            Compare what you'd pay with a traditional processor vs. our
-            zero-fee solution.
+            Whether you want to buy outright and save, or try risk-free first — we've got you covered.
+            Retail terminals sell for $800+. Our pricing is a fraction of that.
           </motion.p>
         </motion.div>
 
@@ -599,46 +599,51 @@ function PricingComparisonSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <Card className="h-full overflow-visible relative border-destructive/20 bg-destructive/[0.03]">
-              <CardHeader className="pb-3">
+            <Card className="h-full overflow-visible relative border-primary/30">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/8 to-transparent" />
+              <div className="absolute -top-3 left-6">
+                <Badge className="shadow-lg shadow-primary/20" data-testid="badge-best-value">Best Value</Badge>
+              </div>
+              <CardHeader className="pb-3 pt-8 relative">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <div className="w-8 h-8 rounded-md bg-destructive/15 flex items-center justify-center">
-                    <X className="w-4 h-4 text-destructive" />
+                  <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
                   </div>
-                  <CardTitle className="text-lg" data-testid="text-traditional-title">
-                    Traditional Processor
-                  </CardTitle>
+                  <div>
+                    <CardTitle className="text-lg" data-testid="text-option1-title">
+                      Option 1: Outright Purchase
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Own it from day one</p>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-1">
-                {traditional.map((row) => (
-                  <div
-                    key={row.label}
-                    className={`flex items-center justify-between gap-4 py-3 border-b border-border/50 last:border-0 ${
-                      row.highlight ? "font-semibold" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <row.icon className="w-4 h-4 text-muted-foreground/50 shrink-0" />
-                      <span className="text-sm text-muted-foreground">{row.label}</span>
-                    </div>
-                    <span
-                      className={`text-sm text-right font-medium ${
-                        row.highlight ? "text-destructive font-bold" : "text-foreground/80"
-                      }`}
-                      data-testid={`text-trad-${row.label.toLowerCase().replace(/[\s/]/g, "-")}`}
-                    >
-                      {row.value}
-                    </span>
+              <CardContent className="relative space-y-5">
+                <div className="text-center py-4">
+                  <div className="text-sm text-muted-foreground mb-1">One-time payment</div>
+                  <div className="flex items-baseline justify-center gap-1.5">
+                    <span className="text-4xl sm:text-5xl font-extrabold text-primary" data-testid="text-option1-price">$399</span>
                   </div>
-                ))}
-                <div className="pt-4">
-                  <div className="rounded-md bg-destructive/10 p-3 text-center">
-                    <span className="text-xs text-destructive font-medium">
-                      You lose $3,600 - $5,400 every year
-                    </span>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    <span className="line-through text-muted-foreground/60">$800+ retail</span>
+                    <span className="ml-2 text-primary font-medium">Save 50%+</span>
                   </div>
                 </div>
+
+                <ul className="space-y-2.5">
+                  {option1Features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2.5 text-sm">
+                      <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button className="w-full" size="lg" asChild>
+                  <a href="https://edifylimited.tech/contact?option=purchase" data-testid="link-option1-cta">
+                    Get Your Terminal
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </Button>
               </CardContent>
             </Card>
           </motion.div>
@@ -649,65 +654,90 @@ function PricingComparisonSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <Card className="h-full overflow-visible relative border-primary/30">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/8 to-transparent" />
+            <Card className="h-full overflow-visible relative border-chart-4/30">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-4/8 to-transparent" />
               <div className="absolute -top-3 left-6">
-                <Badge className="shadow-lg shadow-primary/20">Recommended</Badge>
+                <Badge variant="outline" className="text-chart-4 border-chart-4/30 bg-chart-4/5 shadow-lg" data-testid="badge-no-commitment">No Commitment</Badge>
               </div>
               <CardHeader className="pb-3 pt-8 relative">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <div className="w-8 h-8 rounded-md bg-primary/15 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-primary" />
+                  <div className="w-10 h-10 rounded-md bg-chart-4/15 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-chart-4" />
                   </div>
-                  <CardTitle className="text-lg" data-testid="text-edify-title">
-                    Edify Payment Processing
-                  </CardTitle>
+                  <div>
+                    <CardTitle className="text-lg" data-testid="text-option2-title">
+                      Option 2: 30-Day Risk-Free Trial
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Try before you buy</p>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-1 relative">
-                {edify.map((row) => (
-                  <div
-                    key={row.label}
-                    className={`flex items-center justify-between gap-4 py-3 border-b border-border/50 last:border-0 ${
-                      row.highlight ? "font-semibold" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <row.icon className="w-4 h-4 text-primary/50 shrink-0" />
-                      <span className="text-sm text-muted-foreground">{row.label}</span>
-                    </div>
-                    <span
-                      className={`text-sm text-right font-medium ${
-                        row.highlight ? "text-primary font-bold text-base" : "text-foreground/80"
-                      }`}
-                      data-testid={`text-edify-${row.label.toLowerCase().replace(/[\s/]/g, "-")}`}
-                    >
-                      {row.value}
-                    </span>
+              <CardContent className="relative space-y-5">
+                <div className="text-center py-4">
+                  <div className="text-sm text-muted-foreground mb-1">Free for 30 days, then</div>
+                  <div className="flex items-baseline justify-center gap-1.5">
+                    <span className="text-4xl sm:text-5xl font-extrabold text-chart-4" data-testid="text-option2-price">$599</span>
                   </div>
-                ))}
-                <div className="pt-4">
-                  <div className="rounded-md bg-primary/10 p-3 text-center">
-                    <span className="text-xs text-primary font-medium">
-                      You keep every dollar you earn
-                    </span>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    Only if you decide to keep it
                   </div>
                 </div>
+
+                <ul className="space-y-2.5">
+                  {option2Features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2.5 text-sm">
+                      <Check className="w-4 h-4 text-chart-4 shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button className="w-full" size="lg" variant="outline" asChild>
+                  <a href="https://edifylimited.tech/contact?option=trial" data-testid="link-option2-cta">
+                    Start Free Trial
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </Button>
               </CardContent>
             </Card>
           </motion.div>
         </div>
 
+        <motion.div
+          className="mt-10 max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="overflow-visible border-muted">
+            <CardContent className="p-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="w-10 h-10 rounded-md bg-destructive/10 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-1" data-testid="text-compare-traditional">
+                    Meanwhile, traditional processors cost you $3,600 - $5,400 per year
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    On $10K/month in sales, you're losing $250-$350 every month to processing fees, plus $25-$100/month in service charges. With Edify, you keep every dollar.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         <motion.p
-          className="text-center text-muted-foreground text-sm mt-10 max-w-2xl mx-auto"
+          className="text-center text-muted-foreground text-xs mt-6 max-w-2xl mx-auto"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          data-testid="text-savings-summary"
+          data-testid="text-pricing-disclaimer"
         >
-          On $10,000/month in sales, you could save{" "}
-          <strong className="text-primary">$3,600 - $5,400 per year</strong>{" "}
-          compared to traditional processors.
+          Minimum $5K monthly processing volume required to qualify. Only 4 trial spots available per month.
+          Trial includes a simple 1-page agreement. Terminal auto-bills at $599 on day 31 unless canceled.
         </motion.p>
       </div>
     </section>
@@ -715,40 +745,36 @@ function PricingComparisonSection() {
 }
 
 function PromoSection() {
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
-
-  const handleCopy = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
-  };
-
-  const promos = [
+  const safeguards = [
     {
-      code: "FREETRIAL",
-      title: "Try 1 Month Free",
-      description: "Get your terminal and process payments for one full month at no cost. No commitment required.",
-      icon: Gift,
-      highlight: "Free Trial",
-      gradient: "from-chart-4/20 to-chart-4/5",
-      iconColor: "text-chart-4",
-      badgeColor: "text-chart-4 border-chart-4/30 bg-chart-4/5",
-      details: ["Full terminal access", "Zero upfront cost for 30 days", "Cancel anytime, no questions asked"],
+      title: "Minimum Volume Required",
+      description: "We work with businesses processing at least $5,000-$10,000 per month. This ensures the zero-fee model delivers meaningful savings for your business.",
+      icon: BarChart3,
+      iconColor: "text-primary",
+      gradient: "from-primary/20 to-primary/5",
     },
     {
-      code: "SAVE200",
-      title: "Start for Just $300",
-      description: "Save $200 on your terminal today. Same zero-fee processing, lower entry price. Online exclusive.",
-      icon: Tag,
-      highlight: "$200 Off",
-      gradient: "from-primary/20 to-primary/5",
-      iconColor: "text-primary",
-      badgeColor: "text-primary border-primary/30 bg-primary/5",
-      details: ["$300 instead of $500", "Same zero monthly fees", "Same zero processing fees"],
+      title: "Simple 1-Page Agreement",
+      description: "No 30-page contracts. Our trial agreement is a single page — clear terms, no hidden fees. If you keep the terminal, it auto-bills $599 on day 31 unless you cancel.",
+      icon: FileCheck,
+      iconColor: "text-chart-2",
+      gradient: "from-chart-2/20 to-chart-2/5",
+    },
+    {
+      title: "Only 4 Trial Spots Per Month",
+      description: "We limit trials to 4 businesses per month so we can provide hands-on setup, training, and support. Once they're filled, the next openings are the following month.",
+      icon: Users,
+      iconColor: "text-chart-4",
+      gradient: "from-chart-4/20 to-chart-4/5",
+    },
+    {
+      title: "Hassle-Free Returns",
+      description: "Not happy after your 30-day trial? Return the terminal — we cover return shipping, or you can drop it off locally in Honolulu. No questions asked.",
+      icon: HeartHandshake,
+      iconColor: "text-chart-3",
+      gradient: "from-chart-3/20 to-chart-3/5",
     },
   ];
-
-  const expirationDate = "May 31, 2026";
 
   return (
     <section id="promos" className="py-24 sm:py-32 relative" data-testid="section-promos">
@@ -766,13 +792,13 @@ function PromoSection() {
           viewport={{ once: true, margin: "-50px" }}
         >
           <motion.div className="flex flex-wrap items-center justify-center gap-3" variants={fadeUp}>
-            <Badge variant="outline" className="text-chart-4 border-chart-4/30 bg-chart-4/5">
-              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              Limited Time Offers
+            <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
+              <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+              How It Works
             </Badge>
-            <Badge variant="outline" className="text-destructive border-destructive/30 bg-destructive/5" data-testid="badge-promo-expiry">
+            <Badge variant="outline" className="text-destructive border-destructive/30 bg-destructive/5" data-testid="badge-spots-limited">
               <Timer className="w-3.5 h-3.5 mr-1.5" />
-              Expires {expirationDate}
+              Only 4 Trial Spots / Month
             </Badge>
           </motion.div>
           <motion.h2
@@ -780,96 +806,65 @@ function PromoSection() {
             variants={fadeUp}
             data-testid="text-promo-title"
           >
-            Online{" "}
+            Serious Businesses{" "}
             <span className="bg-gradient-to-r from-chart-4 to-primary bg-clip-text text-transparent">
-              Exclusive Deals
+              Only
             </span>
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-lg"
             variants={fadeUp}
           >
-            Choose the offer that works best for your business. Use a promo code when you get in touch.
+            We keep things simple and transparent. Here's what to expect when you get started.
           </motion.p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {promos.map((promo, i) => (
+          {safeguards.map((item, i) => (
             <motion.div
-              key={promo.code}
+              key={item.title}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.15 }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
             >
-              <Card className="h-full overflow-visible relative border-primary/10">
-                <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${promo.gradient}`} />
-                <div className="absolute -top-3 right-6">
-                  <Badge className="shadow-lg shadow-primary/20">{promo.highlight}</Badge>
-                </div>
-                <CardHeader className="relative pt-8 pb-3">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <div className={`w-10 h-10 rounded-md bg-gradient-to-b ${promo.gradient} flex items-center justify-center`}>
-                      <promo.icon className={`w-5 h-5 ${promo.iconColor}`} />
+              <Card className="h-full overflow-visible">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-10 h-10 rounded-md bg-gradient-to-b ${item.gradient} flex items-center justify-center shrink-0`}>
+                      <item.icon className={`w-5 h-5 ${item.iconColor}`} />
                     </div>
-                    <CardTitle className="text-lg" data-testid={`text-promo-title-${i}`}>
-                      {promo.title}
-                    </CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="relative space-y-4">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {promo.description}
-                  </p>
-
-                  <ul className="space-y-2">
-                    {promo.details.map((detail) => (
-                      <li key={detail} className="flex items-center gap-2 text-sm">
-                        <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span className="text-foreground/80">{detail}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="flex items-center gap-2 flex-wrap pt-2">
-                    <div className="flex-1 rounded-md bg-muted px-3 py-2 font-mono text-sm tracking-wider text-foreground text-center" data-testid={`text-promo-code-${i}`}>
-                      {promo.code}
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1.5" data-testid={`text-safeguard-title-${i}`}>
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {item.description}
+                      </p>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleCopy(promo.code)}
-                      data-testid={`button-copy-code-${i}`}
-                    >
-                      {copiedCode === promo.code ? (
-                        <CheckCheck className="w-4 h-4 text-primary" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
                   </div>
-
-                  <Button className="w-full" asChild>
-                    <a href={`https://edifylimited.tech/contact?promo=${promo.code}`} data-testid={`link-promo-claim-${i}`}>
-                      Claim This Offer
-                      <ArrowRight className="w-4 h-4" />
-                    </a>
-                  </Button>
                 </CardContent>
               </Card>
             </motion.div>
           ))}
         </div>
 
-        <motion.p
-          className="text-center text-muted-foreground text-xs mt-8 max-w-xl mx-auto"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
+        <motion.div
+          className="text-center mt-10"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          data-testid="text-promo-disclaimer"
         >
-          Offers expire {expirationDate}. Limited terminals available at promotional pricing. New customers only. Mention the code when you contact us. Cannot be combined with other promotions.
-        </motion.p>
+          <Button size="lg" asChild>
+            <a href="https://edifylimited.tech/contact" data-testid="link-apply-now">
+              Apply Now — Check If You Qualify
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </Button>
+          <p className="text-xs text-muted-foreground mt-4 max-w-xl mx-auto" data-testid="text-promo-disclaimer">
+            Minimum $5K-$10K monthly volume required. Trial spots are limited and filled on a first-come, first-served basis.
+          </p>
+        </motion.div>
       </div>
     </section>
   );
@@ -1571,12 +1566,16 @@ function FAQSection() {
       a: "Instead of the merchant paying 2-4% processing fees on every sale, a small surcharge is passed to the customer at checkout. The merchant keeps 100% of the sale amount — deposited into their account by the next business day, with no deductions.",
     },
     {
-      q: "What does the $500 terminal include?",
-      a: "The $500 one-time purchase includes a professional countertop payment terminal that accepts chip, swipe, and contactless/NFC tap payments, plus online payment gateway access, setup assistance, and training.",
+      q: "What does the terminal include?",
+      a: "Your terminal accepts chip, swipe, and contactless/NFC tap payments, plus online payment gateway access. Full setup, programming, training, compliance signage, and a free statement analysis are all included.",
+    },
+    {
+      q: "What are the pricing options?",
+      a: "Option 1: Purchase outright for $399 — best value, you own it immediately. Option 2: Try free for 30 days, then $599 if you keep it. Both options come with zero monthly fees and zero processing fees forever. Retail terminals sell for $800+.",
     },
     {
       q: "Are there any monthly fees or contracts?",
-      a: "No. There are zero monthly fees, zero contracts, and zero commitments. The only cost is the one-time $500 terminal purchase.",
+      a: "No. There are zero monthly fees, zero contracts, and zero commitments. Whether you purchase outright ($399) or keep after a trial ($599), your ongoing cost is $0.",
     },
     {
       q: "How long does setup take?",
@@ -1599,8 +1598,12 @@ function FAQSection() {
       a: "Most businesses are surprised by how smoothly it goes. About 90% of customers already pay by card and expect the listed price. Gas stations have done this for decades. We also help you frame it as a 'cash discount' — rewarding cash payers — which customers respond to positively. Professional signage we provide makes it feel standard.",
     },
     {
-      q: "How do the promo codes work?",
-      a: "Simply mention the promo code (FREETRIAL for a free first month, or SAVE200 for $200 off your terminal) when you contact us. These offers expire May 31, 2026 — limited terminals available at promo pricing. New customers only; cannot be combined.",
+      q: "How does the 30-day trial work?",
+      a: "We loan you a terminal for 30 days with live processing — real transactions, real deposits. If you love it (most do), your terminal auto-purchases at $599 on day 31. If not, return it — we cover return shipping or you can drop it off locally in Honolulu. Only 4 trial spots available per month.",
+    },
+    {
+      q: "Do I need a minimum sales volume?",
+      a: "Yes — we require a minimum of $5,000-$10,000 in monthly processing volume to qualify. This ensures the zero-fee model delivers meaningful savings for your business.",
     },
   ];
 
@@ -1711,8 +1714,8 @@ function CTASection() {
                   </span>?
                 </h2>
                 <p className="text-muted-foreground text-lg sm:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
-                  Get your $500 terminal and start accepting payments with zero
-                  ongoing fees. Setup takes minutes, not weeks.
+                  Get your terminal starting at $399 — or try free for 30 days.
+                  Zero ongoing fees, ever. Setup takes minutes, not weeks.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Button size="lg" asChild>

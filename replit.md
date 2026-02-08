@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a marketing/landing page website for **Edify Limited's Payment Processing** service. The site promotes a zero-fee payment processing terminal product ($500 one-time cost, no monthly or processing fees). Edify also offers free custom websites for businesses using their payment processor, premium website packages, and custom software solutions. It's built as a full-stack TypeScript application with a React frontend and Express backend, featuring an AI chatbot powered by Anthropic's Claude API and an admin config page. The site targets both standard and **high-risk merchants** (CBD, vape, firearms, nutraceuticals, etc.) and includes online-exclusive promo codes (FREETRIAL for 1 month free, SAVE200 for $300 start price).
+This is a marketing/landing page website for **Edify Limited's Payment Processing** service. The site promotes a zero-fee payment processing terminal with two pricing options: **Option 1** outright purchase at $399 ("Best Value") and **Option 2** 30-day risk-free trial with $599 purchase after trial ("No Commitment"). Edify also offers free custom websites for businesses using their payment processor, premium website packages, and custom software solutions. It's built as a full-stack TypeScript application with a React frontend and Express backend, featuring an AI chatbot powered by Anthropic's Claude API and an admin config page. The site targets both standard and **high-risk merchants** (CBD, vape, firearms, nutraceuticals, etc.). Qualifications: minimum $5K-$10K monthly volume, 1-page trial agreement, only 4 trial spots per month.
 
 ## User Preferences
 
