@@ -31,6 +31,13 @@ import {
   Copy,
   CheckCheck,
   AlertTriangle,
+  Timer,
+  BadgeCheck,
+  Handshake,
+  FileCheck,
+  HeartHandshake,
+  Megaphone,
+  ThumbsUp,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -318,6 +325,99 @@ function SocialProofBar() {
               <div className="text-xs sm:text-sm text-muted-foreground">
                 {stat.label}
               </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function TrustAuthoritySection() {
+  const trustPoints = [
+    {
+      icon: FileCheck,
+      title: "Visa & Mastercard Compliant",
+      description: "Our surcharge program follows all Visa and Mastercard rules. We handle the compliance paperwork, required signage, and receipt disclosures so you're always in the clear.",
+    },
+    {
+      icon: Handshake,
+      title: "Backed by CashSwipe's ISO Network",
+      description: "Our processing is powered through CashSwipe's established ISO partner network, with years of merchant services experience and direct bank relationships.",
+    },
+    {
+      icon: Clock,
+      title: "Same-Day Setup",
+      description: "Most merchants are processing payments within hours, not weeks. We configure your terminal, connect your bank, and train you on-site or remotely.",
+    },
+    {
+      icon: BadgeCheck,
+      title: "Proper Signage Included",
+      description: "We provide all required point-of-sale signage and receipt language to keep your surcharge program fully compliant with card brand guidelines.",
+    },
+  ];
+
+  return (
+    <section className="py-24 sm:py-32 relative" data-testid="section-trust">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-14"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Badge variant="outline" className="mb-5 text-chart-3 border-chart-3/30 bg-chart-3/5">
+              <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+              Fully Compliant
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
+            variants={fadeUp}
+            data-testid="text-trust-title"
+          >
+            Trusted,{" "}
+            <span className="bg-gradient-to-r from-chart-3 to-primary bg-clip-text text-transparent">
+              Compliant & Proven
+            </span>
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground max-w-2xl mx-auto text-lg"
+            variants={fadeUp}
+          >
+            We follow every rule so you don't have to worry. Backed by an established ISO with years of merchant services experience.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          {trustPoints.map((point, i) => (
+            <motion.div key={i} variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-3/10">
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-3/5 to-transparent" />
+                <CardContent className="p-6 relative">
+                  <div className="w-10 h-10 rounded-md bg-gradient-to-b from-chart-3/20 to-chart-3/5 flex items-center justify-center mb-4">
+                    <point.icon className="w-5 h-5 text-chart-3" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2" data-testid={`text-trust-point-${i}`}>
+                    {point.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {point.description}
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
           ))}
         </motion.div>
@@ -648,6 +748,8 @@ function PromoSection() {
     },
   ];
 
+  const expirationDate = "May 31, 2026";
+
   return (
     <section id="promos" className="py-24 sm:py-32 relative" data-testid="section-promos">
       <div className="absolute inset-0 -z-10">
@@ -663,10 +765,14 @@ function PromoSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
-          <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-5 text-chart-4 border-chart-4/30 bg-chart-4/5">
+          <motion.div className="flex flex-wrap items-center justify-center gap-3" variants={fadeUp}>
+            <Badge variant="outline" className="text-chart-4 border-chart-4/30 bg-chart-4/5">
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
               Limited Time Offers
+            </Badge>
+            <Badge variant="outline" className="text-destructive border-destructive/30 bg-destructive/5" data-testid="badge-promo-expiry">
+              <Timer className="w-3.5 h-3.5 mr-1.5" />
+              Expires {expirationDate}
             </Badge>
           </motion.div>
           <motion.h2
@@ -762,7 +868,7 @@ function PromoSection() {
           viewport={{ once: true }}
           data-testid="text-promo-disclaimer"
         >
-          Offers available for new customers only. Mention the promo code when you contact us. Cannot be combined with other promotions.
+          Offers expire {expirationDate}. Limited terminals available at promotional pricing. New customers only. Mention the code when you contact us. Cannot be combined with other promotions.
         </motion.p>
       </div>
     </section>
@@ -900,6 +1006,116 @@ function HighRiskSection() {
             </Card>
           </motion.div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function CustomerPsychologySection() {
+  const points = [
+    {
+      icon: ThumbsUp,
+      title: "It's a Cash Discount, Not a Surcharge",
+      description: "Frame it positively: your cash-paying customers get a discount. Card users simply pay the standard listed price. Most businesses find customers respond better to \"cash discount\" messaging.",
+      stat: null,
+    },
+    {
+      icon: Users,
+      title: "~90% of Customers Pay by Card Anyway",
+      description: "Studies show roughly 90% of transactions are card-based. The vast majority of your customers won't even notice — they're already paying by card and expect the listed price.",
+      stat: "~90%",
+      statLabel: "pay by card",
+    },
+    {
+      icon: Megaphone,
+      title: "Signage Makes It Normal",
+      description: "We provide professional point-of-sale signage that clearly communicates the program. When customers see it displayed, it feels standard — because it is. Thousands of businesses across the country do this every day.",
+      stat: null,
+    },
+    {
+      icon: HeartHandshake,
+      title: "Your Customers Won't Mind",
+      description: "Gas stations have done this for decades. Customers understand the value exchange — and you keep every dollar of your hard-earned revenue instead of handing it to the processor.",
+      stat: null,
+    },
+  ];
+
+  return (
+    <section className="py-24 sm:py-32 relative" data-testid="section-psychology">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 right-1/4 w-[400px] h-[400px] rounded-full bg-chart-2/8 blur-[120px]" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-14"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Badge variant="outline" className="mb-5 text-chart-2 border-chart-2/30 bg-chart-2/5">
+              <HeartHandshake className="w-3.5 h-3.5 mr-1.5" />
+              Customer-Friendly
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
+            variants={fadeUp}
+            data-testid="text-psychology-title"
+          >
+            Will My Customers{" "}
+            <span className="bg-gradient-to-r from-chart-2 to-primary bg-clip-text text-transparent">
+              Actually Accept This
+            </span>?
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground max-w-2xl mx-auto text-lg"
+            variants={fadeUp}
+          >
+            The short answer: yes. Here's why businesses across the country are making the switch without losing a single customer.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          {points.map((point, i) => (
+            <motion.div key={i} variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-2/10">
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-2/5 to-transparent" />
+                <CardContent className="p-6 relative">
+                  <div className="flex items-start gap-4 flex-wrap">
+                    <div className="w-10 h-10 rounded-md bg-gradient-to-b from-chart-2/20 to-chart-2/5 flex items-center justify-center shrink-0">
+                      <point.icon className="w-5 h-5 text-chart-2" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap mb-2">
+                        <h3 className="font-semibold text-foreground" data-testid={`text-psychology-point-${i}`}>
+                          {point.title}
+                        </h3>
+                        {point.stat && (
+                          <Badge variant="outline" className="text-chart-2 border-chart-2/30 bg-chart-2/5" data-testid={`badge-psychology-stat-${i}`}>
+                            {point.stat} {point.statLabel}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {point.description}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
     </section>
   );
@@ -1190,14 +1406,16 @@ function SavingsCalculator() {
             variants={fadeUp}
             data-testid="text-calc-title"
           >
-            How Much Are You{" "}
-            <span className="text-destructive">Losing</span>?
+            You're{" "}
+            <span className="text-destructive">Losing Money</span>{" "}
+            Every Month
           </motion.h2>
           <motion.p
-            className="text-muted-foreground text-lg"
+            className="text-muted-foreground text-lg max-w-2xl mx-auto"
             variants={fadeUp}
           >
-            Enter your monthly sales to see how much you could save each year.
+            Right now, your payment processor is taking 2-4% of every sale you make.
+            Slide the bar to see exactly how much you're handing over — and why you should stop.
           </motion.p>
         </motion.div>
 
@@ -1236,12 +1454,12 @@ function SavingsCalculator() {
                 <Card className="overflow-visible border-destructive/20">
                   <CardContent className="p-5 text-center">
                     <div className="text-sm text-muted-foreground mb-2">
-                      Lost to Traditional Fees
+                      You're Giving Away
                     </div>
                     <div className="text-3xl sm:text-4xl font-extrabold text-destructive" data-testid="text-calc-loss">
                       -${annualLoss.toLocaleString()}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-2">per year</div>
+                    <div className="text-xs text-muted-foreground mt-2">per year — money that should be yours</div>
                   </CardContent>
                 </Card>
 
@@ -1249,12 +1467,12 @@ function SavingsCalculator() {
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
                   <CardContent className="p-5 text-center relative">
                     <div className="text-sm text-muted-foreground mb-2">
-                      You Save With Edify
+                      You Keep With Edify
                     </div>
                     <div className="text-3xl sm:text-4xl font-extrabold text-primary" data-testid="text-calc-savings">
-                      ${annualLoss.toLocaleString()}
+                      +${annualLoss.toLocaleString()}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-2">per year</div>
+                    <div className="text-xs text-muted-foreground mt-2">back in your pocket every year</div>
                   </CardContent>
                 </Card>
               </div>
@@ -1366,7 +1584,7 @@ function FAQSection() {
     },
     {
       q: "Is the surcharge legal?",
-      a: "Yes. Surcharging is legal in most US states and follows card brand guidelines. We ensure your surcharge program is fully compliant with all regulations.",
+      a: "Yes. Surcharging is legal in most US states and fully compliant with Visa and Mastercard rules. We handle all the compliance requirements — including proper signage, receipt disclosures, and registration — so you're always in the clear.",
     },
     {
       q: "When do I receive my funds?",
@@ -1377,8 +1595,12 @@ function FAQSection() {
       a: "Yes. We specialize in high-risk merchant accounts including CBD, vape, firearms, nutraceuticals, travel, online gaming, adult entertainment, and more. Same zero-fee processing, no excessive reserves, and fast approvals.",
     },
     {
+      q: "Won't customers be upset about the surcharge?",
+      a: "Most businesses are surprised by how smoothly it goes. About 90% of customers already pay by card and expect the listed price. Gas stations have done this for decades. We also help you frame it as a 'cash discount' — rewarding cash payers — which customers respond to positively. Professional signage we provide makes it feel standard.",
+    },
+    {
       q: "How do the promo codes work?",
-      a: "Simply mention the promo code (FREETRIAL for a free first month, or SAVE200 for $200 off your terminal) when you contact us. These are online-exclusive offers for new customers and cannot be combined.",
+      a: "Simply mention the promo code (FREETRIAL for a free first month, or SAVE200 for $200 off your terminal) when you contact us. These offers expire May 31, 2026 — limited terminals available at promo pricing. New customers only; cannot be combined.",
     },
   ];
 
@@ -1612,11 +1834,13 @@ export default function Home() {
       <main>
         <HeroSection />
         <SocialProofBar />
+        <TrustAuthoritySection />
         <HowItWorksSection />
         <PricingComparisonSection />
         <PromoSection />
         <FeaturesSection />
         <HighRiskSection />
+        <CustomerPsychologySection />
         <DetailSections />
         <SavingsCalculator />
         <TestimonialSection />
