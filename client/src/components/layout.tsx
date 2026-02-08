@@ -131,7 +131,7 @@ function Navbar() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border/50 py-12 sm:py-20 relative bg-muted/30" data-testid="section-footer">
+    <footer className="border-t border-border/50 py-12 sm:py-20 relative bg-black" data-testid="section-footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-16">
           <div className="col-span-2 flex flex-col sm:flex-row items-start gap-6">
