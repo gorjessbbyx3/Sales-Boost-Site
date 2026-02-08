@@ -44,133 +44,175 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
 function HeroSection() {
   return (
     <section
-      className="relative overflow-hidden pt-20 pb-12 sm:pt-36 sm:pb-24"
+      className="relative overflow-hidden pt-20 pb-16 sm:pt-32 sm:pb-28"
       data-testid="section-hero"
     >
       <div className="absolute inset-0 -z-10">
         <img
           src="/images/hero-banner.jpg"
           alt="Eliminate Credit Card Fees — Edify Hawaii"
-          className="w-full h-full object-cover object-center opacity-15 sm:opacity-20"
+          className="w-full h-full object-cover object-center opacity-20"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
+        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full bg-primary/8 blur-[150px]" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-blue-600/8 blur-[120px]" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="max-w-4xl mx-auto text-center"
-          variants={staggerContainer}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.div className="flex flex-wrap items-center justify-center gap-2" variants={fadeUp}>
-            <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
-              <MapPin className="w-3 h-3 mr-1" />
-              Proudly Serving Hawai'i
-            </Badge>
-            <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
-              <CircleDollarSign className="w-3 h-3 mr-1" />
-              Save $3,600+ Per Year
-            </Badge>
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
+            <motion.div variants={fadeUp}>
+              <Badge variant="outline" className="mb-4 sm:mb-5 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
+                <MapPin className="w-3 h-3 mr-1" />
+                Proudly Serving Hawai'i
+              </Badge>
+            </motion.div>
+
+            <motion.h1
+              className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-6"
+              variants={fadeUp}
+              data-testid="text-hero-title"
+            >
+              Keep{" "}
+              <span className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
+                100%
+              </span>{" "}
+              of Every Sale
+            </motion.h1>
+
+            <motion.p
+              className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-8 max-w-xl"
+              variants={fadeUp}
+              data-testid="text-hero-subtitle"
+            >
+              Zero processing fees. Zero monthly fees. Get an in-store terminal starting at $399 — or go online-only with a{" "}
+              <span className="text-primary font-semibold">free custom website</span>.
+            </motion.p>
+
+            <motion.div
+              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-8"
+              variants={fadeUp}
+            >
+              <Button size="lg" className="w-full sm:w-auto" asChild>
+                <Link href="/contact" data-testid="link-hero-get-terminal">
+                  Get Your Terminal
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
+                <Link href="/online-processing" data-testid="link-hero-learn-more">
+                  Go Online
+                  <Globe className="w-4 h-4" />
+                </Link>
+              </Button>
+            </motion.div>
+
+            <motion.div
+              className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm text-muted-foreground"
+              variants={fadeUp}
+            >
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                <span>PCI Compliant</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span>Same-Day Setup</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-primary" />
+                <span>Zero Fees</span>
+              </div>
+            </motion.div>
           </motion.div>
-
-          <motion.h1
-            className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-8"
-            variants={fadeUp}
-            data-testid="text-hero-title"
-          >
-            Hawai'i's #1{" "}
-            <span className="relative inline-block">
-              <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-                Zero-Fee
-              </span>
-            </span>{" "}
-            Payment Processor
-          </motion.h1>
-
-          <motion.p
-            className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-10 max-w-2xl mx-auto"
-            variants={fadeUp}
-            data-testid="text-hero-subtitle"
-          >
-            Starting at $399 for a terminal — or go online-only with a{" "}
-            <span className="text-primary font-semibold">free custom website</span>. No monthly fees. No processing fees.
-            Keep{" "}
-            <span className="text-primary font-semibold">100% of every sale</span>.
-          </motion.p>
 
           <motion.div
-            className="flex flex-col sm:flex-row items-center justify-center gap-3"
-            variants={fadeUp}
+            className="hidden lg:block"
+            initial={{ opacity: 0, x: 40, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.7 }}
           >
-            <Button size="lg" className="w-full sm:w-auto" asChild>
-              <Link href="/contact" data-testid="link-hero-get-terminal">
-                Get Your Terminal
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-            <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
-              <Link href="/services-faq" data-testid="link-hero-learn-more">
-                Learn More
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </Button>
-          </motion.div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <Card className="border-primary/20 bg-primary/5" data-testid="card-hero-terminal">
+                  <CardContent className="p-5">
+                    <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center mb-3">
+                      <CreditCard className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="font-bold text-foreground mb-1">In-Store Terminal</h3>
+                    <p className="text-xs text-muted-foreground mb-3">Face-to-face payments with zero fees</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-extrabold text-primary">$399</span>
+                      <span className="text-xs text-muted-foreground">or try free</span>
+                    </div>
+                  </CardContent>
+                </Card>
 
-          <motion.div
-            className="mt-8 sm:mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground"
-            variants={fadeUp}
-          >
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-              <span>PCI Compliant</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-primary" />
-              <span>Same-Day Setup</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-primary" />
-              <span>Zero Monthly Fees</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-primary" />
-              <span>Online Option</span>
+                <Card className="border-emerald-500/20 bg-emerald-500/5" data-testid="card-hero-savings">
+                  <CardContent className="p-5 text-center">
+                    <div className="text-3xl font-extrabold text-primary mb-1">
+                      <AnimatedCounter target={5400} prefix="$" suffix="+" />
+                    </div>
+                    <div className="text-xs text-muted-foreground">Saved Per Year</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-4 pt-8">
+                <Card className="border-blue-500/20 bg-blue-500/5" data-testid="card-hero-online">
+                  <CardContent className="p-5">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center mb-3">
+                      <Globe className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <h3 className="font-bold text-foreground mb-1">Online Processing</h3>
+                    <p className="text-xs text-muted-foreground mb-3">Free website + payment gateway</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-extrabold text-blue-400">FREE</span>
+                      <span className="text-xs text-muted-foreground">website included</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-amber-500/20 bg-amber-500/5" data-testid="card-hero-trial">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                        <Zap className="w-5 h-5 text-amber-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-sm">30-Day Free Trial</h3>
+                        <p className="text-xs text-muted-foreground">Try before you buy</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </motion.div>
-        </motion.div>
+        </div>
 
         <motion.div
-          className="mt-8 sm:mt-14 max-w-4xl mx-auto rounded-xl overflow-hidden"
-          initial={{ opacity: 0, y: 50 }}
+          className="mt-10 sm:mt-16 lg:hidden"
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.7 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
         >
-          <img
-            src="/images/hero-banner.jpg"
-            alt="Edify Hawaii — zero-fee payment processing and free custom websites for local businesses"
-            className="w-full h-auto rounded-xl shadow-lg"
-          />
-        </motion.div>
-
-        <motion.div
-          className="mt-8 sm:mt-14 max-w-4xl mx-auto"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.7 }}
-        >
-          <div className="grid grid-cols-3 gap-3 sm:gap-6">
+          <div className="grid grid-cols-3 gap-3">
             {[
               { value: 5400, prefix: "$", suffix: "+", label: "Saved/Year", color: "text-primary" },
               { value: 0, prefix: "$", suffix: "", label: "Monthly Fees", color: "text-foreground" },
               { value: 100, prefix: "", suffix: "%", label: "Revenue Kept", color: "text-foreground" },
             ].map((stat) => (
-              <Card key={stat.label} className="overflow-visible text-center border-primary/10">
-                <CardContent className="p-3 sm:p-6">
-                  <div className={`text-xl sm:text-3xl lg:text-5xl font-extrabold ${stat.color} mb-1`}>
+              <Card key={stat.label} className="text-center border-primary/10" data-testid={`card-hero-stat-${stat.label}`}>
+                <CardContent className="p-3 sm:p-5">
+                  <div className={`text-xl sm:text-3xl font-extrabold ${stat.color} mb-1`}>
                     <AnimatedCounter target={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
                   </div>
-                  <div className="text-[10px] sm:text-sm text-muted-foreground">{stat.label}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">{stat.label}</div>
                 </CardContent>
               </Card>
             ))}
