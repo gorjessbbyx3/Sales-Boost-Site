@@ -230,93 +230,31 @@ function HeroSection() {
 }
 
 
-const dollarIcons = [
-  "/images/dollar-icon-1.png",
-  "/images/dollar-icon-2.png",
-  "/images/dollar-icon-3.png",
-];
-
 function FallingDollars({ containerRef }: { containerRef: React.RefObject<HTMLElement | null> }) {
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"],
-    layoutEffect: false,
-  });
-  const sectionOpacity = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [0, 1, 1, 0]);
-
-  const dollars = useMemo(() => {
-    const leftSide = Array.from({ length: 14 }, (_, i) => ({
-      id: i,
-      left: `${Math.random() * 12}%`,
-      landingBottom: 4 + Math.random() * 20,
-      size: 22 + Math.random() * 26,
-      delay: Math.random() * 2.5,
-      fallDuration: 1.8 + Math.random() * 1.2,
-      peakOpacity: 0.55 + Math.random() * 0.35,
-      sway: (Math.random() - 0.5) * 40,
-      rotation: (Math.random() - 0.5) * 90,
-      repeatDelay: 1 + Math.random() * 2,
-      icon: dollarIcons[Math.floor(Math.random() * dollarIcons.length)],
-    }));
-    const rightSide = Array.from({ length: 14 }, (_, i) => ({
-      id: i + 14,
-      left: `${88 + Math.random() * 12}%`,
-      landingBottom: 4 + Math.random() * 20,
-      size: 22 + Math.random() * 26,
-      delay: Math.random() * 2.5,
-      fallDuration: 1.8 + Math.random() * 1.2,
-      peakOpacity: 0.55 + Math.random() * 0.35,
-      sway: (Math.random() - 0.5) * 40,
-      rotation: (Math.random() - 0.5) * 90,
-      repeatDelay: 1 + Math.random() * 2,
-      icon: dollarIcons[Math.floor(Math.random() * dollarIcons.length)],
-    }));
-    return [...leftSide, ...rightSide];
-  }, []);
+  const isInView = useInView(containerRef, { once: true, margin: "-30% 0px" });
 
   return (
-    <motion.div
-      className="absolute inset-0 pointer-events-none z-[50] overflow-hidden"
-      style={{ opacity: sectionOpacity }}
-    >
-      {dollars.map((d) => {
-        const totalDuration = d.fallDuration + 3;
-        const fallFraction = d.fallDuration / totalDuration;
-        return (
-          <motion.img
-            key={d.id}
-            src={d.icon}
-            alt=""
-            className="absolute select-none"
-            style={{
-              left: d.left,
-              width: d.size,
-              height: d.size,
-              top: 0,
-            }}
-            initial={{ y: -60, opacity: 0, rotate: 0, x: 0 }}
-            animate={{
-              y: [
-                -60,
-                `calc(100% - ${d.landingBottom + d.size}px)`,
-                `calc(100% - ${d.landingBottom + d.size}px)`,
-              ],
-              opacity: [0, d.peakOpacity, d.peakOpacity, d.peakOpacity * 0.7],
-              rotate: [0, d.rotation, d.rotation * 0.8],
-              x: [0, d.sway, d.sway * 0.9],
-            }}
-            transition={{
-              duration: totalDuration,
-              delay: d.delay,
-              repeat: Infinity,
-              repeatDelay: d.repeatDelay,
-              times: [0, fallFraction, 0.85, 1],
-              ease: "easeIn",
-            }}
-          />
-        );
-      })}
-    </motion.div>
+    <div className="absolute inset-0 pointer-events-none z-[50] overflow-visible">
+      <motion.div
+        className="absolute left-[3%] sm:left-[5%]"
+        style={{ bottom: 0 }}
+        initial={{ y: "-120%", opacity: 0 }}
+        animate={isInView ? { y: 0, opacity: 0.75 } : {}}
+        transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+      >
+        <DollarSign className="w-16 h-16 sm:w-24 sm:h-24 text-primary drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]" strokeWidth={2.5} />
+      </motion.div>
+
+      <motion.div
+        className="absolute right-[3%] sm:right-[5%]"
+        style={{ bottom: 0 }}
+        initial={{ y: "-120%", opacity: 0 }}
+        animate={isInView ? { y: 0, opacity: 0.75 } : {}}
+        transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}
+      >
+        <DollarSign className="w-16 h-16 sm:w-24 sm:h-24 text-primary drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]" strokeWidth={2.5} />
+      </motion.div>
+    </div>
   );
 }
 
