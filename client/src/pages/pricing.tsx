@@ -260,7 +260,7 @@ function PricingCardsSection() {
                   </div>
                   <div>
                     <CardTitle className="text-base sm:text-lg">Online Business Package</CardTitle>
-                    <p className="text-xs text-muted-foreground">No physical terminal needed</p>
+                    <p className="text-xs text-muted-foreground">Free website + payment gateway</p>
                   </div>
                 </div>
               </CardHeader>
@@ -289,11 +289,14 @@ function PricingCardsSection() {
                   ))}
                 </ul>
 
-                <div className="pt-2 border-t border-chart-2/10">
+                <div className="pt-2 border-t border-chart-2/10 space-y-1.5">
                   <div className="flex items-center gap-2 text-sm text-chart-2 font-medium">
                     <Code className="w-4 h-4" />
-                    <span>Free website included — you own it</span>
+                    <span>Free website — you own it</span>
                   </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Manage it yourself (free), pay for one-off updates ($40+), or choose a hands-off maintenance plan ($99–$399/mo).
+                  </p>
                 </div>
 
                 <Button className="w-full" size="lg" variant="outline" asChild>

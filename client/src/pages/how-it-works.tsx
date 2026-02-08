@@ -81,7 +81,7 @@ function StepsSection() {
       details: [
         "In-Store Terminal — $399 one-time, own it immediately",
         "30-Day Trial — free to try, $599 if you keep it",
-        "Online-Only — $50/month, free website, extra updates from $40, host your own site",
+        "Online-Only — $50/month, free website built for you, manage yourself or choose a maintenance plan",
       ],
       icon: CreditCard,
       accent: "from-primary/20 to-primary/5",

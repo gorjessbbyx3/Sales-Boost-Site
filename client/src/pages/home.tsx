@@ -445,37 +445,7 @@ function PortfolioShowcase() {
   );
 }
 
-function WebsiteMaintenanceTiers() {
-  const tiers = [
-    {
-      name: "Basic",
-      price: "$99",
-      description: "Keep your site running smoothly",
-      features: ["Hosting & SSL security", "Monthly backups", "Basic content changes", "Uptime monitoring", "Email support"],
-      color: "text-muted-foreground",
-      borderColor: "border-border",
-      popular: false,
-    },
-    {
-      name: "Pro",
-      price: "$199",
-      description: "Grow your online presence",
-      features: ["Everything in Basic", "Monthly content updates & blog posts", "Google Business optimization", "Monthly SEO tweaks", "Priority support"],
-      color: "text-primary",
-      borderColor: "border-primary/30",
-      popular: true,
-    },
-    {
-      name: "Premium",
-      price: "$399",
-      description: "Full business growth partner",
-      features: ["Everything in Pro", "Custom backend (inventory, CRM, booking)", "Automated emails & invoicing", "Unlimited content changes", "Dedicated account manager"],
-      color: "text-chart-4",
-      borderColor: "border-chart-4/30",
-      popular: false,
-    },
-  ];
-
+function WebsiteUpkeepOverview() {
   return (
     <section className="py-12 sm:py-24 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -488,51 +458,69 @@ function WebsiteMaintenanceTiers() {
           <motion.div className="text-center mb-8 sm:mb-14" variants={fadeUp}>
             <Badge variant="outline" className="mb-4 text-chart-4 border-chart-4/30 bg-chart-4/5">
               <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
-              Ongoing Growth
+              After the Build
             </Badge>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Website Maintenance Plans
+              Website Upkeep — Your Choice
             </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-lg">
-              After your free website is built, choose an optional maintenance plan to keep it growing. Cancel anytime.
-            </p>
-            <p className="text-sm text-primary font-medium mt-3">
-              Don't need a plan? Extra content updates start at just $40.
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg">
+              The website is 100% free to get started. After that, upkeep is 100% your choice.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
-            {tiers.map((tier) => (
-              <motion.div key={tier.name} variants={scaleIn}>
-                <Card className={`h-full overflow-visible relative ${tier.borderColor}`}>
-                  {tier.popular && (
-                    <>
-                      <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/8 to-transparent" />
-                      <div className="absolute -top-3 left-6">
-                        <Badge className="shadow-lg shadow-primary/20">Most Popular</Badge>
-                      </div>
-                    </>
-                  )}
-                  <CardContent className={`p-5 sm:p-6 relative ${tier.popular ? "pt-8" : ""}`}>
-                    <h4 className={`text-lg font-bold ${tier.color} mb-1`}>{tier.name}</h4>
-                    <p className="text-xs text-muted-foreground mb-3">{tier.description}</p>
-                    <div className="flex items-baseline gap-1 mb-4">
-                      <span className={`text-2xl sm:text-3xl font-extrabold ${tier.color}`}>{tier.price}</span>
-                      <span className="text-sm text-muted-foreground">/month</span>
-                    </div>
-                    <ul className="space-y-2">
-                      {tier.features.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-sm">
-                          <Check className={`w-4 h-4 ${tier.color} shrink-0 mt-0.5`} />
-                          <span className="text-foreground/80">{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+            <motion.div variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-2/20">
+                <CardContent className="p-5 sm:p-6 text-center">
+                  <div className="w-10 h-10 rounded-md bg-chart-2/15 flex items-center justify-center mx-auto mb-3">
+                    <Zap className="w-5 h-5 text-chart-2" />
+                  </div>
+                  <h3 className="font-bold text-chart-2 mb-1">Manage It Yourself</h3>
+                  <div className="text-2xl font-extrabold text-chart-2 mb-2">FREE</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Take full ownership — host and maintain the site yourself
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-3/20">
+                <CardContent className="p-5 sm:p-6 text-center">
+                  <div className="w-10 h-10 rounded-md bg-chart-3/15 flex items-center justify-center mx-auto mb-3">
+                    <DollarSign className="w-5 h-5 text-chart-3" />
+                  </div>
+                  <h3 className="font-bold text-chart-3 mb-1">One-Off Updates</h3>
+                  <div className="text-2xl font-extrabold text-chart-3 mb-2">From $40</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Pay only when you need changes — prices, photos, new pages
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div variants={scaleIn}>
+              <Card className="h-full overflow-visible border-primary/20">
+                <CardContent className="p-5 sm:p-6 text-center">
+                  <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center mx-auto mb-3">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-primary mb-1">Maintenance Plans</h3>
+                  <div className="text-2xl font-extrabold text-primary mb-2">$99–$399/mo</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Hands-off — we handle hosting, security, SEO & updates
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
+
+          <motion.div className="text-center mt-6 sm:mt-10" variants={fadeUp}>
+            <Button variant="outline" size="lg" asChild>
+              <Link href="/our-work">
+                See Full Plan Details
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </Button>
+          </motion.div>
         </motion.div>
       </div>
     </section>
@@ -798,7 +786,7 @@ export default function Home() {
       <ServicesOverview />
       <QuickPricingPreview />
       <PortfolioShowcase />
-      <WebsiteMaintenanceTiers />
+      <WebsiteUpkeepOverview />
       <TestimonialSection />
       <CTASection />
     </Layout>

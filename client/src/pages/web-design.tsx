@@ -19,6 +19,9 @@ import {
   Calendar,
   Star,
   Image,
+  Wrench,
+  DollarSign,
+  Settings,
 } from "lucide-react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
@@ -74,7 +77,7 @@ function WebDesignHero() {
             className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto"
             variants={fadeUp}
           >
-            Online orders, bookings, and more — we build it all. Every Edify merchant gets a professional website included.
+            When you switch to our Cash Discount Processing Program, we build and deliver a professional, custom website completely free of charge — no upfront cost, no hidden fees for the initial build.
           </motion.p>
 
           <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
@@ -97,36 +100,26 @@ function WebDesignHero() {
 }
 
 function WebFeaturesSection() {
-  const webFeatures = [
+  const included = [
     {
       icon: Palette,
-      title: "Custom Design",
-      description: "Professionally designed to match your brand. No cookie-cutter templates — every site is built from scratch for your Hawai'i business.",
-    },
-    {
-      icon: Smartphone,
-      title: "Mobile-Optimized",
-      description: "Looks perfect on every device. Over 60% of local searches happen on mobile — your site will be ready.",
+      title: "Modern, Mobile-Friendly Design",
+      description: "Tailored to your business — restaurant, salon, retail, service provider, and more. No cookie-cutter templates.",
     },
     {
       icon: Globe,
-      title: "SEO-Ready",
-      description: "Built with search engine optimization so customers in Honolulu, Maui, Kona, and across Hawai'i can find you online.",
+      title: "Essential Pages",
+      description: "Home, About, Services/Menu, Contact, and whatever pages your business needs to look professional online.",
     },
     {
       icon: Code,
-      title: "E-Commerce & Custom Software",
-      description: "Need online ordering, booking, or custom tools? Our premium packages include full e-commerce and custom software solutions.",
+      title: "Integrated Payment Options",
+      description: "Connected to our processing gateway so you can accept payments online via payment links, invoices, and shopping carts.",
     },
     {
-      icon: Monitor,
-      title: "Hosting & Maintenance",
-      description: "We handle hosting, updates, and security so you can focus on running your business.",
-    },
-    {
-      icon: Zap,
-      title: "Fast Turnaround",
-      description: "Most business websites are live within 1-2 weeks. Premium and custom projects scoped individually.",
+      icon: Smartphone,
+      title: "Basic SEO & Google-Friendly Structure",
+      description: "Built to rank in local searches so Honolulu, Maui, Kona, and Hawai'i customers can find you online.",
     },
   ];
 
@@ -144,21 +137,21 @@ function WebFeaturesSection() {
             className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
             variants={fadeUp}
           >
-            What You Get
+            What's Included — Free
           </motion.h2>
           <motion.p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg" variants={fadeUp}>
-            Every website we build is custom-designed for your business, not a template.
+            Help your Honolulu business get online quickly, look professional, and start capturing more customers — all at zero cost for the website creation itself.
           </motion.p>
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
-          {webFeatures.map((f, i) => (
+          {included.map((f, i) => (
             <motion.div key={f.title} variants={scaleIn}>
               <Card className="h-full overflow-visible border-chart-4/10">
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-4/5 to-transparent" />
@@ -176,6 +169,137 @@ function WebFeaturesSection() {
               </Card>
             </motion.div>
           ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function UpkeepOptionsSection() {
+  return (
+    <section className="py-12 sm:py-24 relative">
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+        >
+          <motion.div className="text-center mb-8 sm:mb-14" variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+              <Settings className="w-3 h-3 mr-1.5" />
+              After the Build
+            </Badge>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+              Your Site, Your Choice
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg">
+              Websites need ongoing care to stay secure, fast, and fresh. You have complete flexibility — nothing is mandatory.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
+            <motion.div variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-2/20">
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-2/5 to-transparent" />
+                <CardContent className="p-5 sm:p-7 relative">
+                  <div className="w-10 h-10 rounded-md bg-chart-2/15 flex items-center justify-center mb-4">
+                    <Wrench className="w-5 h-5 text-chart-2" />
+                  </div>
+                  <h3 className="font-bold text-chart-2 mb-1">Do It Yourself</h3>
+                  <div className="text-2xl font-extrabold text-chart-2 mb-3">FREE</div>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                    Take full ownership of your site and handle hosting, maintenance, updates, and security on your own.
+                  </p>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-chart-2 shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">You own the site completely</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-chart-2 shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">Host it wherever you want</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-chart-2 shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">No ongoing cost</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-3/20">
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-3/5 to-transparent" />
+                <CardContent className="p-5 sm:p-7 relative">
+                  <div className="w-10 h-10 rounded-md bg-chart-3/15 flex items-center justify-center mb-4">
+                    <DollarSign className="w-5 h-5 text-chart-3" />
+                  </div>
+                  <h3 className="font-bold text-chart-3 mb-1">One-Off Updates</h3>
+                  <div className="text-2xl font-extrabold text-chart-3 mb-3">From $40</div>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                    Need help with specific content changes? We offer one-off updates on demand — price depends on scope.
+                  </p>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-chart-3 shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">Update prices, photos, hours</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-chart-3 shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">Add a blog post or new page</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-chart-3 shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">Pay only when you need us</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div variants={scaleIn}>
+              <Card className="h-full overflow-visible border-primary/20">
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
+                <CardContent className="p-5 sm:p-7 relative">
+                  <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center mb-4">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-primary mb-1">Maintenance Plans</h3>
+                  <div className="text-2xl font-extrabold text-primary mb-3">$99–$399/mo</div>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                    We handle all the tech while you focus on growing your business. Month-to-month — cancel anytime, no penalties.
+                  </p>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">Hosting, security & backups</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">Content updates & SEO</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">Hands-off — we do everything</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          <motion.div className="text-center mt-8 sm:mt-12 max-w-2xl mx-auto" variants={fadeUp}>
+            <Card className="border-primary/20">
+              <CardContent className="p-5 sm:p-6">
+                <p className="text-sm sm:text-base text-foreground/90 font-medium leading-relaxed">
+                  <span className="text-primary font-bold">Bottom line:</span> The website is 100% free to get started — we build it for you when you switch your processing. After that, upkeep is 100% your choice.
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
       </div>
     </section>
@@ -434,6 +558,66 @@ function PortfolioSection() {
   );
 }
 
+function LiveExampleSection() {
+  return (
+    <section className="py-12 sm:py-24 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+        >
+          <motion.div className="text-center mb-8 sm:mb-14" variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+              <Monitor className="w-3 h-3 mr-1.5" />
+              Live Example
+            </Badge>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+              See a Real Edify Website in Action
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-lg">
+              Here's one of the custom websites we built for a Hawai'i business — browse it live below.
+            </p>
+          </motion.div>
+
+          <motion.div variants={scaleIn} className="max-w-5xl mx-auto">
+            <Card className="overflow-hidden border-primary/20">
+              <div className="bg-muted/50 px-4 py-2.5 flex items-center gap-2 border-b">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-destructive/60" />
+                  <div className="w-3 h-3 rounded-full bg-chart-3/60" />
+                  <div className="w-3 h-3 rounded-full bg-chart-2/60" />
+                </div>
+                <div className="flex-1 mx-4">
+                  <div className="bg-background rounded-md px-3 py-1 text-xs text-muted-foreground text-center border">
+                    poormantowing.com
+                  </div>
+                </div>
+              </div>
+              <div className="relative w-full" style={{ paddingBottom: "62.5%" }}>
+                <iframe
+                  src="https://poormantowing.com"
+                  title="Poorman Towing — Example Edify Website"
+                  className="absolute inset-0 w-full h-full border-0"
+                  loading="lazy"
+                  sandbox="allow-scripts allow-same-origin"
+                />
+              </div>
+            </Card>
+            <p className="text-center text-xs text-muted-foreground mt-3">
+              <a href="https://poormantowing.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
+                poormantowing.com
+              </a>{" "}
+              — built by Edify for a local Hawai'i towing business
+            </p>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function SubscriptionTiersSection() {
   const subscriptionTiers = [
     {
@@ -590,7 +774,9 @@ export default function WebDesignPage() {
     <Layout>
       <WebDesignHero />
       <WebFeaturesSection />
+      <UpkeepOptionsSection />
       <PortfolioSection />
+      <LiveExampleSection />
       <BeforeAfterSection />
       <SubscriptionTiersSection />
       <WebDesignCTA />
