@@ -323,7 +323,22 @@ function HowItWorksSection() {
             />
           </motion.div>
 
-          <div className="space-y-4 sm:space-y-5">
+          <motion.div
+            className="lg:hidden flex items-center justify-center"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <img
+              src="/images/cash-discount-infographic-mobile.jpeg"
+              alt="How Edify zero-fee payment processing works — Step 1: Customer pays with card, Step 2: Small non-cash adjustment of 3-4%, Step 3: Business keeps 100% of payment"
+              className="w-full max-w-md object-contain rounded-xl"
+              data-testid="img-how-it-works-steps-mobile"
+            />
+          </motion.div>
+
+          <div className="hidden lg:block space-y-5">
             {steps.map((s, i) => (
               <motion.div
                 key={s.step}
@@ -334,27 +349,27 @@ function HowItWorksSection() {
               >
                 <Card className={`overflow-visible relative ${s.border}`}>
                   <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
-                  <CardContent className="p-4 sm:p-6 relative">
-                    <div className="flex items-center gap-3 mb-2 sm:mb-3">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <s.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${s.color}`} />
+                  <CardContent className="p-6 relative">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <s.icon className={`w-5 h-5 ${s.color}`} />
                       </div>
                       <div>
-                        <div className={`text-[10px] sm:text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
+                        <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
                           Step {s.step}
                         </div>
-                        <h3 className="text-sm sm:text-xl font-bold text-foreground">
+                        <h3 className="text-xl font-bold text-foreground">
                           {s.title}
                         </h3>
                       </div>
                     </div>
-                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mb-2 sm:mb-3">
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-3">
                       {s.description}
                     </p>
-                    <ul className="space-y-1 sm:space-y-1.5">
+                    <ul className="space-y-1.5">
                       {s.details.map((detail) => (
-                        <li key={detail} className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                          <Check className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${s.color} shrink-0 mt-0.5`} />
+                        <li key={detail} className="flex items-start gap-2 text-sm">
+                          <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
                           <span className="text-foreground/80">{detail}</span>
                         </li>
                       ))}
