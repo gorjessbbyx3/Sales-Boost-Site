@@ -307,78 +307,61 @@ function HowItWorksSection() {
           </motion.p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center">
-          <motion.div
-            className="flex items-center justify-center mx-auto max-w-[280px] sm:max-w-sm lg:max-w-none lg:sticky lg:top-24"
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <img
-              src="/images/cash-discount-infographic.jpeg"
-              alt="How Edify zero-fee payment processing works — Step 1: Customer pays with card, Step 2: Small non-cash adjustment of 3-4%, Step 3: Business keeps 100% of payment"
-              className="w-full object-contain rounded-xl"
-              data-testid="img-how-it-works-infographic"
-            />
-          </motion.div>
+        <motion.div
+          className="lg:hidden flex items-center justify-center"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <img
+            src="/images/cash-discount-infographic-mobile.jpeg"
+            alt="How Edify zero-fee payment processing works — Step 1: Customer pays with card, Step 2: Small non-cash adjustment of 3-4%, Step 3: Business keeps 100% of payment"
+            className="w-full max-w-md object-contain rounded-xl"
+            data-testid="img-how-it-works-steps-mobile"
+          />
+        </motion.div>
 
-          <motion.div
-            className="lg:hidden flex items-center justify-center"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <img
-              src="/images/cash-discount-infographic-mobile.jpeg"
-              alt="How Edify zero-fee payment processing works — Step 1: Customer pays with card, Step 2: Small non-cash adjustment of 3-4%, Step 3: Business keeps 100% of payment"
-              className="w-full max-w-md object-contain rounded-xl"
-              data-testid="img-how-it-works-steps-mobile"
-            />
-          </motion.div>
-
-          <div className="hidden lg:block space-y-5">
-            {steps.map((s, i) => (
-              <motion.div
-                key={s.step}
-                initial={{ opacity: 0, x: 40 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.12 }}
-              >
-                <Card className={`overflow-visible relative ${s.border}`}>
-                  <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
-                  <CardContent className="p-6 relative">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <s.icon className={`w-5 h-5 ${s.color}`} />
-                      </div>
-                      <div>
-                        <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
-                          Step {s.step}
-                        </div>
-                        <h3 className="text-xl font-bold text-foreground">
-                          {s.title}
-                        </h3>
-                      </div>
+        <div className="hidden lg:grid lg:grid-cols-3 gap-6">
+          {steps.map((s, i) => (
+            <motion.div
+              key={s.step}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.12 }}
+            >
+              <Card className={`overflow-visible relative h-full ${s.border}`}>
+                <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
+                <CardContent className="p-6 relative">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <s.icon className={`w-5 h-5 ${s.color}`} />
                     </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                      {s.description}
-                    </p>
-                    <ul className="space-y-1.5">
-                      {s.details.map((detail) => (
-                        <li key={detail} className="flex items-start gap-2 text-sm">
-                          <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
-                          <span className="text-foreground/80">{detail}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+                    <div>
+                      <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
+                        Step {s.step}
+                      </div>
+                      <h3 className="text-xl font-bold text-foreground">
+                        {s.title}
+                      </h3>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                    {s.description}
+                  </p>
+                  <ul className="space-y-1.5">
+                    {s.details.map((detail) => (
+                      <li key={detail} className="flex items-start gap-2 text-sm">
+                        <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
+                        <span className="text-foreground/80">{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
