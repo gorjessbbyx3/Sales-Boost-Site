@@ -8,6 +8,9 @@ import {
   Check,
   ChevronRight,
   MapPin,
+  Phone,
+  Mail,
+  Clock,
 } from "lucide-react";
 import { useState } from "react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
@@ -212,6 +215,53 @@ function ContactSection() {
             Tell us about your business and we'll send you a personalized website mockup showing what yours could look like
             — plus a free savings analysis on your current processing fees. No strings attached.
           </motion.p>
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.a
+            href="tel:+18087675460"
+            className="flex items-center gap-3 p-4 rounded-lg border border-primary/10 bg-card/50 hover:border-primary/30 transition-colors"
+            variants={fadeUp}
+          >
+            <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center shrink-0">
+              <Phone className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Call Us</div>
+              <div className="text-sm font-semibold text-foreground">(808) 767-5460</div>
+            </div>
+          </motion.a>
+          <motion.a
+            href="mailto:edifyhawaii@gmail.com"
+            className="flex items-center gap-3 p-4 rounded-lg border border-primary/10 bg-card/50 hover:border-primary/30 transition-colors"
+            variants={fadeUp}
+          >
+            <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center shrink-0">
+              <Mail className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Email Us</div>
+              <div className="text-sm font-semibold text-foreground">edifyhawaii@gmail.com</div>
+            </div>
+          </motion.a>
+          <motion.div
+            className="flex items-center gap-3 p-4 rounded-lg border border-primary/10 bg-card/50"
+            variants={fadeUp}
+          >
+            <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Business Hours</div>
+              <div className="text-sm font-semibold text-foreground">Mon–Fri, 8 AM – 5 PM</div>
+            </div>
+          </motion.div>
         </motion.div>
 
         <motion.div

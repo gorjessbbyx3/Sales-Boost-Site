@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Zap,
   ArrowRight,
   Menu,
   XIcon,
   MapPin,
+  Phone,
+  Mail,
+  Clock,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
@@ -47,9 +49,7 @@ function Navbar() {
             className="font-bold text-xl tracking-tight flex items-center gap-2.5"
             data-testid="link-logo"
           >
-            <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img src="/images/logo.svg" alt="Edify Limited" className="w-9 h-9" />
             <span className="text-foreground">Edify</span>
           </Link>
 
@@ -148,17 +148,29 @@ function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="md:col-span-1">
             <div className="font-bold text-lg flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-                <Zap className="w-4 h-4 text-primary-foreground" />
-              </div>
+              <img src="/images/logo.svg" alt="Edify Limited" className="w-8 h-8" />
               <span className="text-foreground">Edify Limited</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mb-3">
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mb-4">
               Hawai'i's trusted payment processing and web design company. Zero processing fees, zero monthly fees — plus free websites for every merchant.
             </p>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="w-3.5 h-3.5 text-primary" />
-              <span>Honolulu, Hawai'i</span>
+            <div className="space-y-2.5 text-sm text-muted-foreground">
+              <a href="tel:+18087675460" className="flex items-center gap-2 transition-colors hover:text-foreground">
+                <Phone className="w-3.5 h-3.5 text-primary" />
+                <span>(808) 767-5460</span>
+              </a>
+              <a href="mailto:edifyhawaii@gmail.com" className="flex items-center gap-2 transition-colors hover:text-foreground">
+                <Mail className="w-3.5 h-3.5 text-primary" />
+                <span>edifyhawaii@gmail.com</span>
+              </a>
+              <div className="flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span>Mon–Fri, 8:00 AM – 5:00 PM</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3.5 h-3.5 text-primary" />
+                <span>Honolulu, Hawai'i</span>
+              </div>
             </div>
           </div>
 
