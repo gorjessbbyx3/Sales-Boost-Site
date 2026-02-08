@@ -270,13 +270,21 @@ function HowItWorksSection() {
     },
   ];
 
+  const stepColors = [
+    { bg: "from-blue-500/20 to-blue-600/5", glow: "bg-blue-500/20", number: "text-blue-400", icon: "bg-blue-500/15 border-blue-500/30", check: "text-blue-400" },
+    { bg: "from-amber-500/20 to-amber-600/5", glow: "bg-amber-500/20", number: "text-amber-400", icon: "bg-amber-500/15 border-amber-500/30", check: "text-amber-400" },
+    { bg: "from-emerald-500/20 to-emerald-600/5", glow: "bg-emerald-500/20", number: "text-emerald-400", icon: "bg-emerald-500/15 border-emerald-500/30", check: "text-emerald-400" },
+  ];
+
   return (
-    <section className="py-12 sm:py-24 relative" data-testid="section-how-it-works">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
+    <section className="py-12 sm:py-24 relative overflow-hidden bg-[#0a1628]" data-testid="section-how-it-works">
+      <div className="absolute inset-0 -z-0">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-blue-600/10 blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-emerald-600/8 blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-primary/5 blur-[150px]" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           className="text-center mb-10 sm:mb-16"
           variants={staggerContainer}
@@ -285,22 +293,22 @@ function HowItWorksSection() {
           viewport={{ once: true, margin: "-50px" }}
         >
           <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+            <Badge variant="outline" className="mb-4 text-blue-300 border-blue-400/30 bg-blue-500/10">
               <CircleDollarSign className="w-3 h-3 mr-1.5" />
               How It Works
             </Badge>
           </motion.div>
           <motion.h2
-            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
+            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3 text-white"
             variants={fadeUp}
           >
             Three Steps to{" "}
-            <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-400 via-emerald-300 to-emerald-400 bg-clip-text text-transparent">
               Zero Fees
             </span>
           </motion.h2>
           <motion.p
-            className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg"
+            className="text-slate-400 max-w-2xl mx-auto text-sm sm:text-lg"
             variants={fadeUp}
           >
             Traditional processors take 2-4% of every sale. Our model flips that — you keep every dollar.
@@ -323,46 +331,65 @@ function HowItWorksSection() {
         </motion.div>
 
         <div className="hidden lg:grid lg:grid-cols-3 gap-6">
-          {steps.map((s, i) => (
-            <motion.div
-              key={s.step}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.12 }}
-            >
-              <Card className={`overflow-visible relative h-full ${s.border}`}>
-                <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
-                <CardContent className="p-6 relative">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <s.icon className={`w-5 h-5 ${s.color}`} />
-                    </div>
-                    <div>
-                      <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
-                        Step {s.step}
+          {steps.map((s, i) => {
+            const colors = stepColors[i];
+            return (
+              <motion.div
+                key={s.step}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.15 }}
+              >
+                <Card className="h-full border-white/10 bg-white/5 backdrop-blur-sm" data-testid={`card-step-${s.step}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className={`text-4xl font-black ${colors.number} opacity-80 leading-none`}>
+                        {s.step}
                       </div>
-                      <h3 className="text-xl font-bold text-foreground">
-                        {s.title}
-                      </h3>
+                      <div className={`w-10 h-10 rounded-lg ${colors.icon} border flex items-center justify-center shrink-0 mt-1`}>
+                        <s.icon className={`w-5 h-5 ${colors.check}`} />
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                    {s.description}
-                  </p>
-                  <ul className="space-y-1.5">
-                    {s.details.map((detail) => (
-                      <li key={detail} className="flex items-start gap-2 text-sm">
-                        <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
-                        <span className="text-foreground/80">{detail}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                    <h3 className="text-lg font-bold text-white mb-2">
+                      {s.title}
+                    </h3>
+                    <p className="text-sm text-slate-300 leading-relaxed mb-4">
+                      {s.description}
+                    </p>
+                    <ul className="space-y-2">
+                      {s.details.map((detail) => (
+                        <li key={detail} className="flex items-start gap-2 text-sm">
+                          <Check className={`w-4 h-4 ${colors.check} shrink-0 mt-0.5`} />
+                          <span className="text-slate-200">{detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
+
+        <motion.div
+          className="hidden lg:flex items-center justify-center gap-6 mt-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          data-testid="banner-zero-fees-tagline"
+        >
+          <div className="flex items-center gap-3 px-5 py-2.5 rounded-lg border border-blue-400/20 bg-blue-500/10" data-testid="badge-zero-processing-fees">
+            <ShieldCheck className="w-4 h-4 text-blue-300" />
+            <span className="text-sm font-semibold text-blue-200">Zero Processing Fees</span>
+          </div>
+          <div className="w-px h-6 bg-white/20" />
+          <div className="flex items-center gap-3 px-5 py-2.5 rounded-lg border border-emerald-400/20 bg-emerald-500/10" data-testid="badge-legally-compliantly">
+            <Check className="w-4 h-4 text-emerald-300" />
+            <span className="text-sm font-semibold text-emerald-200">Legally & Compliantly</span>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
