@@ -52,7 +52,7 @@ function HeroSection() {
         <img
           src="/images/hero-banner.jpg"
           alt="Eliminate Credit Card Fees — Edify Hawaii"
-          className="w-full h-full object-cover opacity-15 sm:opacity-20"
+          className="w-full h-full object-cover object-center opacity-15 sm:opacity-20"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
       </div>
@@ -414,11 +414,11 @@ function PricingComparisonSection() {
                 </div>
               </CardHeader>
               <CardContent className="relative space-y-4">
-                <div className="rounded-lg overflow-hidden">
+                <div className="rounded-lg overflow-hidden bg-muted/30">
                   <img
                     src="/images/terminal-399.jpg"
                     alt="$399 one-time payment terminal"
-                    className="w-full h-32 sm:h-40 object-cover rounded-lg"
+                    className="w-full aspect-[16/10] object-contain rounded-lg"
                   />
                 </div>
                 <div className="text-center">
@@ -484,11 +484,11 @@ function PricingComparisonSection() {
                 </div>
               </CardHeader>
               <CardContent className="relative space-y-4">
-                <div className="rounded-lg overflow-hidden">
+                <div className="rounded-lg overflow-hidden bg-muted/30">
                   <img
                     src="/images/trial-chef.jpg"
                     alt="Try free for 30 days"
-                    className="w-full h-32 sm:h-40 object-cover rounded-lg"
+                    className="w-full aspect-[16/10] object-contain rounded-lg"
                   />
                 </div>
                 <div className="text-center">
@@ -825,7 +825,7 @@ function CTASection() {
         <img
           src="/images/serving-hawaii.jpg"
           alt="Proudly Serving Honolulu Businesses"
-          className="w-full h-full object-cover opacity-10 sm:opacity-15"
+          className="w-full h-full object-cover object-center opacity-10 sm:opacity-15"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
       </div>

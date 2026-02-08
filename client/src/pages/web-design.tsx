@@ -66,7 +66,7 @@ function WebDesignHero() {
             <img
               src="/images/website-before-after.jpg"
               alt="FREE Custom Website — Before and After: Lisa's Salon to Aloha Beauty Salon"
-              className="w-full h-auto rounded-xl shadow-lg"
+              className="w-full h-auto max-h-[50vh] object-contain rounded-xl shadow-lg"
             />
           </motion.div>
 
