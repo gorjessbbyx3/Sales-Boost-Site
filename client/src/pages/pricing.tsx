@@ -88,13 +88,14 @@ function PricingCardsSection() {
   ];
 
   const option3Features = [
+    "Free custom website built for you",
     "Virtual payment gateway setup",
     "Payment links, buttons & invoices",
-    "Custom website (5-10 pages)",
     "Online ordering / booking",
     "Mobile-optimized & SEO-ready",
-    "Zero processing fees — forever",
+    "Optional maintenance plan — cancel anytime",
     "Extra content updates starting at $40",
+    "Host your own site",
   ];
 
   return (
@@ -291,7 +292,7 @@ function PricingCardsSection() {
                 <div className="pt-2 border-t border-chart-2/10">
                   <div className="flex items-center gap-2 text-sm text-chart-2 font-medium">
                     <Code className="w-4 h-4" />
-                    <span>Custom website included in price</span>
+                    <span>Free website included — you own it</span>
                   </div>
                 </div>
 

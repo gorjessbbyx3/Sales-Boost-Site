@@ -598,7 +598,7 @@ function QuickPricingPreview() {
               icon: Globe,
               color: "text-chart-2",
               border: "border-chart-2/20",
-              features: ["No terminal needed", "Custom website included", "Extra content updates from $40"],
+              features: ["Free website built for you", "Extra updates from $40", "Host your own site"],
             },
           ].map((plan, i) => (
             <motion.div key={i} variants={scaleIn}>
