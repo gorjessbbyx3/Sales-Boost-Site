@@ -5,14 +5,11 @@ import { motion, useInView, useMotionValue, useTransform, animate } from "framer
 import {
   CreditCard,
   Globe,
-  Smartphone,
   ShieldCheck,
-  Banknote,
   BarChart3,
   Check,
   ArrowRight,
   ChevronRight,
-  X,
   Zap,
   Clock,
   DollarSign,
@@ -20,15 +17,14 @@ import {
   Star,
   Users,
   Award,
-  Menu,
-  XIcon,
   CircleDollarSign,
   AlertTriangle,
   Timer,
-  BadgeCheck,
-  Handshake,
   FileCheck,
   HeartHandshake,
+  Palette,
+  Code,
+  MapPin,
   Megaphone,
   ThumbsUp,
   MapPin,
@@ -37,21 +33,9 @@ import {
   Monitor,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-};
-
-const staggerContainer = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.12 } },
-};
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.92 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" } },
-};
+import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
+import Layout from "@/components/layout";
+import { Link } from "wouter";
 
 function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -234,10 +218,11 @@ function HeroSection() {
             variants={fadeUp}
           >
             <Button size="lg" asChild>
+              <Link href="/contact" data-testid="link-hero-get-terminal">
               <a href="#contact" data-testid="link-hero-get-terminal">
                 Get Your Terminal
                 <ArrowRight className="w-4 h-4" />
-              </a>
+              </Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
               <a href="#how-it-works" data-testid="link-hero-learn-more">
@@ -672,10 +657,11 @@ function PricingComparisonSection() {
                 </div>
 
                 <Button className="w-full" size="lg" asChild>
+                  <Link href="/contact" data-testid="link-option1-cta">
                   <a href="#contact" data-testid="link-option1-cta">
                     Get Terminal + Free Website
                     <ArrowRight className="w-4 h-4" />
-                  </a>
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
@@ -734,10 +720,73 @@ function PricingComparisonSection() {
                 </div>
 
                 <Button className="w-full" size="lg" variant="outline" asChild>
+                  <Link href="/contact" data-testid="link-option2-cta">
                   <a href="#contact" data-testid="link-option2-cta">
                     Start Free Trial
                     <ArrowRight className="w-4 h-4" />
-                  </a>
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Option 3: Online-Only */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="h-full overflow-visible relative border-chart-2/30">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-2/8 to-transparent" />
+              <div className="absolute -top-3 left-6">
+                <Badge variant="outline" className="text-chart-2 border-chart-2/30 bg-chart-2/5 shadow-lg" data-testid="badge-online-only">Online-Only</Badge>
+              </div>
+              <CardHeader className="pb-3 pt-8 relative">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="w-10 h-10 rounded-md bg-chart-2/15 flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-chart-2" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg" data-testid="text-option3-title">
+                      Online Business Package
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">No physical terminal needed</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="relative space-y-5">
+                <div className="text-center py-4">
+                  <div className="text-sm text-muted-foreground mb-1">Website + Gateway</div>
+                  <div className="flex items-baseline justify-center gap-1.5">
+                    <span className="text-4xl sm:text-5xl font-extrabold text-chart-2" data-testid="text-option3-price">$499</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    or free with processing commitment
+                  </div>
+                </div>
+
+                <ul className="space-y-2.5">
+                  {option3Features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2.5 text-sm">
+                      <Check className="w-4 h-4 text-chart-2 shrink-0 mt-0.5" />
+                      <span className="text-foreground/80">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="pt-2 border-t border-chart-2/10">
+                  <div className="flex items-center gap-2 text-sm text-chart-2 font-medium">
+                    <Code className="w-4 h-4" />
+                    <span>Custom website included in price</span>
+                  </div>
+                </div>
+
+                <Button className="w-full" size="lg" variant="outline" asChild>
+                  <Link href="/contact" data-testid="link-option3-cta">
+                    Go Online with Edify
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
@@ -959,10 +1008,11 @@ function PromoSection() {
           viewport={{ once: true }}
         >
           <Button size="lg" asChild>
+            <Link href="/contact" data-testid="link-apply-now">
             <a href="#contact" data-testid="link-apply-now">
               Apply Now — Check If You Qualify
               <ArrowRight className="w-4 h-4" />
-            </a>
+            </Link>
           </Button>
           <p className="text-xs text-muted-foreground mt-4 max-w-xl mx-auto" data-testid="text-promo-disclaimer">
             Minimum $5K-$10K monthly volume required. Trial spots are limited and filled on a first-come, first-served basis.
@@ -2427,15 +2477,17 @@ function CTASection() {
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Button size="lg" asChild>
+                    <Link href="/contact" data-testid="link-cta-get-terminal">
                     <a href="#contact" data-testid="link-cta-get-terminal">
                       Get Free Mockup + Savings Quote
                       <ArrowRight className="w-4 h-4" />
-                    </a>
+                    </Link>
                   </Button>
                   <Button size="lg" variant="outline" asChild>
+                    <Link href="/contact" data-testid="link-cta-talk">
                     <a href="#contact" data-testid="link-cta-talk">
                       Have Questions? Let's Talk
-                    </a>
+                    </Link>
                   </Button>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-8 mt-10 text-sm text-muted-foreground">
@@ -2465,6 +2517,18 @@ function CTASection() {
   );
 }
 
+export default function Home() {
+  return (
+    <Layout>
+      <HeroSection />
+      <SocialProofBar />
+      <HowItWorksSection />
+      <PricingComparisonSection />
+      <PromoSection />
+      <SavingsCalculator />
+      <TestimonialSection />
+      <CTASection />
+    </Layout>
 function Footer() {
   return (
     <footer className="border-t border-border/50 py-14 relative" data-testid="section-footer">
