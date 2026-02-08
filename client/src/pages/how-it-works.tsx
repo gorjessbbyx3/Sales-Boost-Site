@@ -58,6 +58,14 @@ function HowItWorksHero() {
             Traditional processors take 2-4% of every sale. Our model flips
             that — your customer pays a small surcharge, and you keep every dollar.
           </motion.p>
+
+          <motion.div className="mt-8 rounded-xl overflow-hidden bg-muted/30 max-w-2xl mx-auto" variants={fadeUp}>
+            <img
+              src="/images/How_it_works.png"
+              alt="How Edify zero-fee payment processing works"
+              className="w-full max-h-[50vh] object-contain"
+            />
+          </motion.div>
         </motion.div>
       </div>
     </section>

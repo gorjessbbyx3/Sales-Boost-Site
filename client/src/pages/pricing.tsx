@@ -130,7 +130,7 @@ function PricingCardsSection() {
               <CardContent className="relative space-y-4">
                 <div className="rounded-lg overflow-hidden bg-muted/30">
                   <img
-                    src="/images/terminal-399.jpg"
+                    src="/images/terminal-399.png"
                     alt="$399 one-time payment terminal"
                     className="w-full aspect-[16/10] object-contain rounded-lg"
                   />
