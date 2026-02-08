@@ -145,7 +145,20 @@ function HeroSection() {
         </motion.div>
 
         <motion.div
-          className="mt-10 sm:mt-20 max-w-4xl mx-auto"
+          className="mt-8 sm:mt-14 max-w-4xl mx-auto rounded-xl overflow-hidden"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.7 }}
+        >
+          <img
+            src="/images/hero-banner.jpg"
+            alt="Edify Hawaii — zero-fee payment processing and free custom websites for local businesses"
+            className="w-full h-auto rounded-xl shadow-lg"
+          />
+        </motion.div>
+
+        <motion.div
+          className="mt-8 sm:mt-14 max-w-4xl mx-auto"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.7 }}
@@ -581,12 +594,12 @@ function QuickPricingPreview() {
             },
             {
               title: "Online-Only",
-              price: "$50/mo",
-              note: "Website + Payment Gateway",
+              price: "FREE",
+              note: "With Cash Discount Processing",
               icon: Globe,
               color: "text-chart-2",
               border: "border-chart-2/20",
-              features: ["Free website built for you", "Extra updates from $40", "Host your own site"],
+              features: ["Free website built for you", "Optional maintenance plans", "Host your own site"],
             },
           ].map((plan, i) => (
             <motion.div key={i} variants={scaleIn}>

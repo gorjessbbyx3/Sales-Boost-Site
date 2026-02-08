@@ -60,7 +60,7 @@ function PricingHero() {
             className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto"
             variants={fadeUp}
           >
-            Every option includes zero processing fees and a free custom website. No monthly fees, no contracts.
+            Every option includes zero processing fees and a free custom website. No contracts, cancel anytime.
           </motion.p>
         </motion.div>
       </div>
@@ -89,13 +89,13 @@ function PricingCardsSection() {
 
   const option3Features = [
     "Free custom website built for you",
-    "Virtual payment gateway setup",
+    "Virtual payment gateway included",
     "Payment links, buttons & invoices",
     "Online ordering / booking",
     "Mobile-optimized & SEO-ready",
-    "Optional maintenance plan — cancel anytime",
-    "Extra content updates starting at $40",
-    "Host your own site",
+    "You own the site — host it yourself (free)",
+    "One-off updates from $40 when you need them",
+    "Optional maintenance plans from $99/mo",
   ];
 
   return (
@@ -267,16 +267,18 @@ function PricingCardsSection() {
               <CardContent className="relative space-y-4">
                 <div className="rounded-lg overflow-hidden bg-muted/30">
                   <img
-                    src="/images/IMG_6308.jpeg"
-                    alt="Online business package — website and payment gateway"
+                    src="/images/Website_maintenance .jpeg"
+                    alt="Free custom website and payment gateway for online businesses"
                     className="w-full aspect-[16/10] object-contain rounded-lg"
                   />
                 </div>
                 <div className="text-center py-2">
                   <div className="text-xs text-muted-foreground mb-1">Website + Gateway</div>
                   <div className="flex items-baseline justify-center gap-1.5">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-chart-2">$50</span>
-                    <span className="text-sm text-muted-foreground">/month</span>
+                    <span className="text-3xl sm:text-4xl font-extrabold text-chart-2">FREE</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    With Cash Discount Processing
                   </div>
                 </div>
 
