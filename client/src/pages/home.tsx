@@ -316,10 +316,9 @@ function HowItWorksSection() {
             transition={{ duration: 0.6 }}
           >
             <img
-              src="/images/cash-discount-infographic.png"
+              src="/images/cash-discount-infographic.jpeg"
               alt="How Edify zero-fee payment processing works — Step 1: Customer pays with card, Step 2: Small non-cash adjustment of 3-4%, Step 3: Business keeps 100% of payment"
-              className="w-full object-contain drop-shadow-2xl"
-              style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.3))" }}
+              className="w-full object-contain rounded-xl"
               data-testid="img-how-it-works-infographic"
             />
           </motion.div>
