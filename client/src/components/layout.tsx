@@ -136,7 +136,7 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-16">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="font-bold text-lg flex items-center gap-2.5 mb-6 group">
-              <img src="/images/edify-logo-full.png" alt="Edify Limited" className="h-10 rounded-md group-hover:scale-105 transition-transform" />
+              <img src="/images/edify-logo-full.png" alt="Edify Limited" className="h-16 sm:h-20 rounded-md group-hover:scale-105 transition-transform" />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
               Hawai'i's trusted partner for zero-fee payment processing and professional web design. We help local businesses keep more of their revenue.

@@ -50,9 +50,9 @@ function PricingHero() {
             className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-4 sm:mb-6"
             variants={fadeUp}
           >
-            Three Ways to{" "}
+            Two Paths to{" "}
             <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-              Get Started
+              Zero Fees
             </span>
           </motion.h1>
 
@@ -60,7 +60,7 @@ function PricingHero() {
             className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto"
             variants={fadeUp}
           >
-            Choose an in-store terminal for face-to-face payments or go online-only with a free custom website. Zero processing fees either way.
+            Get an in-store terminal (buy or try free for 30 days) or go online-only with a free custom website. Zero processing fees either way.
           </motion.p>
         </motion.div>
       </div>
@@ -112,9 +112,10 @@ function PricingCardsSection() {
         >
           <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5 mb-3">
             <CreditCard className="w-3 h-3 mr-1" />
-            In-Store Terminals
+            Path 1: In-Store Terminal
           </Badge>
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Accept Payments In Person</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Buy or Try Free for 30 Days</h2>
+          <p className="text-sm text-muted-foreground mt-2 max-w-lg mx-auto">Accept face-to-face payments with your own terminal. Choose the option that works best for you.</p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
@@ -261,9 +262,10 @@ function PricingCardsSection() {
         >
           <Badge variant="outline" className="text-chart-2 border-chart-2/30 bg-chart-2/5 mb-3">
             <Globe className="w-3 h-3 mr-1" />
-            Online-Only
+            Path 2: Online Processing
           </Badge>
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Accept Payments Online</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Free Website + Payment Gateway</h2>
+          <p className="text-sm text-muted-foreground mt-2 max-w-lg mx-auto">No terminal needed. We build you a custom website with built-in payment processing.</p>
         </motion.div>
 
         <div className="max-w-lg mx-auto">

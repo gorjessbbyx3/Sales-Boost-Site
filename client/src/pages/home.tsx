@@ -481,72 +481,94 @@ function QuickPricingPreview() {
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto"
+          className="max-w-5xl mx-auto"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
-          {[
-            {
-              title: "In-Store Terminal",
-              price: "$399",
-              note: "One-time - Best Value",
-              icon: CreditCard,
-              color: "text-primary",
-              border: "border-primary/20",
-              features: ["Own it from day one", "Full setup & training", "Zero fees forever"],
-              separator: false,
-            },
-            {
-              title: "30-Day Trial",
-              price: "FREE",
-              note: "Then $599 if you keep it",
-              icon: Clock,
-              color: "text-chart-4",
-              border: "border-chart-4/20",
-              features: ["Try before you buy", "Real transactions", "Return anytime"],
-              separator: true,
-            },
-            {
-              title: "Online-Only",
-              price: "FREE",
-              note: "Free Website + Gateway",
-              icon: Globe,
-              color: "text-chart-2",
-              border: "border-chart-2/20",
-              features: ["Free website built for you", "Payment gateway included", "You own everything"],
-              separator: false,
-            },
-          ].map((plan, i) => (
-            <motion.div key={i} variants={scaleIn} className="flex flex-col items-center gap-4 sm:gap-6">
-              {plan.separator && (
-                <div className="flex sm:hidden items-center gap-3 w-full">
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-sm font-bold text-muted-foreground tracking-widest uppercase">OR</span>
-                  <div className="flex-1 h-px bg-border" />
+          <motion.div variants={fadeUp} className="mb-3">
+            <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
+              <CreditCard className="w-3 h-3 mr-1" />
+              Path 1: In-Store Terminal
+            </Badge>
+          </motion.div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            {[
+              {
+                title: "In-Store Terminal",
+                price: "$399",
+                note: "One-time - Best Value",
+                icon: CreditCard,
+                color: "text-primary",
+                border: "border-primary/20",
+                features: ["Own it from day one", "Full setup & training", "Zero fees forever"],
+              },
+              {
+                title: "30-Day Free Trial",
+                price: "FREE",
+                note: "Then $599 if you keep it",
+                icon: Clock,
+                color: "text-chart-4",
+                border: "border-chart-4/20",
+                features: ["Try before you buy", "Real transactions", "Return anytime"],
+              },
+            ].map((plan, i) => (
+              <motion.div key={i} variants={scaleIn}>
+                <Card className={`h-full w-full overflow-visible ${plan.border}`}>
+                  <CardContent className="p-5 sm:p-6 text-center">
+                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <plan.icon className={`w-5 h-5 ${plan.color}`} />
+                    </div>
+                    <h3 className="font-bold text-foreground mb-1">{plan.title}</h3>
+                    <div className={`text-2xl sm:text-3xl font-extrabold ${plan.color} mb-1`}>{plan.price}</div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground mb-4">{plan.note}</div>
+                    <ul className="space-y-2 text-left">
+                      {plan.features.map((f) => (
+                        <li key={f} className="flex items-center gap-2 text-sm">
+                          <Check className={`w-3.5 h-3.5 ${plan.color} shrink-0`} />
+                          <span className="text-foreground/80">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div variants={fadeUp} className="flex items-center gap-4 my-6 sm:my-8">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-base sm:text-lg font-bold text-muted-foreground tracking-widest uppercase">OR</span>
+            <div className="flex-1 h-px bg-border" />
+          </motion.div>
+
+          <motion.div variants={fadeUp} className="mb-3">
+            <Badge variant="outline" className="text-chart-2 border-chart-2/30 bg-chart-2/5">
+              <Globe className="w-3 h-3 mr-1" />
+              Path 2: Online Processing
+            </Badge>
+          </motion.div>
+          <motion.div variants={scaleIn} className="max-w-lg mx-auto sm:mx-0">
+            <Card className="overflow-visible border-chart-2/20">
+              <CardContent className="p-5 sm:p-6 text-center">
+                <div className="w-10 h-10 rounded-md bg-chart-2/10 flex items-center justify-center mx-auto mb-3">
+                  <Globe className="w-5 h-5 text-chart-2" />
                 </div>
-              )}
-              <Card className={`h-full w-full overflow-visible ${plan.border}`}>
-                <CardContent className="p-5 sm:p-6 text-center">
-                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <plan.icon className={`w-5 h-5 ${plan.color}`} />
-                  </div>
-                  <h3 className="font-bold text-foreground mb-1">{plan.title}</h3>
-                  <div className={`text-2xl sm:text-3xl font-extrabold ${plan.color} mb-1`}>{plan.price}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground mb-4">{plan.note}</div>
-                  <ul className="space-y-2 text-left mb-4">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2 text-sm">
-                        <Check className={`w-3.5 h-3.5 ${plan.color} shrink-0`} />
-                        <span className="text-foreground/80">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                <h3 className="font-bold text-foreground mb-1">Online Processing + Free Website</h3>
+                <div className="text-2xl sm:text-3xl font-extrabold text-chart-2 mb-1">FREE</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground mb-4">Website + Payment Gateway</div>
+                <ul className="space-y-2 text-left">
+                  {["Free website built for you", "Payment gateway included", "You own everything"].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm">
+                      <Check className="w-3.5 h-3.5 text-chart-2 shrink-0" />
+                      <span className="text-foreground/80">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
 
         <motion.div
