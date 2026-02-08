@@ -119,12 +119,12 @@ function Navbar() {
 
           <div className="hidden md:flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild>
-              <a href="https://edifylimited.tech/contact" data-testid="link-nav-contact">
+              <a href="#contact" data-testid="link-nav-contact">
                 Contact Us
               </a>
             </Button>
             <Button size="sm" asChild>
-              <a href="https://edifylimited.tech/contact" data-testid="link-nav-get-terminal">
+              <a href="#contact" data-testid="link-nav-get-terminal">
                 Get Your Terminal
                 <ArrowRight className="w-3 h-3" />
               </a>
@@ -158,7 +158,7 @@ function Navbar() {
           ))}
           <div className="mt-3 flex flex-col gap-2">
             <Button size="sm" asChild className="w-full">
-              <a href="https://edifylimited.tech/contact" data-testid="link-mobile-get-terminal">
+              <a href="#contact" data-testid="link-mobile-get-terminal">
                 Get Your Terminal
               </a>
             </Button>
@@ -224,7 +224,7 @@ function HeroSection() {
             variants={fadeUp}
           >
             <Button size="lg" asChild>
-              <a href="https://edifylimited.tech/contact" data-testid="link-hero-get-terminal">
+              <a href="#contact" data-testid="link-hero-get-terminal">
                 Get Your Terminal
                 <ArrowRight className="w-4 h-4" />
               </a>
@@ -639,7 +639,7 @@ function PricingComparisonSection() {
                 </ul>
 
                 <Button className="w-full" size="lg" asChild>
-                  <a href="https://edifylimited.tech/contact?option=purchase" data-testid="link-option1-cta">
+                  <a href="#contact" data-testid="link-option1-cta">
                     Get Your Terminal
                     <ArrowRight className="w-4 h-4" />
                   </a>
@@ -693,7 +693,7 @@ function PricingComparisonSection() {
                 </ul>
 
                 <Button className="w-full" size="lg" variant="outline" asChild>
-                  <a href="https://edifylimited.tech/contact?option=trial" data-testid="link-option2-cta">
+                  <a href="#contact" data-testid="link-option2-cta">
                     Start Free Trial
                     <ArrowRight className="w-4 h-4" />
                   </a>
@@ -856,7 +856,7 @@ function PromoSection() {
           viewport={{ once: true }}
         >
           <Button size="lg" asChild>
-            <a href="https://edifylimited.tech/contact" data-testid="link-apply-now">
+            <a href="#contact" data-testid="link-apply-now">
               Apply Now — Check If You Qualify
               <ArrowRight className="w-4 h-4" />
             </a>
@@ -992,7 +992,7 @@ function HighRiskSection() {
                   Don't see your industry? Contact us — we work with nearly every business type that other processors reject.
                 </p>
                 <Button className="w-full mt-5" asChild>
-                  <a href="https://edifylimited.tech/contact" data-testid="link-high-risk-apply">
+                  <a href="#contact" data-testid="link-high-risk-apply">
                     Apply for High-Risk Account
                     <ArrowRight className="w-4 h-4" />
                   </a>
@@ -1688,6 +1688,214 @@ function FAQSection() {
   );
 }
 
+function ContactSection() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    businessName: "",
+    monthlyVolume: "",
+    interest: "purchase",
+    message: "",
+  });
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitted(true);
+  };
+
+  return (
+    <section id="contact" className="py-24 sm:py-32 relative" data-testid="section-contact">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-primary/8 blur-[120px]" />
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-14"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
+              <Zap className="w-3.5 h-3.5 mr-1.5" />
+              Get Started
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5"
+            variants={fadeUp}
+            data-testid="text-contact-title"
+          >
+            Get Your{" "}
+            <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
+              Terminal Today
+            </span>
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground max-w-2xl mx-auto text-lg"
+            variants={fadeUp}
+          >
+            Fill out the form below and our team will get back to you within a few hours to get you set up.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <Card className="overflow-visible border-primary/10">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
+            <CardContent className="p-7 sm:p-10 relative">
+              {submitted ? (
+                <div className="text-center py-10">
+                  <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-5">
+                    <Check className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground mb-3" data-testid="text-contact-success">
+                    We've Got Your Info!
+                  </h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Our team will reach out shortly to get you set up with your terminal. Keep an eye on your email and phone.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5" data-testid="form-contact">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        placeholder="John Doe"
+                        data-testid="input-contact-name"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">
+                        Business Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.businessName}
+                        onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                        className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        placeholder="Your Business LLC"
+                        data-testid="input-contact-business"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        placeholder="john@business.com"
+                        data-testid="input-contact-email"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">
+                        Phone
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        placeholder="(808) 555-1234"
+                        data-testid="input-contact-phone"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">
+                        Monthly Sales Volume
+                      </label>
+                      <select
+                        value={formData.monthlyVolume}
+                        onChange={(e) => setFormData({ ...formData, monthlyVolume: e.target.value })}
+                        className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        data-testid="select-contact-volume"
+                      >
+                        <option value="">Select volume...</option>
+                        <option value="5k-10k">$5,000 - $10,000</option>
+                        <option value="10k-25k">$10,000 - $25,000</option>
+                        <option value="25k-50k">$25,000 - $50,000</option>
+                        <option value="50k-100k">$50,000 - $100,000</option>
+                        <option value="100k+">$100,000+</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">
+                        I'm Interested In
+                      </label>
+                      <select
+                        value={formData.interest}
+                        onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
+                        className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        data-testid="select-contact-interest"
+                      >
+                        <option value="purchase">Outright Purchase ($399)</option>
+                        <option value="trial">30-Day Free Trial</option>
+                        <option value="high-risk">High-Risk Merchant Account</option>
+                        <option value="questions">Just Have Questions</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">
+                      Anything Else?
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+                      placeholder="Tell us about your business, industry, or any questions you have..."
+                      data-testid="input-contact-message"
+                    />
+                  </div>
+
+                  <Button type="submit" size="lg" className="w-full" data-testid="button-contact-submit">
+                    Get Started
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+
+                  <p className="text-xs text-muted-foreground text-center">
+                    No commitment required. We'll reach out to discuss the best option for your business.
+                  </p>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function CTASection() {
   return (
     <section className="py-24 sm:py-32 relative" data-testid="section-cta">
@@ -1719,13 +1927,13 @@ function CTASection() {
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Button size="lg" asChild>
-                    <a href="https://edifylimited.tech/contact" data-testid="link-cta-get-terminal">
+                    <a href="#contact" data-testid="link-cta-get-terminal">
                       Get Your Terminal Today
                       <ArrowRight className="w-4 h-4" />
                     </a>
                   </Button>
                   <Button size="lg" variant="outline" asChild>
-                    <a href="https://edifylimited.tech/contact" data-testid="link-cta-talk">
+                    <a href="#contact" data-testid="link-cta-talk">
                       Have Questions? Let's Talk
                     </a>
                   </Button>
@@ -1802,7 +2010,7 @@ function Footer() {
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
                 <a
-                  href="https://edifylimited.tech/contact"
+                  href="#contact"
                   className="transition-colors"
                   data-testid="link-footer-contact"
                 >
@@ -1811,11 +2019,11 @@ function Footer() {
               </li>
               <li>
                 <a
-                  href="https://edifylimited.tech"
+                  href="#"
                   className="transition-colors"
                   data-testid="link-footer-website"
                 >
-                  edifylimited.tech
+                  Back to Top
                 </a>
               </li>
             </ul>
@@ -1848,6 +2056,7 @@ export default function Home() {
         <SavingsCalculator />
         <TestimonialSection />
         <FAQSection />
+        <ContactSection />
         <CTASection />
       </main>
       <Footer />
