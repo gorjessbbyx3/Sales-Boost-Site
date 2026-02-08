@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Clock,
   Palette,
+  Globe,
   MapPin,
   CircleDollarSign,
   BarChart3,
@@ -77,11 +78,11 @@ function StepsSection() {
     {
       step: "01",
       title: "Choose Your Plan",
-      description: "Buy outright for $399 (best value) or start a 30-day risk-free trial. Both include zero processing fees forever.",
+      description: "Pick an in-store terminal for face-to-face payments, or go online-only with a free website. Zero processing fees either way.",
       details: [
         "In-Store Terminal — $399 one-time, own it immediately",
         "30-Day Trial — free to try, $599 if you keep it",
-        "Online-Only — FREE website + payment gateway with Cash Discount Processing",
+        "OR Online-Only — FREE website + payment gateway",
       ],
       icon: CreditCard,
       accent: "from-primary/20 to-primary/5",
@@ -182,9 +183,9 @@ function WhyEdifySection() {
       description: "Start accepting payments today with full training and support.",
     },
     {
-      icon: Palette,
-      title: "Free Custom Website",
-      description: "Every merchant gets a professional business website — $997 value included.",
+      icon: Globe,
+      title: "Online-Only Option",
+      description: "Go online with a free website and payment gateway — no physical terminal needed.",
     },
     {
       icon: ShieldCheck,

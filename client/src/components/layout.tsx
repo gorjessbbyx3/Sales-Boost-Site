@@ -47,7 +47,7 @@ function Navbar() {
             className="font-bold text-xl tracking-tight flex items-center gap-2.5 transition-transform hover:scale-105"
             data-testid="link-logo"
           >
-            <img src="/images/IMG_6304.png" alt="Edify Limited" className="w-8 h-8 sm:w-9 sm:h-9 rounded shadow-sm" />
+            <img src="/images/edify-logo.png" alt="Edify Limited" className="w-8 h-8 sm:w-9 sm:h-9 rounded shadow-sm" />
             <span className="text-foreground hidden sm:inline">Edify</span>
           </Link>
 
@@ -136,7 +136,7 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-16">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="font-bold text-lg flex items-center gap-2.5 mb-6 group">
-              <img src="/images/IMG_6304.png" alt="Edify Limited" className="w-8 h-8 rounded shadow-sm group-hover:scale-110 transition-transform" />
+              <img src="/images/edify-logo.png" alt="Edify Limited" className="w-8 h-8 rounded shadow-sm group-hover:scale-110 transition-transform" />
               <span className="text-foreground">Edify Limited</span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">

@@ -32,7 +32,7 @@ function FAQSection() {
     },
     {
       q: "What does the terminal include?",
-      a: "Your terminal accepts chip, swipe, and contactless/NFC tap payments, plus online payment gateway access. Full setup, programming, training, compliance signage, and a free statement analysis are all included.",
+      a: "Your terminal accepts chip, swipe, and contactless/NFC tap payments. Full setup, programming, training, compliance signage, and a free statement analysis are all included. For online payments, see our Online-Only package.",
     },
     {
       q: "What are the pricing options?",
@@ -118,7 +118,7 @@ function ReviewsSection() {
     {
       name: "Lisa K.",
       role: "Owner, Aloha Beauty Salon",
-      content: "Switching to Edify saved me over $400 a month in fees. The free website they built is beautiful and my customers love the new terminal.",
+      content: "Switching to Edify saved me over $400 a month in fees. The terminal was set up the same day and my customers love the tap-to-pay feature.",
       stars: 5,
     },
     {
@@ -182,8 +182,8 @@ function ServicesSection() {
     },
     {
       icon: Globe,
-      title: "Free Custom Website",
-      description: "Every merchant gets a professional, mobile-optimized business website included.",
+      title: "Online Business Package",
+      description: "Go online-only with a free custom website and payment gateway — an alternative to the physical terminal.",
     },
     {
       icon: ShieldCheck,

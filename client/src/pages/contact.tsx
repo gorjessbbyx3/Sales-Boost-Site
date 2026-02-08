@@ -217,9 +217,9 @@ function ContactSection() {
                           className="w-full rounded-xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none"
                           data-testid="select-contact-interest"
                         >
-                          <option value="bundle-terminal">Terminal + Free Website</option>
+                          <option value="bundle-terminal">In-Store Terminal ($399)</option>
                           <option value="bundle-trial">30-Day Risk-Free Trial</option>
-                          <option value="online-only">Online-Only Package (FREE)</option>
+                          <option value="online-only">Online-Only (Free Website + Gateway)</option>
                           <option value="high-risk">High-Risk Merchant Account</option>
                           <option value="questions">Just Have Questions</option>
                         </select>

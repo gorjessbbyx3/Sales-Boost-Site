@@ -60,7 +60,7 @@ function PricingHero() {
             className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto"
             variants={fadeUp}
           >
-            Every option includes zero processing fees and a free custom website. No contracts, cancel anytime.
+            Choose an in-store terminal for face-to-face payments or go online-only with a free custom website. Zero processing fees either way.
           </motion.p>
         </motion.div>
       </div>
@@ -71,7 +71,6 @@ function PricingHero() {
 function PricingCardsSection() {
   const option1Features = [
     "Countertop terminal (chip, swipe, NFC)",
-    "Online payment gateway access",
     "Full setup, programming & training",
     "Free compliance signage kit",
     "Zero monthly fees — forever",
@@ -105,7 +104,20 @@ function PricingCardsSection() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
+        <motion.div
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5 mb-3">
+            <CreditCard className="w-3 h-3 mr-1" />
+            In-Store Terminals
+          </Badge>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Accept Payments In Person</h2>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
           {/* Option 1: Outright Purchase */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -157,16 +169,9 @@ function PricingCardsSection() {
                   ))}
                 </ul>
 
-                <div className="pt-2 border-t border-primary/10">
-                  <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                    <Palette className="w-4 h-4" />
-                    <span>+ FREE Custom Website ($997 value)</span>
-                  </div>
-                </div>
-
                 <Button className="w-full" size="lg" asChild>
                   <Link href="/contact">
-                    Get Terminal + Free Website
+                    Get Your Terminal
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </Button>
@@ -224,13 +229,6 @@ function PricingCardsSection() {
                   ))}
                 </ul>
 
-                <div className="pt-2 border-t border-chart-4/10">
-                  <div className="flex items-center gap-2 text-sm text-chart-4 font-medium">
-                    <Palette className="w-4 h-4" />
-                    <span>+ Website for $199 (when you keep)</span>
-                  </div>
-                </div>
-
                 <Button className="w-full" size="lg" variant="outline" asChild>
                   <Link href="/contact">
                     Start Free Trial
@@ -241,6 +239,34 @@ function PricingCardsSection() {
             </Card>
           </motion.div>
 
+        </div>
+
+        <motion.div
+          className="flex items-center gap-4 max-w-4xl mx-auto my-10 sm:my-14"
+          initial={{ opacity: 0, scaleX: 0.5 }}
+          whileInView={{ opacity: 1, scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-lg sm:text-xl font-bold text-muted-foreground tracking-widest uppercase">OR</span>
+          <div className="flex-1 h-px bg-border" />
+        </motion.div>
+
+        <motion.div
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Badge variant="outline" className="text-chart-2 border-chart-2/30 bg-chart-2/5 mb-3">
+            <Globe className="w-3 h-3 mr-1" />
+            Online-Only
+          </Badge>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Accept Payments Online</h2>
+        </motion.div>
+
+        <div className="max-w-lg mx-auto">
           {/* Option 3: Online-Only */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -251,7 +277,7 @@ function PricingCardsSection() {
             <Card className="h-full overflow-visible relative border-chart-2/30">
               <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-2/8 to-transparent" />
               <div className="absolute -top-3 left-6">
-                <Badge variant="outline" className="text-chart-2 border-chart-2/30 bg-chart-2/5 shadow-lg">Online-Only</Badge>
+                <Badge variant="outline" className="text-chart-2 border-chart-2/30 bg-chart-2/5 shadow-lg">Includes Free Website</Badge>
               </div>
               <CardHeader className="pb-2 pt-7 relative">
                 <div className="flex items-center gap-3">
@@ -297,7 +323,7 @@ function PricingCardsSection() {
                     <span>Free website — you own it</span>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Manage it yourself (free), pay for one-off updates ($40+), or choose a hands-off maintenance plan ($99–$399/mo).
+                    Manage it yourself (free), pay for one-off updates ($40+), or choose a hands-off maintenance plan ($99-$399/mo).
                   </p>
                 </div>
 
@@ -492,16 +518,16 @@ function PricingCTA() {
 function PricingFAQ() {
   const faqs = [
     {
-      q: "What's the difference between Option 1 and Option 2?",
-      a: "Option 1 is an upfront purchase for $399 (best value), giving you full ownership and a free website immediately. Option 2 is a 30-day risk-free trial where we loan you the terminal; if you decide to keep it after 30 days, it's $599.",
+      q: "What's the difference between the terminal options?",
+      a: "Option 1 is an outright purchase for $399 (best value), giving you full ownership immediately. Option 2 is a 30-day risk-free trial where we loan you the terminal; if you decide to keep it after 30 days, it's $599. Both are for in-store, face-to-face payments.",
     },
     {
       q: "Is there really no monthly fee?",
       a: "Yes. Once you have your terminal, there are zero monthly fees, zero processing fees, and zero software fees. You keep 100% of every sale.",
     },
     {
-      q: "How does the free website work?",
-      a: "We build a custom professional website for your business from scratch. It's included with your terminal purchase. You own the site completely and can host it yourself for free, or choose one of our maintenance plans.",
+      q: "How does the Online-Only option work?",
+      a: "If you don't need a physical terminal, we build you a free custom website with a built-in payment gateway. You can accept payments via web, mobile, or payment links. The website is separate from the terminal options — it's an alternative for online-only businesses.",
     },
   ];
 

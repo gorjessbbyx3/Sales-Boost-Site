@@ -93,10 +93,10 @@ function HeroSection() {
             variants={fadeUp}
             data-testid="text-hero-subtitle"
           >
-            Starting at $399 for a terminal — or try free for 30 days. No monthly fees. No processing fees.
+            Starting at $399 for a terminal — or go online-only with a{" "}
+            <span className="text-primary font-semibold">free custom website</span>. No monthly fees. No processing fees.
             Keep{" "}
-            <span className="text-primary font-semibold">100% of every sale</span>. Plus, get a{" "}
-            <span className="text-primary font-semibold">free custom website</span>.
+            <span className="text-primary font-semibold">100% of every sale</span>.
           </motion.p>
 
           <motion.div
@@ -134,8 +134,8 @@ function HeroSection() {
               <span>Zero Monthly Fees</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Palette className="w-3.5 h-3.5 text-primary" />
-              <span>Free Website</span>
+              <Globe className="w-3.5 h-3.5 text-primary" />
+              <span>Online Option</span>
             </div>
           </motion.div>
         </motion.div>
@@ -227,11 +227,11 @@ function HowItWorksSection() {
     {
       step: "01",
       title: "Choose Your Plan",
-      description: "Buy outright for $399 (best value) or start a 30-day risk-free trial. Both include zero processing fees forever.",
+      description: "Pick in-store terminal for face-to-face payments, or go online-only with a free website. Zero processing fees either way.",
       details: [
         "In-Store Terminal — $399 one-time, own it immediately",
         "30-Day Trial — free to try, $599 if you keep it",
-        "Online-Only — FREE website + payment gateway",
+        "OR Online-Only — FREE website + payment gateway",
       ],
       icon: CreditCard,
       color: "text-primary",
@@ -379,9 +379,9 @@ function WhyEdifySection() {
       description: "Start accepting payments today with full training and support.",
     },
     {
-      icon: Palette,
-      title: "Free Custom Website",
-      description: "Every merchant gets a professional business website — $997 value included.",
+      icon: Globe,
+      title: "Online-Only Option",
+      description: "Don't need a terminal? Get a free website and payment gateway instead.",
     },
     {
       icon: ShieldCheck,
@@ -491,7 +491,8 @@ function QuickPricingPreview() {
               icon: CreditCard,
               color: "text-primary",
               border: "border-primary/20",
-              features: ["Own it from day one", "Free custom website", "Zero fees forever"],
+              features: ["Own it from day one", "Full setup & training", "Zero fees forever"],
+              separator: false,
             },
             {
               title: "30-Day Trial",
@@ -501,19 +502,28 @@ function QuickPricingPreview() {
               color: "text-chart-4",
               border: "border-chart-4/20",
               features: ["Try before you buy", "Real transactions", "Return anytime"],
+              separator: true,
             },
             {
               title: "Online-Only",
               price: "FREE",
-              note: "With Cash Discount Processing",
+              note: "Free Website + Gateway",
               icon: Globe,
               color: "text-chart-2",
               border: "border-chart-2/20",
-              features: ["Free website built for you", "Optional maintenance plans", "Host your own site"],
+              features: ["Free website built for you", "Payment gateway included", "You own everything"],
+              separator: false,
             },
           ].map((plan, i) => (
-            <motion.div key={i} variants={scaleIn}>
-              <Card className={`h-full overflow-visible ${plan.border}`}>
+            <motion.div key={i} variants={scaleIn} className="flex flex-col items-center gap-4 sm:gap-6">
+              {plan.separator && (
+                <div className="flex sm:hidden items-center gap-3 w-full">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-sm font-bold text-muted-foreground tracking-widest uppercase">OR</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+              )}
+              <Card className={`h-full w-full overflow-visible ${plan.border}`}>
                 <CardContent className="p-5 sm:p-6 text-center">
                   <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <plan.icon className={`w-5 h-5 ${plan.color}`} />
@@ -578,13 +588,13 @@ function CTASection() {
               <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/10 to-transparent" />
               <div className="relative">
                 <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mb-4 text-foreground">
-                  Processing Savings + Website ={" "}
+                  Zero Processing Fees ={" "}
                   <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
                     More Profit
                   </span>
                 </h2>
                 <p className="text-muted-foreground text-sm sm:text-lg mb-6 sm:mb-10 max-w-2xl mx-auto">
-                  Stop losing money to processing fees. Get your terminal starting at $399 — plus a free custom website.
+                  Get a terminal starting at $399 for in-store payments — or go online-only with a free website and payment gateway.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Button size="lg" className="w-full sm:w-auto" asChild>
@@ -606,7 +616,7 @@ function CTASection() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Palette className="w-3.5 h-3.5 text-primary" />
-                    <span>Free Website</span>
+                    <span>Online Option Available</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <DollarSign className="w-3.5 h-3.5 text-primary" />
