@@ -374,89 +374,6 @@ function HowItWorksSection() {
   );
 }
 
-function WhyEdifySection() {
-  const benefits = [
-    {
-      icon: DollarSign,
-      title: "Zero Processing Fees",
-      description: "You keep 100% of every sale. No 2-4% taken from your revenue.",
-    },
-    {
-      icon: Clock,
-      title: "Same-Day Setup",
-      description: "Start accepting payments today with full training and support.",
-    },
-    {
-      icon: Globe,
-      title: "Online-Only Option",
-      description: "Don't need a terminal? Get a free website and payment gateway instead.",
-    },
-    {
-      icon: ShieldCheck,
-      title: "PCI Compliant & Secure",
-      description: "End-to-end encryption, tokenization, and full PCI compliance.",
-    },
-    {
-      icon: BarChart3,
-      title: "Real-Time Dashboard",
-      description: "Track every transaction, deposit, and refund from your dashboard.",
-    },
-    {
-      icon: MapPin,
-      title: "Local Hawai'i Support",
-      description: "Based in Honolulu with on-site support available. We know your market.",
-    },
-  ];
-
-  return (
-    <section className="py-12 sm:py-24 relative" data-testid="section-why-edify">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-8 sm:mb-14"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              Why Edify
-            </Badge>
-          </motion.div>
-          <motion.h2
-            className="text-2xl sm:text-4xl font-extrabold tracking-tight"
-            variants={fadeUp}
-          >
-            Why Hawai'i Businesses Choose Us
-          </motion.h2>
-        </motion.div>
-
-        <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          {benefits.map((b, i) => (
-            <motion.div key={i} variants={scaleIn}>
-              <Card className="h-full overflow-visible border-primary/10">
-                <CardContent className="p-5 sm:p-6">
-                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mb-3">
-                    <b.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <h3 className="font-bold text-foreground mb-1">{b.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{b.description}</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
 
 function QuickPricingPreview() {
   return (
@@ -668,7 +585,7 @@ export default function Home() {
       <HeroSection />
 
       <HowItWorksSection />
-      <WhyEdifySection />
+
       <QuickPricingPreview />
       <CTASection />
     </Layout>
