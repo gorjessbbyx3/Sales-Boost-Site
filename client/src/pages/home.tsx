@@ -545,8 +545,8 @@ function CTASection() {
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Button size="lg" className="w-full sm:w-auto" asChild>
-                    <Link href="/contact" data-testid="link-cta-mockup">
-                      Get Free Mockup + Savings Quote
+                    <Link href="/contact" data-testid="link-cta-schedule-call">
+                      Schedule a Call
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </Button>
