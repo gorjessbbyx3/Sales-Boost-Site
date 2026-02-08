@@ -94,6 +94,7 @@ function PricingCardsSection() {
     "Online ordering / booking",
     "Mobile-optimized & SEO-ready",
     "Zero processing fees — forever",
+    "Extra content updates starting at $40",
   ];
 
   return (

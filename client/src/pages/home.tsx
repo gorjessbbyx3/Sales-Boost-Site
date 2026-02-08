@@ -383,7 +383,7 @@ function QuickPricingPreview() {
               icon: Globe,
               color: "text-chart-2",
               border: "border-chart-2/20",
-              features: ["No terminal needed", "Custom website included", "Payment links & invoices"],
+              features: ["No terminal needed", "Custom website included", "Extra content updates from $40"],
             },
           ].map((plan, i) => (
             <motion.div key={i} variants={scaleIn}>

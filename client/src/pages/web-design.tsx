@@ -508,6 +508,9 @@ function SubscriptionTiersSection() {
             <p className="text-muted-foreground max-w-xl mx-auto text-lg">
               After your free website is built, choose an optional maintenance plan to keep it growing. Cancel anytime.
             </p>
+            <p className="text-sm text-primary font-medium mt-3">
+              Don't need a plan? Extra content updates start at just $40.
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
