@@ -194,11 +194,22 @@ function SocialProofBar() {
   ];
 
   return (
-    <section className="py-8 sm:py-16 relative" data-testid="section-social-proof">
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+    <section className="py-12 sm:py-20 relative bg-muted/30" data-testid="section-social-proof">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground mb-6">
+            Trusted by Businesses Across the Islands
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-16 opacity-40 grayscale hover:grayscale-0 transition-all duration-500">
+            <img src="/images/IMG_6304.png" alt="Trusted Partner" className="h-8 sm:h-10 w-auto" />
+            <img src="/images/IMG_6304.png" alt="Trusted Partner" className="h-8 sm:h-10 w-auto" />
+            <img src="/images/IMG_6304.png" alt="Trusted Partner" className="h-8 sm:h-10 w-auto" />
+            <img src="/images/IMG_6304.png" alt="Trusted Partner" className="h-8 sm:h-10 w-auto" />
+          </div>
+        </div>
+
         <motion.div
-          className="grid grid-cols-4 gap-3 sm:gap-8"
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10 border-t border-border/50 pt-12"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -207,16 +218,16 @@ function SocialProofBar() {
           {stats.map((stat) => (
             <motion.div
               key={stat.label}
-              className="text-center"
+              className="text-center group p-4 rounded-xl hover:bg-background transition-colors shadow-sm shadow-transparent hover:shadow-primary/5"
               variants={fadeUp}
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-2">
-                <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <stat.icon className="w-6 h-6 text-primary" />
               </div>
-              <div className="text-lg sm:text-3xl font-extrabold text-foreground mb-0.5">
+              <div className="text-2xl sm:text-3xl font-extrabold text-foreground mb-1">
                 {stat.value}
               </div>
-              <div className="text-[9px] sm:text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider">
                 {stat.label}
               </div>
             </motion.div>

@@ -489,12 +489,48 @@ function PricingCTA() {
   );
 }
 
+function PricingFAQ() {
+  const faqs = [
+    {
+      q: "What's the difference between Option 1 and Option 2?",
+      a: "Option 1 is an upfront purchase for $399 (best value), giving you full ownership and a free website immediately. Option 2 is a 30-day risk-free trial where we loan you the terminal; if you decide to keep it after 30 days, it's $599.",
+    },
+    {
+      q: "Is there really no monthly fee?",
+      a: "Yes. Once you have your terminal, there are zero monthly fees, zero processing fees, and zero software fees. You keep 100% of every sale.",
+    },
+    {
+      q: "How does the free website work?",
+      a: "We build a custom professional website for your business from scratch. It's included with your terminal purchase. You own the site completely and can host it yourself for free, or choose one of our maintenance plans.",
+    },
+  ];
+
+  return (
+    <section className="py-12 sm:py-24 relative bg-muted/30">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-center mb-10">Pricing FAQ</h2>
+        <div className="grid gap-4">
+          {faqs.map((faq, i) => (
+            <Card key={i} className="border-primary/5">
+              <CardContent className="p-6">
+                <h3 className="font-bold mb-2 text-foreground">{faq.q}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function PricingPage() {
   return (
     <Layout>
       <PricingHero />
       <PricingCardsSection />
       <SavingsCalculator />
+      <PricingFAQ />
       <PricingCTA />
     </Layout>
   );
