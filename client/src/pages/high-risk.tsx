@@ -69,9 +69,9 @@ function HighRiskHero() {
               </Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <a href="/#pricing">
+              <Link href="/pricing">
                 See Pricing
-              </a>
+              </Link>
             </Button>
           </motion.div>
         </motion.div>

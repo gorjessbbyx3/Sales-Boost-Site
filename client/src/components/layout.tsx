@@ -23,14 +23,12 @@ function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isHome = location === "/";
-
   const links = [
-    { label: "How It Works", href: isHome ? "#how-it-works" : "/#how-it-works", isPage: false },
-    { label: "Pricing", href: isHome ? "#pricing" : "/#pricing", isPage: false },
-    { label: "Web Design", href: "/web-design", isPage: true },
-    { label: "High-Risk", href: "/high-risk", isPage: true },
-    { label: "FAQ", href: "/contact", isPage: true },
+    { label: "How It Works", href: "/how-it-works" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "Web Design", href: "/web-design" },
+    { label: "High-Risk", href: "/high-risk" },
+    { label: "FAQ", href: "/contact" },
   ];
 
   return (
@@ -54,27 +52,18 @@ function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
-            {links.map((l) =>
-              l.isPage ? (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="px-3 py-2 text-sm text-muted-foreground transition-colors rounded-md hover:text-foreground"
-                  data-testid={`link-nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-                >
-                  {l.label}
-                </Link>
-              ) : (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  className="px-3 py-2 text-sm text-muted-foreground transition-colors rounded-md hover:text-foreground"
-                  data-testid={`link-nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-                >
-                  {l.label}
-                </a>
-              )
-            )}
+            {links.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={`px-3 py-2 text-sm transition-colors rounded-md hover:text-foreground ${
+                  location === l.href ? "text-foreground font-medium" : "text-muted-foreground"
+                }`}
+                data-testid={`link-nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
+              >
+                {l.label}
+              </Link>
+            ))}
           </div>
 
           <div className="hidden md:flex items-center gap-2">
@@ -105,29 +94,19 @@ function Navbar() {
 
       {mobileOpen && (
         <div className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border px-4 pb-4">
-          {links.map((l) =>
-            l.isPage ? (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="block px-3 py-2.5 text-sm text-muted-foreground"
-                onClick={() => setMobileOpen(false)}
-                data-testid={`link-mobile-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-              >
-                {l.label}
-              </Link>
-            ) : (
-              <a
-                key={l.href}
-                href={l.href}
-                className="block px-3 py-2.5 text-sm text-muted-foreground"
-                onClick={() => setMobileOpen(false)}
-                data-testid={`link-mobile-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-              >
-                {l.label}
-              </a>
-            )
-          )}
+          {links.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`block px-3 py-2.5 text-sm ${
+                location === l.href ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}
+              onClick={() => setMobileOpen(false)}
+              data-testid={`link-mobile-${l.label.toLowerCase().replace(/\s/g, "-")}`}
+            >
+              {l.label}
+            </Link>
+          ))}
           <div className="mt-3 flex flex-col gap-2">
             <Button size="sm" asChild className="w-full">
               <Link href="/contact" data-testid="link-mobile-get-terminal">
@@ -185,9 +164,9 @@ function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-foreground">Services</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
-                <a href="/#pricing" className="transition-colors hover:text-foreground" data-testid="link-footer-pricing">
+                <Link href="/pricing" className="transition-colors hover:text-foreground" data-testid="link-footer-pricing">
                   Payment Processing
-                </a>
+                </Link>
               </li>
               <li>
                 <Link href="/web-design" className="transition-colors hover:text-foreground" data-testid="link-footer-web-design">
@@ -200,9 +179,9 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="/#how-it-works" className="transition-colors hover:text-foreground" data-testid="link-footer-features">
+                <Link href="/how-it-works" className="transition-colors hover:text-foreground" data-testid="link-footer-features">
                   How It Works
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -211,9 +190,9 @@ function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-foreground">Quick Links</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
-                <a href="/#how-it-works" className="transition-colors hover:text-foreground" data-testid="link-footer-how">
+                <Link href="/how-it-works" className="transition-colors hover:text-foreground" data-testid="link-footer-how">
                   How It Works
-                </a>
+                </Link>
               </li>
               <li>
                 <Link href="/contact" className="transition-colors hover:text-foreground" data-testid="link-footer-faq">
