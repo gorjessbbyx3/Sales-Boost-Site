@@ -22,6 +22,7 @@ import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
 import terminalImg from "@assets/5C321236-148C-4266-B3E6-16C4212A3FF7_1770597638678.png";
+import onlineCardImg from "@assets/IMG_6310_1770676360781.jpeg";
 
 function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -165,31 +166,15 @@ function HeroSection() {
             </CardContent>
           </Card>
 
-          <Card className="border-amber-500/20 overflow-hidden" data-testid="card-hero-trial">
-            <div className="relative overflow-hidden bg-muted/50">
-              <div className="bg-[#e8e8e8] dark:bg-[#2a2a2a] rounded-t-md mx-3 mt-3">
-                <div className="flex items-center gap-2 px-3 py-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
-                  </div>
-                  <div className="flex-1 bg-white dark:bg-[#1a1a1a] rounded px-3 py-1 text-[10px] sm:text-xs text-muted-foreground truncate text-center">
-                    poormantowing.com
-                  </div>
-                </div>
-                <div className="relative h-44 sm:h-52 overflow-hidden">
-                  <iframe
-                    src="https://poormantowing.com"
-                    title="Poorman Towing — Edify client website"
-                    className="absolute inset-0 w-[200%] h-[200%] border-0 origin-top-left scale-50 pointer-events-none"
-                    loading="lazy"
-                    sandbox="allow-same-origin allow-scripts"
-                    data-testid="iframe-poormantowing"
-                  />
-                </div>
-              </div>
-              <div className="px-4 pb-3 pt-2">
+          <Card className="border-amber-500/20 overflow-hidden" data-testid="card-hero-online">
+            <div className="relative h-48 sm:h-56 overflow-hidden">
+              <img
+                src={onlineCardImg}
+                alt="Your Free Website — Built by Edify LLC, No Cost Ever"
+                className="w-full h-full object-cover object-top"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
+              <div className="absolute bottom-3 left-4 right-4">
                 <Badge className="bg-amber-500 text-white border-0">
                   <Zap className="w-3 h-3 mr-1" />
                   Free Website Included

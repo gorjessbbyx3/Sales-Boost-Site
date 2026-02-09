@@ -43,7 +43,7 @@ function OnlineHero() {
           <p className="text-lg text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto">
             Get a professional business website and zero-fee online processing gateway. Accept payments via web, mobile, or payment links.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Button size="lg" asChild>
               <Link href="/contact">Get Started Free</Link>
             </Button>
@@ -51,6 +51,37 @@ function OnlineHero() {
               <Link href="/faq">Learn More</Link>
             </Button>
           </div>
+
+          <motion.div
+            className="max-w-2xl mx-auto"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+          >
+            <div className="bg-[#e8e8e8] dark:bg-[#2a2a2a] rounded-t-lg">
+              <div className="flex items-center gap-2 px-4 py-2.5">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+                  <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
+                  <div className="w-3 h-3 rounded-full bg-[#28c840]" />
+                </div>
+                <div className="flex-1 bg-white dark:bg-[#1a1a1a] rounded px-3 py-1 text-xs text-muted-foreground truncate text-center">
+                  poormantowing.com
+                </div>
+              </div>
+            </div>
+            <div className="relative h-64 sm:h-80 overflow-hidden rounded-b-lg border border-t-0 border-border">
+              <iframe
+                src="https://poormantowing.com"
+                title="Poorman Towing — Edify client website example"
+                className="absolute inset-0 w-[200%] h-[200%] border-0 origin-top-left scale-50 pointer-events-none"
+                loading="lazy"
+                sandbox="allow-same-origin allow-scripts"
+                data-testid="iframe-poormantowing"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">Live client website built by Edify</p>
+          </motion.div>
         </div>
       </div>
     </section>
