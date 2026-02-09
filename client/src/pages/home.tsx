@@ -21,7 +21,7 @@ import { useEffect, useRef, useState } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
-import terminalImg from "@assets/5C321236-148C-4266-B3E6-16C4212A3FF7_1770597638678.png";
+import terminalImg from "@assets/2F1DC4FE-A7DE-4A07-AAD2-26B1F2BC3F51_1770676800821.png";
 import onlineCardImg from "@assets/IMG_6310_1770676360781.jpeg";
 
 function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
