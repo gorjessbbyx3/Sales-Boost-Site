@@ -12,6 +12,7 @@ import {
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import servicesBanner from "@assets/IMG_6296_1770672559549.png";
 
 function ServicesSection() {
   const services = [
@@ -90,14 +91,20 @@ function ServicesSection() {
 export default function ServicesPage() {
   return (
     <Layout>
-      <section className="pt-32 pb-16 bg-gradient-to-b from-primary/10 via-transparent to-transparent">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6">
-            Our <span className="text-primary">Services</span>
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Zero-fee payment processing, free custom websites, and high-risk merchant solutions for Hawai'i businesses.
-          </p>
+      <section className="pt-20 sm:pt-24" data-testid="section-services-hero">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <img
+              src={servicesBanner}
+              alt="Edify — Eliminate Credit Card Fees Forever. Cash Discount Program, Free Custom Website, 30-Day Risk-Free Trial."
+              className="w-full rounded-lg shadow-2xl"
+              data-testid="img-services-banner"
+            />
+          </motion.div>
         </div>
       </section>
       <ServicesSection />
