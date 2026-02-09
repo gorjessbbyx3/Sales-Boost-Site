@@ -27,7 +27,7 @@ import { Link } from "wouter";
 
 function OnlineHero() {
   return (
-    <section className="relative overflow-hidden pt-20 pb-10 sm:pt-36 sm:pb-20">
+    <section className="relative overflow-hidden pt-20 pb-16 sm:pt-32 sm:pb-24">
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />
       </div>
@@ -54,9 +54,9 @@ function OnlineHero() {
 
           <motion.div
             className="max-w-2xl mx-auto"
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
           >
             <div className="bg-[#e8e8e8] dark:bg-[#2a2a2a] rounded-t-lg">
               <div className="flex items-center gap-2 px-4 py-2.5">
@@ -70,14 +70,12 @@ function OnlineHero() {
                 </div>
               </div>
             </div>
-            <div className="relative h-64 sm:h-80 overflow-hidden rounded-b-lg border border-t-0 border-border">
-              <iframe
-                src="https://poormantowing.com"
-                title="Poorman Towing — Edify client website example"
-                className="absolute inset-0 w-[200%] h-[200%] border-0 origin-top-left scale-50 pointer-events-none"
-                loading="lazy"
-                sandbox="allow-same-origin allow-scripts"
-                data-testid="iframe-poormantowing"
+            <div className="relative overflow-hidden rounded-b-lg border border-t-0 border-border">
+              <img
+                src="/images/poormantowing-preview.jpg"
+                alt="Poorman Towing — Edify client website example"
+                className="w-full"
+                data-testid="img-poormantowing-preview"
               />
             </div>
             <p className="text-xs text-muted-foreground mt-3">Live client website built by Edify</p>
