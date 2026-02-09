@@ -54,7 +54,7 @@ function HeroSection() {
           className="absolute inset-0 w-full h-full object-cover"
           data-testid="video-hero-background"
         >
-          <source src="/images/hero-video.mp4" type="video/mp4" />
+          <source src="/images/hero-video-v2.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-black/55" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/15 to-transparent" />
