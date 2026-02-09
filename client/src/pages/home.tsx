@@ -22,7 +22,6 @@ import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
 import terminalImg from "@assets/5C321236-148C-4266-B3E6-16C4212A3FF7_1770597638678.png";
-import trialImg from "@assets/IMG_6301_1770597638678.png";
 
 function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -167,25 +166,41 @@ function HeroSection() {
           </Card>
 
           <Card className="border-amber-500/20 overflow-hidden" data-testid="card-hero-trial">
-            <div className="relative h-48 sm:h-56 overflow-hidden">
-              <img
-                src={trialImg}
-                alt="Try it free for 30 days — pay only $599 if you love it"
-                className="w-full h-full object-cover object-top"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
-              <div className="absolute bottom-3 left-4 right-4">
+            <div className="relative overflow-hidden bg-muted/50">
+              <div className="bg-[#e8e8e8] dark:bg-[#2a2a2a] rounded-t-md mx-3 mt-3">
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
+                  </div>
+                  <div className="flex-1 bg-white dark:bg-[#1a1a1a] rounded px-3 py-1 text-[10px] sm:text-xs text-muted-foreground truncate text-center">
+                    poormantowing.com
+                  </div>
+                </div>
+                <div className="relative h-44 sm:h-52 overflow-hidden">
+                  <iframe
+                    src="https://poormantowing.com"
+                    title="Poorman Towing — Edify client website"
+                    className="absolute inset-0 w-[200%] h-[200%] border-0 origin-top-left scale-50 pointer-events-none"
+                    loading="lazy"
+                    sandbox="allow-same-origin allow-scripts"
+                    data-testid="iframe-poormantowing"
+                  />
+                </div>
+              </div>
+              <div className="px-4 pb-3 pt-2">
                 <Badge className="bg-amber-500 text-white border-0">
                   <Zap className="w-3 h-3 mr-1" />
-                  30-Day Free Trial
+                  Free Website Included
                 </Badge>
               </div>
             </div>
             <CardContent className="p-5 sm:p-6">
-              <h3 className="font-bold text-lg text-foreground mb-1">Try It FREE for 30 Days</h3>
-              <p className="text-sm text-muted-foreground mb-4">Live processing with real customers. Pay $599 only if you love it.</p>
+              <h3 className="font-bold text-lg text-foreground mb-1">Online Payments + Free Website</h3>
+              <p className="text-sm text-muted-foreground mb-4">Accept payments online with a custom website built for your business — at no extra cost.</p>
               <ul className="space-y-2 mb-5">
-                {["No upfront cost — zero risk", "Full terminal with live processing", "Cancel anytime within 30 days"].map((item) => (
+                {["Custom website designed for you", "Online payment gateway included", "Zero processing fees"].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Check className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span>{item}</span>
@@ -193,8 +208,8 @@ function HeroSection() {
                 ))}
               </ul>
               <Button variant="outline" className="w-full" asChild>
-                <Link href="/contact" data-testid="link-card-free-trial">
-                  Start Free Trial
+                <Link href="/contact" data-testid="link-card-online-payments">
+                  Schedule a Call
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
