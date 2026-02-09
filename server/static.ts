@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 export function serveStatic(app: Express) {
-  const baseDir = typeof __dirname !== "undefined" ? __dirname : path.resolve(import.meta.dirname, "..", "dist");
+  const baseDir = typeof __dirname !== "undefined" ? __dirname : path.resolve(process.cwd(), "dist");
   const distPath = path.resolve(baseDir, "public");
   if (!fs.existsSync(distPath)) {
     throw new Error(

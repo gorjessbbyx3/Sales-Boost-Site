@@ -92,7 +92,8 @@ app.use((req, res, next) => {
   });
 
   // Setup static serving or vite dev middleware
-  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+  const baseDir = typeof __dirname !== "undefined" ? __dirname : path.resolve(process.cwd(), "dist");
+  const distPath = path.resolve(baseDir, "public");
   const hasBuiltAssets = fs.existsSync(path.join(distPath, "index.html"));
 
   if (process.env.NODE_ENV === "production" || hasBuiltAssets) {
