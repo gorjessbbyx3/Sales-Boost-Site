@@ -46,11 +46,17 @@ function HeroSection() {
       data-testid="section-hero"
     >
       <div className="relative w-full min-h-[520px] sm:min-h-[600px] lg:min-h-[680px]">
-        <img
-          src="/images/hero-hawaii-sunset.jpg"
-          alt="Honolulu skyline at sunset"
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="/images/hero-hawaii-sunset.jpg"
           className="absolute inset-0 w-full h-full object-cover"
-        />
+          data-testid="video-hero-background"
+        >
+          <source src="/images/hero-video.mp4" type="video/mp4" />
+        </video>
         <div className="absolute inset-0 bg-black/55" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/15 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
