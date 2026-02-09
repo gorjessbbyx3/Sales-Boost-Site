@@ -3,21 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import {
-  CreditCard,
-  Zap,
-  Globe,
-  ShieldCheck,
-  Check,
-  ArrowRight,
   ChevronRight,
-  Phone,
-  Mail,
-  Clock,
-  MapPin,
+  ArrowRight,
   Star,
+  HeartHandshake,
+  ThumbsUp,
   Users,
-  Award,
-  TrendingUp,
+  Megaphone,
 } from "lucide-react";
 import { useState } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
@@ -113,6 +105,130 @@ function FAQSection() {
   );
 }
 
+function CustomerPsychologySection() {
+  const points = [
+    {
+      icon: ThumbsUp,
+      title: "It's a Cash Discount, Not a Surcharge",
+      description: "Frame it positively: your cash-paying customers get a discount. Card users simply pay the standard listed price. Most businesses find customers respond better to \"cash discount\" messaging.",
+      stat: null,
+    },
+    {
+      icon: Users,
+      title: "~90% of Customers Pay by Card Anyway",
+      description: "Studies show roughly 90% of transactions are card-based. The vast majority of your customers won't even notice — they're already paying by card and expect the listed price.",
+      stat: "~90%",
+      statLabel: "pay by card",
+    },
+    {
+      icon: Megaphone,
+      title: "Signage Makes It Normal",
+      description: "We provide professional point-of-sale signage that clearly communicates the program. When customers see it displayed, it feels standard — because it is. Thousands of businesses across the country do this every day.",
+      stat: null,
+    },
+    {
+      icon: HeartHandshake,
+      title: "Your Customers Won't Mind",
+      description: "Gas stations have done this for decades. Customers understand the value exchange — and you keep every dollar of your hard-earned revenue instead of handing it to the processor.",
+      stat: null,
+    },
+  ];
+
+  return (
+    <section className="py-12 sm:py-24 relative" data-testid="section-psychology">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 right-1/4 w-[400px] h-[400px] rounded-full bg-chart-2/8 blur-[120px]" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-14"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Badge variant="outline" className="mb-5 text-chart-2 border-chart-2/30 bg-chart-2/5">
+              <HeartHandshake className="w-3.5 h-3.5 mr-1.5" />
+              Customer-Friendly
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
+            variants={fadeUp}
+            data-testid="text-psychology-title"
+          >
+            Will My Customers{" "}
+            <span className="bg-gradient-to-r from-chart-2 to-primary bg-clip-text text-transparent">
+              Accept This
+            </span>?
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg"
+            variants={fadeUp}
+          >
+            The short answer: yes. Here's why businesses are making the switch.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          {points.map((point, i) => (
+            <motion.div key={i} variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-2/10">
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-2/5 to-transparent" />
+                <CardContent className="p-6 relative">
+                  <div className="flex items-start gap-4 flex-wrap">
+                    <div className="w-10 h-10 rounded-md bg-gradient-to-b from-chart-2/20 to-chart-2/5 flex items-center justify-center shrink-0">
+                      <point.icon className="w-5 h-5 text-chart-2" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap mb-2">
+                        <h3 className="font-semibold text-foreground" data-testid={`text-psychology-point-${i}`}>
+                          {point.title}
+                        </h3>
+                        {point.stat && (
+                          <Badge variant="outline" className="text-chart-2 border-chart-2/30 bg-chart-2/5" data-testid={`badge-psychology-stat-${i}`}>
+                            {point.stat} {point.statLabel}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {point.description}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.div
+          className="text-center mt-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Button size="lg" asChild>
+            <Link href="/contact" data-testid="link-psychology-cta">
+              Schedule a Call
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </Button>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function ReviewsSection() {
   const reviews = [
     {
@@ -173,73 +289,21 @@ function ReviewsSection() {
   );
 }
 
-function ServicesSection() {
-  const services = [
-    {
-      icon: CreditCard,
-      title: "Zero-Fee Processing",
-      description: "Keep 100% of every sale. No processing fees, no monthly fees, and no contracts.",
-    },
-    {
-      icon: Globe,
-      title: "Online Business Package",
-      description: "Go online-only with a free custom website and payment gateway — an alternative to the physical terminal.",
-    },
-    {
-      icon: ShieldCheck,
-      title: "High-Risk Merchant Accounts",
-      description: "Fast approvals for CBD, vape, and other high-risk industries with zero-fee processing.",
-    },
-    {
-      icon: Zap,
-      title: "Same-Day Setup",
-      description: "Start accepting payments today with our easy-to-use terminals and local support.",
-    },
-  ];
-
-  return (
-    <section className="py-20 relative bg-muted/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-            Our Services
-          </Badge>
-          <h2 className="text-3xl sm:text-4xl font-extrabold">Everything Your Business Needs</h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {services.map((s, i) => (
-            <Card key={i} className="border-primary/10">
-              <CardContent className="p-6">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <s.icon className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="font-bold mb-2">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{s.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export default function ServicesFaqPage() {
+export default function FaqPage() {
   return (
     <Layout>
       <section className="pt-32 pb-16 bg-gradient-to-b from-primary/10 via-transparent to-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6">
-            Services & <span className="text-primary">FAQ</span>
+            Frequently Asked <span className="text-primary">Questions</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Learn more about our zero-fee processing, free websites, and find answers to common questions.
+            Find answers to common questions about our zero-fee processing and how it works for your business.
           </p>
         </div>
       </section>
-      <ServicesSection />
       <FAQSection />
+      <CustomerPsychologySection />
       <ReviewsSection />
     </Layout>
   );

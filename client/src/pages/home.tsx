@@ -586,7 +586,7 @@ function CTASection() {
                     </Link>
                   </Button>
                   <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-                    <Link href="/services-faq" data-testid="link-cta-questions">
+                    <Link href="/faq" data-testid="link-cta-questions">
                       Have Questions? Learn More
                     </Link>
                   </Button>

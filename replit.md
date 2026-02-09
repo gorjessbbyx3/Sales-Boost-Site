@@ -62,12 +62,13 @@ script/           → Build scripts
 - **Production**: `npm run build` builds the React app with Vite (output to `dist/public/`) and bundles the server with esbuild (output to `dist/index.cjs`). `npm start` runs the production bundle.
 
 ### Page Structure (Feb 2026)
-- **/** — Home page: Hero, Social Proof, How It Works (3-step guide), Why Edify, Pricing Preview, CTA
+- **/** — Home page: Hero (video background), two product cards (terminal + online), How It Works, Pricing Preview, CTA
 - **/pricing** — Detailed pricing comparison
-- **/services-faq** — Services overview, FAQ accordion, customer reviews/testimonials
+- **/services** — Services overview (zero-fee processing, online package, high-risk, same-day setup)
+- **/faq** — FAQ accordion, "Will My Customers Accept This?" psychology section, customer reviews/testimonials
 - **/online-processing** — Online payment gateway, website portfolio by industry, case study
-- **/high-risk** — High-risk merchant solutions
-- **/contact** — Simplified contact form with phone/email sidebar
+- **/high-risk** — High-risk merchant solutions (industries served, why choose us)
+- **/contact** — Schedule a Call form with phone/email sidebar
 - **/how-it-works** — Dedicated How It Works detail page (also integrated into home)
 - **/our-work** — Web design portfolio detail page
 - **/ai-config** — Admin AI chatbot configuration

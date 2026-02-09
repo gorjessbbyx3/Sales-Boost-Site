@@ -10,7 +10,8 @@ import HowItWorksPage from "@/pages/how-it-works";
 import WebDesignPage from "@/pages/web-design";
 import HighRiskPage from "@/pages/high-risk";
 import ContactPage from "@/pages/contact";
-import ServicesFaqPage from "@/pages/services-faq";
+import FaqPage from "@/pages/services-faq";
+import ServicesPage from "@/pages/services";
 import OnlineProcessingPage from "@/pages/online-processing";
 import AiConfigPage from "@/pages/ai-config";
 import NotFound from "@/pages/not-found";
@@ -37,7 +38,8 @@ function Router() {
         <Route path="/our-work" component={WebDesignPage} />
         <Route path="/high-risk" component={HighRiskPage} />
         <Route path="/contact" component={ContactPage} />
-        <Route path="/services-faq" component={ServicesFaqPage} />
+        <Route path="/faq" component={FaqPage} />
+        <Route path="/services" component={ServicesPage} />
         <Route path="/online-processing" component={OnlineProcessingPage} />
         <Route path="/ai-config" component={AiConfigPage} />
         <Route component={NotFound} />

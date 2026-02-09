@@ -8,10 +8,6 @@ import {
   ArrowRight,
   Check,
   AlertTriangle,
-  HeartHandshake,
-  ThumbsUp,
-  Users,
-  Megaphone,
   MapPin,
 } from "lucide-react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
@@ -181,122 +177,11 @@ function HighRiskDetailsSection() {
   );
 }
 
-function CustomerPsychologySection() {
-  const points = [
-    {
-      icon: ThumbsUp,
-      title: "It's a Cash Discount, Not a Surcharge",
-      description: "Frame it positively: your cash-paying customers get a discount. Card users simply pay the standard listed price. Most businesses find customers respond better to \"cash discount\" messaging.",
-      stat: null,
-    },
-    {
-      icon: Users,
-      title: "~90% of Customers Pay by Card Anyway",
-      description: "Studies show roughly 90% of transactions are card-based. The vast majority of your customers won't even notice — they're already paying by card and expect the listed price.",
-      stat: "~90%",
-      statLabel: "pay by card",
-    },
-    {
-      icon: Megaphone,
-      title: "Signage Makes It Normal",
-      description: "We provide professional point-of-sale signage that clearly communicates the program. When customers see it displayed, it feels standard — because it is. Thousands of businesses across the country do this every day.",
-      stat: null,
-    },
-    {
-      icon: HeartHandshake,
-      title: "Your Customers Won't Mind",
-      description: "Gas stations have done this for decades. Customers understand the value exchange — and you keep every dollar of your hard-earned revenue instead of handing it to the processor.",
-      stat: null,
-    },
-  ];
-
-  return (
-    <section className="py-12 sm:py-24 relative" data-testid="section-psychology">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 right-1/4 w-[400px] h-[400px] rounded-full bg-chart-2/8 blur-[120px]" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-14"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-5 text-chart-2 border-chart-2/30 bg-chart-2/5">
-              <HeartHandshake className="w-3.5 h-3.5 mr-1.5" />
-              Customer-Friendly
-            </Badge>
-          </motion.div>
-          <motion.h2
-            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
-            variants={fadeUp}
-            data-testid="text-psychology-title"
-          >
-            Will My Customers{" "}
-            <span className="bg-gradient-to-r from-chart-2 to-primary bg-clip-text text-transparent">
-              Accept This
-            </span>?
-          </motion.h2>
-          <motion.p
-            className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg"
-            variants={fadeUp}
-          >
-            The short answer: yes. Here's why businesses are making the switch.
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          {points.map((point, i) => (
-            <motion.div key={i} variants={scaleIn}>
-              <Card className="h-full overflow-visible border-chart-2/10">
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-chart-2/5 to-transparent" />
-                <CardContent className="p-6 relative">
-                  <div className="flex items-start gap-4 flex-wrap">
-                    <div className="w-10 h-10 rounded-md bg-gradient-to-b from-chart-2/20 to-chart-2/5 flex items-center justify-center shrink-0">
-                      <point.icon className="w-5 h-5 text-chart-2" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 flex-wrap mb-2">
-                        <h3 className="font-semibold text-foreground" data-testid={`text-psychology-point-${i}`}>
-                          {point.title}
-                        </h3>
-                        {point.stat && (
-                          <Badge variant="outline" className="text-chart-2 border-chart-2/30 bg-chart-2/5" data-testid={`badge-psychology-stat-${i}`}>
-                            {point.stat} {point.statLabel}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {point.description}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
 export default function HighRiskPage() {
   return (
     <Layout>
       <HighRiskHero />
       <HighRiskDetailsSection />
-      <CustomerPsychologySection />
     </Layout>
   );
 }

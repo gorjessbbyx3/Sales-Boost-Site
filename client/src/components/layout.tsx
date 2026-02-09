@@ -27,7 +27,8 @@ function Navbar() {
 
   const links = [
     { label: "Pricing", href: "/pricing" },
-    { label: "Services & FAQ", href: "/services-faq" },
+    { label: "Services", href: "/services" },
+    { label: "FAQ", href: "/faq" },
     { label: "Online Processing", href: "/online-processing" },
     { label: "High-Risk Merchants", href: "/high-risk" },
   ];
@@ -171,8 +172,13 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/services-faq" className="transition-colors hover:text-primary" data-testid="link-footer-services-faq">
-                  Services & FAQ
+                <Link href="/services" className="transition-colors hover:text-primary" data-testid="link-footer-services">
+                  Services
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="transition-colors hover:text-primary" data-testid="link-footer-faq">
+                  FAQ
                 </Link>
               </li>
               <li>
