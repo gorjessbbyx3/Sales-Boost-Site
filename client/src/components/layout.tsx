@@ -162,7 +162,7 @@ function Footer() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-10 lg:gap-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 lg:gap-16">
           <div>
             <h4 className="font-bold text-sm mb-6 uppercase tracking-wider text-white">Services</h4>
             <ul className="space-y-4 text-sm text-slate-400">
