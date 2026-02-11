@@ -3,6 +3,8 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 const httpServer = createServer(app);
@@ -89,10 +91,12 @@ app.use((req, res, next) => {
     return res.status(status).json({ message });
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "production") {
+  // Setup static serving or vite dev middleware
+  const baseDir = typeof __dirname !== "undefined" ? __dirname : path.resolve(process.cwd(), "dist");
+  const distPath = path.resolve(baseDir, "public");
+  const hasBuiltAssets = fs.existsSync(path.join(distPath, "index.html"));
+
+  if (process.env.NODE_ENV === "production" || hasBuiltAssets) {
     serveStatic(app);
   } else {
     const { setupVite } = await import("./vite");

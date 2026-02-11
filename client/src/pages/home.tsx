@@ -57,12 +57,12 @@ function HeroSection() {
           loop
           muted
           playsInline
-          poster="/images/hero-banner.jpg"
+          poster="/images/hero-hawaii-sunset.jpg"
           className="w-full h-full object-cover object-center opacity-15 sm:opacity-20"
         >
           <source src="/images/hero-video.mp4" type="video/mp4" />
           <img
-            src="/images/hero-banner.jpg"
+            src="/images/hero-hawaii-sunset.jpg"
             alt="Eliminate Credit Card Fees — TechSavvy Hawaii"
             className="w-full h-full object-cover object-center"
           />
@@ -161,7 +161,7 @@ function HeroSection() {
           transition={{ delay: 0.5, duration: 0.7 }}
         >
           <img
-            src="/images/hero-banner.jpg"
+            src="/images/hero-hawaii-sunset.jpg"
             alt="TechSavvy Hawaii — zero-fee payment processing and free custom websites for local businesses"
             className="w-full h-auto rounded-xl shadow-lg"
           />
