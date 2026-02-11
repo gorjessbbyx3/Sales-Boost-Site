@@ -142,6 +142,7 @@ function Footer() {
                 className="w-48 sm:w-56 h-auto rounded-lg"
                 poster="/images/techsavvy-logo.jpeg"
               >
+                <source src="/images/techsavvy-logo-video.mov" type="video/quicktime" />
                 <source src="/images/techsavvy-logo-video.mp4" type="video/mp4" />
                 <img src="/images/techsavvy-logo.jpeg" alt="TechSavvy Hawaii" className="w-48 sm:w-56 h-auto rounded-lg" />
               </video>
