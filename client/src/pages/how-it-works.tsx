@@ -62,7 +62,7 @@ function HowItWorksHero() {
           <motion.div className="mt-8 rounded-xl overflow-hidden bg-muted/30 max-w-2xl mx-auto" variants={fadeUp}>
             <img
               src="/images/How_it_works.png"
-              alt="How Edify zero-fee payment processing works"
+              alt="How TechSavvy zero-fee payment processing works"
               className="w-full max-h-[50vh] object-contain"
             />
           </motion.div>
@@ -169,7 +169,7 @@ function StepsSection() {
   );
 }
 
-function WhyEdifySection() {
+function WhyTechSavvySection() {
   const benefits = [
     {
       icon: DollarSign,
@@ -216,7 +216,7 @@ function WhyEdifySection() {
         >
           <motion.div variants={fadeUp}>
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              Why Edify
+              Why TechSavvy
             </Badge>
           </motion.div>
           <motion.h2
@@ -297,7 +297,7 @@ export default function HowItWorksPage() {
     <Layout>
       <HowItWorksHero />
       <StepsSection />
-      <WhyEdifySection />
+      <WhyTechSavvySection />
       <HowItWorksCTA />
     </Layout>
   );

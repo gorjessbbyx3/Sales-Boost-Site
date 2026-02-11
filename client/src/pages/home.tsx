@@ -54,7 +54,7 @@ function HeroSection() {
       <div className="absolute inset-0 -z-10">
         <img
           src="/images/hero-banner.jpg"
-          alt="Eliminate Credit Card Fees — Edify Hawaii"
+          alt="Eliminate Credit Card Fees — TechSavvy Hawaii"
           className="w-full h-full object-cover object-center opacity-15 sm:opacity-20"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
@@ -152,7 +152,7 @@ function HeroSection() {
         >
           <img
             src="/images/hero-banner.jpg"
-            alt="Edify Hawaii — zero-fee payment processing and free custom websites for local businesses"
+            alt="TechSavvy Hawaii — zero-fee payment processing and free custom websites for local businesses"
             className="w-full h-auto rounded-xl shadow-lg"
           />
         </motion.div>
@@ -252,7 +252,7 @@ function ServicesOverview() {
     {
       icon: Globe,
       title: "Free Custom Website",
-      description: "Every Edify merchant gets a professional business website — mobile-optimized and SEO-ready.",
+      description: "Every TechSavvy merchant gets a professional business website — mobile-optimized and SEO-ready.",
       href: "/our-work",
       cta: "See Examples",
       color: "text-chart-3",
@@ -417,7 +417,7 @@ function PortfolioShowcase() {
               Websites We Build for Every Industry
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-lg">
-              Every Edify merchant gets a free custom website — here's what yours could look like.
+              Every TechSavvy merchant gets a free custom website — here's what yours could look like.
             </p>
           </motion.div>
 
@@ -646,7 +646,7 @@ function QuickPricingPreview() {
 function TestimonialSection() {
   const testimonials = [
     {
-      quote: "Switching to Edify saved us over $4,800 last year. The free website brings in new customers every week.",
+      quote: "Switching to TechSavvy saved us over $4,800 last year. The free website brings in new customers every week.",
       name: "Marcus Kalani",
       role: "Kalani's Auto Repair — Honolulu",
       rating: 5,
@@ -658,7 +658,7 @@ function TestimonialSection() {
       rating: 5,
     },
     {
-      quote: "As a high-risk CBD merchant, nobody would work with us. Edify got us approved same day with zero fees.",
+      quote: "As a high-risk CBD merchant, nobody would work with us. TechSavvy got us approved same day with zero fees.",
       name: "David Kealoha",
       role: "Island Wellness CBD — Kona",
       rating: 5,
@@ -685,7 +685,7 @@ function TestimonialSection() {
             className="text-2xl sm:text-4xl font-extrabold tracking-tight"
             variants={fadeUp}
           >
-            Hawai'i Businesses Love Edify
+            Hawai'i Businesses Love TechSavvy
           </motion.h2>
         </motion.div>
 

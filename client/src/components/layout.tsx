@@ -47,8 +47,8 @@ function Navbar() {
             className="font-bold text-xl tracking-tight flex items-center gap-2.5"
             data-testid="link-logo"
           >
-            <img src="/images/IMG_6304.png" alt="Edify Limited" className="w-9 h-9 rounded" />
-            <span className="text-foreground">Edify</span>
+            <img src="/images/IMG_6304.png" alt="TechSavvy Hawaii" className="w-9 h-9 rounded" />
+            <span className="text-foreground">TechSavvy</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -134,8 +134,8 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
           <div className="col-span-2 md:col-span-1">
             <div className="font-bold text-base sm:text-lg flex items-center gap-2 mb-3">
-              <img src="/images/IMG_6304.png" alt="Edify Limited" className="w-7 h-7 sm:w-8 sm:h-8 rounded" />
-              <span className="text-foreground">Edify Limited</span>
+              <img src="/images/IMG_6304.png" alt="TechSavvy Hawaii" className="w-7 h-7 sm:w-8 sm:h-8 rounded" />
+              <span className="text-foreground">TechSavvy Hawaii</span>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-sm mb-3">
               Hawai'i's trusted payment processing and web design company. Zero fees — plus free websites for every merchant.
@@ -224,7 +224,7 @@ function Footer() {
         </div>
 
         <div className="border-t border-border/50 mt-10 pt-8 text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} Edify Limited. All rights reserved.
+          &copy; {new Date().getFullYear()} TechSavvy Hawaii. All rights reserved.
         </div>
       </div>
     </footer>

@@ -39,7 +39,7 @@ function now() {
 
 function getSessionToken(request: Request): string | null {
   const cookie = request.headers.get("Cookie") || "";
-  const match = cookie.match(/edify_session=([^;]+)/);
+  const match = cookie.match(/techsavvy_session=([^;]+)/);
   return match ? match[1] : null;
 }
 
@@ -51,11 +51,11 @@ async function isAuthenticated(db: D1Database, request: Request): Promise<boolea
 }
 
 function setSessionCookie(token: string): string {
-  return `edify_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`;
+  return `techsavvy_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`;
 }
 
 function clearSessionCookie(): string {
-  return "edify_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
+  return "techsavvy_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
 }
 
 // ─── Allowed AI models ───────────────────────────────────────────────

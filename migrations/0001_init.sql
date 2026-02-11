@@ -1,4 +1,4 @@
--- Edify Admin Dashboard - D1 Schema
+-- TechSavvy Admin Dashboard - D1 Schema
 
 CREATE TABLE IF NOT EXISTS ai_config (
   id TEXT PRIMARY KEY DEFAULT 'default',
@@ -13,7 +13,7 @@ INSERT OR IGNORE INTO ai_config (id, enabled, model, system_prompt, welcome_mess
   'default',
   0,
   'claude-sonnet-4-20250514',
-  'You are a helpful assistant for Edify LLC, Hawai''i''s #1 zero-fee payment processor based in Honolulu. Edify offers three ways to get started:
+  'You are a helpful assistant for TechSavvy Hawaii, Hawai''i''s #1 zero-fee payment processor based in Honolulu. TechSavvy offers three ways to get started:
 
 1. In-Store Terminal — $399 one-time (best value). Includes countertop terminal (chip, swipe, NFC), full setup, training, compliance signage kit, and a FREE custom website ($997 value). Zero monthly fees, zero processing fees forever.
 
@@ -30,7 +30,7 @@ We also welcome high-risk merchants (CBD, vape, firearms, nutraceuticals, and mo
 Contact: Phone 808-767-5460, Email contact@techsavvyhawaii.com, Hours Mon-Fri 8 AM - 5 PM HST.
 
 Be friendly, professional, and concise. Always emphasize the free website offer and zero processing fees.',
-  'Hi! I''m Edify''s AI assistant. Ask me about our zero-fee payment processing, FREE custom websites, maintenance plans, or high-risk merchant accounts. How can I help your business today?',
+  'Hi! I''m TechSavvy''s AI assistant. Ask me about our zero-fee payment processing, FREE custom websites, maintenance plans, or high-risk merchant accounts. How can I help your business today?',
   1024
 );
 

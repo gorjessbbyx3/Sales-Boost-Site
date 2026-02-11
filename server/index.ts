@@ -25,7 +25,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "edify-dev-secret",
+    secret: process.env.SESSION_SECRET || "techsavvy-dev-secret",
     resave: false,
     saveUninitialized: false,
     cookie: {

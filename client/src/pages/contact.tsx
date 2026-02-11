@@ -60,11 +60,11 @@ function FAQSection() {
       a: "Yes — we require a minimum of $5,000-$10,000 in monthly processing volume to qualify. This ensures the zero-fee model delivers meaningful savings for your business.",
     },
     {
-      q: "Does Edify offer website design for Hawai'i businesses?",
-      a: "Yes. Every Edify payment processing merchant gets a free custom-built business website — no templates, no extra cost. We also offer premium website packages with e-commerce integration, online ordering, booking systems, and custom software. All websites are mobile-optimized, SEO-ready, and built to help your Hawai'i business get found online.",
+      q: "Does TechSavvy offer website design for Hawai'i businesses?",
+      a: "Yes. Every TechSavvy payment processing merchant gets a free custom-built business website — no templates, no extra cost. We also offer premium website packages with e-commerce integration, online ordering, booking systems, and custom software. All websites are mobile-optimized, SEO-ready, and built to help your Hawai'i business get found online.",
     },
     {
-      q: "What areas in Hawai'i does Edify serve?",
+      q: "What areas in Hawai'i does TechSavvy serve?",
       a: "We serve businesses across all Hawaiian Islands — O'ahu (Honolulu, Kailua, Pearl City), Maui (Kahului, Lahaina, Kihei), the Big Island (Kona, Hilo), Kaua'i, Moloka'i, and Lana'i. We offer same-day setup with remote training, and on-site support is available in the Honolulu area.",
     },
     {

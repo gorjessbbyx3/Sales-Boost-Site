@@ -262,7 +262,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <div className="w-7 h-7 rounded bg-primary/15 flex items-center justify-center">
                   <LayoutDashboard className="w-4 h-4 text-primary" />
                 </div>
-                <h1 className="text-sm font-bold">Edify Admin</h1>
+                <h1 className="text-sm font-bold">TechSavvy Admin</h1>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={onLogout} className="text-muted-foreground">
