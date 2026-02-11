@@ -15,13 +15,13 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Bot, Save, Zap, Settings, MessageSquare, Lock, LogOut,
   LayoutDashboard, Users, DollarSign, ClipboardList, Phone, Mail,
-  Plus, Trash2, Edit3, Check, X, TrendingUp, CreditCard, Globe,
-  Clock, AlertTriangle, ChevronRight, Calendar, Search, Filter,
-  UserPlus, Building, FileText, CheckCircle, XCircle, Pause,
+  Plus, Trash2, Edit3, Check, TrendingUp, CreditCard, Globe,
+  AlertTriangle, Calendar, Search, Filter,
+  UserPlus, Building, CheckCircle,
   BarChart3, ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -78,24 +78,7 @@ interface Task {
   createdAt: string;
 }
 
-// ─── localStorage Helpers ────────────────────────────────────────────
-
-function loadData<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(`edify_admin_${key}`);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveData<T>(key: string, data: T) {
-  localStorage.setItem(`edify_admin_${key}`, JSON.stringify(data));
-}
-
-function genId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
+// ─── Helpers ─────────────────────────────────────────────────────────
 
 function today() {
   return new Date().toISOString().split("T")[0];
@@ -210,7 +193,6 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
 // ─── Main Export ─────────────────────────────────────────────────────
 
 export default function AiConfigPage() {
-  const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -336,10 +318,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 // ─── Overview Tab ────────────────────────────────────────────────────
 
 function OverviewTab() {
-  const leads = loadData<Lead[]>("leads", []);
-  const clients = loadData<Client[]>("clients", []);
-  const revenue = loadData<RevenueEntry[]>("revenue", []);
-  const tasks = loadData<Task[]>("tasks", []);
+  const { data: leads = [] } = useQuery<Lead[]>({ queryKey: ["/api/leads"] });
+  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
+  const { data: revenue = [] } = useQuery<RevenueEntry[]>({ queryKey: ["/api/revenue"] });
+  const { data: tasks = [] } = useQuery<Task[]>({ queryKey: ["/api/tasks"] });
 
   const activeLeads = leads.filter((l) => !["won", "lost"].includes(l.status));
   const wonThisMonth = leads.filter((l) => {
@@ -367,43 +349,13 @@ function OverviewTab() {
 
   return (
     <div className="space-y-6">
-      {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <MetricCard
-          icon={UserPlus}
-          label="Active Leads"
-          value={activeLeads.length.toString()}
-          subtext={`${wonThisMonth.length} won this month`}
-          color="text-blue-400"
-          bgColor="bg-blue-400/10"
-        />
-        <MetricCard
-          icon={Users}
-          label="Total Clients"
-          value={clients.length.toString()}
-          subtext={`${clients.filter((c) => c.maintenance !== "none").length} on maintenance`}
-          color="text-emerald-400"
-          bgColor="bg-emerald-400/10"
-        />
-        <MetricCard
-          icon={TrendingUp}
-          label="Monthly Recurring"
-          value={`$${monthlyRecurring.toLocaleString()}`}
-          subtext={`${clients.filter((c) => c.maintenance !== "none").length} active plans`}
-          color="text-primary"
-          bgColor="bg-primary/10"
-        />
-        <MetricCard
-          icon={DollarSign}
-          label="Revenue This Month"
-          value={`$${thisMonthRevenue.toLocaleString()}`}
-          subtext={`${revenue.filter((r) => { const d = new Date(r.date); const n = new Date(); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); }).length} transactions`}
-          color="text-chart-4"
-          bgColor="bg-chart-4/10"
-        />
+        <MetricCard icon={UserPlus} label="Active Leads" value={activeLeads.length.toString()} subtext={`${wonThisMonth.length} won this month`} color="text-blue-400" bgColor="bg-blue-400/10" />
+        <MetricCard icon={Users} label="Total Clients" value={clients.length.toString()} subtext={`${clients.filter((c) => c.maintenance !== "none").length} on maintenance`} color="text-emerald-400" bgColor="bg-emerald-400/10" />
+        <MetricCard icon={TrendingUp} label="Monthly Recurring" value={`$${monthlyRecurring.toLocaleString()}`} subtext={`${clients.filter((c) => c.maintenance !== "none").length} active plans`} color="text-primary" bgColor="bg-primary/10" />
+        <MetricCard icon={DollarSign} label="Revenue This Month" value={`$${thisMonthRevenue.toLocaleString()}`} subtext={`${revenue.filter((r) => { const d = new Date(r.date); const n = new Date(); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); }).length} transactions`} color="text-chart-4" bgColor="bg-chart-4/10" />
       </div>
 
-      {/* Alerts */}
       {overdueTasks.length > 0 && (
         <Card className="border-destructive/30 overflow-visible">
           <CardContent className="p-4 flex items-center gap-3">
@@ -418,9 +370,7 @@ function OverviewTab() {
         </Card>
       )}
 
-      {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Recent Leads */}
         <Card className="overflow-visible border-border/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -449,7 +399,6 @@ function OverviewTab() {
           </CardContent>
         </Card>
 
-        {/* Upcoming Tasks */}
         <Card className="overflow-visible border-border/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -481,7 +430,6 @@ function OverviewTab() {
         </Card>
       </div>
 
-      {/* Pipeline Summary */}
       <Card className="overflow-visible border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -504,7 +452,6 @@ function OverviewTab() {
         </CardContent>
       </Card>
 
-      {/* Client Breakdown */}
       <Card className="overflow-visible border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -556,69 +503,67 @@ function MetricCard({ icon: Icon, label, value, subtext, color, bgColor }: {
 // ─── Leads Tab ───────────────────────────────────────────────────────
 
 function LeadsTab() {
-  const [leads, setLeads] = useState<Lead[]>(() => loadData("leads", []));
+  const { data: leads = [], refetch } = useQuery<Lead[]>({ queryKey: ["/api/leads"] });
   const [showForm, setShowForm] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<LeadStatus | "all">("all");
   const { toast } = useToast();
 
-  const saveLeads = useCallback((updated: Lead[]) => {
-    setLeads(updated);
-    saveData("leads", updated);
-  }, []);
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<Lead>) => {
+      const res = await apiRequest("POST", "/api/leads", data);
+      return res.json();
+    },
+    onSuccess: () => { refetch(); toast({ title: "Lead added" }); setShowForm(false); setEditingLead(null); },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: Partial<Lead> & { id: string }) => {
+      const res = await apiRequest("PATCH", `/api/leads/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => { refetch(); toast({ title: "Lead updated" }); setShowForm(false); setEditingLead(null); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/leads/${id}`); },
+    onSuccess: () => { refetch(); toast({ title: "Lead deleted" }); },
+  });
+
+  const convertMutation = useMutation({
+    mutationFn: async (lead: Lead) => {
+      await apiRequest("POST", "/api/clients", {
+        name: lead.name, business: lead.business, phone: lead.phone, email: lead.email,
+        package: lead.package, maintenance: "none", websiteUrl: "", websiteStatus: "not-started",
+        terminalId: "", monthlyVolume: 0, startDate: today(), notes: lead.notes,
+      });
+      await apiRequest("PATCH", `/api/leads/${lead.id}`, { status: "won" });
+    },
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({ title: "Lead converted to client" });
+    },
+  });
 
   const filteredLeads = useMemo(() => {
     return leads
       .filter((l) => filterStatus === "all" || l.status === filterStatus)
-      .filter((l) =>
-        !search || [l.name, l.business, l.email, l.phone].some((f) => f.toLowerCase().includes(search.toLowerCase()))
-      )
+      .filter((l) => !search || [l.name, l.business, l.email, l.phone].some((f) => f.toLowerCase().includes(search.toLowerCase())))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [leads, filterStatus, search]);
 
-  const handleSave = (lead: Lead) => {
-    const existing = leads.find((l) => l.id === lead.id);
-    if (existing) {
-      saveLeads(leads.map((l) => (l.id === lead.id ? { ...lead, updatedAt: new Date().toISOString() } : l)));
-      toast({ title: "Lead updated" });
+  const handleSave = (form: Partial<Lead>) => {
+    if (editingLead) {
+      updateMutation.mutate({ ...form, id: editingLead.id } as Lead & { id: string });
     } else {
-      saveLeads([...leads, { ...lead, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }]);
-      toast({ title: "Lead added" });
+      createMutation.mutate(form);
     }
-    setShowForm(false);
-    setEditingLead(null);
-  };
-
-  const handleDelete = (id: string) => {
-    saveLeads(leads.filter((l) => l.id !== id));
-    toast({ title: "Lead deleted" });
   };
 
   const handleStatusChange = (id: string, status: LeadStatus) => {
-    saveLeads(leads.map((l) => (l.id === id ? { ...l, status, updatedAt: new Date().toISOString() } : l)));
-  };
-
-  const handleConvert = (lead: Lead) => {
-    const clients = loadData<Client[]>("clients", []);
-    const newClient: Client = {
-      id: genId(),
-      name: lead.name,
-      business: lead.business,
-      phone: lead.phone,
-      email: lead.email,
-      package: lead.package,
-      maintenance: "none",
-      websiteUrl: "",
-      websiteStatus: "not-started",
-      terminalId: "",
-      monthlyVolume: 0,
-      startDate: today(),
-      notes: lead.notes,
-    };
-    saveData("clients", [...clients, newClient]);
-    handleStatusChange(lead.id, "won");
-    toast({ title: "Lead converted to client", description: `${lead.business || lead.name} added to clients.` });
+    updateMutation.mutate({ id, status } as any);
   };
 
   return (
@@ -634,16 +579,10 @@ function LeadsTab() {
         </Button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search leads..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 text-sm"
-          />
+          <Input placeholder="Search leads..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
         </div>
         <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as LeadStatus | "all")}>
           <SelectTrigger className="w-full sm:w-40 h-9">
@@ -659,7 +598,6 @@ function LeadsTab() {
         </Select>
       </div>
 
-      {/* Lead List */}
       {filteredLeads.length === 0 ? (
         <Card className="overflow-visible border-dashed">
           <CardContent className="p-8 text-center">
@@ -683,34 +621,18 @@ function LeadsTab() {
                         {PACKAGE_CONFIG[lead.package].label}
                       </Badge>
                     </div>
-                    {lead.business && lead.name && (
-                      <p className="text-xs text-muted-foreground">{lead.name}</p>
-                    )}
+                    {lead.business && lead.name && <p className="text-xs text-muted-foreground">{lead.name}</p>}
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
-                      {lead.phone && (
-                        <a href={`tel:${lead.phone}`} className="flex items-center gap-1 hover:text-foreground">
-                          <Phone className="w-3 h-3" />{lead.phone}
-                        </a>
-                      )}
-                      {lead.email && (
-                        <a href={`mailto:${lead.email}`} className="flex items-center gap-1 hover:text-foreground">
-                          <Mail className="w-3 h-3" />{lead.email}
-                        </a>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(lead.createdAt).toLocaleDateString()}
-                      </span>
+                      {lead.phone && <a href={`tel:${lead.phone}`} className="flex items-center gap-1 hover:text-foreground"><Phone className="w-3 h-3" />{lead.phone}</a>}
+                      {lead.email && <a href={`mailto:${lead.email}`} className="flex items-center gap-1 hover:text-foreground"><Mail className="w-3 h-3" />{lead.email}</a>}
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(lead.createdAt).toLocaleDateString()}</span>
                     </div>
                     {lead.notes && <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{lead.notes}</p>}
                   </div>
-
                   <div className="flex items-center gap-1 shrink-0">
                     {lead.status !== "won" && lead.status !== "lost" && (
                       <Select value={lead.status} onValueChange={(v) => handleStatusChange(lead.id, v as LeadStatus)}>
-                        <SelectTrigger className="h-7 w-24 text-[10px]">
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {(Object.keys(LEAD_STATUS_CONFIG) as LeadStatus[]).map((s) => (
                             <SelectItem key={s} value={s} className="text-xs">{LEAD_STATUS_CONFIG[s].label}</SelectItem>
@@ -719,14 +641,14 @@ function LeadsTab() {
                       </Select>
                     )}
                     {lead.status !== "won" && lead.status !== "lost" && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => handleConvert(lead)} title="Convert to client">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => convertMutation.mutate(lead)} title="Convert to client">
                         <CheckCircle className="w-3.5 h-3.5" />
                       </Button>
                     )}
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingLead(lead); setShowForm(true); }}>
                       <Edit3 className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(lead.id)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(lead.id)}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -737,28 +659,18 @@ function LeadsTab() {
         </div>
       )}
 
-      {/* Add/Edit Lead Dialog */}
-      <LeadFormDialog
-        open={showForm}
-        onClose={() => { setShowForm(false); setEditingLead(null); }}
-        onSave={handleSave}
-        lead={editingLead}
-      />
+      <LeadFormDialog open={showForm} onClose={() => { setShowForm(false); setEditingLead(null); }} onSave={handleSave} lead={editingLead} />
     </div>
   );
 }
 
 function LeadFormDialog({ open, onClose, onSave, lead }: {
-  open: boolean; onClose: () => void; onSave: (lead: Lead) => void; lead: Lead | null;
+  open: boolean; onClose: () => void; onSave: (form: Partial<Lead>) => void; lead: Lead | null;
 }) {
   const [form, setForm] = useState<Partial<Lead>>({});
-
   useEffect(() => {
-    if (open) {
-      setForm(lead || { id: genId(), name: "", business: "", phone: "", email: "", package: "terminal", status: "new", notes: "" });
-    }
+    if (open) setForm(lead || { name: "", business: "", phone: "", email: "", package: "terminal", status: "new", notes: "" });
   }, [open, lead]);
-
   const set = (key: keyof Lead, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
 
   return (
@@ -770,24 +682,12 @@ function LeadFormDialog({ open, onClose, onSave, lead }: {
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Contact Name</Label>
-              <Input value={form.name || ""} onChange={(e) => set("name", e.target.value)} placeholder="John Doe" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Business Name</Label>
-              <Input value={form.business || ""} onChange={(e) => set("business", e.target.value)} placeholder="Aloha Café" />
-            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Contact Name</Label><Input value={form.name || ""} onChange={(e) => set("name", e.target.value)} placeholder="John Doe" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Business Name</Label><Input value={form.business || ""} onChange={(e) => set("business", e.target.value)} placeholder="Aloha Café" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Phone</Label>
-              <Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} placeholder="808-555-1234" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Email</Label>
-              <Input value={form.email || ""} onChange={(e) => set("email", e.target.value)} placeholder="john@aloha.com" />
-            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} placeholder="808-555-1234" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={form.email || ""} onChange={(e) => set("email", e.target.value)} placeholder="john@aloha.com" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -820,10 +720,7 @@ function LeadFormDialog({ open, onClose, onSave, lead }: {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => onSave(form as Lead)} disabled={!form.name && !form.business}>
-            <Save className="w-3.5 h-3.5" />
-            {lead ? "Update" : "Add Lead"}
-          </Button>
+          <Button onClick={() => onSave(form)} disabled={!form.name && !form.business}><Save className="w-3.5 h-3.5" />{lead ? "Update" : "Add Lead"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -833,16 +730,26 @@ function LeadFormDialog({ open, onClose, onSave, lead }: {
 // ─── Clients Tab ─────────────────────────────────────────────────────
 
 function ClientsTab() {
-  const [clients, setClients] = useState<Client[]>(() => loadData("clients", []));
+  const { data: clients = [], refetch } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
   const { toast } = useToast();
 
-  const saveClients = useCallback((updated: Client[]) => {
-    setClients(updated);
-    saveData("clients", updated);
-  }, []);
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<Client>) => { const res = await apiRequest("POST", "/api/clients", data); return res.json(); },
+    onSuccess: () => { refetch(); toast({ title: "Client added" }); setShowForm(false); setEditingClient(null); },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: Partial<Client> & { id: string }) => { const res = await apiRequest("PATCH", `/api/clients/${id}`, data); return res.json(); },
+    onSuccess: () => { refetch(); toast({ title: "Client updated" }); setShowForm(false); setEditingClient(null); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/clients/${id}`); },
+    onSuccess: () => { refetch(); toast({ title: "Client removed" }); },
+  });
 
   const filteredClients = useMemo(() => {
     return clients
@@ -850,22 +757,9 @@ function ClientsTab() {
       .sort((a, b) => a.business.localeCompare(b.business));
   }, [clients, search]);
 
-  const handleSave = (client: Client) => {
-    const existing = clients.find((c) => c.id === client.id);
-    if (existing) {
-      saveClients(clients.map((c) => (c.id === client.id ? client : c)));
-      toast({ title: "Client updated" });
-    } else {
-      saveClients([...clients, client]);
-      toast({ title: "Client added" });
-    }
-    setShowForm(false);
-    setEditingClient(null);
-  };
-
-  const handleDelete = (id: string) => {
-    saveClients(clients.filter((c) => c.id !== id));
-    toast({ title: "Client removed" });
+  const handleSave = (form: Partial<Client>) => {
+    if (editingClient) { updateMutation.mutate({ ...form, id: editingClient.id } as Client & { id: string }); }
+    else { createMutation.mutate(form); }
   };
 
   const WEBSITE_STATUS: Record<string, { label: string; color: string }> = {
@@ -878,16 +772,9 @@ function ClientsTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold">Client Directory</h2>
-          <p className="text-xs text-muted-foreground">{clients.length} active merchants</p>
-        </div>
-        <Button size="sm" onClick={() => { setEditingClient(null); setShowForm(true); }}>
-          <Plus className="w-3.5 h-3.5" />
-          Add Client
-        </Button>
+        <div><h2 className="text-lg font-bold">Client Directory</h2><p className="text-xs text-muted-foreground">{clients.length} active merchants</p></div>
+        <Button size="sm" onClick={() => { setEditingClient(null); setShowForm(true); }}><Plus className="w-3.5 h-3.5" />Add Client</Button>
       </div>
-
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
         <Input placeholder="Search clients..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
@@ -909,55 +796,22 @@ function ClientsTab() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-semibold text-sm">{client.business || client.name}</span>
-                      <Badge variant="outline" className={`text-[10px] ${PACKAGE_CONFIG[client.package].color}`}>
-                        {PACKAGE_CONFIG[client.package].label}
-                      </Badge>
-                      {client.maintenance !== "none" && (
-                        <Badge variant="outline" className="text-[10px] text-primary">
-                          {MAINTENANCE_CONFIG[client.maintenance].label} — {MAINTENANCE_CONFIG[client.maintenance].price}
-                        </Badge>
-                      )}
+                      <Badge variant="outline" className={`text-[10px] ${PACKAGE_CONFIG[client.package].color}`}>{PACKAGE_CONFIG[client.package].label}</Badge>
+                      {client.maintenance !== "none" && <Badge variant="outline" className="text-[10px] text-primary">{MAINTENANCE_CONFIG[client.maintenance].label} — {MAINTENANCE_CONFIG[client.maintenance].price}</Badge>}
                     </div>
-                    {client.business && client.name && (
-                      <p className="text-xs text-muted-foreground">{client.name}</p>
-                    )}
+                    {client.business && client.name && <p className="text-xs text-muted-foreground">{client.name}</p>}
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
-                      {client.phone && (
-                        <a href={`tel:${client.phone}`} className="flex items-center gap-1 hover:text-foreground">
-                          <Phone className="w-3 h-3" />{client.phone}
-                        </a>
-                      )}
-                      {client.email && (
-                        <a href={`mailto:${client.email}`} className="flex items-center gap-1 hover:text-foreground">
-                          <Mail className="w-3 h-3" />{client.email}
-                        </a>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <Globe className="w-3 h-3" />
-                        Website: <span className={WEBSITE_STATUS[client.websiteStatus]?.color}>{WEBSITE_STATUS[client.websiteStatus]?.label}</span>
-                      </span>
-                      {client.websiteUrl && (
-                        <a href={client.websiteUrl.startsWith("http") ? client.websiteUrl : `https://${client.websiteUrl}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-foreground text-primary">
-                          <ArrowUpRight className="w-3 h-3" />{client.websiteUrl}
-                        </a>
-                      )}
-                      {client.monthlyVolume > 0 && (
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="w-3 h-3" />
-                          ${client.monthlyVolume.toLocaleString()}/mo volume
-                        </span>
-                      )}
+                      {client.phone && <a href={`tel:${client.phone}`} className="flex items-center gap-1 hover:text-foreground"><Phone className="w-3 h-3" />{client.phone}</a>}
+                      {client.email && <a href={`mailto:${client.email}`} className="flex items-center gap-1 hover:text-foreground"><Mail className="w-3 h-3" />{client.email}</a>}
+                      <span className="flex items-center gap-1"><Globe className="w-3 h-3" />Website: <span className={WEBSITE_STATUS[client.websiteStatus]?.color}>{WEBSITE_STATUS[client.websiteStatus]?.label}</span></span>
+                      {client.websiteUrl && <a href={client.websiteUrl.startsWith("http") ? client.websiteUrl : `https://${client.websiteUrl}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-foreground text-primary"><ArrowUpRight className="w-3 h-3" />{client.websiteUrl}</a>}
+                      {client.monthlyVolume > 0 && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />${client.monthlyVolume.toLocaleString()}/mo volume</span>}
                     </div>
                     {client.notes && <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{client.notes}</p>}
                   </div>
-
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingClient(client); setShowForm(true); }}>
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(client.id)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingClient(client); setShowForm(true); }}><Edit3 className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(client.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                   </div>
                 </div>
               </CardContent>
@@ -966,32 +820,18 @@ function ClientsTab() {
         </div>
       )}
 
-      <ClientFormDialog
-        open={showForm}
-        onClose={() => { setShowForm(false); setEditingClient(null); }}
-        onSave={handleSave}
-        client={editingClient}
-      />
+      <ClientFormDialog open={showForm} onClose={() => { setShowForm(false); setEditingClient(null); }} onSave={handleSave} client={editingClient} />
     </div>
   );
 }
 
 function ClientFormDialog({ open, onClose, onSave, client }: {
-  open: boolean; onClose: () => void; onSave: (client: Client) => void; client: Client | null;
+  open: boolean; onClose: () => void; onSave: (form: Partial<Client>) => void; client: Client | null;
 }) {
   const [form, setForm] = useState<Partial<Client>>({});
-
   useEffect(() => {
-    if (open) {
-      setForm(client || {
-        id: genId(), name: "", business: "", phone: "", email: "",
-        package: "terminal", maintenance: "none", websiteUrl: "",
-        websiteStatus: "not-started", terminalId: "", monthlyVolume: 0,
-        startDate: today(), notes: "",
-      });
-    }
+    if (open) setForm(client || { name: "", business: "", phone: "", email: "", package: "terminal", maintenance: "none", websiteUrl: "", websiteStatus: "not-started", terminalId: "", monthlyVolume: 0, startDate: today(), notes: "" });
   }, [open, client]);
-
   const set = (key: keyof Client, value: string | number) => setForm((prev) => ({ ...prev, [key]: value }));
 
   return (
@@ -1003,47 +843,26 @@ function ClientFormDialog({ open, onClose, onSave, client }: {
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Contact Name</Label>
-              <Input value={form.name || ""} onChange={(e) => set("name", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Business Name</Label>
-              <Input value={form.business || ""} onChange={(e) => set("business", e.target.value)} />
-            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Contact Name</Label><Input value={form.name || ""} onChange={(e) => set("name", e.target.value)} /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Business Name</Label><Input value={form.business || ""} onChange={(e) => set("business", e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Phone</Label>
-              <Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Email</Label>
-              <Input value={form.email || ""} onChange={(e) => set("email", e.target.value)} />
-            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={form.email || ""} onChange={(e) => set("email", e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Package</Label>
               <Select value={form.package || "terminal"} onValueChange={(v) => set("package", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="terminal">Terminal ($399)</SelectItem>
-                  <SelectItem value="trial">30-Day Trial</SelectItem>
-                  <SelectItem value="online">Online (Free)</SelectItem>
-                </SelectContent>
+                <SelectContent><SelectItem value="terminal">Terminal ($399)</SelectItem><SelectItem value="trial">30-Day Trial</SelectItem><SelectItem value="online">Online (Free)</SelectItem></SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Maintenance Plan</Label>
               <Select value={form.maintenance || "none"} onValueChange={(v) => set("maintenance", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None / Self-Hosted</SelectItem>
-                  <SelectItem value="basic">Basic ($99/mo)</SelectItem>
-                  <SelectItem value="pro">Pro ($199/mo)</SelectItem>
-                  <SelectItem value="premium">Premium ($399/mo)</SelectItem>
-                </SelectContent>
+                <SelectContent><SelectItem value="none">None / Self-Hosted</SelectItem><SelectItem value="basic">Basic ($99/mo)</SelectItem><SelectItem value="pro">Pro ($199/mo)</SelectItem><SelectItem value="premium">Premium ($399/mo)</SelectItem></SelectContent>
               </Select>
             </div>
           </div>
@@ -1052,44 +871,21 @@ function ClientFormDialog({ open, onClose, onSave, client }: {
               <Label className="text-xs">Website Status</Label>
               <Select value={form.websiteStatus || "not-started"} onValueChange={(v) => set("websiteStatus", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="not-started">Not Started</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="live">Live</SelectItem>
-                  <SelectItem value="self-hosted">Self-Hosted</SelectItem>
-                </SelectContent>
+                <SelectContent><SelectItem value="not-started">Not Started</SelectItem><SelectItem value="in-progress">In Progress</SelectItem><SelectItem value="live">Live</SelectItem><SelectItem value="self-hosted">Self-Hosted</SelectItem></SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Website URL</Label>
-              <Input value={form.websiteUrl || ""} onChange={(e) => set("websiteUrl", e.target.value)} placeholder="example.com" />
-            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Website URL</Label><Input value={form.websiteUrl || ""} onChange={(e) => set("websiteUrl", e.target.value)} placeholder="example.com" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Terminal ID</Label>
-              <Input value={form.terminalId || ""} onChange={(e) => set("terminalId", e.target.value)} placeholder="TID-XXXXX" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Monthly Volume ($)</Label>
-              <Input type="number" value={form.monthlyVolume || ""} onChange={(e) => set("monthlyVolume", Number(e.target.value))} placeholder="10000" />
-            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Terminal ID</Label><Input value={form.terminalId || ""} onChange={(e) => set("terminalId", e.target.value)} placeholder="TID-XXXXX" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Monthly Volume ($)</Label><Input type="number" value={form.monthlyVolume || ""} onChange={(e) => set("monthlyVolume", Number(e.target.value))} placeholder="10000" /></div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Start Date</Label>
-            <Input type="date" value={form.startDate || today()} onChange={(e) => set("startDate", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Notes</Label>
-            <Textarea value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} rows={3} className="resize-none text-sm" />
-          </div>
+          <div className="space-y-1.5"><Label className="text-xs">Start Date</Label><Input type="date" value={form.startDate || today()} onChange={(e) => set("startDate", e.target.value)} /></div>
+          <div className="space-y-1.5"><Label className="text-xs">Notes</Label><Textarea value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} rows={3} className="resize-none text-sm" /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => onSave(form as Client)} disabled={!form.name && !form.business}>
-            <Save className="w-3.5 h-3.5" />
-            {client ? "Update" : "Add Client"}
-          </Button>
+          <Button onClick={() => onSave(form)} disabled={!form.name && !form.business}><Save className="w-3.5 h-3.5" />{client ? "Update" : "Add Client"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1099,154 +895,82 @@ function ClientFormDialog({ open, onClose, onSave, client }: {
 // ─── Revenue Tab ─────────────────────────────────────────────────────
 
 function RevenueTab() {
-  const [entries, setEntries] = useState<RevenueEntry[]>(() => loadData("revenue", []));
+  const { data: entries = [], refetch } = useQuery<RevenueEntry[]>({ queryKey: ["/api/revenue"] });
+  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<RevenueEntry | null>(null);
-  const clients = loadData<Client[]>("clients", []);
   const { toast } = useToast();
 
-  const saveEntries = useCallback((updated: RevenueEntry[]) => {
-    setEntries(updated);
-    saveData("revenue", updated);
-  }, []);
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<RevenueEntry>) => { const res = await apiRequest("POST", "/api/revenue", data); return res.json(); },
+    onSuccess: () => { refetch(); toast({ title: "Revenue recorded" }); setShowForm(false); setEditingEntry(null); },
+  });
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: Partial<RevenueEntry> & { id: string }) => { const res = await apiRequest("PATCH", `/api/revenue/${id}`, data); return res.json(); },
+    onSuccess: () => { refetch(); toast({ title: "Entry updated" }); setShowForm(false); setEditingEntry(null); },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/revenue/${id}`); },
+    onSuccess: () => { refetch(); toast({ title: "Entry deleted" }); },
+  });
+
+  const handleSave = (form: Partial<RevenueEntry>) => {
+    if (editingEntry) { updateMutation.mutate({ ...form, id: editingEntry.id } as RevenueEntry & { id: string }); }
+    else { createMutation.mutate(form); }
+  };
 
   const now = new Date();
-  const thisMonth = entries.filter((r) => {
-    const d = new Date(r.date);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const lastMonth = entries.filter((r) => {
-    const d = new Date(r.date);
-    const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear();
-  });
-
+  const thisMonth = entries.filter((r) => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
+  const lastMonth = entries.filter((r) => { const d = new Date(r.date); const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1); return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear(); });
   const thisMonthTotal = thisMonth.reduce((s, r) => s + r.amount, 0);
   const lastMonthTotal = lastMonth.reduce((s, r) => s + r.amount, 0);
   const oneTimeThisMonth = thisMonth.filter((r) => !r.recurring).reduce((s, r) => s + r.amount, 0);
   const recurringThisMonth = thisMonth.filter((r) => r.recurring).reduce((s, r) => s + r.amount, 0);
-
-  const monthlyRecurringFromClients = clients.reduce((sum, c) => {
+  const mrrFromClients = clients.reduce((sum, c) => {
     const prices: Record<MaintenancePlan, number> = { none: 0, basic: 99, pro: 199, premium: 399 };
     return sum + prices[c.maintenance];
   }, 0);
-
-  const handleSave = (entry: RevenueEntry) => {
-    const existing = entries.find((e) => e.id === entry.id);
-    if (existing) {
-      saveEntries(entries.map((e) => (e.id === entry.id ? entry : e)));
-      toast({ title: "Entry updated" });
-    } else {
-      saveEntries([...entries, entry]);
-      toast({ title: "Revenue recorded" });
-    }
-    setShowForm(false);
-    setEditingEntry(null);
-  };
-
-  const handleDelete = (id: string) => {
-    saveEntries(entries.filter((e) => e.id !== id));
-    toast({ title: "Entry deleted" });
-  };
 
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold">Revenue Tracker</h2>
-          <p className="text-xs text-muted-foreground">{entries.length} total entries</p>
-        </div>
-        <Button size="sm" onClick={() => { setEditingEntry(null); setShowForm(true); }}>
-          <Plus className="w-3.5 h-3.5" />
-          Record Revenue
-        </Button>
+        <div><h2 className="text-lg font-bold">Revenue Tracker</h2><p className="text-xs text-muted-foreground">{entries.length} total entries</p></div>
+        <Button size="sm" onClick={() => { setEditingEntry(null); setShowForm(true); }}><Plus className="w-3.5 h-3.5" />Record Revenue</Button>
       </div>
 
-      {/* Revenue Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="overflow-visible border-border/50">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">This Month</p>
-            <p className="text-xl font-extrabold text-primary">${thisMonthTotal.toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              {lastMonthTotal > 0 ? (
-                thisMonthTotal >= lastMonthTotal ? (
-                  <span className="text-emerald-400 flex items-center gap-0.5"><ArrowUpRight className="w-3 h-3" /> vs last month</span>
-                ) : (
-                  <span className="text-red-400 flex items-center gap-0.5"><ArrowDownRight className="w-3 h-3" /> vs last month</span>
-                )
-              ) : "No prior month data"}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="overflow-visible border-border/50">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">One-Time (This Mo)</p>
-            <p className="text-xl font-extrabold">${oneTimeThisMonth.toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">Terminals, conversions, add-ons</p>
-          </CardContent>
-        </Card>
-        <Card className="overflow-visible border-border/50">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Recurring (This Mo)</p>
-            <p className="text-xl font-extrabold text-chart-2">${recurringThisMonth.toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">Logged recurring entries</p>
-          </CardContent>
-        </Card>
-        <Card className="overflow-visible border-border/50">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Expected MRR</p>
-            <p className="text-xl font-extrabold text-emerald-400">${monthlyRecurringFromClients.toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">From active maintenance plans</p>
-          </CardContent>
-        </Card>
+        <Card className="overflow-visible border-border/50"><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground mb-1">This Month</p>
+          <p className="text-xl font-extrabold text-primary">${thisMonthTotal.toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">{lastMonthTotal > 0 ? (thisMonthTotal >= lastMonthTotal ? <span className="text-emerald-400 flex items-center gap-0.5"><ArrowUpRight className="w-3 h-3" /> vs last month</span> : <span className="text-red-400 flex items-center gap-0.5"><ArrowDownRight className="w-3 h-3" /> vs last month</span>) : "No prior month data"}</p>
+        </CardContent></Card>
+        <Card className="overflow-visible border-border/50"><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">One-Time (This Mo)</p><p className="text-xl font-extrabold">${oneTimeThisMonth.toLocaleString()}</p><p className="text-[10px] text-muted-foreground mt-1">Terminals, conversions, add-ons</p></CardContent></Card>
+        <Card className="overflow-visible border-border/50"><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Recurring (This Mo)</p><p className="text-xl font-extrabold text-chart-2">${recurringThisMonth.toLocaleString()}</p><p className="text-[10px] text-muted-foreground mt-1">Logged recurring entries</p></CardContent></Card>
+        <Card className="overflow-visible border-border/50"><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Expected MRR</p><p className="text-xl font-extrabold text-emerald-400">${mrrFromClients.toLocaleString()}</p><p className="text-[10px] text-muted-foreground mt-1">From active maintenance plans</p></CardContent></Card>
       </div>
 
-      {/* Revenue List */}
       {sorted.length === 0 ? (
-        <Card className="overflow-visible border-dashed">
-          <CardContent className="p-8 text-center">
-            <DollarSign className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No revenue entries yet. Record your first sale.</p>
-          </CardContent>
-        </Card>
+        <Card className="overflow-visible border-dashed"><CardContent className="p-8 text-center"><DollarSign className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" /><p className="text-sm text-muted-foreground">No revenue entries yet. Record your first sale.</p></CardContent></Card>
       ) : (
         <Card className="overflow-visible border-border/50">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Date</TableHead>
-                  <TableHead className="text-xs">Type</TableHead>
-                  <TableHead className="text-xs">Description</TableHead>
-                  <TableHead className="text-xs text-right">Amount</TableHead>
-                  <TableHead className="text-xs w-20"></TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader><TableRow>
+                <TableHead className="text-xs">Date</TableHead><TableHead className="text-xs">Type</TableHead><TableHead className="text-xs">Description</TableHead><TableHead className="text-xs text-right">Amount</TableHead><TableHead className="text-xs w-20"></TableHead>
+              </TableRow></TableHeader>
               <TableBody>
                 {sorted.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell className="text-xs">{entry.date}</TableCell>
-                    <TableCell className="text-xs">
-                      <div className="flex items-center gap-1.5">
-                        {entry.recurring && <Badge variant="outline" className="text-[9px] text-chart-2 border-chart-2/20">Recurring</Badge>}
-                        <span>{REVENUE_TYPES[entry.type]}</span>
-                      </div>
-                    </TableCell>
+                    <TableCell className="text-xs"><div className="flex items-center gap-1.5">{entry.recurring && <Badge variant="outline" className="text-[9px] text-chart-2 border-chart-2/20">Recurring</Badge>}<span>{REVENUE_TYPES[entry.type]}</span></div></TableCell>
                     <TableCell className="text-xs text-muted-foreground">{entry.description}</TableCell>
                     <TableCell className="text-xs text-right font-semibold text-primary">${entry.amount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 justify-end">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingEntry(entry); setShowForm(true); }}>
-                          <Edit3 className="w-3 h-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(entry.id)}>
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    <TableCell><div className="flex items-center gap-1 justify-end">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingEntry(entry); setShowForm(true); }}><Edit3 className="w-3 h-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(entry.id)}><Trash2 className="w-3 h-3" /></Button>
+                    </div></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1255,55 +979,33 @@ function RevenueTab() {
         </Card>
       )}
 
-      <RevenueFormDialog
-        open={showForm}
-        onClose={() => { setShowForm(false); setEditingEntry(null); }}
-        onSave={handleSave}
-        entry={editingEntry}
-        clients={clients}
-      />
+      <RevenueFormDialog open={showForm} onClose={() => { setShowForm(false); setEditingEntry(null); }} onSave={handleSave} entry={editingEntry} clients={clients} />
     </div>
   );
 }
 
 function RevenueFormDialog({ open, onClose, onSave, entry, clients }: {
-  open: boolean; onClose: () => void; onSave: (entry: RevenueEntry) => void; entry: RevenueEntry | null; clients: Client[];
+  open: boolean; onClose: () => void; onSave: (form: Partial<RevenueEntry>) => void; entry: RevenueEntry | null; clients: Client[];
 }) {
   const [form, setForm] = useState<Partial<RevenueEntry>>({});
-
   useEffect(() => {
-    if (open) {
-      setForm(entry || { id: genId(), date: today(), type: "terminal-sale", description: "", amount: 0, clientId: "", recurring: false });
-    }
+    if (open) setForm(entry || { date: today(), type: "terminal-sale", description: "", amount: 0, clientId: "", recurring: false });
   }, [open, entry]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{entry ? "Edit Entry" : "Record Revenue"}</DialogTitle>
-          <DialogDescription>Track income from sales and services</DialogDescription>
-        </DialogHeader>
+        <DialogHeader><DialogTitle>{entry ? "Edit Entry" : "Record Revenue"}</DialogTitle><DialogDescription>Track income from sales and services</DialogDescription></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Date</Label>
-              <Input type="date" value={form.date || today()} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Amount ($)</Label>
-              <Input type="number" value={form.amount || ""} onChange={(e) => setForm((p) => ({ ...p, amount: Number(e.target.value) }))} placeholder="399" />
-            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Date</Label><Input type="date" value={form.date || today()} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Amount ($)</Label><Input type="number" value={form.amount || ""} onChange={(e) => setForm((p) => ({ ...p, amount: Number(e.target.value) }))} placeholder="399" /></div>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Type</Label>
             <Select value={form.type || "terminal-sale"} onValueChange={(v) => setForm((p) => ({ ...p, type: v as RevenueEntry["type"] }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(REVENUE_TYPES).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
+              <SelectContent>{Object.entries(REVENUE_TYPES).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
             </Select>
           </div>
           {clients.length > 0 && (
@@ -1311,19 +1013,11 @@ function RevenueFormDialog({ open, onClose, onSave, entry, clients }: {
               <Label className="text-xs">Client (optional)</Label>
               <Select value={form.clientId || "none"} onValueChange={(v) => setForm((p) => ({ ...p, clientId: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No client linked</SelectItem>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.business || c.name}</SelectItem>
-                  ))}
-                </SelectContent>
+                <SelectContent><SelectItem value="none">No client linked</SelectItem>{clients.map((c) => (<SelectItem key={c.id} value={c.id}>{c.business || c.name}</SelectItem>))}</SelectContent>
               </Select>
             </div>
           )}
-          <div className="space-y-1.5">
-            <Label className="text-xs">Description</Label>
-            <Input value={form.description || ""} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Terminal sale for Aloha Café" />
-          </div>
+          <div className="space-y-1.5"><Label className="text-xs">Description</Label><Input value={form.description || ""} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Terminal sale for Aloha Café" /></div>
           <div className="flex items-center gap-2">
             <Switch checked={form.recurring || false} onCheckedChange={(v) => setForm((p) => ({ ...p, recurring: v }))} />
             <Label className="text-xs">Recurring revenue (maintenance plan, etc.)</Label>
@@ -1331,10 +1025,7 @@ function RevenueFormDialog({ open, onClose, onSave, entry, clients }: {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => onSave(form as RevenueEntry)} disabled={!form.amount}>
-            <Save className="w-3.5 h-3.5" />
-            {entry ? "Update" : "Record"}
-          </Button>
+          <Button onClick={() => onSave(form)} disabled={!form.amount}><Save className="w-3.5 h-3.5" />{entry ? "Update" : "Record"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1344,62 +1035,50 @@ function RevenueFormDialog({ open, onClose, onSave, entry, clients }: {
 // ─── Tasks Tab ───────────────────────────────────────────────────────
 
 function TasksTab() {
-  const [tasks, setTasks] = useState<Task[]>(() => loadData("tasks", []));
+  const { data: tasks = [], refetch } = useQuery<Task[]>({ queryKey: ["/api/tasks"] });
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("pending");
   const { toast } = useToast();
 
-  const saveTasks = useCallback((updated: Task[]) => {
-    setTasks(updated);
-    saveData("tasks", updated);
-  }, []);
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<Task>) => { const res = await apiRequest("POST", "/api/tasks", data); return res.json(); },
+    onSuccess: () => { refetch(); toast({ title: "Task added" }); setShowForm(false); setEditingTask(null); },
+  });
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: Partial<Task> & { id: string }) => { const res = await apiRequest("PATCH", `/api/tasks/${id}`, data); return res.json(); },
+    onSuccess: () => { refetch(); },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/tasks/${id}`); },
+    onSuccess: () => { refetch(); },
+  });
+
+  const handleSave = (form: Partial<Task>) => {
+    if (editingTask) { updateMutation.mutate({ ...form, id: editingTask.id } as Task & { id: string }); setShowForm(false); setEditingTask(null); toast({ title: "Task updated" }); }
+    else { createMutation.mutate(form); }
+  };
+
+  const toggleComplete = (task: Task) => {
+    updateMutation.mutate({ id: task.id, completed: !task.completed });
+  };
 
   const filtered = useMemo(() => {
     return tasks
       .filter((t) => filter === "all" || (filter === "pending" ? !t.completed : t.completed))
       .sort((a, b) => {
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        if (a.priority !== b.priority) {
-          const order = { high: 0, medium: 1, low: 2 };
-          return order[a.priority] - order[b.priority];
-        }
+        const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
+        if (a.priority !== b.priority) return order[a.priority] - order[b.priority];
         return (a.dueDate || "9").localeCompare(b.dueDate || "9");
       });
   }, [tasks, filter]);
 
-  const handleSave = (task: Task) => {
-    const existing = tasks.find((t) => t.id === task.id);
-    if (existing) {
-      saveTasks(tasks.map((t) => (t.id === task.id ? task : t)));
-      toast({ title: "Task updated" });
-    } else {
-      saveTasks([...tasks, { ...task, createdAt: new Date().toISOString() }]);
-      toast({ title: "Task added" });
-    }
-    setShowForm(false);
-    setEditingTask(null);
-  };
-
-  const toggleComplete = (id: string) => {
-    saveTasks(tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
-  };
-
-  const handleDelete = (id: string) => {
-    saveTasks(tasks.filter((t) => t.id !== id));
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold">Tasks & Follow-Ups</h2>
-          <p className="text-xs text-muted-foreground">{tasks.filter((t) => !t.completed).length} pending — {tasks.filter((t) => t.completed).length} completed</p>
-        </div>
-        <Button size="sm" onClick={() => { setEditingTask(null); setShowForm(true); }}>
-          <Plus className="w-3.5 h-3.5" />
-          Add Task
-        </Button>
+        <div><h2 className="text-lg font-bold">Tasks & Follow-Ups</h2><p className="text-xs text-muted-foreground">{tasks.filter((t) => !t.completed).length} pending — {tasks.filter((t) => t.completed).length} completed</p></div>
+        <Button size="sm" onClick={() => { setEditingTask(null); setShowForm(true); }}><Plus className="w-3.5 h-3.5" />Add Task</Button>
       </div>
 
       <div className="flex gap-2">
@@ -1411,50 +1090,28 @@ function TasksTab() {
       </div>
 
       {filtered.length === 0 ? (
-        <Card className="overflow-visible border-dashed">
-          <CardContent className="p-8 text-center">
-            <CheckCircle className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">{tasks.length === 0 ? "No tasks yet. Add a follow-up or to-do." : "No tasks match this filter."}</p>
-          </CardContent>
-        </Card>
+        <Card className="overflow-visible border-dashed"><CardContent className="p-8 text-center"><CheckCircle className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" /><p className="text-sm text-muted-foreground">{tasks.length === 0 ? "No tasks yet. Add a follow-up or to-do." : "No tasks match this filter."}</p></CardContent></Card>
       ) : (
         <div className="space-y-1.5">
           {filtered.map((task) => (
             <Card key={task.id} className={`overflow-visible border-border/50 ${task.completed ? "opacity-60" : ""}`}>
               <CardContent className="p-3 flex items-center gap-3">
-                <button
-                  onClick={() => toggleComplete(task.id)}
-                  className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                    task.completed
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "border-muted-foreground/30 hover:border-primary"
-                  }`}
-                >
+                <button onClick={() => toggleComplete(task)} className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${task.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30 hover:border-primary"}`}>
                   {task.completed && <Check className="w-3 h-3" />}
                 </button>
-
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className={`text-sm ${task.completed ? "line-through text-muted-foreground" : ""}`}>{task.title}</span>
                     <div className={`w-1.5 h-1.5 rounded-full ${task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"}`} />
                   </div>
                   <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
-                    {task.dueDate && (
-                      <span className={!task.completed && new Date(task.dueDate) < new Date(today()) ? "text-destructive font-medium" : ""}>
-                        Due {task.dueDate}
-                      </span>
-                    )}
+                    {task.dueDate && <span className={!task.completed && new Date(task.dueDate) < new Date(today()) ? "text-destructive font-medium" : ""}>Due {task.dueDate}</span>}
                     {task.linkedTo && <span>{task.linkedTo}</span>}
                   </div>
                 </div>
-
                 <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingTask(task); setShowForm(true); }}>
-                    <Edit3 className="w-3 h-3" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(task.id)}>
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingTask(task); setShowForm(true); }}><Edit3 className="w-3 h-3" /></Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(task.id)}><Trash2 className="w-3 h-3" /></Button>
                 </div>
               </CardContent>
             </Card>
@@ -1462,67 +1119,40 @@ function TasksTab() {
         </div>
       )}
 
-      <TaskFormDialog
-        open={showForm}
-        onClose={() => { setShowForm(false); setEditingTask(null); }}
-        onSave={handleSave}
-        task={editingTask}
-      />
+      <TaskFormDialog open={showForm} onClose={() => { setShowForm(false); setEditingTask(null); }} onSave={handleSave} task={editingTask} />
     </div>
   );
 }
 
 function TaskFormDialog({ open, onClose, onSave, task }: {
-  open: boolean; onClose: () => void; onSave: (task: Task) => void; task: Task | null;
+  open: boolean; onClose: () => void; onSave: (form: Partial<Task>) => void; task: Task | null;
 }) {
   const [form, setForm] = useState<Partial<Task>>({});
-
   useEffect(() => {
-    if (open) {
-      setForm(task || { id: genId(), title: "", dueDate: "", priority: "medium", completed: false, linkedTo: "" });
-    }
+    if (open) setForm(task || { title: "", dueDate: "", priority: "medium", completed: false, linkedTo: "" });
   }, [open, task]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{task ? "Edit Task" : "Add Task"}</DialogTitle>
-          <DialogDescription>Create a follow-up or to-do</DialogDescription>
-        </DialogHeader>
+        <DialogHeader><DialogTitle>{task ? "Edit Task" : "Add Task"}</DialogTitle><DialogDescription>Create a follow-up or to-do</DialogDescription></DialogHeader>
         <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Task</Label>
-            <Input value={form.title || ""} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Follow up with Aloha Café about trial" />
-          </div>
+          <div className="space-y-1.5"><Label className="text-xs">Task</Label><Input value={form.title || ""} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Follow up with Aloha Café about trial" /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Due Date</Label>
-              <Input type="date" value={form.dueDate || ""} onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))} />
-            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Due Date</Label><Input type="date" value={form.dueDate || ""} onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))} /></div>
             <div className="space-y-1.5">
               <Label className="text-xs">Priority</Label>
               <Select value={form.priority || "medium"} onValueChange={(v) => setForm((p) => ({ ...p, priority: v as Task["priority"] }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                </SelectContent>
+                <SelectContent><SelectItem value="high">High</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent>
               </Select>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Linked To (optional)</Label>
-            <Input value={form.linkedTo || ""} onChange={(e) => setForm((p) => ({ ...p, linkedTo: e.target.value }))} placeholder="Business name or reference" />
-          </div>
+          <div className="space-y-1.5"><Label className="text-xs">Linked To (optional)</Label><Input value={form.linkedTo || ""} onChange={(e) => setForm((p) => ({ ...p, linkedTo: e.target.value }))} placeholder="Business name or reference" /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => onSave(form as Task)} disabled={!form.title}>
-            <Save className="w-3.5 h-3.5" />
-            {task ? "Update" : "Add Task"}
-          </Button>
+          <Button onClick={() => onSave(form)} disabled={!form.title}><Save className="w-3.5 h-3.5" />{task ? "Update" : "Add Task"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1533,10 +1163,7 @@ function TaskFormDialog({ open, onClose, onSave, task }: {
 
 function AiSettingsTab() {
   const { toast } = useToast();
-
-  const { data: config, isLoading } = useQuery<AiConfig>({
-    queryKey: ["/api/ai-config"],
-  });
+  const { data: config, isLoading } = useQuery<AiConfig>({ queryKey: ["/api/ai-config"] });
 
   const [enabled, setEnabled] = useState(false);
   const [model, setModel] = useState("claude-sonnet-4-20250514");
@@ -1545,161 +1172,77 @@ function AiSettingsTab() {
   const [maxTokens, setMaxTokens] = useState(1024);
 
   useEffect(() => {
-    if (config) {
-      setEnabled(config.enabled);
-      setModel(config.model);
-      setSystemPrompt(config.systemPrompt);
-      setWelcomeMessage(config.welcomeMessage);
-      setMaxTokens(config.maxTokens);
-    }
+    if (config) { setEnabled(config.enabled); setModel(config.model); setSystemPrompt(config.systemPrompt); setWelcomeMessage(config.welcomeMessage); setMaxTokens(config.maxTokens); }
   }, [config]);
 
   const saveMutation = useMutation({
-    mutationFn: async (data: Partial<AiConfig>) => {
-      const res = await apiRequest("PATCH", "/api/ai-config", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/ai-config"] });
-      toast({ title: "Settings saved", description: "AI agent configuration updated." });
-    },
-    onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    },
+    mutationFn: async (data: Partial<AiConfig>) => { const res = await apiRequest("PATCH", "/api/ai-config", data); return res.json(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/ai-config"] }); toast({ title: "Settings saved", description: "AI agent configuration updated." }); },
+    onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
   });
 
   const toggleMutation = useMutation({
-    mutationFn: async (newEnabled: boolean) => {
-      const res = await apiRequest("PATCH", "/api/ai-config", { enabled: newEnabled });
-      return res.json();
-    },
+    mutationFn: async (newEnabled: boolean) => { const res = await apiRequest("PATCH", "/api/ai-config", { enabled: newEnabled }); return res.json(); },
     onSuccess: (data: AiConfig) => {
       setEnabled(data.enabled);
       queryClient.invalidateQueries({ queryKey: ["/api/ai-config"] });
-      toast({
-        title: data.enabled ? "AI Agent Enabled" : "AI Agent Disabled",
-        description: data.enabled ? "The chatbot is now live on your site." : "The chatbot has been turned off.",
-      });
+      toast({ title: data.enabled ? "AI Agent Enabled" : "AI Agent Disabled", description: data.enabled ? "The chatbot is now live on your site." : "The chatbot has been turned off." });
     },
-    onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    },
+    onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
   });
 
-  if (isLoading) {
-    return <div className="py-12 text-center text-muted-foreground">Loading AI configuration...</div>;
-  }
+  if (isLoading) return <div className="py-12 text-center text-muted-foreground">Loading AI configuration...</div>;
 
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Bot className="w-5 h-5 text-primary" />
-          AI Chatbot Settings
-        </h2>
+        <h2 className="text-lg font-bold flex items-center gap-2"><Bot className="w-5 h-5 text-primary" />AI Chatbot Settings</h2>
         <p className="text-xs text-muted-foreground mt-1">Configure the AI assistant on your main website</p>
       </div>
 
-      {/* Toggle */}
       <Card className="overflow-visible border-primary/10">
         <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
         <CardContent className="p-5 relative">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">Agent Status</p>
-                <p className="text-xs text-muted-foreground">Turn the chatbot on or off for visitors</p>
-              </div>
+              <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center"><Zap className="w-5 h-5 text-primary" /></div>
+              <div><p className="text-sm font-semibold">Agent Status</p><p className="text-xs text-muted-foreground">Turn the chatbot on or off for visitors</p></div>
             </div>
             <div className="flex items-center gap-3">
-              <Badge variant={enabled ? "default" : "outline"}>
-                {enabled ? "Active" : "Inactive"}
-              </Badge>
-              <Switch
-                checked={enabled}
-                onCheckedChange={(checked) => {
-                  setEnabled(checked);
-                  toggleMutation.mutate(checked);
-                }}
-              />
+              <Badge variant={enabled ? "default" : "outline"}>{enabled ? "Active" : "Inactive"}</Badge>
+              <Switch checked={enabled} onCheckedChange={(checked) => { setEnabled(checked); toggleMutation.mutate(checked); }} />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Model & Tokens */}
       <Card className="overflow-visible border-border/50">
         <CardContent className="p-5 space-y-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-md bg-chart-2/15 flex items-center justify-center">
-              <Settings className="w-5 h-5 text-chart-2" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Model Settings</p>
-              <p className="text-xs text-muted-foreground">Choose AI model and response limits</p>
-            </div>
+            <div className="w-10 h-10 rounded-md bg-chart-2/15 flex items-center justify-center"><Settings className="w-5 h-5 text-chart-2" /></div>
+            <div><p className="text-sm font-semibold">Model Settings</p><p className="text-xs text-muted-foreground">Choose AI model and response limits</p></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs">AI Model</Label>
-              <Select value={model} onValueChange={setModel}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {MODELS.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Max Response Length</Label>
-              <Select value={String(maxTokens)} onValueChange={(v) => setMaxTokens(Number(v))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="512">Short (512)</SelectItem>
-                  <SelectItem value="1024">Medium (1024)</SelectItem>
-                  <SelectItem value="2048">Long (2048)</SelectItem>
-                  <SelectItem value="4096">Very Long (4096)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="space-y-1.5"><Label className="text-xs">AI Model</Label><Select value={model} onValueChange={setModel}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{MODELS.map((m) => (<SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>))}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label className="text-xs">Max Response Length</Label><Select value={String(maxTokens)} onValueChange={(v) => setMaxTokens(Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="512">Short (512)</SelectItem><SelectItem value="1024">Medium (1024)</SelectItem><SelectItem value="2048">Long (2048)</SelectItem><SelectItem value="4096">Very Long (4096)</SelectItem></SelectContent></Select></div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Prompts */}
       <Card className="overflow-visible border-border/50">
         <CardContent className="p-5 space-y-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-md bg-chart-4/15 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-chart-4" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Chat Configuration</p>
-              <p className="text-xs text-muted-foreground">Customize personality and greeting</p>
-            </div>
+            <div className="w-10 h-10 rounded-md bg-chart-4/15 flex items-center justify-center"><MessageSquare className="w-5 h-5 text-chart-4" /></div>
+            <div><p className="text-sm font-semibold">Chat Configuration</p><p className="text-xs text-muted-foreground">Customize personality and greeting</p></div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">System Prompt</Label>
-            <Textarea value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} rows={6} className="resize-none text-sm" />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Welcome Message</Label>
-            <Textarea value={welcomeMessage} onChange={(e) => setWelcomeMessage(e.target.value)} rows={3} className="resize-none text-sm" />
-          </div>
+          <div className="space-y-1.5"><Label className="text-xs">System Prompt</Label><Textarea value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} rows={6} className="resize-none text-sm" /></div>
+          <div className="space-y-1.5"><Label className="text-xs">Welcome Message</Label><Textarea value={welcomeMessage} onChange={(e) => setWelcomeMessage(e.target.value)} rows={3} className="resize-none text-sm" /></div>
         </CardContent>
       </Card>
 
       <div className="flex justify-end">
-        <Button
-          onClick={() => saveMutation.mutate({ model, systemPrompt, welcomeMessage, maxTokens })}
-          disabled={saveMutation.isPending}
-        >
-          <Save className="w-4 h-4" />
-          {saveMutation.isPending ? "Saving..." : "Save Settings"}
+        <Button onClick={() => saveMutation.mutate({ model, systemPrompt, welcomeMessage, maxTokens })} disabled={saveMutation.isPending}>
+          <Save className="w-4 h-4" />{saveMutation.isPending ? "Saving..." : "Save Settings"}
         </Button>
       </div>
     </div>
