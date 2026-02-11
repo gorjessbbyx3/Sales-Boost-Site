@@ -21,9 +21,11 @@ import {
   DollarSign,
   Settings,
 } from "lucide-react";
+import { useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 function OnlineHero() {
   return (
@@ -73,12 +75,12 @@ function OnlineHero() {
             <div className="relative overflow-hidden rounded-b-lg border border-t-0 border-border">
               <img
                 src="/images/poormantowing-preview.jpg"
-                alt="Poorman Towing — Edify client website example"
+                alt="Poorman Towing — λechSavvy client website example"
                 className="w-full"
                 data-testid="img-poormantowing-preview"
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-3">Live client website built by Edify</p>
+            <p className="text-xs text-muted-foreground mt-3">Live client website built by λechSavvy</p>
           </motion.div>
         </div>
       </div>
@@ -177,6 +179,27 @@ function WebDesignShowcase() {
 }
 
 export default function OnlineProcessingPage() {
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Online Payment Processing — Free Website & Payment Gateway",
+    "description": "Accept payments online with a free custom website and zero-fee payment gateway. Payment links, invoicing, recurring billing & more. No terminal needed.",
+    "url": "https://techsavvyhawaii.com/online-processing",
+    "mainEntity": { "@id": "https://techsavvyhawaii.com/#online-processing" }
+  }), []);
+
+  useSEO({
+    title: "Online Payment Processing | Free Website & Payment Gateway — λechSavvy (TechSavvy)",
+    description: "Accept payments online with a free custom website and zero-fee payment gateway. Features include payment links, online invoicing, recurring billing, online ordering, and booking integration. No physical terminal needed. Perfect for e-commerce, service businesses, and freelancers.",
+    keywords: "online payment processing, payment gateway, accept payments online, online payment gateway, virtual terminal, e-commerce payment processing, online invoicing, recurring billing, subscription payments, payment links, online ordering, booking integration, accept credit cards online, digital payments, mobile payment processing, e-commerce website, free business website, online payment solutions",
+    canonical: "https://techsavvyhawaii.com/online-processing",
+    ogTitle: "Online Payment Processing — Free Website & Gateway | λechSavvy",
+    ogDescription: "Accept payments online for FREE. Custom website + payment gateway included. Payment links, invoicing, recurring billing. No terminal needed.",
+    twitterTitle: "Online Payment Processing — Free Website | λechSavvy (TechSavvy)",
+    twitterDescription: "Accept payments online with a free custom website and zero-fee payment gateway. No terminal needed. E-commerce, invoicing, subscriptions.",
+    jsonLd,
+  });
+
   return (
     <Layout>
       <OnlineHero />

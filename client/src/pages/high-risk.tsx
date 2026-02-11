@@ -10,9 +10,11 @@ import {
   AlertTriangle,
   MapPin,
 } from "lucide-react";
+import { useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 function HighRiskHero() {
   return (
@@ -178,6 +180,27 @@ function HighRiskDetailsSection() {
 }
 
 export default function HighRiskPage() {
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "High-Risk Merchant Account & Payment Processing — Zero Fees",
+    "description": "High-risk merchant accounts with zero-fee payment processing. CBD, vape, firearms, nutraceuticals, travel, gaming & more. Fast approvals, no excessive reserves.",
+    "url": "https://techsavvyhawaii.com/high-risk",
+    "mainEntity": { "@id": "https://techsavvyhawaii.com/#high-risk" }
+  }), []);
+
+  useSEO({
+    title: "High-Risk Merchant Account & Payment Processing | Zero Fees — λechSavvy (TechSavvy)",
+    description: "High-risk merchant accounts with zero-fee payment processing. CBD, vape, firearms, nutraceuticals, supplements, travel, online gaming, adult entertainment & more. Fast approvals, no excessive reserves, no hidden fees, no contracts. Accept all major credit & debit cards.",
+    keywords: "high risk merchant account, high risk payment processing, high risk payment processor, high risk merchant services, CBD payment processing, CBD merchant account, vape merchant account, vape payment processing, firearms payment processing, firearms merchant account, nutraceuticals merchant account, adult merchant account, online gaming payment processing, travel merchant account, supplement merchant account, e-cigarette merchant account, high risk credit card processing, cannabis payment processing, Delta-8 merchant account, subscription box payment processing",
+    canonical: "https://techsavvyhawaii.com/high-risk",
+    ogTitle: "High-Risk Merchant Accounts — Zero-Fee Processing | λechSavvy",
+    ogDescription: "CBD, vape, firearms, nutraceuticals & more. Zero processing fees, fast approvals, no excessive reserves, no contracts. High-risk specialists.",
+    twitterTitle: "High-Risk Merchant Accounts — Zero Fees | λechSavvy (TechSavvy)",
+    twitterDescription: "CBD, vape, firearms & more. Zero processing fees, fast approvals, no reserves, no contracts. High-risk payment processing specialists.",
+    jsonLd,
+  });
+
   return (
     <Layout>
       <HighRiskHero />

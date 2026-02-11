@@ -12,9 +12,10 @@ import {
   MapPin,
   CalendarCheck,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import Layout from "@/components/layout";
+import { useSEO } from "@/hooks/useSEO";
 
 function ContactSection() {
   const [formData, setFormData] = useState({
@@ -269,6 +270,27 @@ function ContactSection() {
 }
 
 export default function ContactPage() {
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "name": "Contact λechSavvy (TechSavvy) — Get Started with Zero-Fee Processing",
+    "description": "Schedule a call or request a free statement analysis. Get started with zero-fee payment processing and a free custom website today.",
+    "url": "https://techsavvyhawaii.com/contact",
+    "mainEntity": { "@id": "https://techsavvyhawaii.com/#localbusiness" }
+  }), []);
+
+  useSEO({
+    title: "Contact Us | Get Started with Zero-Fee Payment Processing — λechSavvy (TechSavvy)",
+    description: "Contact λechSavvy (TechSavvy) to get started with zero-fee payment processing. Schedule a call, request a free statement analysis, or ask about high-risk merchant accounts. Same-day setup available. Phone: (808) 767-5460. Free custom website included with every merchant account.",
+    keywords: "contact payment processor, get merchant account, schedule payment processing consultation, free statement analysis, start accepting credit cards, payment processing sign up, merchant account application, get payment terminal, switch payment processor, payment processing quote, contact TechSavvy, payment processing phone number",
+    canonical: "https://techsavvyhawaii.com/contact",
+    ogTitle: "Contact λechSavvy — Start Zero-Fee Processing Today",
+    ogDescription: "Schedule a call or get a free statement analysis. Same-day setup. Zero fees, no contracts, free website included. (808) 767-5460.",
+    twitterTitle: "Contact λechSavvy (TechSavvy) — Get Started Today",
+    twitterDescription: "Schedule a call for zero-fee payment processing. Same-day setup. Free website included. (808) 767-5460.",
+    jsonLd,
+  });
+
   return (
     <Layout>
       <ContactSection />

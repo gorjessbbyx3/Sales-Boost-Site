@@ -49,8 +49,8 @@ function Navbar() {
             className="font-bold text-xl tracking-tight flex items-center gap-2.5 transition-transform hover:scale-105"
             data-testid="link-logo"
           >
-            <img src="/images/edify-icon.png" alt="Edify Limited" className="w-8 h-8 sm:w-9 sm:h-9 rounded-md" />
-            <span className="text-foreground hidden sm:inline">Edify</span>
+            <img src="/images/techsavvy-icon.png" alt="λechSavvy" className="w-8 h-8 sm:w-9 sm:h-9 rounded-md" />
+            <span className="text-foreground hidden sm:inline">λechSavvy</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1 bg-muted/30 p-1 rounded-lg">
@@ -136,7 +136,7 @@ function Footer() {
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-12">
           <div className="w-48 shrink-0">
             <video
-              src="/images/edify-footer-video.mp4"
+              src="/images/techsavvy-footer-video.mp4"
               autoPlay
               loop
               muted
@@ -238,7 +238,7 @@ function Footer() {
         </div>
 
         <div className="border-t border-white/10 mt-16 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>&copy; {new Date().getFullYear()} Edify Limited. All rights reserved. Proudly locally owned and operated in Hawai'i.</p>
+          <p>&copy; {new Date().getFullYear()} λechSavvy. All rights reserved. Proudly locally owned and operated in Hawai'i.</p>
           <div className="flex items-center gap-6">
             <Link href="/contact" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link href="/contact" className="hover:text-white transition-colors">Terms of Service</Link>

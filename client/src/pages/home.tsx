@@ -17,10 +17,11 @@ import {
   MapPin,
   BarChart3,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 import terminalImg from "@assets/2F1DC4FE-A7DE-4A07-AAD2-26B1F2BC3F51_1770676800821.png";
 import onlineCardImg from "@assets/IMG_6310_1770676360781.jpeg";
 
@@ -135,7 +136,7 @@ function HeroSection() {
             <div className="relative h-48 sm:h-56 overflow-hidden">
               <img
                 src={terminalImg}
-                alt="Edify payment terminal — $399 one-time purchase"
+                alt="λechSavvy payment terminal — $399 one-time purchase"
                 className="w-full h-full object-cover object-top"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
@@ -170,7 +171,7 @@ function HeroSection() {
             <div className="relative h-48 sm:h-56 overflow-hidden">
               <img
                 src={onlineCardImg}
-                alt="Your Free Website — Built by Edify LLC, No Cost Ever"
+                alt="Your Free Website — Built by λechSavvy, No Cost Ever"
                 className="w-full h-full object-cover object-top"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
@@ -600,6 +601,27 @@ function CTASection() {
 }
 
 export default function Home() {
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "λechSavvy (TechSavvy) — #1 Zero-Fee Payment Processing",
+    "description": "Zero-fee payment processing for businesses. No processing fees, no monthly fees, no contracts. Free custom website included. High-risk merchants welcome.",
+    "url": "https://techsavvyhawaii.com/",
+    "mainEntity": { "@id": "https://techsavvyhawaii.com/#organization" }
+  }), []);
+
+  useSEO({
+    title: "λechSavvy (TechSavvy) | #1 Zero-Fee Payment Processing & Merchant Services",
+    description: "Zero-fee payment processing for businesses. No processing fees, no monthly fees, no contracts. Accept credit cards at zero cost. Free custom website included. High-risk merchants welcome. Rated 4.9/5 by 127+ businesses. Same-day setup.",
+    keywords: "payment processing, payment processor, credit card processing, merchant services, zero fee payment processing, best payment processor, free payment processing, accept credit cards, POS system, payment terminal, high risk merchant account, online payment processing, payment gateway, free business website, TechSavvy, λechSavvy",
+    canonical: "https://techsavvyhawaii.com/",
+    ogTitle: "λechSavvy (TechSavvy) | #1 Zero-Fee Payment Processing — Keep 100% of Every Sale",
+    ogDescription: "Stop paying 2-4% on every sale. Zero processing fees, zero monthly fees, no contracts. Free website included. High-risk welcome. Rated 4.9/5.",
+    twitterTitle: "λechSavvy (TechSavvy) | Zero-Fee Payment Processing",
+    twitterDescription: "Zero processing fees. Zero monthly fees. No contracts. Free custom website. High-risk merchants welcome. Rated 4.9/5.",
+    jsonLd,
+  });
+
   return (
     <Layout>
       <HeroSection />

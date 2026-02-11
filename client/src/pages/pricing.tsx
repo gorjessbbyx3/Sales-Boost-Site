@@ -15,10 +15,11 @@ import {
   Code,
   MapPin,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 function PricingHero() {
   return (
@@ -331,7 +332,7 @@ function PricingCardsSection() {
 
                 <Button className="w-full" size="lg" variant="outline" asChild>
                   <Link href="/contact">
-                    Go Online with Edify
+                    Go Online with λechSavvy
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </Button>
@@ -358,7 +359,7 @@ function PricingCardsSection() {
                     Traditional processors cost you $3,600 - $5,400/year
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    On $10K/month, you're losing $250-$350 every month to fees. With Edify, you keep every dollar.
+                    On $10K/month, you're losing $250-$350 every month to fees. With λechSavvy, you keep every dollar.
                   </p>
                 </div>
               </div>
@@ -468,7 +469,7 @@ function SavingsCalculator() {
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
                   <CardContent className="p-3 sm:p-5 text-center relative">
                     <div className="text-[10px] sm:text-sm text-muted-foreground mb-1">
-                      Keep With Edify
+                      Keep With λechSavvy
                     </div>
                     <div className="text-xl sm:text-3xl font-extrabold text-primary">
                       +${annualLoss.toLocaleString()}
@@ -553,6 +554,27 @@ function PricingFAQ() {
 }
 
 export default function PricingPage() {
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Payment Processing Pricing — Zero Fees, No Contracts",
+    "description": "Compare payment processing pricing: $399 terminal, free 30-day trial, or free online-only package. Zero processing fees, zero monthly fees.",
+    "url": "https://techsavvyhawaii.com/pricing",
+    "mainEntity": { "@id": "https://techsavvyhawaii.com/#payment-processing" }
+  }), []);
+
+  useSEO({
+    title: "Payment Processing Pricing | Zero Fees, No Contracts — λechSavvy (TechSavvy)",
+    description: "Compare payment processing pricing: $399 one-time terminal purchase, free 30-day trial, or free online-only business package. Zero processing fees, zero monthly fees, no contracts. Includes free custom website. Save $3,000-$15,000/year vs traditional processors like Square, Stripe & Clover.",
+    keywords: "payment processing pricing, cheapest payment processor, payment processing cost, credit card processing fees, zero fee payment processing, no monthly fee payment processing, payment processor comparison, best payment processing rates, Square alternative, Stripe alternative, Clover alternative, free payment terminal, payment processing for small business, merchant services pricing",
+    canonical: "https://techsavvyhawaii.com/pricing",
+    ogTitle: "Payment Processing Pricing — Zero Fees, No Contracts | λechSavvy",
+    ogDescription: "$399 terminal or FREE online package. Zero processing fees. Zero monthly fees. No contracts. Save thousands vs Square, Stripe & Clover.",
+    twitterTitle: "Payment Processing Pricing — $0 Fees | λechSavvy (TechSavvy)",
+    twitterDescription: "$399 terminal or FREE online package. Zero processing fees, zero monthly fees, no contracts. Save $3,000-$15,000/year.",
+    jsonLd,
+  });
+
   return (
     <Layout>
       <PricingHero />

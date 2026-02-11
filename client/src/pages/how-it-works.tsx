@@ -16,9 +16,11 @@ import {
   CircleDollarSign,
   BarChart3,
 } from "lucide-react";
+import { useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 function HowItWorksHero() {
   return (
@@ -63,7 +65,7 @@ function HowItWorksHero() {
           <motion.div className="mt-8 rounded-xl overflow-hidden bg-muted/30 max-w-2xl mx-auto" variants={fadeUp}>
             <img
               src="/images/How_it_works.png"
-              alt="How Edify zero-fee payment processing works"
+              alt="How λechSavvy zero-fee payment processing works"
               className="w-full max-h-[50vh] object-contain"
             />
           </motion.div>
@@ -170,7 +172,7 @@ function StepsSection() {
   );
 }
 
-function WhyEdifySection() {
+function WhyTechSavvySection() {
   const benefits = [
     {
       icon: DollarSign,
@@ -217,7 +219,7 @@ function WhyEdifySection() {
         >
           <motion.div variants={fadeUp}>
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              Why Edify
+              Why λechSavvy
             </Badge>
           </motion.div>
           <motion.h2
@@ -294,11 +296,31 @@ function HowItWorksCTA() {
 }
 
 export default function HowItWorksPage() {
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "How Zero-Fee Payment Processing Works — 3 Simple Steps",
+    "description": "Learn how zero-fee (cash discount / surcharge) payment processing works. Customer pays with card, small fee added, merchant keeps 100%. Fully legal and compliant.",
+    "url": "https://techsavvyhawaii.com/how-it-works"
+  }), []);
+
+  useSEO({
+    title: "How Zero-Fee Payment Processing Works | Cash Discount & Surcharge Explained — λechSavvy (TechSavvy)",
+    description: "Learn how zero-fee payment processing works in 3 simple steps. Customer pays with card, a small surcharge is added, and the merchant keeps 100% of the sale. Fully legal and compliant with Visa & Mastercard. Also called cash discount processing or surcharge processing. No monthly fees, no contracts.",
+    keywords: "how does zero fee payment processing work, cash discount program explained, surcharge processing how it works, how to accept credit cards with no fees, zero cost processing explained, cash discount vs surcharge, dual pricing explained, how to eliminate credit card fees, merchant keeps 100 percent, no processing fees how, credit card surcharge legal, payment processing explained, how payment processing works",
+    canonical: "https://techsavvyhawaii.com/how-it-works",
+    ogTitle: "How Zero-Fee Payment Processing Works — 3 Steps to $0 Fees | λechSavvy",
+    ogDescription: "Customer pays → small surcharge added → you keep 100%. Learn how cash discount / surcharge processing eliminates credit card fees legally.",
+    twitterTitle: "How Zero-Fee Processing Works | λechSavvy (TechSavvy)",
+    twitterDescription: "3 steps to zero fees: customer pays, surcharge added, you keep 100%. Fully legal. No monthly fees, no contracts.",
+    jsonLd,
+  });
+
   return (
     <Layout>
       <HowItWorksHero />
       <StepsSection />
-      <WhyEdifySection />
+      <WhyTechSavvySection />
       <HowItWorksCTA />
     </Layout>
   );

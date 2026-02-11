@@ -23,9 +23,11 @@ import {
   DollarSign,
   Settings,
 } from "lucide-react";
+import { useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 function WebDesignHero() {
   return (
@@ -374,7 +376,7 @@ function BeforeAfterSection() {
               Real Hawai'i Businesses We've Transformed
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg">
-              Every Edify merchant gets a free custom website.
+              Every λechSavvy merchant gets a free custom website.
             </p>
           </motion.div>
 
@@ -401,7 +403,7 @@ function BeforeAfterSection() {
                               <div className="w-6 h-6 rounded bg-destructive/15 flex items-center justify-center">
                                 <span className="text-destructive text-xs font-bold">B</span>
                               </div>
-                              <span className="text-sm font-semibold text-muted-foreground">Before Edify</span>
+                              <span className="text-sm font-semibold text-muted-foreground">Before λechSavvy</span>
                             </div>
                             <ul className="space-y-2">
                               {t.before.issues.map((issue) => (
@@ -418,7 +420,7 @@ function BeforeAfterSection() {
                               <div className={`w-6 h-6 rounded ${t.bgColor}/15 flex items-center justify-center`}>
                                 <span className={`${t.color} text-xs font-bold`}>A</span>
                               </div>
-                              <span className="text-sm font-semibold text-muted-foreground">After Edify</span>
+                              <span className="text-sm font-semibold text-muted-foreground">After λechSavvy</span>
                             </div>
                             <ul className="space-y-2">
                               {t.after.features.map((feature) => (
@@ -574,7 +576,7 @@ function LiveExampleSection() {
               Live Example
             </Badge>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              See a Real Edify Website in Action
+              See a Real λechSavvy Website in Action
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-lg">
               Here's one of the custom websites we built for a Hawai'i business — browse it live below.
@@ -598,7 +600,7 @@ function LiveExampleSection() {
               <div className="relative w-full" style={{ paddingBottom: "62.5%" }}>
                 <iframe
                   src="https://poormantowing.com"
-                  title="Poorman Towing — Example Edify Website"
+                  title="Poorman Towing — Example λechSavvy Website"
                   className="absolute inset-0 w-full h-full border-0"
                   loading="lazy"
                   sandbox="allow-scripts allow-same-origin"
@@ -609,7 +611,7 @@ function LiveExampleSection() {
               <a href="https://poormantowing.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
                 poormantowing.com
               </a>{" "}
-              — built by Edify for a local Hawai'i towing business
+              — built by λechSavvy for a local Hawai'i towing business
             </p>
           </motion.div>
         </motion.div>
@@ -770,6 +772,27 @@ function WebDesignCTA() {
 }
 
 export default function WebDesignPage() {
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Business Website Design — Free for Payment Processing Merchants",
+    "description": "Professional business website design, free for payment processing merchants. Mobile-optimized, SEO-ready, with e-commerce and payment gateway integration.",
+    "url": "https://techsavvyhawaii.com/our-work",
+    "mainEntity": { "@id": "https://techsavvyhawaii.com/#web-design" }
+  }), []);
+
+  useSEO({
+    title: "Business Website Design | Free Custom Websites for Merchants — λechSavvy (TechSavvy)",
+    description: "Professional business website design, free for payment processing merchants ($997 value). Mobile-optimized, SEO-ready, with integrated payment gateway and e-commerce. Premium packages available with custom software, CRM, booking, and inventory management. See our portfolio.",
+    keywords: "business website design, free business website, custom website design, web design for small business, e-commerce website design, website builder for business, professional web design, mobile website design, SEO web design, responsive website design, business website builder, free website for merchants, custom web development, website design portfolio, landing page design, website maintenance plans",
+    canonical: "https://techsavvyhawaii.com/our-work",
+    ogTitle: "Business Website Design — Free for Merchants | λechSavvy",
+    ogDescription: "Free professional website for every merchant ($997 value). Mobile-optimized, SEO-ready, with payment gateway. Premium packages available.",
+    twitterTitle: "Free Business Website Design | λechSavvy (TechSavvy)",
+    twitterDescription: "Free custom website for payment processing merchants. Mobile-optimized, SEO-ready, with e-commerce integration. See our portfolio.",
+    jsonLd,
+  });
+
   return (
     <Layout>
       <WebDesignHero />

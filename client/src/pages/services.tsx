@@ -9,9 +9,11 @@ import {
   ShieldCheck,
   ArrowRight,
 } from "lucide-react";
+import { useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 import servicesBanner from "@assets/IMG_6296_1770672559549.png";
 
 function ServicesSection() {
@@ -89,6 +91,26 @@ function ServicesSection() {
 }
 
 export default function ServicesPage() {
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Payment Processing & Website Design Services",
+    "description": "Full range of business services: zero-fee payment processing, high-risk merchant accounts, online payment gateway, POS systems, and free business website design.",
+    "url": "https://techsavvyhawaii.com/services"
+  }), []);
+
+  useSEO({
+    title: "Payment Processing & Website Design Services | λechSavvy (TechSavvy)",
+    description: "Full range of business services: zero-fee payment processing, credit card processing, high-risk merchant accounts, online payment gateway, POS systems, contactless payments, and free business website design. No processing fees, no monthly fees, no contracts. Same-day setup.",
+    keywords: "payment processing services, merchant services, credit card processing services, business payment solutions, POS system services, high risk merchant services, online payment services, payment gateway services, website design services, business web design, e-commerce solutions, contactless payment services, mobile payment solutions, payment terminal services, merchant account services",
+    canonical: "https://techsavvyhawaii.com/services",
+    ogTitle: "Payment Processing & Web Design Services | λechSavvy (TechSavvy)",
+    ogDescription: "Zero-fee payment processing, high-risk merchant accounts, online payment gateway, POS systems, and free website design. All with zero fees.",
+    twitterTitle: "All Services — Zero-Fee Processing & Web Design | λechSavvy",
+    twitterDescription: "Payment processing, high-risk accounts, online gateway, POS, and free website design. Zero fees, no contracts, same-day setup.",
+    jsonLd,
+  });
+
   return (
     <Layout>
       <section className="pt-20 sm:pt-24" data-testid="section-services-hero">
@@ -100,7 +122,7 @@ export default function ServicesPage() {
           >
             <img
               src={servicesBanner}
-              alt="Edify — Eliminate Credit Card Fees Forever. Cash Discount Program, Free Custom Website, 30-Day Risk-Free Trial."
+              alt="λechSavvy — Eliminate Credit Card Fees Forever. Cash Discount Program, Free Custom Website, 30-Day Risk-Free Trial."
               className="w-full rounded-lg shadow-2xl"
               data-testid="img-services-banner"
             />
