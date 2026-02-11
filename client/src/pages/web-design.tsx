@@ -23,9 +23,11 @@ import {
   DollarSign,
   Settings,
 } from "lucide-react";
+import { useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 function WebDesignHero() {
   return (
@@ -770,6 +772,27 @@ function WebDesignCTA() {
 }
 
 export default function WebDesignPage() {
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Business Website Design — Free for Payment Processing Merchants",
+    "description": "Professional business website design, free for payment processing merchants. Mobile-optimized, SEO-ready, with e-commerce and payment gateway integration.",
+    "url": "https://techsavvyhawaii.com/our-work",
+    "mainEntity": { "@id": "https://techsavvyhawaii.com/#web-design" }
+  }), []);
+
+  useSEO({
+    title: "Business Website Design | Free Custom Websites for Merchants — λechSavvy (TechSavvy)",
+    description: "Professional business website design, free for payment processing merchants ($997 value). Mobile-optimized, SEO-ready, with integrated payment gateway and e-commerce. Premium packages available with custom software, CRM, booking, and inventory management. See our portfolio.",
+    keywords: "business website design, free business website, custom website design, web design for small business, e-commerce website design, website builder for business, professional web design, mobile website design, SEO web design, responsive website design, business website builder, free website for merchants, custom web development, website design portfolio, landing page design, website maintenance plans",
+    canonical: "https://techsavvyhawaii.com/our-work",
+    ogTitle: "Business Website Design — Free for Merchants | λechSavvy",
+    ogDescription: "Free professional website for every merchant ($997 value). Mobile-optimized, SEO-ready, with payment gateway. Premium packages available.",
+    twitterTitle: "Free Business Website Design | λechSavvy (TechSavvy)",
+    twitterDescription: "Free custom website for payment processing merchants. Mobile-optimized, SEO-ready, with e-commerce integration. See our portfolio.",
+    jsonLd,
+  });
+
   return (
     <Layout>
       <WebDesignHero />

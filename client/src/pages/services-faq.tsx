@@ -11,10 +11,11 @@ import {
   Users,
   Megaphone,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 function FAQSection() {
   const faqs = [
@@ -290,6 +291,26 @@ function ReviewsSection() {
 }
 
 export default function FaqPage() {
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Payment Processing FAQ — Zero-Fee Processing Questions Answered",
+    "description": "Frequently asked questions about zero-fee payment processing, cash discount programs, surcharge processing, high-risk merchant accounts, and free business websites.",
+    "url": "https://techsavvyhawaii.com/faq"
+  }), []);
+
+  useSEO({
+    title: "Payment Processing FAQ | Zero-Fee Processing Questions Answered — λechSavvy (TechSavvy)",
+    description: "Frequently asked questions about zero-fee payment processing, cash discount programs, surcharge processing, high-risk merchant accounts, payment terminals, online payment gateways, and free business websites. Learn how to eliminate credit card processing fees.",
+    keywords: "payment processing FAQ, zero fee processing questions, how does cash discount work, is surcharging legal, what is a high risk merchant account, payment processing questions, credit card processing FAQ, merchant services FAQ, how to accept credit cards, payment terminal FAQ, online payment FAQ, free website FAQ, best payment processor questions",
+    canonical: "https://techsavvyhawaii.com/faq",
+    ogTitle: "Payment Processing FAQ — All Your Questions Answered | λechSavvy",
+    ogDescription: "Get answers about zero-fee payment processing, cash discount programs, high-risk merchants, and free websites. Everything you need to know.",
+    twitterTitle: "Payment Processing FAQ | λechSavvy (TechSavvy)",
+    twitterDescription: "FAQ: zero-fee processing, cash discount, surcharging, high-risk accounts, free websites. All your payment processing questions answered.",
+    jsonLd,
+  });
+
   return (
     <Layout>
       <section className="pt-32 pb-16 bg-gradient-to-b from-primary/10 via-transparent to-transparent">
