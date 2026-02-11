@@ -145,9 +145,9 @@ function Footer() {
                 <Phone className="w-3.5 h-3.5 text-primary" />
                 <span>(808) 767-5460</span>
               </a>
-              <a href="mailto:edifyhawaii@gmail.com" className="flex items-center gap-2 transition-colors hover:text-foreground">
+              <a href="mailto:contact@techsavvyhawaii.com" className="flex items-center gap-2 transition-colors hover:text-foreground">
                 <Mail className="w-3.5 h-3.5 text-primary" />
-                <span>edifyhawaii@gmail.com</span>
+                <span>contact@techsavvyhawaii.com</span>
               </a>
               <div className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-primary" />

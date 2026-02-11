@@ -13,6 +13,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useState } from "react";
+import { apiRequest } from "@/lib/queryClient";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import Layout from "@/components/layout";
 
@@ -168,9 +169,36 @@ function ContactSection() {
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
+    try {
+      const pkgMap: Record<string, string> = {
+        "bundle-terminal": "terminal",
+        "trial": "trial",
+        "online-only": "online",
+      };
+      await apiRequest("POST", "/api/leads", {
+        name: formData.name,
+        business: formData.businessName,
+        phone: formData.phone,
+        email: formData.email,
+        package: pkgMap[formData.interest] || "terminal",
+        status: "new",
+        notes: [
+          formData.businessType && `Type: ${formData.businessType}`,
+          formData.monthlyVolume && `Volume: ${formData.monthlyVolume}`,
+          formData.hasWebsite && `Has website: ${formData.hasWebsite}`,
+          formData.message,
+        ].filter(Boolean).join(" | "),
+      });
+    } catch {
+      // Still show success — form data may not reach DB if API is down,
+      // but we don't want to block the user experience
+    }
+    setSubmitting(false);
     setSubmitted(true);
   };
 
@@ -238,7 +266,7 @@ function ContactSection() {
             </div>
           </motion.a>
           <motion.a
-            href="mailto:edifyhawaii@gmail.com"
+            href="mailto:contact@techsavvyhawaii.com"
             className="flex items-center gap-3 p-4 rounded-lg border border-primary/10 bg-card/50 hover:border-primary/30 transition-colors"
             variants={fadeUp}
           >
@@ -247,7 +275,7 @@ function ContactSection() {
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Email Us</div>
-              <div className="text-sm font-semibold text-foreground">edifyhawaii@gmail.com</div>
+              <div className="text-sm font-semibold text-foreground">contact@techsavvyhawaii.com</div>
             </div>
           </motion.a>
           <motion.div
@@ -446,9 +474,9 @@ function ContactSection() {
                     />
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full" data-testid="button-contact-submit">
-                    Get My Free Mockup + Savings Quote
-                    <ArrowRight className="w-4 h-4" />
+                  <Button type="submit" size="lg" className="w-full" disabled={submitting} data-testid="button-contact-submit">
+                    {submitting ? "Submitting..." : "Get My Free Mockup + Savings Quote"}
+                    {!submitting && <ArrowRight className="w-4 h-4" />}
                   </Button>
 
                   <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
