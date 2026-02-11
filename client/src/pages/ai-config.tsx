@@ -80,7 +80,7 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
           </form>
           <div className="mt-4 text-center">
             <Button variant="ghost" size="sm" asChild>
-              <a href="/" data-testid="link-login-back">Back to Home</a>
+              <a href={window.location.hostname.startsWith("admin.") ? `https://${window.location.hostname.replace("admin.", "")}` : "/"} data-testid="link-login-back">Back to Main Site</a>
             </Button>
           </div>
         </CardContent>
@@ -209,7 +209,7 @@ function ConfigPanel({ onLogout }: { onLogout: () => void }) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center gap-4 flex-wrap mb-8">
           <Button variant="ghost" size="icon" asChild>
-            <a href="/" data-testid="link-back-home">
+            <a href={window.location.hostname.startsWith("admin.") ? `https://${window.location.hostname.replace("admin.", "")}` : "/"} data-testid="link-back-home">
               <ArrowLeft />
             </a>
           </Button>
