@@ -100,7 +100,7 @@ export default function ServicesPage() {
           >
             <img
               src={servicesBanner}
-              alt="Edify — Eliminate Credit Card Fees Forever. Cash Discount Program, Free Custom Website, 30-Day Risk-Free Trial."
+              alt="λechSavvy — Eliminate Credit Card Fees Forever. Cash Discount Program, Free Custom Website, 30-Day Risk-Free Trial."
               className="w-full rounded-lg shadow-2xl"
               data-testid="img-services-banner"
             />

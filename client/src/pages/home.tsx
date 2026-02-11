@@ -135,7 +135,7 @@ function HeroSection() {
             <div className="relative h-48 sm:h-56 overflow-hidden">
               <img
                 src={terminalImg}
-                alt="Edify payment terminal — $399 one-time purchase"
+                alt="λechSavvy payment terminal — $399 one-time purchase"
                 className="w-full h-full object-cover object-top"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
@@ -170,7 +170,7 @@ function HeroSection() {
             <div className="relative h-48 sm:h-56 overflow-hidden">
               <img
                 src={onlineCardImg}
-                alt="Your Free Website — Built by Edify LLC, No Cost Ever"
+                alt="Your Free Website — Built by λechSavvy, No Cost Ever"
                 className="w-full h-full object-cover object-top"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />

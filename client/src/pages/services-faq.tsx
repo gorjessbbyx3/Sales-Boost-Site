@@ -234,7 +234,7 @@ function ReviewsSection() {
     {
       name: "Lisa K.",
       role: "Owner, Aloha Beauty Salon",
-      content: "Switching to Edify saved me over $400 a month in fees. The terminal was set up the same day and my customers love the tap-to-pay feature.",
+      content: "Switching to λechSavvy saved me over $400 a month in fees. The terminal was set up the same day and my customers love the tap-to-pay feature.",
       stars: 5,
     },
     {

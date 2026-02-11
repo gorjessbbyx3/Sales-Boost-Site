@@ -73,12 +73,12 @@ function OnlineHero() {
             <div className="relative overflow-hidden rounded-b-lg border border-t-0 border-border">
               <img
                 src="/images/poormantowing-preview.jpg"
-                alt="Poorman Towing — Edify client website example"
+                alt="Poorman Towing — λechSavvy client website example"
                 className="w-full"
                 data-testid="img-poormantowing-preview"
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-3">Live client website built by Edify</p>
+            <p className="text-xs text-muted-foreground mt-3">Live client website built by λechSavvy</p>
           </motion.div>
         </div>
       </div>

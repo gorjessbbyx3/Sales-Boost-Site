@@ -374,7 +374,7 @@ function BeforeAfterSection() {
               Real Hawai'i Businesses We've Transformed
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg">
-              Every Edify merchant gets a free custom website.
+              Every λechSavvy merchant gets a free custom website.
             </p>
           </motion.div>
 
@@ -401,7 +401,7 @@ function BeforeAfterSection() {
                               <div className="w-6 h-6 rounded bg-destructive/15 flex items-center justify-center">
                                 <span className="text-destructive text-xs font-bold">B</span>
                               </div>
-                              <span className="text-sm font-semibold text-muted-foreground">Before Edify</span>
+                              <span className="text-sm font-semibold text-muted-foreground">Before λechSavvy</span>
                             </div>
                             <ul className="space-y-2">
                               {t.before.issues.map((issue) => (
@@ -418,7 +418,7 @@ function BeforeAfterSection() {
                               <div className={`w-6 h-6 rounded ${t.bgColor}/15 flex items-center justify-center`}>
                                 <span className={`${t.color} text-xs font-bold`}>A</span>
                               </div>
-                              <span className="text-sm font-semibold text-muted-foreground">After Edify</span>
+                              <span className="text-sm font-semibold text-muted-foreground">After λechSavvy</span>
                             </div>
                             <ul className="space-y-2">
                               {t.after.features.map((feature) => (
@@ -574,7 +574,7 @@ function LiveExampleSection() {
               Live Example
             </Badge>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              See a Real Edify Website in Action
+              See a Real λechSavvy Website in Action
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-lg">
               Here's one of the custom websites we built for a Hawai'i business — browse it live below.
@@ -598,7 +598,7 @@ function LiveExampleSection() {
               <div className="relative w-full" style={{ paddingBottom: "62.5%" }}>
                 <iframe
                   src="https://poormantowing.com"
-                  title="Poorman Towing — Example Edify Website"
+                  title="Poorman Towing — Example λechSavvy Website"
                   className="absolute inset-0 w-full h-full border-0"
                   loading="lazy"
                   sandbox="allow-scripts allow-same-origin"
@@ -609,7 +609,7 @@ function LiveExampleSection() {
               <a href="https://poormantowing.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
                 poormantowing.com
               </a>{" "}
-              — built by Edify for a local Hawai'i towing business
+              — built by λechSavvy for a local Hawai'i towing business
             </p>
           </motion.div>
         </motion.div>

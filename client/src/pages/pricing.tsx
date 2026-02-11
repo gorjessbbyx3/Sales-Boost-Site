@@ -331,7 +331,7 @@ function PricingCardsSection() {
 
                 <Button className="w-full" size="lg" variant="outline" asChild>
                   <Link href="/contact">
-                    Go Online with Edify
+                    Go Online with λechSavvy
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </Button>
@@ -358,7 +358,7 @@ function PricingCardsSection() {
                     Traditional processors cost you $3,600 - $5,400/year
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    On $10K/month, you're losing $250-$350 every month to fees. With Edify, you keep every dollar.
+                    On $10K/month, you're losing $250-$350 every month to fees. With λechSavvy, you keep every dollar.
                   </p>
                 </div>
               </div>
@@ -468,7 +468,7 @@ function SavingsCalculator() {
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
                   <CardContent className="p-3 sm:p-5 text-center relative">
                     <div className="text-[10px] sm:text-sm text-muted-foreground mb-1">
-                      Keep With Edify
+                      Keep With λechSavvy
                     </div>
                     <div className="text-xl sm:text-3xl font-extrabold text-primary">
                       +${annualLoss.toLocaleString()}
