@@ -47,7 +47,7 @@ function Navbar() {
             className="font-bold text-xl tracking-tight flex items-center gap-2.5"
             data-testid="link-logo"
           >
-            <img src="/images/IMG_6304.png" alt="TechSavvy Hawaii" className="w-9 h-9 rounded" />
+            <img src="/images/techsavvy-logo.jpeg" alt="TechSavvy Hawaii" className="w-9 h-9 rounded" />
             <span className="text-foreground">TechSavvy</span>
           </Link>
 
@@ -133,9 +133,18 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
           <div className="col-span-2 md:col-span-1">
-            <div className="font-bold text-base sm:text-lg flex items-center gap-2 mb-3">
-              <img src="/images/IMG_6304.png" alt="TechSavvy Hawaii" className="w-7 h-7 sm:w-8 sm:h-8 rounded" />
-              <span className="text-foreground">TechSavvy Hawaii</span>
+            <div className="mb-4">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-48 sm:w-56 h-auto rounded-lg"
+                poster="/images/techsavvy-logo.jpeg"
+              >
+                <source src="/images/techsavvy-logo-video.mp4" type="video/mp4" />
+                <img src="/images/techsavvy-logo.jpeg" alt="TechSavvy Hawaii" className="w-48 sm:w-56 h-auto rounded-lg" />
+              </video>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-sm mb-3">
               Hawai'i's trusted payment processing and web design company. Zero fees — plus free websites for every merchant.
