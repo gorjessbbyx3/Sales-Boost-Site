@@ -11,16 +11,13 @@ import {
   ArrowRight,
   Clock,
   Palette,
-  Globe,
   MapPin,
   CircleDollarSign,
   BarChart3,
 } from "lucide-react";
-import { useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
-import { useSEO } from "@/hooks/useSEO";
 
 function HowItWorksHero() {
   return (
@@ -65,7 +62,7 @@ function HowItWorksHero() {
           <motion.div className="mt-8 rounded-xl overflow-hidden bg-muted/30 max-w-2xl mx-auto" variants={fadeUp}>
             <img
               src="/images/How_it_works.png"
-              alt="How λechSavvy zero-fee payment processing works"
+              alt="How TechSavvy zero-fee payment processing works"
               className="w-full max-h-[50vh] object-contain"
             />
           </motion.div>
@@ -80,11 +77,11 @@ function StepsSection() {
     {
       step: "01",
       title: "Choose Your Plan",
-      description: "Pick an in-store terminal for face-to-face payments, or go online-only with a free website. Zero processing fees either way.",
+      description: "Buy outright for $399 (best value) or start a 30-day risk-free trial. Both include zero processing fees forever.",
       details: [
         "In-Store Terminal — $399 one-time, own it immediately",
         "30-Day Trial — free to try, $599 if you keep it",
-        "OR Online-Only — FREE website + payment gateway",
+        "Online-Only — FREE website + payment gateway with Cash Discount Processing",
       ],
       icon: CreditCard,
       accent: "from-primary/20 to-primary/5",
@@ -185,9 +182,9 @@ function WhyTechSavvySection() {
       description: "Start accepting payments today with full training and support.",
     },
     {
-      icon: Globe,
-      title: "Online-Only Option",
-      description: "Go online with a free website and payment gateway — no physical terminal needed.",
+      icon: Palette,
+      title: "Free Custom Website",
+      description: "Every merchant gets a professional business website — $997 value included.",
     },
     {
       icon: ShieldCheck,
@@ -219,7 +216,7 @@ function WhyTechSavvySection() {
         >
           <motion.div variants={fadeUp}>
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              Why λechSavvy
+              Why TechSavvy
             </Badge>
           </motion.div>
           <motion.h2
@@ -296,26 +293,6 @@ function HowItWorksCTA() {
 }
 
 export default function HowItWorksPage() {
-  const jsonLd = useMemo(() => ({
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "name": "How Zero-Fee Payment Processing Works — 3 Simple Steps",
-    "description": "Learn how zero-fee (cash discount / surcharge) payment processing works. Customer pays with card, small fee added, merchant keeps 100%. Fully legal and compliant.",
-    "url": "https://techsavvyhawaii.com/how-it-works"
-  }), []);
-
-  useSEO({
-    title: "How Zero-Fee Payment Processing Works | Cash Discount & Surcharge Explained — λechSavvy (TechSavvy)",
-    description: "Learn how zero-fee payment processing works in 3 simple steps. Customer pays with card, a small surcharge is added, and the merchant keeps 100% of the sale. Fully legal and compliant with Visa & Mastercard. Also called cash discount processing or surcharge processing. No monthly fees, no contracts.",
-    keywords: "how does zero fee payment processing work, cash discount program explained, surcharge processing how it works, how to accept credit cards with no fees, zero cost processing explained, cash discount vs surcharge, dual pricing explained, how to eliminate credit card fees, merchant keeps 100 percent, no processing fees how, credit card surcharge legal, payment processing explained, how payment processing works",
-    canonical: "https://techsavvyhawaii.com/how-it-works",
-    ogTitle: "How Zero-Fee Payment Processing Works — 3 Steps to $0 Fees | λechSavvy",
-    ogDescription: "Customer pays → small surcharge added → you keep 100%. Learn how cash discount / surcharge processing eliminates credit card fees legally.",
-    twitterTitle: "How Zero-Fee Processing Works | λechSavvy (TechSavvy)",
-    twitterDescription: "3 steps to zero fees: customer pays, surcharge added, you keep 100%. Fully legal. No monthly fees, no contracts.",
-    jsonLd,
-  });
-
   return (
     <Layout>
       <HowItWorksHero />

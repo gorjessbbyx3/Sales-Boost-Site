@@ -10,12 +10,11 @@ import HowItWorksPage from "@/pages/how-it-works";
 import WebDesignPage from "@/pages/web-design";
 import HighRiskPage from "@/pages/high-risk";
 import ContactPage from "@/pages/contact";
-import FaqPage from "@/pages/services-faq";
-import ServicesPage from "@/pages/services";
-import OnlineProcessingPage from "@/pages/online-processing";
 import AiConfigPage from "@/pages/ai-config";
 import NotFound from "@/pages/not-found";
 import { ChatWidget } from "@/components/chat-widget";
+
+const isAdminSubdomain = window.location.hostname.startsWith("admin.");
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -27,7 +26,7 @@ function ScrollToTop() {
   return null;
 }
 
-function Router() {
+function MainRouter() {
   return (
     <>
       <ScrollToTop />
@@ -38,22 +37,38 @@ function Router() {
         <Route path="/our-work" component={WebDesignPage} />
         <Route path="/high-risk" component={HighRiskPage} />
         <Route path="/contact" component={ContactPage} />
-        <Route path="/faq" component={FaqPage} />
-        <Route path="/services" component={ServicesPage} />
-        <Route path="/online-processing" component={OnlineProcessingPage} />
-        <Route path="/ai-config" component={AiConfigPage} />
         <Route component={NotFound} />
       </Switch>
     </>
   );
 }
 
+function AdminRouter() {
+  return (
+    <Switch>
+      <Route path="/" component={AiConfigPage} />
+      <Route component={AiConfigPage} />
+    </Switch>
+  );
+}
+
 function App() {
+  if (isAdminSubdomain) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <AdminRouter />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Router />
+        <MainRouter />
         <ChatWidget />
       </TooltipProvider>
     </QueryClientProvider>
