@@ -52,11 +52,21 @@ function HeroSection() {
       data-testid="section-hero"
     >
       <div className="absolute inset-0 -z-10">
-        <img
-          src="/images/hero-banner.jpg"
-          alt="Eliminate Credit Card Fees — TechSavvy Hawaii"
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          poster="/images/hero-banner.jpg"
           className="w-full h-full object-cover object-center opacity-15 sm:opacity-20"
-        />
+        >
+          <source src="/images/hero-video.mp4" type="video/mp4" />
+          <img
+            src="/images/hero-banner.jpg"
+            alt="Eliminate Credit Card Fees — TechSavvy Hawaii"
+            className="w-full h-full object-cover object-center"
+          />
+        </video>
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
       </div>
 
