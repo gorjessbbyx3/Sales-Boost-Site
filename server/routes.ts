@@ -1,7 +1,10 @@
 import type { Express, Request, Response, NextFunction } from "express";
-import { createServer, type Server } from "http";
+import { type Server } from "http";
 import { storage } from "./storage";
 import { updateAiConfigSchema, insertContactLeadSchema } from "@shared/schema";
+import * as schema from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, asc, getTableColumns } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
 
@@ -33,204 +36,69 @@ function requireAdminSession(req: Request, res: Response, next: NextFunction) {
   return res.status(401).json({ error: "Unauthorized" });
 }
 
-// ─── In-Memory Stores for Admin Dashboard ─────────────────────────────
+// ─── DB Helpers ─────────────────────────────────────────────────────
 
-interface Lead {
-  id: string;
-  name: string;
-  business: string;
-  address: string;
-  phone: string;
-  email: string;
-  decisionMakerName: string;
-  decisionMakerRole: string;
-  bestContactMethod: string;
-  package: string;
-  status: string;
-  source: string;
-  vertical: string;
-  currentProcessor: string;
-  currentEquipment: string;
-  monthlyVolume: string;
-  painPoints: string;
-  nextStep: string;
-  nextStepDate: string;
-  attachments: Array<{ name: string; url: string }>;
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
+function pickColumns(table: any, data: Record<string, any>): Record<string, any> {
+  const cols = Object.keys(getTableColumns(table));
+  const result: Record<string, any> = {};
+  for (const key of cols) {
+    if (key in data && key !== "id") {
+      result[key] = data[key];
+    }
+  }
+  return result;
 }
 
-interface Client {
-  id: string;
-  name: string;
-  business: string;
-  phone: string;
-  email: string;
-  package: string;
-  maintenance: string;
-  websiteUrl: string;
-  websiteStatus: string;
-  terminalId: string;
-  monthlyVolume: number;
-  startDate: string;
-  notes: string;
+function deserializeLead(row: typeof schema.leads.$inferSelect) {
+  return { ...row, attachments: JSON.parse(row.attachments || "[]") };
 }
 
-interface RevenueEntry {
-  id: string;
-  date: string;
-  type: string;
-  description: string;
-  amount: number;
-  clientId: string;
-  recurring: boolean;
+function deserializeIntegration(row: typeof schema.integrations.$inferSelect) {
+  return { ...row, config: JSON.parse(row.config || "{}") };
 }
 
-interface Task {
-  id: string;
-  title: string;
-  dueDate: string;
-  priority: string;
-  completed: boolean;
-  linkedTo: string;
-  createdAt: string;
+async function logActivity(action: string, details: string, type: string) {
+  try {
+    await db.insert(schema.activityLog).values({
+      id: randomUUID(),
+      action,
+      details,
+      timestamp: new Date().toISOString(),
+      type,
+    });
+  } catch (err) {
+    console.error("Failed to log activity:", err);
+  }
 }
 
-interface AdminFile {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  category: string;
-  uploadedAt: string;
-  url: string;
+async function sendSlackNotification(text: string, eventType?: string) {
+  try {
+    const [config] = await db.select().from(schema.slackConfig).where(eq(schema.slackConfig.id, "default"));
+    if (!config || !config.enabled || !config.webhookUrl) return;
+    if (eventType === "newLead" && !config.notifyNewLead) return;
+    if (eventType === "newClient" && !config.notifyNewClient) return;
+    if (eventType === "revenue" && !config.notifyRevenue) return;
+    if (eventType === "taskDue" && !config.notifyTaskDue) return;
+
+    await fetch(config.webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, channel: config.channel }),
+    });
+  } catch (err) {
+    console.error("Slack notification failed:", err);
+  }
 }
 
-interface SlackConfig {
-  webhookUrl: string;
-  channel: string;
-  enabled: boolean;
-  notifyNewLead: boolean;
-  notifyNewClient: boolean;
-  notifyRevenue: boolean;
-  notifyTaskDue: boolean;
-}
-
-interface Integration {
-  id: string;
-  name: string;
-  type: string;
-  enabled: boolean;
-  config: Record<string, string>;
-  lastSync: string;
-}
-
-const leads: Map<string, Lead> = new Map();
-const clients: Map<string, Client> = new Map();
-const revenue: Map<string, RevenueEntry> = new Map();
-const tasks: Map<string, Task> = new Map();
-const files: Map<string, AdminFile> = new Map();
-let slackConfig: SlackConfig = {
-  webhookUrl: "",
-  channel: "#general",
-  enabled: false,
-  notifyNewLead: true,
-  notifyNewClient: true,
-  notifyRevenue: false,
-  notifyTaskDue: true,
-};
-const integrations: Map<string, Integration> = new Map();
-const activityLog: Array<{ id: string; action: string; details: string; timestamp: string; type: string }> = [];
-
-// ─── Sales Playbook Stores ─────────────────────────────────────────
-
-interface ReferralPartner {
-  id: string;
-  name: string;
-  niche: string;
-  clientTypes: string;
-  referralTerms: string;
-  introMethod: string;
-  trackingNotes: string;
-  lastCheckIn: string;
-  nextCheckIn: string;
-  createdAt: string;
-}
-
-interface PlaybookCheckItem {
-  id: string;
-  channel: string;
-  label: string;
-  completed: boolean;
-  completedAt: string;
-}
-
-interface WeeklyKPI {
-  id: string;
-  weekStart: string;
-  outboundCalls: number;
-  outboundEmails: number;
-  outboundDMs: number;
-  walkIns: number;
-  contactsMade: number;
-  appointmentsSet: number;
-  statementsRequested: number;
-  statementsReceived: number;
-  proposalsSent: number;
-  dealsWon: number;
-  volumeWon: number;
-  notes: string;
-}
-
-interface PlanItem {
-  id: string;
-  phase: number;
-  weekRange: string;
-  title: string;
-  description: string;
-  completed: boolean;
-  completedAt: string;
-  order: number;
-}
-
-interface MaterialItem {
-  id: string;
-  category: string;
-  name: string;
-  description: string;
-  status: string;
-  fileUrl: string;
-  updatedAt: string;
-}
-
-interface Resource {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  type: string; // "video" | "pdf" | "doc" | "link" | "template"
-  url: string;
-  thumbnailUrl: string;
-  order: number;
-  featured: boolean;
-  published: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const referralPartners: Map<string, ReferralPartner> = new Map();
-const playbookChecks: Map<string, PlaybookCheckItem> = new Map();
-const weeklyKPIs: Map<string, WeeklyKPI> = new Map();
-const planItems: Map<string, PlanItem> = new Map();
-const materials: Map<string, MaterialItem> = new Map();
-const resources: Map<string, Resource> = new Map();
+// ─── Seed Functions (check DB first, insert if empty) ───────────────
 
 let planSeeded = false;
-function seedPlanIfNeeded() {
+async function seedPlanIfNeeded() {
   if (planSeeded) return;
   planSeeded = true;
-  const items: Omit<PlanItem, "id">[] = [
+  const existing = await db.select({ id: schema.planItems.id }).from(schema.planItems).limit(1);
+  if (existing.length > 0) return;
+  const items = [
     { phase: 1, weekRange: "1-2", title: "Set up CRM pipeline and configure all lead fields", description: "Pipeline stages, source tracking, required fields", completed: false, completedAt: "", order: 1 },
     { phase: 1, weekRange: "1-2", title: "Craft value proposition and 30-second elevator pitch", description: "One-pager for walk-ins, pitch for networking", completed: false, completedAt: "", order: 2 },
     { phase: 1, weekRange: "1-2", title: "Create 2 lead magnet PDFs", description: "E.g., Statement Checklist + Cash Discount Guide", completed: false, completedAt: "", order: 3 },
@@ -249,44 +117,47 @@ function seedPlanIfNeeded() {
     { phase: 3, weekRange: "7-12", title: "Quarterly check-in with all referral partners", description: "Review referrals, refresh agreement, share results", completed: false, completedAt: "", order: 16 },
     { phase: 3, weekRange: "7-12", title: "Review and refine all scripts based on results", description: "Update what's working, discard what isn't", completed: false, completedAt: "", order: 17 },
   ];
-  items.forEach((item) => {
-    const id = randomUUID();
-    planItems.set(id, { id, ...item });
-  });
+  await db.insert(schema.planItems).values(
+    items.map((item) => ({ id: randomUUID(), ...item }))
+  );
 }
 
 let materialsSeeded = false;
-function seedMaterialsIfNeeded() {
+async function seedMaterialsIfNeeded() {
   if (materialsSeeded) return;
   materialsSeeded = true;
-  const items: Omit<MaterialItem, "id">[] = [
-    { category: "sales", name: "One-Page Value Prop + Statement Review Offer", description: "Benefits, pricing, QR to landing page — print + PDF", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "sales", name: "Cold Call Script + Objection Handlers", description: "30-60 sec opener, qualification Qs, common objections", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "sales", name: "Walk-In Script + Leave-Behind Card", description: "In-person opener with handoff material", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "sales", name: "Email Templates (Cold + Follow-Up + Confirm)", description: "Initial outreach, follow-up sequences, appointment confirm", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "lead-gen", name: "Lead Magnet PDF: Statement Checklist", description: "Top 10 Things to Check on Your Merchant Statement", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "lead-gen", name: "Lead Magnet PDF: Cash Discount Guide", description: "Cash Discount Program Explained: Is It Right for Your Business?", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "lead-gen", name: "Landing Page with Lead Capture Form", description: "Opt-in page for lead magnets with form + thank-you page", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "lead-gen", name: "QR Codes for Print Materials", description: "Links to landing page, for one-pagers and business cards", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "partner", name: "Referral Partner Agreement", description: "Simple 1-pager: terms, commission, tracking method", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "partner", name: "Partner Intro Email Template", description: "Template for partners to introduce you to their clients", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "partner", name: "CRM Partner Tracking Setup", description: "Tags, source field, quarterly check-in calendar", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "tracking", name: "Weekly KPI Sheet", description: "Track outreach, contacts, appointments, closes weekly", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "tracking", name: "Channel Scorecard", description: "Per-source conversion funnel + avg volume metrics", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
-    { category: "tracking", name: "Follow-Up SLA Tracker", description: "24hr rule for lead magnets, 48hr for partner referrals", status: "not-started", fileUrl: "", updatedAt: new Date().toISOString() },
+  const existing = await db.select({ id: schema.materials.id }).from(schema.materials).limit(1);
+  if (existing.length > 0) return;
+  const now = new Date().toISOString();
+  const items = [
+    { category: "sales", name: "One-Page Value Prop + Statement Review Offer", description: "Benefits, pricing, QR to landing page — print + PDF", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "sales", name: "Cold Call Script + Objection Handlers", description: "30-60 sec opener, qualification Qs, common objections", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "sales", name: "Walk-In Script + Leave-Behind Card", description: "In-person opener with handoff material", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "sales", name: "Email Templates (Cold + Follow-Up + Confirm)", description: "Initial outreach, follow-up sequences, appointment confirm", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "lead-gen", name: "Lead Magnet PDF: Statement Checklist", description: "Top 10 Things to Check on Your Merchant Statement", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "lead-gen", name: "Lead Magnet PDF: Cash Discount Guide", description: "Cash Discount Program Explained: Is It Right for Your Business?", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "lead-gen", name: "Landing Page with Lead Capture Form", description: "Opt-in page for lead magnets with form + thank-you page", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "lead-gen", name: "QR Codes for Print Materials", description: "Links to landing page, for one-pagers and business cards", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "partner", name: "Referral Partner Agreement", description: "Simple 1-pager: terms, commission, tracking method", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "partner", name: "Partner Intro Email Template", description: "Template for partners to introduce you to their clients", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "partner", name: "CRM Partner Tracking Setup", description: "Tags, source field, quarterly check-in calendar", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "tracking", name: "Weekly KPI Sheet", description: "Track outreach, contacts, appointments, closes weekly", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "tracking", name: "Channel Scorecard", description: "Per-source conversion funnel + avg volume metrics", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "tracking", name: "Follow-Up SLA Tracker", description: "24hr rule for lead magnets, 48hr for partner referrals", status: "not-started", fileUrl: "", updatedAt: now },
   ];
-  items.forEach((item) => {
-    const id = randomUUID();
-    materials.set(id, { id, ...item });
-  });
+  await db.insert(schema.materials).values(
+    items.map((item) => ({ id: randomUUID(), ...item }))
+  );
 }
 
 let resourcesSeeded = false;
-function seedResourcesIfNeeded() {
+async function seedResourcesIfNeeded() {
   if (resourcesSeeded) return;
   resourcesSeeded = true;
+  const existing = await db.select({ id: schema.resources.id }).from(schema.resources).limit(1);
+  if (existing.length > 0) return;
   const now = new Date().toISOString();
-  const items: Omit<Resource, "id">[] = [
+  const items = [
     // ─── Client Sales Resources (Google Drive Folder 1) ────────────
     { title: "Cash Discount Program — Part 1", description: "Comprehensive guide to the Cash Discount Program covering compliance, implementation, and customer communication. PDF format.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1yiqqPiOkcTUizcncUYE7v0fs5ezPDMFu/view", thumbnailUrl: "", order: 1, featured: true, published: true, createdAt: now, updatedAt: now },
     { title: "Cash Discount Program — Part 2", description: "Visual companion to the Cash Discount Program guide. Print-ready infographic with program details and signage requirements.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1FYLYcqF9Wm0vi4da2WQI4aaIyCw193qs/view", thumbnailUrl: "", order: 2, featured: false, published: true, createdAt: now, updatedAt: now },
@@ -331,35 +202,12 @@ function seedResourcesIfNeeded() {
     { title: "CashSwipe Classroom — Resource 11", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/f45b9938f72e43728d17e430fefbb10b34abc190639f44e0aaf87393b1e4c9e0/view", thumbnailUrl: "", order: 11, featured: false, published: true, createdAt: now, updatedAt: now },
     { title: "CashSwipe Classroom — Resource 12", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1RXWIWZQpVIUNfgu4clvn3M9T9XVkq1-r/view", thumbnailUrl: "", order: 12, featured: true, published: true, createdAt: now, updatedAt: now },
   ];
-  items.forEach((item) => {
-    const id = randomUUID();
-    resources.set(id, { id, ...item });
-  });
+  await db.insert(schema.resources).values(
+    items.map((item) => ({ id: randomUUID(), ...item }))
+  );
 }
 
-function logActivity(action: string, details: string, type: string) {
-  activityLog.unshift({
-    id: randomUUID(),
-    action,
-    details,
-    timestamp: new Date().toISOString(),
-    type,
-  });
-  if (activityLog.length > 100) activityLog.length = 100;
-}
-
-async function sendSlackNotification(text: string) {
-  if (!slackConfig.enabled || !slackConfig.webhookUrl) return;
-  try {
-    await fetch(slackConfig.webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, channel: slackConfig.channel }),
-    });
-  } catch (err) {
-    console.error("Slack notification failed:", err);
-  }
-}
+// ─── Routes ────────────────────────────────────────────────────────
 
 export async function registerRoutes(
   httpServer: Server,
@@ -368,7 +216,7 @@ export async function registerRoutes(
 
   // ─── Admin Auth ─────────────────────────────────────────────────
 
-  app.post("/api/admin/login", (req: Request, res: Response) => {
+  app.post("/api/admin/login", async (req: Request, res: Response) => {
     const { password } = req.body;
     const adminPassword = process.env.SESSION_SECRET;
     if (!adminPassword) {
@@ -479,27 +327,26 @@ export async function registerRoutes(
     }
     const lead = await storage.createContactLead(parsed.data);
     logActivity("New Website Lead", `${parsed.data.businessName} submitted contact form`, "lead");
-    if (slackConfig.notifyNewLead) {
-      sendSlackNotification(`New lead from website: ${parsed.data.businessName} (${parsed.data.contactName}) - ${parsed.data.email}`);
-    }
+    sendSlackNotification(`New lead from website: ${parsed.data.businessName} (${parsed.data.contactName}) - ${parsed.data.email}`, "newLead");
     res.status(201).json(lead);
   });
 
   app.get("/api/contact-leads", requireAdminSession, async (_req: Request, res: Response) => {
-    const contactLeads = await storage.getContactLeads();
-    res.json(contactLeads);
+    const contactLeadRows = await storage.getContactLeads();
+    res.json(contactLeadRows);
   });
 
   // ─── Leads CRUD ─────────────────────────────────────────────────
 
-  app.get("/api/leads", requireAdminSession, (_req, res) => {
-    res.json(Array.from(leads.values()));
+  app.get("/api/leads", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.leads);
+    res.json(rows.map(deserializeLead));
   });
 
-  app.post("/api/leads", requireAdminSession, (req, res) => {
+  app.post("/api/leads", requireAdminSession, async (req, res) => {
     const id = randomUUID();
     const now = new Date().toISOString();
-    const lead: Lead = {
+    const [lead] = await db.insert(schema.leads).values({
       id,
       name: req.body.name || "",
       business: req.body.business || "",
@@ -519,44 +366,43 @@ export async function registerRoutes(
       painPoints: req.body.painPoints || "",
       nextStep: req.body.nextStep || "",
       nextStepDate: req.body.nextStepDate || "",
-      attachments: Array.isArray(req.body.attachments) ? req.body.attachments : [],
+      attachments: JSON.stringify(Array.isArray(req.body.attachments) ? req.body.attachments : []),
       notes: req.body.notes || "",
       createdAt: now,
       updatedAt: now,
-    };
-    leads.set(id, lead);
+    }).returning();
     logActivity("Lead Created", `${lead.business || lead.name}`, "lead");
-    if (slackConfig.notifyNewLead) {
-      sendSlackNotification(`New lead added: ${lead.business || lead.name} (${lead.package})`);
-    }
-    res.status(201).json(lead);
+    sendSlackNotification(`New lead added: ${lead.business || lead.name} (${lead.package})`, "newLead");
+    res.status(201).json(deserializeLead(lead));
   });
 
-  app.patch("/api/leads/:id", requireAdminSession, (req, res) => {
-    const lead = leads.get(req.params.id);
-    if (!lead) return res.status(404).json({ error: "Lead not found" });
-    Object.assign(lead, req.body, { updatedAt: new Date().toISOString() });
-    leads.set(req.params.id, lead);
-    logActivity("Lead Updated", `${lead.business || lead.name} - ${lead.status}`, "lead");
-    res.json(lead);
+  app.patch("/api/leads/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body };
+    if (body.attachments) body.attachments = JSON.stringify(body.attachments);
+    body.updatedAt = new Date().toISOString();
+    const updateData = pickColumns(schema.leads, body);
+    const [updated] = await db.update(schema.leads).set(updateData).where(eq(schema.leads.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Lead not found" });
+    logActivity("Lead Updated", `${updated.business || updated.name} - ${updated.status}`, "lead");
+    res.json(deserializeLead(updated));
   });
 
-  app.delete("/api/leads/:id", requireAdminSession, (req, res) => {
-    const lead = leads.get(req.params.id);
-    leads.delete(req.params.id);
-    if (lead) logActivity("Lead Deleted", `${lead.business || lead.name}`, "lead");
+  app.delete("/api/leads/:id", requireAdminSession, async (req, res) => {
+    const [deleted] = await db.delete(schema.leads).where(eq(schema.leads.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Lead Deleted", `${deleted.business || deleted.name}`, "lead");
     res.json({ success: true });
   });
 
   // ─── Clients CRUD ───────────────────────────────────────────────
 
-  app.get("/api/clients", requireAdminSession, (_req, res) => {
-    res.json(Array.from(clients.values()));
+  app.get("/api/clients", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.clients);
+    res.json(rows);
   });
 
-  app.post("/api/clients", requireAdminSession, (req, res) => {
+  app.post("/api/clients", requireAdminSession, async (req, res) => {
     const id = randomUUID();
-    const client: Client = {
+    const [client] = await db.insert(schema.clients).values({
       id,
       name: req.body.name || "",
       business: req.body.business || "",
@@ -570,40 +416,36 @@ export async function registerRoutes(
       monthlyVolume: req.body.monthlyVolume || 0,
       startDate: req.body.startDate || new Date().toISOString().split("T")[0],
       notes: req.body.notes || "",
-    };
-    clients.set(id, client);
+    }).returning();
     logActivity("Client Added", `${client.business || client.name}`, "client");
-    if (slackConfig.notifyNewClient) {
-      sendSlackNotification(`New client onboarded: ${client.business || client.name} (${client.package})`);
-    }
+    sendSlackNotification(`New client onboarded: ${client.business || client.name} (${client.package})`, "newClient");
     res.status(201).json(client);
   });
 
-  app.patch("/api/clients/:id", requireAdminSession, (req, res) => {
-    const client = clients.get(req.params.id);
-    if (!client) return res.status(404).json({ error: "Client not found" });
-    Object.assign(client, req.body);
-    clients.set(req.params.id, client);
-    logActivity("Client Updated", `${client.business || client.name}`, "client");
-    res.json(client);
+  app.patch("/api/clients/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.clients, req.body);
+    const [updated] = await db.update(schema.clients).set(updateData).where(eq(schema.clients.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Client not found" });
+    logActivity("Client Updated", `${updated.business || updated.name}`, "client");
+    res.json(updated);
   });
 
-  app.delete("/api/clients/:id", requireAdminSession, (req, res) => {
-    const client = clients.get(req.params.id);
-    clients.delete(req.params.id);
-    if (client) logActivity("Client Removed", `${client.business || client.name}`, "client");
+  app.delete("/api/clients/:id", requireAdminSession, async (req, res) => {
+    const [deleted] = await db.delete(schema.clients).where(eq(schema.clients.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Client Removed", `${deleted.business || deleted.name}`, "client");
     res.json({ success: true });
   });
 
   // ─── Revenue CRUD ───────────────────────────────────────────────
 
-  app.get("/api/revenue", requireAdminSession, (_req, res) => {
-    res.json(Array.from(revenue.values()));
+  app.get("/api/revenue", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.revenueEntries);
+    res.json(rows);
   });
 
-  app.post("/api/revenue", requireAdminSession, (req, res) => {
+  app.post("/api/revenue", requireAdminSession, async (req, res) => {
     const id = randomUUID();
-    const entry: RevenueEntry = {
+    const [entry] = await db.insert(schema.revenueEntries).values({
       id,
       date: req.body.date || new Date().toISOString().split("T")[0],
       type: req.body.type || "other",
@@ -611,37 +453,34 @@ export async function registerRoutes(
       amount: req.body.amount || 0,
       clientId: req.body.clientId || "",
       recurring: req.body.recurring || false,
-    };
-    revenue.set(id, entry);
+    }).returning();
     logActivity("Revenue Recorded", `$${entry.amount} - ${entry.type}`, "revenue");
-    if (slackConfig.notifyRevenue) {
-      sendSlackNotification(`Revenue recorded: $${entry.amount} (${entry.type})`);
-    }
+    sendSlackNotification(`Revenue recorded: $${entry.amount} (${entry.type})`, "revenue");
     res.status(201).json(entry);
   });
 
-  app.patch("/api/revenue/:id", requireAdminSession, (req, res) => {
-    const entry = revenue.get(req.params.id);
-    if (!entry) return res.status(404).json({ error: "Entry not found" });
-    Object.assign(entry, req.body);
-    revenue.set(req.params.id, entry);
-    res.json(entry);
+  app.patch("/api/revenue/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.revenueEntries, req.body);
+    const [updated] = await db.update(schema.revenueEntries).set(updateData).where(eq(schema.revenueEntries.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Entry not found" });
+    res.json(updated);
   });
 
-  app.delete("/api/revenue/:id", requireAdminSession, (req, res) => {
-    revenue.delete(req.params.id);
+  app.delete("/api/revenue/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.revenueEntries).where(eq(schema.revenueEntries.id, req.params.id as string));
     res.json({ success: true });
   });
 
   // ─── Tasks CRUD ─────────────────────────────────────────────────
 
-  app.get("/api/tasks", requireAdminSession, (_req, res) => {
-    res.json(Array.from(tasks.values()));
+  app.get("/api/tasks", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.tasks);
+    res.json(rows);
   });
 
-  app.post("/api/tasks", requireAdminSession, (req, res) => {
+  app.post("/api/tasks", requireAdminSession, async (req, res) => {
     const id = randomUUID();
-    const task: Task = {
+    const [task] = await db.insert(schema.tasks).values({
       id,
       title: req.body.title || "",
       dueDate: req.body.dueDate || "",
@@ -649,34 +488,33 @@ export async function registerRoutes(
       completed: req.body.completed || false,
       linkedTo: req.body.linkedTo || "",
       createdAt: new Date().toISOString(),
-    };
-    tasks.set(id, task);
+    }).returning();
     logActivity("Task Created", task.title, "task");
     res.status(201).json(task);
   });
 
-  app.patch("/api/tasks/:id", requireAdminSession, (req, res) => {
-    const task = tasks.get(req.params.id);
-    if (!task) return res.status(404).json({ error: "Task not found" });
-    Object.assign(task, req.body);
-    tasks.set(req.params.id, task);
-    res.json(task);
+  app.patch("/api/tasks/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.tasks, req.body);
+    const [updated] = await db.update(schema.tasks).set(updateData).where(eq(schema.tasks.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Task not found" });
+    res.json(updated);
   });
 
-  app.delete("/api/tasks/:id", requireAdminSession, (req, res) => {
-    tasks.delete(req.params.id);
+  app.delete("/api/tasks/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.tasks).where(eq(schema.tasks.id, req.params.id as string));
     res.json({ success: true });
   });
 
   // ─── File Management ────────────────────────────────────────────
 
-  app.get("/api/files", requireAdminSession, (_req, res) => {
-    res.json(Array.from(files.values()));
+  app.get("/api/files", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.adminFiles);
+    res.json(rows);
   });
 
-  app.post("/api/files", requireAdminSession, (req, res) => {
+  app.post("/api/files", requireAdminSession, async (req, res) => {
     const id = randomUUID();
-    const file: AdminFile = {
+    const [file] = await db.insert(schema.adminFiles).values({
       id,
       name: req.body.name || "untitled",
       size: req.body.size || 0,
@@ -684,37 +522,57 @@ export async function registerRoutes(
       category: req.body.category || "general",
       uploadedAt: new Date().toISOString(),
       url: req.body.url || "",
-    };
-    files.set(id, file);
+    }).returning();
     logActivity("File Added", file.name, "file");
     res.status(201).json(file);
   });
 
-  app.delete("/api/files/:id", requireAdminSession, (req, res) => {
-    const file = files.get(req.params.id);
-    files.delete(req.params.id);
-    if (file) logActivity("File Deleted", file.name, "file");
+  app.delete("/api/files/:id", requireAdminSession, async (req, res) => {
+    const [deleted] = await db.delete(schema.adminFiles).where(eq(schema.adminFiles.id, req.params.id as string)).returning();
+    if (deleted) logActivity("File Deleted", deleted.name, "file");
     res.json({ success: true });
   });
 
   // ─── Slack Integration ──────────────────────────────────────────
 
-  app.get("/api/integrations/slack", requireAdminSession, (_req, res) => {
-    res.json(slackConfig);
+  app.get("/api/integrations/slack", requireAdminSession, async (_req, res) => {
+    const [row] = await db.select().from(schema.slackConfig).where(eq(schema.slackConfig.id, "default"));
+    if (!row) {
+      return res.json({
+        webhookUrl: "",
+        channel: "#general",
+        enabled: false,
+        notifyNewLead: true,
+        notifyNewClient: true,
+        notifyRevenue: false,
+        notifyTaskDue: true,
+      });
+    }
+    const { id, ...config } = row;
+    res.json(config);
   });
 
-  app.patch("/api/integrations/slack", requireAdminSession, (req, res) => {
-    Object.assign(slackConfig, req.body);
-    logActivity("Slack Config Updated", `Enabled: ${slackConfig.enabled}`, "integration");
-    res.json(slackConfig);
+  app.patch("/api/integrations/slack", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.slackConfig, req.body);
+    const [existing] = await db.select().from(schema.slackConfig).where(eq(schema.slackConfig.id, "default"));
+    let row;
+    if (existing) {
+      [row] = await db.update(schema.slackConfig).set(updateData).where(eq(schema.slackConfig.id, "default")).returning();
+    } else {
+      [row] = await db.insert(schema.slackConfig).values({ id: "default", ...updateData } as any).returning();
+    }
+    const { id, ...config } = row;
+    logActivity("Slack Config Updated", `Enabled: ${config.enabled}`, "integration");
+    res.json(config);
   });
 
   app.post("/api/integrations/slack/test", requireAdminSession, async (_req, res) => {
-    if (!slackConfig.webhookUrl) {
+    const [config] = await db.select().from(schema.slackConfig).where(eq(schema.slackConfig.id, "default"));
+    if (!config || !config.webhookUrl) {
       return res.status(400).json({ error: "No webhook URL configured" });
     }
     try {
-      await fetch(slackConfig.webhookUrl, {
+      await fetch(config.webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: "TechSavvy Admin: Test notification from your dashboard!" }),
@@ -727,53 +585,57 @@ export async function registerRoutes(
 
   // ─── Integrations (Generic) ─────────────────────────────────────
 
-  app.get("/api/integrations", requireAdminSession, (_req, res) => {
-    res.json(Array.from(integrations.values()));
+  app.get("/api/integrations", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.integrations);
+    res.json(rows.map(deserializeIntegration));
   });
 
-  app.post("/api/integrations", requireAdminSession, (req, res) => {
+  app.post("/api/integrations", requireAdminSession, async (req, res) => {
     const id = randomUUID();
-    const integration: Integration = {
+    const [integration] = await db.insert(schema.integrations).values({
       id,
       name: req.body.name || "",
       type: req.body.type || "webhook",
       enabled: req.body.enabled ?? false,
-      config: req.body.config || {},
+      config: JSON.stringify(req.body.config || {}),
       lastSync: new Date().toISOString(),
-    };
-    integrations.set(id, integration);
+    }).returning();
     logActivity("Integration Added", integration.name, "integration");
-    res.status(201).json(integration);
+    res.status(201).json(deserializeIntegration(integration));
   });
 
-  app.patch("/api/integrations/:id", requireAdminSession, (req, res) => {
-    const integration = integrations.get(req.params.id);
-    if (!integration) return res.status(404).json({ error: "Integration not found" });
-    Object.assign(integration, req.body, { lastSync: new Date().toISOString() });
-    integrations.set(req.params.id, integration);
-    res.json(integration);
+  app.patch("/api/integrations/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body };
+    if (body.config) body.config = JSON.stringify(body.config);
+    body.lastSync = new Date().toISOString();
+    const updateData = pickColumns(schema.integrations, body);
+    const [updated] = await db.update(schema.integrations).set(updateData).where(eq(schema.integrations.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Integration not found" });
+    res.json(deserializeIntegration(updated));
   });
 
-  app.delete("/api/integrations/:id", requireAdminSession, (req, res) => {
-    integrations.delete(req.params.id);
+  app.delete("/api/integrations/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.integrations).where(eq(schema.integrations.id, req.params.id as string));
     res.json({ success: true });
   });
 
   // ─── Activity Log ───────────────────────────────────────────────
 
-  app.get("/api/activity", requireAdminSession, (_req, res) => {
-    res.json(activityLog.slice(0, 50));
+  app.get("/api/activity", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.activityLog).orderBy(desc(schema.activityLog.timestamp)).limit(50);
+    res.json(rows);
   });
 
   // ─── Referral Partners ─────────────────────────────────────────
 
-  app.get("/api/referral-partners", requireAdminSession, (_req, res) => {
-    res.json(Array.from(referralPartners.values()));
+  app.get("/api/referral-partners", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.referralPartners);
+    res.json(rows);
   });
 
-  app.post("/api/referral-partners", requireAdminSession, (req, res) => {
+  app.post("/api/referral-partners", requireAdminSession, async (req, res) => {
     const id = randomUUID();
-    const partner: ReferralPartner = {
+    const [partner] = await db.insert(schema.referralPartners).values({
       id,
       name: req.body.name || "",
       niche: req.body.niche || "",
@@ -784,63 +646,62 @@ export async function registerRoutes(
       lastCheckIn: req.body.lastCheckIn || "",
       nextCheckIn: req.body.nextCheckIn || "",
       createdAt: new Date().toISOString(),
-    };
-    referralPartners.set(id, partner);
+    }).returning();
     logActivity("Partner Added", partner.name, "lead");
     res.status(201).json(partner);
   });
 
-  app.patch("/api/referral-partners/:id", requireAdminSession, (req, res) => {
-    const partner = referralPartners.get(req.params.id);
-    if (!partner) return res.status(404).json({ error: "Partner not found" });
-    Object.assign(partner, req.body);
-    referralPartners.set(req.params.id, partner);
-    res.json(partner);
+  app.patch("/api/referral-partners/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.referralPartners, req.body);
+    const [updated] = await db.update(schema.referralPartners).set(updateData).where(eq(schema.referralPartners.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Partner not found" });
+    res.json(updated);
   });
 
-  app.delete("/api/referral-partners/:id", requireAdminSession, (req, res) => {
-    referralPartners.delete(req.params.id);
+  app.delete("/api/referral-partners/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.referralPartners).where(eq(schema.referralPartners.id, req.params.id as string));
     res.json({ success: true });
   });
 
   // ─── Playbook Checklists ─────────────────────────────────────────
 
-  app.get("/api/playbook-checks", requireAdminSession, (_req, res) => {
-    res.json(Array.from(playbookChecks.values()));
+  app.get("/api/playbook-checks", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.playbookChecks);
+    res.json(rows);
   });
 
-  app.post("/api/playbook-checks", requireAdminSession, (req, res) => {
+  app.post("/api/playbook-checks", requireAdminSession, async (req, res) => {
     const id = req.body.id || randomUUID();
-    const item: PlaybookCheckItem = {
+    const [item] = await db.insert(schema.playbookChecks).values({
       id,
       channel: req.body.channel || "",
       label: req.body.label || "",
       completed: req.body.completed || false,
       completedAt: req.body.completed ? new Date().toISOString() : "",
-    };
-    playbookChecks.set(id, item);
+    }).returning();
     res.status(201).json(item);
   });
 
-  app.patch("/api/playbook-checks/:id", requireAdminSession, (req, res) => {
-    const item = playbookChecks.get(req.params.id);
-    if (!item) return res.status(404).json({ error: "Not found" });
-    Object.assign(item, req.body);
-    if (req.body.completed) item.completedAt = new Date().toISOString();
-    if (req.body.completed === false) item.completedAt = "";
-    playbookChecks.set(req.params.id, item);
-    res.json(item);
+  app.patch("/api/playbook-checks/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body };
+    if (body.completed === true) body.completedAt = new Date().toISOString();
+    if (body.completed === false) body.completedAt = "";
+    const updateData = pickColumns(schema.playbookChecks, body);
+    const [updated] = await db.update(schema.playbookChecks).set(updateData).where(eq(schema.playbookChecks.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json(updated);
   });
 
   // ─── Weekly KPIs ─────────────────────────────────────────────────
 
-  app.get("/api/kpis", requireAdminSession, (_req, res) => {
-    res.json(Array.from(weeklyKPIs.values()));
+  app.get("/api/kpis", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.weeklyKpis);
+    res.json(rows);
   });
 
-  app.post("/api/kpis", requireAdminSession, (req, res) => {
+  app.post("/api/kpis", requireAdminSession, async (req, res) => {
     const id = randomUUID();
-    const kpi: WeeklyKPI = {
+    const [kpi] = await db.insert(schema.weeklyKpis).values({
       id,
       weekStart: req.body.weekStart || "",
       outboundCalls: req.body.outboundCalls || 0,
@@ -855,35 +716,35 @@ export async function registerRoutes(
       dealsWon: req.body.dealsWon || 0,
       volumeWon: req.body.volumeWon || 0,
       notes: req.body.notes || "",
-    };
-    weeklyKPIs.set(id, kpi);
+    }).returning();
     logActivity("KPI Logged", `Week of ${kpi.weekStart}`, "task");
     res.status(201).json(kpi);
   });
 
-  app.patch("/api/kpis/:id", requireAdminSession, (req, res) => {
-    const kpi = weeklyKPIs.get(req.params.id);
-    if (!kpi) return res.status(404).json({ error: "Not found" });
-    Object.assign(kpi, req.body);
-    weeklyKPIs.set(req.params.id, kpi);
-    res.json(kpi);
+  app.patch("/api/kpis/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.weeklyKpis, req.body);
+    const [updated] = await db.update(schema.weeklyKpis).set(updateData).where(eq(schema.weeklyKpis.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json(updated);
   });
 
-  app.delete("/api/kpis/:id", requireAdminSession, (req, res) => {
-    weeklyKPIs.delete(req.params.id);
+  app.delete("/api/kpis/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.weeklyKpis).where(eq(schema.weeklyKpis.id, req.params.id as string));
     res.json({ success: true });
   });
 
   // ─── 90-Day Plan Items ───────────────────────────────────────────
 
-  app.get("/api/plan-items", requireAdminSession, (_req, res) => {
-    seedPlanIfNeeded();
-    res.json(Array.from(planItems.values()).sort((a, b) => a.order - b.order));
+  app.get("/api/plan-items", requireAdminSession, async (_req, res) => {
+    await seedPlanIfNeeded();
+    const rows = await db.select().from(schema.planItems).orderBy(asc(schema.planItems.order));
+    res.json(rows);
   });
 
-  app.post("/api/plan-items", requireAdminSession, (req, res) => {
+  app.post("/api/plan-items", requireAdminSession, async (req, res) => {
     const id = randomUUID();
-    const item: PlanItem = {
+    const allItems = await db.select({ id: schema.planItems.id }).from(schema.planItems);
+    const [item] = await db.insert(schema.planItems).values({
       id,
       phase: req.body.phase || 1,
       weekRange: req.body.weekRange || "1-2",
@@ -891,37 +752,37 @@ export async function registerRoutes(
       description: req.body.description || "",
       completed: false,
       completedAt: "",
-      order: req.body.order || planItems.size + 1,
-    };
-    planItems.set(id, item);
+      order: req.body.order || allItems.length + 1,
+    }).returning();
     res.status(201).json(item);
   });
 
-  app.patch("/api/plan-items/:id", requireAdminSession, (req, res) => {
-    const item = planItems.get(req.params.id);
-    if (!item) return res.status(404).json({ error: "Not found" });
-    Object.assign(item, req.body);
-    if (req.body.completed && !item.completedAt) item.completedAt = new Date().toISOString();
-    if (req.body.completed === false) item.completedAt = "";
-    planItems.set(req.params.id, item);
-    res.json(item);
+  app.patch("/api/plan-items/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body };
+    if (body.completed === true && !body.completedAt) body.completedAt = new Date().toISOString();
+    if (body.completed === false) body.completedAt = "";
+    const updateData = pickColumns(schema.planItems, body);
+    const [updated] = await db.update(schema.planItems).set(updateData).where(eq(schema.planItems.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json(updated);
   });
 
-  app.delete("/api/plan-items/:id", requireAdminSession, (req, res) => {
-    planItems.delete(req.params.id);
+  app.delete("/api/plan-items/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.planItems).where(eq(schema.planItems.id, req.params.id as string));
     res.json({ success: true });
   });
 
   // ─── Materials Checklist ─────────────────────────────────────────
 
-  app.get("/api/materials", requireAdminSession, (_req, res) => {
-    seedMaterialsIfNeeded();
-    res.json(Array.from(materials.values()));
+  app.get("/api/materials", requireAdminSession, async (_req, res) => {
+    await seedMaterialsIfNeeded();
+    const rows = await db.select().from(schema.materials);
+    res.json(rows);
   });
 
-  app.post("/api/materials", requireAdminSession, (req, res) => {
+  app.post("/api/materials", requireAdminSession, async (req, res) => {
     const id = randomUUID();
-    const item: MaterialItem = {
+    const [item] = await db.insert(schema.materials).values({
       id,
       category: req.body.category || "sales",
       name: req.body.name || "",
@@ -929,23 +790,22 @@ export async function registerRoutes(
       status: req.body.status || "not-started",
       fileUrl: req.body.fileUrl || "",
       updatedAt: new Date().toISOString(),
-    };
-    materials.set(id, item);
+    }).returning();
     res.status(201).json(item);
   });
 
-  app.patch("/api/materials/:id", requireAdminSession, (req, res) => {
-    const item = materials.get(req.params.id);
-    if (!item) return res.status(404).json({ error: "Not found" });
-    Object.assign(item, req.body, { updatedAt: new Date().toISOString() });
-    materials.set(req.params.id, item);
-    res.json(item);
+  app.patch("/api/materials/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body, updatedAt: new Date().toISOString() };
+    const updateData = pickColumns(schema.materials, body);
+    const [updated] = await db.update(schema.materials).set(updateData).where(eq(schema.materials.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json(updated);
   });
 
   // ─── Scorecard Metrics (Computed) ────────────────────────────────
 
-  app.get("/api/metrics/scorecard", requireAdminSession, (_req, res) => {
-    const allLeads = Array.from(leads.values());
+  app.get("/api/metrics/scorecard", requireAdminSession, async (_req, res) => {
+    const allLeads = (await db.select().from(schema.leads)).map(deserializeLead);
     const sources = ["referral", "networking", "social", "direct", "lead-magnet"];
 
     const scorecard = sources.map((src) => {
@@ -1004,22 +864,24 @@ export async function registerRoutes(
 
   // ─── Resources (Public + Admin CRUD) ────────────────────────────
 
-  app.get("/api/resources", (_req, res) => {
-    seedResourcesIfNeeded();
-    const allResources = Array.from(resources.values());
-    const published = allResources.filter((r) => r.published).sort((a, b) => a.order - b.order);
+  app.get("/api/resources", async (_req, res) => {
+    await seedResourcesIfNeeded();
+    const rows = await db.select().from(schema.resources).orderBy(asc(schema.resources.order));
+    const published = rows.filter((r) => r.published);
     res.json(published);
   });
 
-  app.get("/api/resources/all", requireAdminSession, (_req, res) => {
-    seedResourcesIfNeeded();
-    res.json(Array.from(resources.values()).sort((a, b) => a.order - b.order));
+  app.get("/api/resources/all", requireAdminSession, async (_req, res) => {
+    await seedResourcesIfNeeded();
+    const rows = await db.select().from(schema.resources).orderBy(asc(schema.resources.order));
+    res.json(rows);
   });
 
-  app.post("/api/resources", requireAdminSession, (req, res) => {
+  app.post("/api/resources", requireAdminSession, async (req, res) => {
     const id = randomUUID();
     const now = new Date().toISOString();
-    const resource: Resource = {
+    const allResources = await db.select({ id: schema.resources.id }).from(schema.resources);
+    const [resource] = await db.insert(schema.resources).values({
       id,
       title: req.body.title || "",
       description: req.body.description || "",
@@ -1027,63 +889,69 @@ export async function registerRoutes(
       type: req.body.type || "doc",
       url: req.body.url || "",
       thumbnailUrl: req.body.thumbnailUrl || "",
-      order: req.body.order || resources.size + 1,
+      order: req.body.order || allResources.length + 1,
       featured: req.body.featured || false,
       published: req.body.published !== false,
       createdAt: now,
       updatedAt: now,
-    };
-    resources.set(id, resource);
+    }).returning();
     logActivity("Resource Added", resource.title, "file");
     res.status(201).json(resource);
   });
 
-  app.patch("/api/resources/:id", requireAdminSession, (req, res) => {
-    const resource = resources.get(req.params.id);
-    if (!resource) return res.status(404).json({ error: "Resource not found" });
-    Object.assign(resource, req.body, { updatedAt: new Date().toISOString() });
-    resources.set(req.params.id, resource);
-    logActivity("Resource Updated", resource.title, "file");
-    res.json(resource);
+  app.patch("/api/resources/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body, updatedAt: new Date().toISOString() };
+    const updateData = pickColumns(schema.resources, body);
+    const [updated] = await db.update(schema.resources).set(updateData).where(eq(schema.resources.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Resource not found" });
+    logActivity("Resource Updated", updated.title, "file");
+    res.json(updated);
   });
 
-  app.delete("/api/resources/:id", requireAdminSession, (req, res) => {
-    const resource = resources.get(req.params.id);
-    resources.delete(req.params.id);
-    if (resource) logActivity("Resource Deleted", resource.title, "file");
+  app.delete("/api/resources/:id", requireAdminSession, async (req, res) => {
+    const [deleted] = await db.delete(schema.resources).where(eq(schema.resources.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Resource Deleted", deleted.title, "file");
     res.json({ success: true });
   });
 
   // ─── Dashboard Stats ───────────────────────────────────────────
 
   app.get("/api/dashboard/stats", requireAdminSession, async (_req, res) => {
-    const contactLeads = await storage.getContactLeads();
+    const contactLeadRows = await storage.getContactLeads();
+    const allLeads = await db.select().from(schema.leads);
+    const allClients = await db.select().from(schema.clients);
+    const allRevenue = await db.select().from(schema.revenueEntries);
+    const allTasks = await db.select().from(schema.tasks);
+    const allFiles = await db.select({ id: schema.adminFiles.id }).from(schema.adminFiles);
+    const allIntegrations = await db.select({ id: schema.integrations.id }).from(schema.integrations);
+    const [slackRow] = await db.select().from(schema.slackConfig).where(eq(schema.slackConfig.id, "default"));
+
     const now = new Date();
-    const thisMonthRevenue = Array.from(revenue.values())
+    const thisMonthRevenue = allRevenue
       .filter((r) => {
         const d = new Date(r.date);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       })
       .reduce((sum, r) => sum + r.amount, 0);
 
-    const mrr = Array.from(clients.values()).reduce((sum, c) => {
+    const mrr = allClients.reduce((sum, c) => {
       const prices: Record<string, number> = { none: 0, basic: 99, pro: 199, premium: 399 };
       return sum + (prices[c.maintenance] || 0);
     }, 0);
 
     res.json({
-      totalLeads: leads.size,
-      activeLeads: Array.from(leads.values()).filter((l) => !["won", "lost"].includes(l.status)).length,
-      totalClients: clients.size,
-      websitesLive: Array.from(clients.values()).filter((c) => c.websiteStatus === "live").length,
+      totalLeads: allLeads.length,
+      activeLeads: allLeads.filter((l) => !["won", "lost"].includes(l.status)).length,
+      totalClients: allClients.length,
+      websitesLive: allClients.filter((c) => c.websiteStatus === "live").length,
       thisMonthRevenue,
       mrr,
-      pendingTasks: Array.from(tasks.values()).filter((t) => !t.completed).length,
-      overdueTasks: Array.from(tasks.values()).filter((t) => !t.completed && t.dueDate && new Date(t.dueDate) < new Date()).length,
-      contactFormLeads: contactLeads.length,
-      totalFiles: files.size,
-      slackEnabled: slackConfig.enabled,
-      integrationsCount: integrations.size,
+      pendingTasks: allTasks.filter((t) => !t.completed).length,
+      overdueTasks: allTasks.filter((t) => !t.completed && t.dueDate && new Date(t.dueDate) < new Date()).length,
+      contactFormLeads: contactLeadRows.length,
+      totalFiles: allFiles.length,
+      slackEnabled: slackRow?.enabled || false,
+      integrationsCount: allIntegrations.length,
     });
   });
 
