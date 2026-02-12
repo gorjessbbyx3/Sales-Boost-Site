@@ -7,6 +7,7 @@ import { db } from "./db";
 import { eq, desc, asc, getTableColumns } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
+import rateLimit from "express-rate-limit";
 
 /*
  * Anthropic integration - blueprint:javascript_anthropic
@@ -50,11 +51,15 @@ function pickColumns(table: any, data: Record<string, any>): Record<string, any>
 }
 
 function deserializeLead(row: typeof schema.leads.$inferSelect) {
-  return { ...row, attachments: JSON.parse(row.attachments || "[]") };
+  let attachments: any[] = [];
+  try { attachments = JSON.parse(row.attachments || "[]"); } catch {}
+  return { ...row, attachments };
 }
 
 function deserializeIntegration(row: typeof schema.integrations.$inferSelect) {
-  return { ...row, config: JSON.parse(row.config || "{}") };
+  let config: Record<string, any> = {};
+  try { config = JSON.parse(row.config || "{}"); } catch {}
+  return { ...row, config };
 }
 
 async function logActivity(action: string, details: string, type: string) {
@@ -189,18 +194,44 @@ async function seedResourcesIfNeeded() {
     { title: "RPOWER — rPortal Reporting Brochure", description: "Cloud-based reporting portal — real-time sales data, labor costs, inventory tracking, and trend analysis.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1PieDCMCkzMXOJtTCudtEHiwYZwd2uwTh/view", thumbnailUrl: "", order: 17, featured: false, published: true, createdAt: now, updatedAt: now },
 
     // ─── CashSwipe Classroom Resources (Google Drive Folder 3) ─────
-    { title: "CashSwipe Classroom — Resource 1", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/40b17cdff7c34417a62aea3ef08ea6ee021e1d59aad946a39f84685644c112b8/view", thumbnailUrl: "", order: 1, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 2", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/43509cb0a8e74effb56b94de6c048ee83e886245aa6d4752b0a4a2f481e50ca2/view", thumbnailUrl: "", order: 2, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 3", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/44e4254753364137b4c56a284a47670da60001a8f5d747fdba69841d6b31fc45/view", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 4", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/6a5f297f7a18494fa7428e5989e0e0d4085cd388d7b9433db7a3eaa96eb1d2d1/view", thumbnailUrl: "", order: 4, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 5", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/7db3d32d7890487db2eb4543eaaa0af91c439c2f9ef54672bbccf8dc3a23b838/view", thumbnailUrl: "", order: 5, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 6", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/911a2f781ca04a089ac62a0ceb521cc5728491a7203a4d75865096504fd35748/view", thumbnailUrl: "", order: 6, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 7", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/9f49a9a3f06746ab8689c0621ee88fd00cbd9226f49a46cb87c8c8b1f55b6f5e/view", thumbnailUrl: "", order: 7, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 8", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/a4f414e1a8574a25a119d0cd6d473afc4a7144baa81246b881d9acfe053f48bd/view", thumbnailUrl: "", order: 8, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 9", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/af99b60d316a4478b82ac7dcf82e9e390afafa5a28674da8954c29cde7578b92/view", thumbnailUrl: "", order: 9, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 10", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/c7e5b4ad75174e7ba842475ec918f74af7fbdcdee49a433d8475faeb62ed3e39/view", thumbnailUrl: "", order: 10, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 11", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/f45b9938f72e43728d17e430fefbb10b34abc190639f44e0aaf87393b1e4c9e0/view", thumbnailUrl: "", order: 11, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 12", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1RXWIWZQpVIUNfgu4clvn3M9T9XVkq1-r/view", thumbnailUrl: "", order: 12, featured: true, published: true, createdAt: now, updatedAt: now },
+    // 2 Presentations (named files)
+    { title: "5 Powerful Icebreakers to Start Conversations with Merchants", description: "PowerPoint presentation with proven icebreaker techniques for engaging merchants in sales conversations. Essential training for new reps.", category: "classroom", type: "doc", url: "https://drive.google.com/file/d/1RauUWaVTQf_7HqYKOMhv6zkDrlqPPlrg/view", thumbnailUrl: "", order: 1, featured: true, published: true, createdAt: now, updatedAt: now },
+    { title: "Understanding Your Merchant Statement", description: "PowerPoint guide to reading and analyzing merchant processing statements. Key skill for identifying savings opportunities during sales.", category: "classroom", type: "doc", url: "https://drive.google.com/file/d/1w7XMTJYzFiyDYksrzA7jamk_8GlpiYcE/view", thumbnailUrl: "", order: 2, featured: true, published: true, createdAt: now, updatedAt: now },
+    // 34 Training PDFs from CashSwipe classroom
+    { title: "CashSwipe Training — Module 1", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1Us7dWmw7CYhfMP1U2q27n0scmj0Av9Pm/view", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 2", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1BXTK7aTZCW9_fhOJu8KlaeVtR1IDvmUq/view", thumbnailUrl: "", order: 4, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 3", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1l3t7yW1_5oeit0aIZIjCskql3C94Yfa1/view", thumbnailUrl: "", order: 5, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 4", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1TOCLzJh0dg7c181kvo1qUU_okOu1ZfbZ/view", thumbnailUrl: "", order: 6, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 5", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1cGqO1QvA_vuATHvsCtJc6r_1fouwh7No/view", thumbnailUrl: "", order: 7, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 6", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/12-PUec5esxoFjXPsL8oypOe3OuwRWO6D/view", thumbnailUrl: "", order: 8, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 7", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1Rzj3ZETBB6MHCHFaFQ0AjcIHURosoyhS/view", thumbnailUrl: "", order: 9, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 8", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1fogX8lg-UuLfFrQzUR9QEouQVif6R5mQ/view", thumbnailUrl: "", order: 10, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 9", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/12A1fXMG8v9HQpI2r98rCHOmebrXbZRqa/view", thumbnailUrl: "", order: 11, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 10", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1DCNp6oxvbms0PE5PDoEHWLcHzw-IwkyF/view", thumbnailUrl: "", order: 12, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 11", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1q8QZC5LQ_3AieouFfvGmvqtFTk6_knGt/view", thumbnailUrl: "", order: 13, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 12", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1uVFKc4ClEk5tLwx74Xx0QIiqb-pgt-xj/view", thumbnailUrl: "", order: 14, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 13", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1rEiOFLa2HtRlqa8ndbBmPPBthhdmLs_w/view", thumbnailUrl: "", order: 15, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 14", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1ODZ93kA7ieOWRVX3GfQqM334lrx4olgX/view", thumbnailUrl: "", order: 16, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 15", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/14vTjgJb9sJnQbiMM4Tlk6WF4lj0Lc8sF/view", thumbnailUrl: "", order: 17, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 16", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1KcfNeHvEqFGX0pGW1aT9ZLCuHtCNGjN4/view", thumbnailUrl: "", order: 18, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 17", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1sxkGBGDxc7wMjHgMG4vF0H8eDalngZcX/view", thumbnailUrl: "", order: 19, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 18", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1RXWIWZQpVIUNfgu4clvn3M9T9XVkq1-r/view", thumbnailUrl: "", order: 20, featured: true, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 19", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1UFZ9ApuUcSJbNpq33jbNSSDwsmygWH_k/view", thumbnailUrl: "", order: 21, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 20", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1cYvt5iNHSRFpRa3AWurxHCD8WIsZ3-Av/view", thumbnailUrl: "", order: 22, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 21", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1JIKQLLnCPO2s6PYB3HpCaoCzjRqI9ty-/view", thumbnailUrl: "", order: 23, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 22", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/131x-bp7IkvAmn6-hxqz7W9ykNAIGajxa/view", thumbnailUrl: "", order: 24, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 23", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1gxUzlw3WdBRgh9x5rOS_bsJHXTVabbza/view", thumbnailUrl: "", order: 25, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 24", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1RPI5e7V-OLV4Sh8lGPDT0fGXUS-zXzdc/view", thumbnailUrl: "", order: 26, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 25", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1TMRzlQ8XQYTEkeSTGTsX0JCG1pmlyukv/view", thumbnailUrl: "", order: 27, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 26", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1q81ISq3PVU6O1CG1NiJvdSRGLL_bjnES/view", thumbnailUrl: "", order: 28, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 27", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1IfCuI7DdA57VXyJhQCRYZZuWyM9wyYXo/view", thumbnailUrl: "", order: 29, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 28", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1Y9ynOphu3AqU1oP2A_ET8uQ3ptqWjyAG/view", thumbnailUrl: "", order: 30, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 29", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1uJVDvzBno4PMfuDiHRLxhi37k1pc3Vob/view", thumbnailUrl: "", order: 31, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 30", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1rz3r6kW_qUMmliR0YVJeDSV5Mtv6i2cI/view", thumbnailUrl: "", order: 32, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 31", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1i_Z2X6cDgr4WB9lxVzMHYXjNguxGj0PH/view", thumbnailUrl: "", order: 33, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 32", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1BXgkwLkdL0_hCBUWLaF4OFRKoBQJIUT7/view", thumbnailUrl: "", order: 34, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 33", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1qcBAyga_1BD7JfgGuHY-TojajCbU61X_/view", thumbnailUrl: "", order: 35, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 34", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1fS3MOxhZ61agT64OQUgCHe6bV7IPtm3Y/view", thumbnailUrl: "", order: 36, featured: false, published: true, createdAt: now, updatedAt: now },
   ];
   await db.insert(schema.resources).values(
     items.map((item) => ({ id: randomUUID(), ...item }))
@@ -213,6 +244,23 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ─── Rate Limiters ────────────────────────────────────────────
+  const chatLimiter = rateLimit({
+    windowMs: 60 * 1000,   // 1 minute
+    max: 10,               // 10 requests per minute per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please wait a moment." },
+  });
+
+  const publicLeadLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,                // 5 submissions per minute per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many submissions. Please try again shortly." },
+  });
 
   // ─── Admin Auth ─────────────────────────────────────────────────
 
@@ -264,7 +312,7 @@ export async function registerRoutes(
 
   // ─── Chat ───────────────────────────────────────────────────────
 
-  app.post("/api/chat", async (req, res) => {
+  app.post("/api/chat", chatLimiter, async (req, res) => {
     const config = await storage.getAiConfig();
 
     if (!config.enabled) {
@@ -374,6 +422,29 @@ export async function registerRoutes(
     logActivity("Lead Created", `${lead.business || lead.name}`, "lead");
     sendSlackNotification(`New lead added: ${lead.business || lead.name} (${lead.package})`, "newLead");
     res.status(201).json(deserializeLead(lead));
+  });
+
+  // Public lead creation from website contact form (no auth required)
+  app.post("/api/leads/public", publicLeadLimiter, async (req, res) => {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const [lead] = await db.insert(schema.leads).values({
+      id,
+      name: req.body.name || "",
+      business: req.body.business || "",
+      phone: req.body.phone || "",
+      email: req.body.email || "",
+      package: req.body.package || "terminal",
+      status: "new",
+      source: "lead-magnet",
+      notes: req.body.notes || "",
+      attachments: "[]",
+      createdAt: now,
+      updatedAt: now,
+    }).returning();
+    logActivity("Website Lead", `${lead.business || lead.name} submitted contact form`, "lead");
+    sendSlackNotification(`New lead from website: ${lead.business || lead.name} (${lead.email})`, "newLead");
+    res.status(201).json({ success: true });
   });
 
   app.patch("/api/leads/:id", requireAdminSession, async (req, res) => {
@@ -885,7 +956,7 @@ export async function registerRoutes(
       id,
       title: req.body.title || "",
       description: req.body.description || "",
-      category: req.body.category || "getting-started",
+      category: req.body.category || "classroom",
       type: req.body.type || "doc",
       url: req.body.url || "",
       thumbnailUrl: req.body.thumbnailUrl || "",
@@ -953,6 +1024,269 @@ export async function registerRoutes(
       slackEnabled: slackRow?.enabled || false,
       integrationsCount: allIntegrations.length,
     });
+  });
+
+  // ─── Team Members CRUD ───────────────────────────────────────────
+
+  let teamSeeded = false;
+  async function seedTeamIfNeeded() {
+    if (teamSeeded) return;
+    teamSeeded = true;
+    const existing = await db.select({ id: schema.teamMembers.id }).from(schema.teamMembers).limit(1);
+    if (existing.length > 0) return;
+    const now = new Date().toISOString();
+    await db.insert(schema.teamMembers).values([
+      { id: randomUUID(), name: "Aaron", role: "Investor & Financial Backer", email: "", phone: "", status: "active", dailyInvolvement: "minimal", joinedAt: now },
+      { id: randomUUID(), name: "Joey", role: "Business Operations & Legal (EIN, compliance, registration)", email: "", phone: "", status: "active", dailyInvolvement: "part-time", joinedAt: now },
+      { id: randomUUID(), name: "Kepa", role: "Lead Sales & CashSwipe Point of Contact", email: "", phone: "", status: "active", dailyInvolvement: "full", joinedAt: now },
+      { id: randomUUID(), name: "Jessica", role: "CRM Development, Website, & Marketing Materials", email: "", phone: "", status: "active", dailyInvolvement: "full", joinedAt: now },
+    ]);
+  }
+
+  app.get("/api/team-members", requireAdminSession, async (_req, res) => {
+    await seedTeamIfNeeded();
+    const rows = await db.select().from(schema.teamMembers);
+    res.json(rows);
+  });
+
+  app.post("/api/team-members", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const [member] = await db.insert(schema.teamMembers).values({
+      id,
+      name: req.body.name || "",
+      role: req.body.role || "",
+      email: req.body.email || "",
+      phone: req.body.phone || "",
+      status: req.body.status || "active",
+      dailyInvolvement: req.body.dailyInvolvement || "full",
+      joinedAt: new Date().toISOString(),
+    }).returning();
+    logActivity("Team Member Added", member.name, "client");
+    res.status(201).json(member);
+  });
+
+  app.patch("/api/team-members/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.teamMembers, req.body);
+    const [updated] = await db.update(schema.teamMembers).set(updateData).where(eq(schema.teamMembers.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/team-members/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.teamMembers).where(eq(schema.teamMembers.id, req.params.id as string));
+    res.json({ success: true });
+  });
+
+  // ─── Business Info (singleton) ──────────────────────────────────
+
+  app.get("/api/business-info", requireAdminSession, async (_req, res) => {
+    const [row] = await db.select().from(schema.businessInfo).where(eq(schema.businessInfo.id, "default"));
+    if (!row) {
+      return res.json({
+        companyName: "", dba: "", phone: "", email: "", address: "",
+        website: "", taxId: "", bankPartner: "", processorPartner: "CashSwipe",
+        currentPhase: "onboarding", notes: "", updatedAt: new Date().toISOString(),
+      });
+    }
+    const { id, ...info } = row;
+    res.json(info);
+  });
+
+  app.patch("/api/business-info", requireAdminSession, async (req, res) => {
+    const body = { ...req.body, updatedAt: new Date().toISOString() };
+    const updateData = pickColumns(schema.businessInfo, body);
+    const [existing] = await db.select().from(schema.businessInfo).where(eq(schema.businessInfo.id, "default"));
+    let row;
+    if (existing) {
+      [row] = await db.update(schema.businessInfo).set(updateData).where(eq(schema.businessInfo.id, "default")).returning();
+    } else {
+      [row] = await db.insert(schema.businessInfo).values({ id: "default", ...updateData } as any).returning();
+    }
+    const { id, ...info } = row;
+    logActivity("Business Info Updated", `Phase: ${info.currentPhase}`, "client");
+    res.json(info);
+  });
+
+  // ─── Schedule Items CRUD ────────────────────────────────────────
+
+  app.get("/api/schedule", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.scheduleItems).orderBy(asc(schema.scheduleItems.date));
+    res.json(rows);
+  });
+
+  app.post("/api/schedule", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const [item] = await db.insert(schema.scheduleItems).values({
+      id,
+      title: req.body.title || "",
+      description: req.body.description || "",
+      date: req.body.date || new Date().toISOString().split("T")[0],
+      time: req.body.time || "",
+      duration: req.body.duration || 30,
+      assigneeId: req.body.assigneeId || "",
+      priority: req.body.priority || "medium",
+      status: req.body.status || "pending",
+      isAiGenerated: req.body.isAiGenerated || false,
+      category: req.body.category || "general",
+      createdAt: new Date().toISOString(),
+    }).returning();
+    logActivity("Schedule Item Added", item.title, "task");
+    res.status(201).json(item);
+  });
+
+  app.patch("/api/schedule/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.scheduleItems, req.body);
+    const [updated] = await db.update(schema.scheduleItems).set(updateData).where(eq(schema.scheduleItems.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/schedule/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.scheduleItems).where(eq(schema.scheduleItems.id, req.params.id as string));
+    res.json({ success: true });
+  });
+
+  // ─── AI Ops Assistant (Recommendations) ─────────────────────────
+
+  app.post("/api/ai-ops/recommend", requireAdminSession, async (_req, res) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured." });
+
+    const [teamRows, leadRows, taskRows, scheduleRows, clientRows, businessRow] = await Promise.all([
+      db.select().from(schema.teamMembers),
+      db.select().from(schema.leads),
+      db.select().from(schema.tasks),
+      db.select().from(schema.scheduleItems),
+      db.select().from(schema.clients),
+      db.select().from(schema.businessInfo).where(eq(schema.businessInfo.id, "default")),
+    ]);
+    const biz = businessRow[0];
+    const pendingTasks = taskRows.filter(t => !t.completed);
+    const todayStr = new Date().toISOString().split("T")[0];
+    const todaySchedule = scheduleRows.filter(s => s.date === todayStr);
+
+    const context = `
+BUSINESS CONTEXT:
+- Company: ${biz?.companyName || "TechSavvy Hawaii"} (DBA: ${biz?.dba || "N/A"})
+- Processor Partner: ${biz?.processorPartner || "CashSwipe"}
+- Current Phase: ${biz?.currentPhase || "onboarding"} (still in CashSwipe onboarding/training via Skool)
+- Today: ${todayStr}
+
+TEAM MEMBERS:
+${teamRows.map(m => `- ${m.name}: ${m.role} (involvement: ${m.dailyInvolvement})`).join("\n")}
+
+CURRENT STATE:
+- Pipeline leads: ${leadRows.length} (active: ${leadRows.filter(l => !["won","lost"].includes(l.status)).length})
+- Clients: ${clientRows.length}
+- Pending tasks: ${pendingTasks.length}
+- Today's schedule items: ${todaySchedule.length}
+
+PENDING TASKS:
+${pendingTasks.slice(0, 10).map(t => `- [${t.priority}] ${t.title} (due: ${t.dueDate || "no date"})`).join("\n") || "None"}
+`;
+
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2048,
+        system: `You are the AI Operations Assistant for a merchant services startup. Generate actionable daily recommendations based on the current business state. Return a JSON array of task recommendations. Each item must have: title (string), description (string), assigneeName (string - one of the team member names), priority ("high"|"medium"|"low"), category ("training"|"outreach"|"admin"|"meeting"|"follow-up"|"development"). Focus on what each team member should do TODAY given the current business phase. Be specific and practical. Return ONLY valid JSON array, no other text.`,
+        messages: [{ role: "user", content: context }],
+      });
+      const text = response.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const recommendations = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+      res.json({ recommendations, generatedAt: new Date().toISOString() });
+    } catch (err: any) {
+      console.error("AI Ops recommendation error:", err.message);
+      res.status(500).json({ error: "Failed to generate recommendations." });
+    }
+  });
+
+  app.post("/api/ai-ops/chat", requireAdminSession, async (req, res) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured." });
+
+    const { message, history } = req.body;
+    if (!message) return res.status(400).json({ error: "Message required." });
+
+    const [teamRows, leadRows, taskRows, clientRows, businessRow] = await Promise.all([
+      db.select().from(schema.teamMembers),
+      db.select().from(schema.leads),
+      db.select().from(schema.tasks),
+      db.select().from(schema.clients),
+      db.select().from(schema.businessInfo).where(eq(schema.businessInfo.id, "default")),
+    ]);
+    const biz = businessRow[0];
+
+    const systemPrompt = `You are the AI Operations Assistant for ${biz?.companyName || "TechSavvy Hawaii"}, a merchant services startup currently in the ${biz?.currentPhase || "onboarding"} phase with CashSwipe (training via Skool platform).
+
+TEAM: ${teamRows.map(m => `${m.name} (${m.role}, ${m.dailyInvolvement} involvement)`).join("; ")}
+STATS: ${leadRows.length} leads, ${clientRows.length} clients, ${taskRows.filter(t => !t.completed).length} pending tasks
+
+You help manage daily operations, give reminders, make recommendations, and can suggest tasks to assign to team members or to yourself (AI). Be concise, actionable, and specific. When suggesting tasks, mention which team member should handle it. If asked to "do" something, explain what you'd recommend and offer to create a task for the appropriate team member.`;
+
+    const messages: { role: "user" | "assistant"; content: string }[] = [];
+    if (Array.isArray(history)) {
+      for (const h of history.slice(-10)) {
+        if (h.role && h.content) messages.push({ role: h.role, content: h.content.slice(0, 2000) });
+      }
+    }
+    messages.push({ role: "user", content: message });
+
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages,
+      });
+      const text = response.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
+      res.json({ reply: text });
+    } catch (err: any) {
+      console.error("AI Ops chat error:", err.message);
+      res.status(500).json({ error: "Failed to get AI response." });
+    }
+  });
+
+  // ─── Pinned Pitches ─────────────────────────────────────────────
+
+  app.get("/api/pinned-pitches", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.pinnedPitches);
+    res.json(rows);
+  });
+
+  app.post("/api/pinned-pitches", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const [pitch] = await db.insert(schema.pinnedPitches).values({
+      id,
+      scriptKey: req.body.scriptKey || "",
+      customContent: req.body.customContent || "",
+      pinnedAt: new Date().toISOString(),
+    }).returning();
+    res.status(201).json(pitch);
+  });
+
+  app.patch("/api/pinned-pitches/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.pinnedPitches, req.body);
+    const [updated] = await db.update(schema.pinnedPitches).set(updateData).where(eq(schema.pinnedPitches.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/pinned-pitches/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.pinnedPitches).where(eq(schema.pinnedPitches.id, req.params.id as string));
+    res.json({ success: true });
+  });
+
+  // ─── Client-Team Assignment ─────────────────────────────────────
+
+  app.patch("/api/clients/:id/assign", requireAdminSession, async (req, res) => {
+    const { assigneeId } = req.body;
+    const [updated] = await db.update(schema.clients).set({ notes: `[ASSIGNED:${assigneeId}] ` }).where(eq(schema.clients.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Client not found" });
+    res.json(updated);
   });
 
   return httpServer;

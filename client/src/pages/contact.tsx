@@ -549,7 +549,7 @@ function ContactSection() {
         "trial": "trial",
         "online-only": "online",
       };
-      await apiRequest("POST", "/api/leads", {
+      await apiRequest("POST", "/api/leads/public", {
         name: formData.name,
         business: formData.businessName,
         phone: formData.phone,
