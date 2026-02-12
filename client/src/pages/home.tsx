@@ -59,9 +59,9 @@ function HeroSection() {
           muted
           playsInline
           src={heroVideo}
-          className="w-full h-full object-cover object-center opacity-40 sm:opacity-50"
+          className="w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-background" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
