@@ -47,7 +47,7 @@ function Navbar() {
             className="font-bold text-xl tracking-tight flex items-center gap-2.5"
             data-testid="link-logo"
           >
-            <span className="text-foreground">TechSavvy</span>
+            <span className="text-foreground font-extrabold text-xl tracking-tight"><span className="text-primary italic">λ</span>echSavvy</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
