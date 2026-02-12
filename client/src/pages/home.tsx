@@ -60,21 +60,19 @@ function HeroSection() {
       className="relative overflow-hidden pt-20 pb-12 sm:pt-36 sm:pb-24"
       data-testid="section-hero"
     >
-      <div className="absolute inset-0 -z-10">
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          src="/videos/hero-bg.mp4"
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-background" />
-      </div>
+      <video
+        ref={videoRef}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        src="/videos/hero-bg.mp4"
+        className="absolute inset-0 w-full h-full object-cover object-center z-0"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-background z-[1]" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-[2]">
         <motion.div
           className="max-w-4xl mx-auto text-center"
           variants={staggerContainer}
