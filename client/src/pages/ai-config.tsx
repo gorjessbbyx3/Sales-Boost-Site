@@ -23,9 +23,10 @@ import {
   UserPlus, Building, CheckCircle,
   BarChart3, ArrowUpRight, ArrowDownRight,
   Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
-  Pin, PinOff, Sparkles, Clock, UserCog, Briefcase,
+  Pin, PinOff, Sparkles, Clock, UserCog, Briefcase, Sun, Moon,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
+import { useTheme } from "@/hooks/use-theme";
 import { useState, useEffect, useMemo } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -457,6 +458,7 @@ export default function AiConfigPage() {
 
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState("overview");
+  const { theme, toggleTheme } = useTheme();
   const mainDomain = window.location.hostname.startsWith("admin.") ? `https://${window.location.hostname.replace("admin.", "")}` : "/";
 
   const tabs = [
@@ -491,7 +493,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <h1 className="text-sm font-bold">TechSavvy Admin</h1>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={onLogout} className="text-muted-foreground"><LogOut className="w-4 h-4" /><span className="hidden sm:inline ml-1.5">Log Out</span></Button>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" onClick={toggleTheme} className="text-muted-foreground" title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onLogout} className="text-muted-foreground"><LogOut className="w-4 h-4" /><span className="hidden sm:inline ml-1.5">Log Out</span></Button>
+            </div>
           </div>
         </div>
       </div>
@@ -499,11 +506,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       <div className="border-b border-border/50 bg-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-transparent h-auto p-0 gap-0 rounded-none w-full justify-start overflow-x-auto">
+            <TabsList className="bg-transparent h-auto p-0 gap-0 rounded-none w-full justify-start overflow-x-auto scrollbar-none">
               {tabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 sm:px-4 py-3 text-xs sm:text-sm gap-1.5 shrink-0">
-                  <tab.icon className="w-3.5 h-3.5" /><span className="hidden sm:inline">{tab.label}</span>
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-2.5 sm:px-4 py-3 text-[11px] sm:text-sm gap-1 sm:gap-1.5 shrink-0"
+                  title={tab.label}>
+                  <tab.icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" /><span className="hidden sm:inline">{tab.label}</span>
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -811,18 +819,18 @@ function LeadsTab() {
         <div className="space-y-2">{filteredLeads.map((lead) => (
           <Card key={lead.id} className="overflow-visible border-border/50">
             <CardContent className="p-3 sm:p-4">
-              <div className="flex items-start gap-3">
+              <div className="flex flex-col sm:flex-row items-start gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
                     <span className="font-semibold text-sm">{lead.business || lead.name}</span>
                     <Badge variant="outline" className={`text-[10px] ${PIPELINE_CONFIG[lead.status].bg} ${PIPELINE_CONFIG[lead.status].color}`}>{PIPELINE_CONFIG[lead.status].short}</Badge>
                     <Badge variant="outline" className={`text-[10px] ${SOURCE_CONFIG[lead.source]?.color || ""}`}>{SOURCE_CONFIG[lead.source]?.label || lead.source}</Badge>
                     <Badge variant="outline" className={`text-[10px] ${PACKAGE_CONFIG[lead.package].color}`}>{PACKAGE_CONFIG[lead.package].label}</Badge>
                   </div>
                   {lead.business && lead.name && <p className="text-xs text-muted-foreground">{lead.name}{lead.decisionMakerName ? ` — DM: ${lead.decisionMakerName}${lead.decisionMakerRole ? ` (${lead.decisionMakerRole})` : ""}` : ""}</p>}
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
                     {lead.phone && <a href={`tel:${lead.phone}`} className="flex items-center gap-1 hover:text-foreground"><Phone className="w-3 h-3" />{lead.phone}</a>}
-                    {lead.email && <a href={`mailto:${lead.email}`} className="flex items-center gap-1 hover:text-foreground"><Mail className="w-3 h-3" />{lead.email}</a>}
+                    {lead.email && <a href={`mailto:${lead.email}`} className="flex items-center gap-1 hover:text-foreground truncate max-w-[180px] sm:max-w-none"><Mail className="w-3 h-3" />{lead.email}</a>}
                     {lead.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{lead.address}</span>}
                     {lead.vertical && <span className="text-[10px]">{VERTICAL_CONFIG[lead.vertical] || lead.vertical}</span>}
                     {lead.currentProcessor && <span className="text-[10px]">Processor: {lead.currentProcessor}</span>}
@@ -836,7 +844,7 @@ function LeadsTab() {
                   {lead.painPoints && <p className="text-[10px] text-muted-foreground mt-1">Pain: {lead.painPoints}</p>}
                   {lead.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{lead.notes}</p>}
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 self-end sm:self-start">
                   {!["won", "lost"].includes(lead.status) && (
                     <Select value={lead.status} onValueChange={(v) => updateMutation.mutate({ id: lead.id, status: v } as any)}>
                       <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue /></SelectTrigger>
@@ -881,7 +889,7 @@ function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClos
             <div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} placeholder="808-555-1234" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={form.email || ""} onChange={(e) => set("email", e.target.value)} placeholder="john@aloha.com" /></div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">Decision Maker</Label><Input value={form.decisionMakerName || ""} onChange={(e) => set("decisionMakerName", e.target.value)} placeholder="Owner name" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Role</Label><Input value={form.decisionMakerRole || ""} onChange={(e) => set("decisionMakerRole", e.target.value)} placeholder="Owner, Manager..." /></div>
             <div className="space-y-1.5"><Label className="text-xs">Best Contact</Label>
@@ -889,7 +897,7 @@ function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClos
                 <SelectContent>{Object.entries(CONTACT_METHODS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent></Select>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">Lead Source</Label>
               <Select value={form.source || "direct"} onValueChange={(v) => set("source", v)}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{(Object.keys(SOURCE_CONFIG) as LeadSource[]).map((s) => <SelectItem key={s} value={s}>{SOURCE_CONFIG[s].label}</SelectItem>)}</SelectContent></Select>
@@ -1643,7 +1651,7 @@ function ClientFormDialog({ open, onClose, onSave, client }: { open: boolean; on
             <div className="space-y-1.5"><Label className="text-xs">Website Status</Label><Select value={form.websiteStatus || "not-started"} onValueChange={(v) => set("websiteStatus", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="not-started">Not Started</SelectItem><SelectItem value="in-progress">In Progress</SelectItem><SelectItem value="live">Live</SelectItem><SelectItem value="self-hosted">Self-Hosted</SelectItem></SelectContent></Select></div>
             <div className="space-y-1.5"><Label className="text-xs">Website URL</Label><Input value={form.websiteUrl || ""} onChange={(e) => set("websiteUrl", e.target.value)} placeholder="example.com" /></div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">Terminal ID</Label><Input value={form.terminalId || ""} onChange={(e) => set("terminalId", e.target.value)} /></div>
             <div className="space-y-1.5"><Label className="text-xs">Monthly Vol ($)</Label><Input type="number" value={form.monthlyVolume || ""} onChange={(e) => set("monthlyVolume", Number(e.target.value))} /></div>
             <div className="space-y-1.5"><Label className="text-xs">Start Date</Label><Input type="date" value={form.startDate || today()} onChange={(e) => set("startDate", e.target.value)} /></div>
@@ -2273,20 +2281,20 @@ function TeamTab() {
         <CardContent>
           <div className="space-y-2">
             {team.map((m) => (
-              <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center text-sm font-bold text-primary">{m.name.charAt(0)}</div>
-                  <div>
+              <div key={m.id} className="flex items-start sm:items-center justify-between gap-2 p-3 rounded-lg bg-muted/30 border border-border/30">
+                <div className="flex items-start sm:items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center text-sm font-bold text-primary shrink-0">{m.name.charAt(0)}</div>
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold">{m.name}</p>
                     <p className="text-xs text-muted-foreground">{m.role}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-0.5">
                       <Badge variant="outline" className="text-[10px] h-4">{INVOLVEMENT_LABELS[m.dailyInvolvement] || m.dailyInvolvement}</Badge>
-                      {m.email && <span className="text-[10px] text-muted-foreground">{m.email}</span>}
+                      {m.email && <span className="text-[10px] text-muted-foreground truncate max-w-[140px] sm:max-w-none">{m.email}</span>}
                       {m.phone && <span className="text-[10px] text-muted-foreground">{m.phone}</span>}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingMember(m)}><Edit3 className="w-3 h-3" /></Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMemberMutation.mutate(m.id)}><Trash2 className="w-3 h-3" /></Button>
                 </div>
@@ -2511,21 +2519,23 @@ function ScheduleTab() {
           })}
         </div>
       ) : (
-        <div className="grid grid-cols-7 gap-2">
-          {weekDates.map((d, i) => {
-            const dayItems = schedule.filter(s => s.date === d);
-            const isToday = d === today();
-            return (
-              <div key={d} className={`rounded-lg border p-2 min-h-[120px] ${isToday ? "border-primary/50 bg-primary/5" : "border-border/30"}`}>
-                <p className={`text-[10px] font-semibold mb-1 ${isToday ? "text-primary" : "text-muted-foreground"}`}>{DAY_NAMES[i]} {d.slice(5)}</p>
-                <div className="space-y-1">{dayItems.map((item) => (
-                  <div key={item.id} className={`rounded px-1.5 py-0.5 text-[9px] cursor-pointer ${item.status === "completed" ? "line-through opacity-50" : ""} ${CATEGORY_COLORS[item.category]?.replace("bg-", "bg-") + "/10"}`} onClick={() => toggleStatusMutation.mutate({ id: item.id, status: item.status === "completed" ? "pending" : "completed" })}>
-                    {item.title.slice(0, 25)}{item.title.length > 25 ? "…" : ""}
-                  </div>
-                ))}</div>
-              </div>
-            );
-          })}
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="grid grid-cols-7 gap-2 min-w-[600px] sm:min-w-0">
+            {weekDates.map((d, i) => {
+              const dayItems = schedule.filter(s => s.date === d);
+              const isToday = d === today();
+              return (
+                <div key={d} className={`rounded-lg border p-2 min-h-[120px] ${isToday ? "border-primary/50 bg-primary/5" : "border-border/30"}`}>
+                  <p className={`text-[10px] font-semibold mb-1 ${isToday ? "text-primary" : "text-muted-foreground"}`}>{DAY_NAMES[i]} {d.slice(5)}</p>
+                  <div className="space-y-1">{dayItems.map((item) => (
+                    <div key={item.id} className={`rounded px-1.5 py-0.5 text-[9px] cursor-pointer ${item.status === "completed" ? "line-through opacity-50" : ""} ${CATEGORY_COLORS[item.category]?.replace("bg-", "bg-") + "/10"}`} onClick={() => toggleStatusMutation.mutate({ id: item.id, status: item.status === "completed" ? "pending" : "completed" })}>
+                      {item.title.slice(0, 25)}{item.title.length > 25 ? "…" : ""}
+                    </div>
+                  ))}</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -2536,12 +2546,12 @@ function ScheduleTab() {
           <div className="space-y-3">
             <div className="space-y-1.5"><Label className="text-xs">Title *</Label><Input value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Complete CashSwipe Module 3" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Description</Label><Input value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Details..." /></div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5"><Label className="text-xs">Date</Label><Input type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} /></div>
               <div className="space-y-1.5"><Label className="text-xs">Time</Label><Input type="time" value={form.time} onChange={(e) => setForm(f => ({ ...f, time: e.target.value }))} /></div>
               <div className="space-y-1.5"><Label className="text-xs">Duration (min)</Label><Input type="number" value={form.duration} onChange={(e) => setForm(f => ({ ...f, duration: Number(e.target.value) }))} /></div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5"><Label className="text-xs">Assign To</Label>
                 <Select value={form.assigneeId || "unassigned"} onValueChange={(v) => setForm(f => ({ ...f, assigneeId: v === "unassigned" ? "" : v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
