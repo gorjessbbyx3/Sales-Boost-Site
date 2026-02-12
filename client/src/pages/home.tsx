@@ -29,6 +29,7 @@ import { useEffect, useRef } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import heroVideo from "@assets/Grok-Video-44538243-2D13-4E77-AD95-1161023B842A_1770882433390.mp4";
 
 function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -57,15 +58,9 @@ function HeroSection() {
           loop
           muted
           playsInline
-          poster="/images/hero-hawaii-sunset.jpg"
           className="w-full h-full object-cover object-center opacity-15 sm:opacity-20"
         >
-          <source src="/images/hero-video.mp4" type="video/mp4" />
-          <img
-            src="/images/hero-hawaii-sunset.jpg"
-            alt="Eliminate Credit Card Fees — TechSavvy Hawaii"
-            className="w-full h-full object-cover object-center"
-          />
+          <source src={heroVideo} type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
       </div>
