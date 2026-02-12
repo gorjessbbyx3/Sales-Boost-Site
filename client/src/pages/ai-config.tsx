@@ -1832,11 +1832,9 @@ function IntegrationsTab() {
 // ─── Resources Manager Tab ──────────────────────────────────────────
 
 const RESOURCE_CATEGORIES: Record<string, string> = {
-  "getting-started": "Getting Started",
-  "sales-training": "Sales Training",
-  "marketing": "Marketing Materials",
-  "partner": "Partner Resources",
-  "tools": "Tools & Templates",
+  "sales-materials": "Client Sales Resources",
+  "pos-systems": "POS Systems & Battlecards",
+  "classroom": "CashSwipe Classroom",
 };
 
 const RESOURCE_TYPES: Record<string, string> = {

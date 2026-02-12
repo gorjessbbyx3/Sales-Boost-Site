@@ -14,12 +14,8 @@ import {
   ArrowRight,
   ExternalLink,
   Play,
-  Download,
-  GraduationCap,
   Target,
   Megaphone,
-  Users,
-  Wrench,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -43,11 +39,9 @@ interface Resource {
 
 const CATEGORIES = [
   { id: "all", label: "All Resources", icon: BookOpen },
-  { id: "getting-started", label: "Getting Started", icon: GraduationCap },
-  { id: "sales-training", label: "Sales Training", icon: Target },
-  { id: "marketing", label: "Marketing Materials", icon: Megaphone },
-  { id: "partner", label: "Partner Resources", icon: Users },
-  { id: "tools", label: "Tools & Templates", icon: Wrench },
+  { id: "sales-materials", label: "Sales Materials", icon: Target },
+  { id: "pos-systems", label: "POS Systems", icon: Megaphone },
+  { id: "classroom", label: "Classroom", icon: FileText },
 ];
 
 const TYPE_CONFIG: Record<string, { icon: typeof Video; label: string; color: string }> = {
