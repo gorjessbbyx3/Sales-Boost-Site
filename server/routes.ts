@@ -50,11 +50,15 @@ function pickColumns(table: any, data: Record<string, any>): Record<string, any>
 }
 
 function deserializeLead(row: typeof schema.leads.$inferSelect) {
-  return { ...row, attachments: JSON.parse(row.attachments || "[]") };
+  let attachments: any[] = [];
+  try { attachments = JSON.parse(row.attachments || "[]"); } catch {}
+  return { ...row, attachments };
 }
 
 function deserializeIntegration(row: typeof schema.integrations.$inferSelect) {
-  return { ...row, config: JSON.parse(row.config || "{}") };
+  let config: Record<string, any> = {};
+  try { config = JSON.parse(row.config || "{}"); } catch {}
+  return { ...row, config };
 }
 
 async function logActivity(action: string, details: string, type: string) {
@@ -374,6 +378,29 @@ export async function registerRoutes(
     logActivity("Lead Created", `${lead.business || lead.name}`, "lead");
     sendSlackNotification(`New lead added: ${lead.business || lead.name} (${lead.package})`, "newLead");
     res.status(201).json(deserializeLead(lead));
+  });
+
+  // Public lead creation from website contact form (no auth required)
+  app.post("/api/leads/public", async (req, res) => {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const [lead] = await db.insert(schema.leads).values({
+      id,
+      name: req.body.name || "",
+      business: req.body.business || "",
+      phone: req.body.phone || "",
+      email: req.body.email || "",
+      package: req.body.package || "terminal",
+      status: "new",
+      source: "lead-magnet",
+      notes: req.body.notes || "",
+      attachments: "[]",
+      createdAt: now,
+      updatedAt: now,
+    }).returning();
+    logActivity("Website Lead", `${lead.business || lead.name} submitted contact form`, "lead");
+    sendSlackNotification(`New lead from website: ${lead.business || lead.name} (${lead.email})`, "newLead");
+    res.status(201).json({ success: true });
   });
 
   app.patch("/api/leads/:id", requireAdminSession, async (req, res) => {

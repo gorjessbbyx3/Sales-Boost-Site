@@ -576,7 +576,7 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
 
   const activeLeads = leads.filter((l) => !["won", "lost", "nurture"].includes(l.status));
   const wonThisMonth = leads.filter((l) => { const d = new Date(l.updatedAt); const n = new Date(); return l.status === "won" && d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); });
-  const monthlyRecurring = clients.reduce((sum, c) => { const p: Record<MaintenancePlan, number> = { none: 0, basic: 99, pro: 199, premium: 399 }; return sum + p[c.maintenance]; }, 0);
+  const monthlyRecurring = clients.reduce((sum, c) => { const p: Record<MaintenancePlan, number> = { none: 0, basic: 50, pro: 199, premium: 399 }; return sum + p[c.maintenance]; }, 0);
   const now = new Date();
   const thisMonthRevenue = revenueEntries.filter((r) => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, r) => s + r.amount, 0);
   const pendingTasks = tasks.filter((t) => !t.completed);
@@ -949,10 +949,10 @@ function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClos
 
 // ─── Reusable Script Card ────────────────────────────────────────────
 
-function ScriptCard({ title, content, scriptKey, pinned, onPin, onUnpin, onRefresh }: {
+function ScriptCard({ title, content, scriptKey, pinned, onPin, onUnpin, onRefresh, isRefreshing }: {
   title: string; content: string; scriptKey?: string;
   pinned?: PinnedPitch | null; onPin?: (key: string, content: string) => void;
-  onUnpin?: (id: string) => void; onRefresh?: (key: string) => void;
+  onUnpin?: (id: string) => void; onRefresh?: (key: string) => void; isRefreshing?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const displayContent = pinned?.customContent || content;
@@ -966,8 +966,8 @@ function ScriptCard({ title, content, scriptKey, pinned, onPin, onUnpin, onRefre
           </span>
           <div className="flex items-center gap-1">
             {scriptKey && onRefresh && (
-              <Button variant="ghost" size="sm" className="text-[10px] h-6 px-1.5" onClick={() => onRefresh(scriptKey)} title="Get AI variation">
-                <RefreshCw className="w-3 h-3" />
+              <Button variant="ghost" size="sm" className="text-[10px] h-6 px-1.5" onClick={() => onRefresh(scriptKey)} disabled={isRefreshing} title="Get AI variation">
+                <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} />
               </Button>
             )}
             {scriptKey && !pinned && onPin && (
@@ -1075,7 +1075,7 @@ function PlaybooksTab() {
         <AccordionItem value="referral" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-emerald-400/10 flex items-center justify-center text-emerald-400 text-xs font-bold">R</span>Referral Partner Program</span></AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
-            <ScriptCard title="Partner Outreach Script" content={PLAYBOOK_SCRIPTS.referral.outreach} scriptKey="referral.outreach" pinned={getPinned("referral.outreach")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
+            <ScriptCard title="Partner Outreach Script" content={PLAYBOOK_SCRIPTS.referral.outreach} scriptKey="referral.outreach" pinned={getPinned("referral.outreach")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} isRefreshing={refreshing === "referral.outreach"} />
             <div>
               <p className="text-xs font-semibold mb-2">Partner Onboarding Checklist</p>
               <div className="space-y-1.5">{referralChecklist.map((item) => (
@@ -1106,7 +1106,7 @@ function PlaybooksTab() {
         <AccordionItem value="networking" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-blue-400/10 flex items-center justify-center text-blue-400 text-xs font-bold">N</span>Networking & Community Presence</span></AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
-            <ScriptCard title="30-Second Elevator Pitch" content={PLAYBOOK_SCRIPTS.networking.elevator} scriptKey="networking.elevator" pinned={getPinned("networking.elevator")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
+            <ScriptCard title="30-Second Elevator Pitch" content={PLAYBOOK_SCRIPTS.networking.elevator} scriptKey="networking.elevator" pinned={getPinned("networking.elevator")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} isRefreshing={refreshing === "networking.elevator"} />
             <Card className="overflow-visible border-border/50 bg-blue-400/5">
               <CardContent className="p-3">
                 <p className="text-xs font-semibold mb-1">Event Reminders</p>
@@ -1125,7 +1125,7 @@ function PlaybooksTab() {
         <AccordionItem value="social" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-pink-400/10 flex items-center justify-center text-pink-400 text-xs font-bold">S</span>Social Media Outreach</span></AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
-            <ScriptCard title="DM Script (After Engagement)" content={PLAYBOOK_SCRIPTS.social.dm} scriptKey="social.dm" pinned={getPinned("social.dm")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
+            <ScriptCard title="DM Script (After Engagement)" content={PLAYBOOK_SCRIPTS.social.dm} scriptKey="social.dm" pinned={getPinned("social.dm")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} isRefreshing={refreshing === "social.dm"} />
             <Card className="overflow-visible border-border/50 bg-pink-400/5">
               <CardContent className="p-3">
                 <p className="text-xs font-semibold mb-1">Content That Converts</p>
@@ -1150,9 +1150,9 @@ function PlaybooksTab() {
         <AccordionItem value="direct" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-orange-400/10 flex items-center justify-center text-orange-400 text-xs font-bold">D</span>Direct Prospecting</span></AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
-            <ScriptCard title="Cold Call Script (30 sec)" content={PLAYBOOK_SCRIPTS.direct.coldCall} scriptKey="direct.coldCall" pinned={getPinned("direct.coldCall")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
-            <ScriptCard title="Walk-In Opener" content={PLAYBOOK_SCRIPTS.direct.walkIn} scriptKey="direct.walkIn" pinned={getPinned("direct.walkIn")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
-            <ScriptCard title="Personalized Email Template" content={PLAYBOOK_SCRIPTS.direct.email} scriptKey="direct.email" pinned={getPinned("direct.email")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
+            <ScriptCard title="Cold Call Script (30 sec)" content={PLAYBOOK_SCRIPTS.direct.coldCall} scriptKey="direct.coldCall" pinned={getPinned("direct.coldCall")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} isRefreshing={refreshing === "direct.coldCall"} />
+            <ScriptCard title="Walk-In Opener" content={PLAYBOOK_SCRIPTS.direct.walkIn} scriptKey="direct.walkIn" pinned={getPinned("direct.walkIn")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} isRefreshing={refreshing === "direct.walkIn"} />
+            <ScriptCard title="Personalized Email Template" content={PLAYBOOK_SCRIPTS.direct.email} scriptKey="direct.email" pinned={getPinned("direct.email")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} isRefreshing={refreshing === "direct.email"} />
             <Card className="overflow-visible border-border/50 bg-orange-400/5">
               <CardContent className="p-3">
                 <p className="text-xs font-semibold mb-1">Direct Prospecting Tips</p>
@@ -1177,7 +1177,7 @@ function PlaybooksTab() {
                 <p className="text-xs font-medium text-destructive">Critical Rule: Follow up within 24 hours of every download</p>
               </CardContent>
             </Card>
-            <ScriptCard title="24-Hour Follow-Up Template" content={PLAYBOOK_SCRIPTS.leadMagnet.followUp24hr} scriptKey="leadMagnet.followUp24hr" pinned={getPinned("leadMagnet.followUp24hr")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
+            <ScriptCard title="24-Hour Follow-Up Template" content={PLAYBOOK_SCRIPTS.leadMagnet.followUp24hr} scriptKey="leadMagnet.followUp24hr" pinned={getPinned("leadMagnet.followUp24hr")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} isRefreshing={refreshing === "leadMagnet.followUp24hr"} />
             <div>
               <p className="text-xs font-semibold mb-2">High-Converting Resources to Create</p>
               <div className="space-y-1.5">{leadMagnetResources.map((item) => (
@@ -1683,7 +1683,7 @@ function RevenueTab() {
   const lastMonth = entries.filter((r) => { const d = new Date(r.date); const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1); return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear(); });
   const thisMonthTotal = thisMonth.reduce((s, r) => s + r.amount, 0);
   const lastMonthTotal = lastMonth.reduce((s, r) => s + r.amount, 0);
-  const mrrFromClients = clients.reduce((sum, c) => { const p: Record<MaintenancePlan, number> = { none: 0, basic: 99, pro: 199, premium: 399 }; return sum + p[c.maintenance]; }, 0);
+  const mrrFromClients = clients.reduce((sum, c) => { const p: Record<MaintenancePlan, number> = { none: 0, basic: 50, pro: 199, premium: 399 }; return sum + p[c.maintenance]; }, 0);
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
@@ -1977,7 +1977,7 @@ function ResourcesManagerTab() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingResource, setEditingResource] = useState<AdminResource | null>(null);
   const [filterCat, setFilterCat] = useState("all");
-  const [form, setForm] = useState({ title: "", description: "", category: "getting-started", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: 1 });
+  const [form, setForm] = useState({ title: "", description: "", category: "sales-materials", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: 1 });
 
   const createMut = useMutation({
     mutationFn: (data: typeof form) => apiRequest("POST", "/api/resources", data),
@@ -2315,7 +2315,10 @@ function TeamTab() {
               const assignedMember = team.find(m => m.id === assignedId);
               return (
                 <div key={c.id} className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-border/30">
-                  <div><p className="text-xs font-medium">{c.business || c.name}</p><p className="text-[10px] text-muted-foreground">{c.package} — {c.maintenance !== "none" ? c.maintenance : "no maintenance"}</p></div>
+                  <div>
+                    <p className="text-xs font-medium">{c.business || c.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{c.package} — {c.maintenance !== "none" ? c.maintenance : "no maintenance"}{assignedMember ? ` • ${assignedMember.name}` : ""}</p>
+                  </div>
                   <Select value={assignedId || "unassigned"} onValueChange={async (v) => {
                     const cleanNotes = (c.notes || "").replace(/\[ASSIGNED:[^\]]+\]\s*/g, "");
                     const newNotes = v !== "unassigned" ? `[ASSIGNED:${v}] ${cleanNotes}` : cleanNotes;
@@ -2366,7 +2369,7 @@ function TeamTab() {
           {editingMember && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5"><Label className="text-xs">Name</Label><Input defaultValue={editingMember.name} onChange={(e) => setEditingMember(m => m ? { ...m, name: e.target.value } : m)} /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Name</Label><Input value={editingMember.name} onChange={(e) => setEditingMember(m => m ? { ...m, name: e.target.value } : m)} /></div>
                 <div className="space-y-1.5"><Label className="text-xs">Involvement</Label>
                   <Select value={editingMember.dailyInvolvement} onValueChange={(v) => setEditingMember(m => m ? { ...m, dailyInvolvement: v } : m)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -2528,7 +2531,7 @@ function ScheduleTab() {
                 <div key={d} className={`rounded-lg border p-2 min-h-[120px] ${isToday ? "border-primary/50 bg-primary/5" : "border-border/30"}`}>
                   <p className={`text-[10px] font-semibold mb-1 ${isToday ? "text-primary" : "text-muted-foreground"}`}>{DAY_NAMES[i]} {d.slice(5)}</p>
                   <div className="space-y-1">{dayItems.map((item) => (
-                    <div key={item.id} className={`rounded px-1.5 py-0.5 text-[9px] cursor-pointer ${item.status === "completed" ? "line-through opacity-50" : ""} ${CATEGORY_COLORS[item.category]?.replace("bg-", "bg-") + "/10"}`} onClick={() => toggleStatusMutation.mutate({ id: item.id, status: item.status === "completed" ? "pending" : "completed" })}>
+                    <div key={item.id} className={`rounded px-1.5 py-0.5 text-[9px] cursor-pointer ${item.status === "completed" ? "line-through opacity-50" : ""} ${(CATEGORY_COLORS[item.category] || "bg-muted") + "/10"}`} onClick={() => toggleStatusMutation.mutate({ id: item.id, status: item.status === "completed" ? "pending" : "completed" })}>
                       {item.title.slice(0, 25)}{item.title.length > 25 ? "…" : ""}
                     </div>
                   ))}</div>
