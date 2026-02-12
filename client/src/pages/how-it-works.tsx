@@ -18,6 +18,7 @@ import {
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 import stepChoosePlan from "@/assets/images/step-choose-plan.png";
 import stepSetup from "@/assets/images/step-setup.png";
 import stepKeepProfits from "@/assets/images/step-keep-profits.png";
@@ -314,6 +315,13 @@ function HowItWorksCTA() {
 }
 
 export default function HowItWorksPage() {
+  useSEO({
+    title: "How AI Payment Processing Works in Hawaii | Zero-Fee Setup | TechSavvy",
+    description: "Learn how TechSavvy's AI-powered zero-fee payment processing works. Choose your plan, get same-day setup, and keep 100% of your revenue. AI-driven merchant solutions for Hawaii businesses.",
+    keywords: "how AI payment processing works Hawaii, zero-fee processing explained, surcharge processing Hawaii, AI merchant setup Honolulu, same-day payment terminal, intelligent payment solutions",
+    canonical: "https://techsavvyhawaii.com/how-it-works",
+  });
+
   return (
     <Layout>
       <HowItWorksHero />

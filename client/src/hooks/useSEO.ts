@@ -7,10 +7,16 @@ interface SEOProps {
   canonical?: string;
   ogTitle?: string;
   ogDescription?: string;
+  ogImage?: string;
+  ogType?: string;
   twitterTitle?: string;
   twitterDescription?: string;
-  jsonLd?: Record<string, unknown>;
+  twitterImage?: string;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  noindex?: boolean;
 }
+
+const BASE_URL = "https://techsavvyhawaii.com";
 
 function setMetaTag(attr: string, key: string, content: string) {
   let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
@@ -22,6 +28,16 @@ function setMetaTag(attr: string, key: string, content: string) {
   el.setAttribute("content", content);
 }
 
+function setLinkTag(rel: string, href: string) {
+  let el = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
+  if (!el) {
+    el = document.createElement("link");
+    el.setAttribute("rel", rel);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("href", href);
+}
+
 export function useSEO({
   title,
   description,
@@ -29,9 +45,13 @@ export function useSEO({
   canonical,
   ogTitle,
   ogDescription,
+  ogImage,
+  ogType,
   twitterTitle,
   twitterDescription,
+  twitterImage,
   jsonLd,
+  noindex,
 }: SEOProps) {
   useEffect(() => {
     const prevTitle = document.title;
@@ -39,33 +59,47 @@ export function useSEO({
 
     setMetaTag("name", "description", description);
     if (keywords) setMetaTag("name", "keywords", keywords);
-    if (ogTitle) setMetaTag("property", "og:title", ogTitle);
-    if (ogDescription) setMetaTag("property", "og:description", ogDescription);
-    if (twitterTitle) setMetaTag("name", "twitter:title", twitterTitle);
-    if (twitterDescription) setMetaTag("name", "twitter:description", twitterDescription);
-
-    let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (canonical) {
-      if (!canonicalEl) {
-        canonicalEl = document.createElement("link");
-        canonicalEl.setAttribute("rel", "canonical");
-        document.head.appendChild(canonicalEl);
-      }
-      canonicalEl.setAttribute("href", canonical);
+    if (noindex) {
+      setMetaTag("name", "robots", "noindex, nofollow");
+    } else {
+      setMetaTag("name", "robots", "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
     }
 
-    let scriptEl: HTMLScriptElement | null = null;
+    // Open Graph
+    setMetaTag("property", "og:title", ogTitle || title);
+    setMetaTag("property", "og:description", ogDescription || description);
+    setMetaTag("property", "og:type", ogType || "website");
+    setMetaTag("property", "og:site_name", "TechSavvy Hawaii");
+    if (ogImage) setMetaTag("property", "og:image", ogImage);
+    if (canonical) setMetaTag("property", "og:url", canonical);
+
+    // Twitter
+    setMetaTag("name", "twitter:card", "summary_large_image");
+    setMetaTag("name", "twitter:title", twitterTitle || ogTitle || title);
+    setMetaTag("name", "twitter:description", twitterDescription || ogDescription || description);
+    if (twitterImage || ogImage) setMetaTag("name", "twitter:image", twitterImage || ogImage || "");
+
+    // Canonical URL
+    const canonicalHref = canonical || `${BASE_URL}${window.location.pathname}`;
+    setLinkTag("canonical", canonicalHref);
+
+    // JSON-LD structured data
+    const scriptEls: HTMLScriptElement[] = [];
     if (jsonLd) {
-      scriptEl = document.createElement("script");
-      scriptEl.type = "application/ld+json";
-      scriptEl.setAttribute("data-page-seo", "true");
-      scriptEl.textContent = JSON.stringify(jsonLd);
-      document.head.appendChild(scriptEl);
+      const schemas = Array.isArray(jsonLd) ? jsonLd : [jsonLd];
+      for (const schema of schemas) {
+        const scriptEl = document.createElement("script");
+        scriptEl.type = "application/ld+json";
+        scriptEl.setAttribute("data-page-seo", "true");
+        scriptEl.textContent = JSON.stringify(schema);
+        document.head.appendChild(scriptEl);
+        scriptEls.push(scriptEl);
+      }
     }
 
     return () => {
       document.title = prevTitle;
-      if (scriptEl) scriptEl.remove();
+      scriptEls.forEach((el) => el.remove());
     };
-  }, [title, description, keywords, canonical, ogTitle, ogDescription, twitterTitle, twitterDescription, jsonLd]);
+  }, [title, description, keywords, canonical, ogTitle, ogDescription, ogImage, ogType, twitterTitle, twitterDescription, twitterImage, jsonLd, noindex]);
 }

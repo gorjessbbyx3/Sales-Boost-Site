@@ -26,6 +26,7 @@ import {
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 function WebDesignHero() {
   return (
@@ -771,6 +772,14 @@ function WebDesignCTA() {
 }
 
 export default function WebDesignPage() {
+  useSEO({
+    title: "AI Web Design & SEO Hawaii | Free Websites for Merchants | TechSavvy",
+    description: "AI-powered website design and search engine optimization for Hawaii businesses. Free custom websites for TechSavvy merchants. AI-optimized SEO, mobile-responsive, e-commerce ready. Portfolio and maintenance plans.",
+    keywords: "AI web design Hawaii, search engine optimization Honolulu, AI-powered SEO, free website merchants Hawaii, web development Maui, AI website builder, intelligent web design, e-commerce website Hawaii",
+    canonical: "https://techsavvyhawaii.com/our-work",
+    ogImage: "https://techsavvyhawaii.com/images/website-before-after.jpg",
+  });
+
   return (
     <Layout>
       <WebDesignHero />
