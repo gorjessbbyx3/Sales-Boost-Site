@@ -22,7 +22,7 @@ import {
   AlertTriangle, Calendar, Search, Filter, Copy, MapPin, Paperclip, Target, BookOpen,
   UserPlus, Building, CheckCircle,
   BarChart3, ArrowUpRight, ArrowDownRight,
-  Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash,
+  Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { useState, useEffect, useMemo } from "react";
@@ -117,6 +117,21 @@ interface MaterialItem {
   description: string;
   status: string;
   fileUrl: string;
+  updatedAt: string;
+}
+
+interface AdminResource {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  type: string;
+  url: string;
+  thumbnailUrl: string;
+  order: number;
+  featured: boolean;
+  published: boolean;
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -399,6 +414,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { value: "tasks", icon: ClipboardList, label: "Tasks" },
     { value: "files", icon: FolderOpen, label: "Files" },
     { value: "integrations", icon: Plug, label: "Integrations" },
+    { value: "resources", icon: Library, label: "Resources" },
     { value: "activity", icon: Activity, label: "Activity" },
     { value: "ai", icon: Bot, label: "AI Chat" },
   ];
@@ -448,6 +464,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           <TabsContent value="tasks"><TasksTab /></TabsContent>
           <TabsContent value="files"><FilesTab /></TabsContent>
           <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
+          <TabsContent value="resources"><ResourcesManagerTab /></TabsContent>
           <TabsContent value="activity"><ActivityTab /></TabsContent>
           <TabsContent value="ai"><AiSettingsTab /></TabsContent>
         </Tabs>
@@ -1808,6 +1825,216 @@ function IntegrationsTab() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ─── Resources Manager Tab ──────────────────────────────────────────
+
+const RESOURCE_CATEGORIES: Record<string, string> = {
+  "getting-started": "Getting Started",
+  "sales-training": "Sales Training",
+  "marketing": "Marketing Materials",
+  "partner": "Partner Resources",
+  "tools": "Tools & Templates",
+};
+
+const RESOURCE_TYPES: Record<string, string> = {
+  video: "Video", pdf: "PDF", doc: "Guide", template: "Template", link: "Link",
+};
+
+function ResourcesManagerTab() {
+  const { toast } = useToast();
+  const { data: resources = [], refetch } = useQuery<AdminResource[]>({
+    queryKey: ["/api/resources/all"],
+    queryFn: async () => { const r = await fetch("/api/resources/all", { credentials: "include" }); if (!r.ok) throw new Error("Failed"); return r.json(); },
+  });
+  const [showDialog, setShowDialog] = useState(false);
+  const [editingResource, setEditingResource] = useState<AdminResource | null>(null);
+  const [filterCat, setFilterCat] = useState("all");
+  const [form, setForm] = useState({ title: "", description: "", category: "getting-started", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: 1 });
+
+  const createMut = useMutation({
+    mutationFn: (data: typeof form) => apiRequest("POST", "/api/resources", data),
+    onSuccess: () => { refetch(); setShowDialog(false); toast({ title: "Resource added" }); },
+  });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, ...data }: Partial<AdminResource> & { id: string }) => apiRequest("PATCH", `/api/resources/${id}`, data),
+    onSuccess: () => { refetch(); setShowDialog(false); setEditingResource(null); toast({ title: "Resource updated" }); },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/resources/${id}`),
+    onSuccess: () => { refetch(); toast({ title: "Resource deleted" }); },
+  });
+
+  const openCreate = () => {
+    setEditingResource(null);
+    setForm({ title: "", description: "", category: "getting-started", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: resources.length + 1 });
+    setShowDialog(true);
+  };
+
+  const openEdit = (r: AdminResource) => {
+    setEditingResource(r);
+    setForm({ title: r.title, description: r.description, category: r.category, type: r.type, url: r.url, thumbnailUrl: r.thumbnailUrl, featured: r.featured, published: r.published, order: r.order });
+    setShowDialog(true);
+  };
+
+  const handleSave = () => {
+    if (editingResource) {
+      updateMut.mutate({ id: editingResource.id, ...form });
+    } else {
+      createMut.mutate(form);
+    }
+  };
+
+  const filtered = filterCat === "all" ? resources : resources.filter((r) => r.category === filterCat);
+  const grouped = Object.entries(RESOURCE_CATEGORIES).map(([catId, catLabel]) => ({
+    id: catId,
+    label: catLabel,
+    items: filtered.filter((r) => r.category === catId),
+  })).filter((g) => filterCat === "all" ? g.items.length > 0 : g.id === filterCat);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2"><Library className="w-5 h-5 text-primary" />Resources Manager</h2>
+          <p className="text-xs text-muted-foreground mt-1">Manage the public resources page — {resources.length} total, {resources.filter((r) => r.published).length} published</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={filterCat} onValueChange={setFilterCat}>
+            <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {Object.entries(RESOURCE_CATEGORIES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={openCreate}><Plus className="w-3.5 h-3.5" />Add Resource</Button>
+        </div>
+      </div>
+
+      {grouped.map((group) => (
+        <Card key={group.id} className="overflow-visible">
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-sm font-semibold">{group.label} ({group.items.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs w-8">#</TableHead>
+                  <TableHead className="text-xs">Title</TableHead>
+                  <TableHead className="text-xs w-20">Type</TableHead>
+                  <TableHead className="text-xs w-20">Status</TableHead>
+                  <TableHead className="text-xs w-16">Featured</TableHead>
+                  <TableHead className="text-xs w-24 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {group.items.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="text-xs text-muted-foreground">{r.order}</TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="text-sm font-medium truncate max-w-xs">{r.title}</p>
+                        <p className="text-[10px] text-muted-foreground truncate max-w-xs">{r.description}</p>
+                        {r.url && <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-0.5 mt-0.5"><ExternalLink className="w-2.5 h-2.5" />Link</a>}
+                      </div>
+                    </TableCell>
+                    <TableCell><Badge variant="outline" className="text-[10px]">{RESOURCE_TYPES[r.type] || r.type}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[10px] cursor-pointer ${r.published ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" : "text-muted-foreground bg-muted/30"}`}
+                        onClick={() => updateMut.mutate({ id: r.id, published: !r.published })}>
+                        {r.published ? "Published" : "Draft"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {r.featured && <Badge variant="outline" className="text-[10px] text-amber-400 bg-amber-400/10 border-amber-400/20"><Star className="w-2.5 h-2.5" /></Badge>}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center gap-1 justify-end">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)}><Edit3 className="w-3 h-3" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-300" onClick={() => { if (confirm("Delete this resource?")) deleteMut.mutate(r.id); }}><Trash2 className="w-3 h-3" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      ))}
+
+      {filtered.length === 0 && (
+        <Card className="border-dashed"><CardContent className="p-8 text-center">
+          <Library className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No resources in this category yet.</p>
+          <Button size="sm" variant="outline" className="mt-3" onClick={openCreate}><Plus className="w-3.5 h-3.5" />Add Resource</Button>
+        </CardContent></Card>
+      )}
+
+      <Dialog open={showDialog} onOpenChange={(o) => { setShowDialog(o); if (!o) setEditingResource(null); }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingResource ? "Edit Resource" : "Add Resource"}</DialogTitle>
+            <DialogDescription>Fill in the resource details below.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Title</Label>
+              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Resource title" />
+            </div>
+            <div>
+              <Label className="text-xs">Description</Label>
+              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Brief description" rows={2} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Category</Label>
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(RESOURCE_CATEGORIES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Type</Label>
+                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(RESOURCE_TYPES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Resource URL</Label>
+              <Input value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://..." />
+            </div>
+            <div>
+              <Label className="text-xs">Thumbnail URL (optional)</Label>
+              <Input value={form.thumbnailUrl} onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })} placeholder="https://..." />
+            </div>
+            <div>
+              <Label className="text-xs">Display Order</Label>
+              <Input type="number" value={form.order} onChange={(e) => setForm({ ...form, order: parseInt(e.target.value) || 1 })} min={1} />
+            </div>
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={form.featured} onCheckedChange={(c) => setForm({ ...form, featured: !!c })} />
+                Featured
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={form.published} onCheckedChange={(c) => setForm({ ...form, published: !!c })} />
+                Published
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={!form.title}>{editingResource ? "Update" : "Add"} Resource</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

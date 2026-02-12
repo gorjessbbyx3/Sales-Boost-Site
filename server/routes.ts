@@ -204,11 +204,27 @@ interface MaterialItem {
   updatedAt: string;
 }
 
+interface Resource {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  type: string; // "video" | "pdf" | "doc" | "link" | "template"
+  url: string;
+  thumbnailUrl: string;
+  order: number;
+  featured: boolean;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const referralPartners: Map<string, ReferralPartner> = new Map();
 const playbookChecks: Map<string, PlaybookCheckItem> = new Map();
 const weeklyKPIs: Map<string, WeeklyKPI> = new Map();
 const planItems: Map<string, PlanItem> = new Map();
 const materials: Map<string, MaterialItem> = new Map();
+const resources: Map<string, Resource> = new Map();
 
 let planSeeded = false;
 function seedPlanIfNeeded() {
@@ -262,6 +278,53 @@ function seedMaterialsIfNeeded() {
   items.forEach((item) => {
     const id = randomUUID();
     materials.set(id, { id, ...item });
+  });
+}
+
+let resourcesSeeded = false;
+function seedResourcesIfNeeded() {
+  if (resourcesSeeded) return;
+  resourcesSeeded = true;
+  const now = new Date().toISOString();
+  const items: Omit<Resource, "id">[] = [
+    // Getting Started
+    { title: "Welcome to CashSwipe — Quick Start Guide", description: "Everything you need to get started with CashSwipe payment processing. Covers account setup, terminal activation, and your first transaction.", category: "getting-started", type: "doc", url: "", thumbnailUrl: "", order: 1, featured: true, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Platform Overview", description: "A complete walkthrough of the CashSwipe platform — dashboard, reporting, merchant portal, and key features.", category: "getting-started", type: "video", url: "", thumbnailUrl: "", order: 2, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Setting Up Your Merchant Account", description: "Step-by-step guide to completing your merchant application, KYC verification, and bank account linking.", category: "getting-started", type: "doc", url: "", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Terminal Setup & Activation Guide", description: "How to unbox, connect, and activate your payment terminal. Includes Wi-Fi setup and test transaction instructions.", category: "getting-started", type: "video", url: "", thumbnailUrl: "", order: 4, featured: false, published: true, createdAt: now, updatedAt: now },
+
+    // Sales Training
+    { title: "Sales Playbook — Complete Guide", description: "The full CashSwipe sales playbook covering all 5 prospecting channels, scripts, qualification frameworks, and closing techniques.", category: "sales-training", type: "pdf", url: "", thumbnailUrl: "", order: 1, featured: true, published: true, createdAt: now, updatedAt: now },
+    { title: "Cold Calling Scripts & Objection Handlers", description: "Proven cold call scripts with rebuttals for the top 10 merchant objections including 'I'm in a contract' and 'I'm happy with my processor'.", category: "sales-training", type: "doc", url: "", thumbnailUrl: "", order: 2, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Walk-In Prospecting Masterclass", description: "How to walk into any business and start a meaningful conversation about payment processing. Includes openers, body language tips, and leave-behind strategies.", category: "sales-training", type: "video", url: "", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Statement Analysis Training", description: "Learn to read and analyze merchant statements to identify hidden fees, overcharges, and savings opportunities. Includes real statement examples.", category: "sales-training", type: "video", url: "", thumbnailUrl: "", order: 4, featured: true, published: true, createdAt: now, updatedAt: now },
+    { title: "Cash Discount Program Explained", description: "Everything you need to know about cash discount programs — compliance, signage requirements, customer communication, and implementation.", category: "sales-training", type: "pdf", url: "", thumbnailUrl: "", order: 5, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Closing Techniques for Payment Processing", description: "The top closing techniques that work specifically for merchant services — urgency builders, trial closes, and follow-up frameworks.", category: "sales-training", type: "doc", url: "", thumbnailUrl: "", order: 6, featured: false, published: true, createdAt: now, updatedAt: now },
+
+    // Marketing Materials
+    { title: "One-Pager — Zero Fee Processing", description: "Professional one-page leave-behind explaining the zero-fee processing model. Print-ready PDF with QR code to landing page.", category: "marketing", type: "pdf", url: "", thumbnailUrl: "", order: 1, featured: true, published: true, createdAt: now, updatedAt: now },
+    { title: "Social Media Templates Pack", description: "30 days of ready-to-post social media content — carousel posts, educational content, testimonials, and promotional graphics.", category: "marketing", type: "template", url: "", thumbnailUrl: "", order: 2, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Email Outreach Templates", description: "Cold email, follow-up sequences, appointment confirmation, and referral request templates. Copy-paste ready with personalization tags.", category: "marketing", type: "template", url: "", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Lead Magnet — Statement Checklist", description: "'Top 10 Things to Check on Your Merchant Statement' — downloadable PDF lead magnet for capturing merchant leads.", category: "marketing", type: "pdf", url: "", thumbnailUrl: "", order: 4, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Lead Magnet — Cash Discount Guide", description: "'Is Cash Discount Right for Your Business?' — educational guide that doubles as a lead capture tool.", category: "marketing", type: "pdf", url: "", thumbnailUrl: "", order: 5, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Business Card & Flyer Designs", description: "Editable Canva templates for business cards, door hangers, and flyers with CashSwipe branding.", category: "marketing", type: "template", url: "", thumbnailUrl: "", order: 6, featured: false, published: true, createdAt: now, updatedAt: now },
+
+    // Partner Resources
+    { title: "Referral Partner Program Overview", description: "How the CashSwipe referral partner program works — commission structure, tracking, onboarding process, and partner portal access.", category: "partner", type: "doc", url: "", thumbnailUrl: "", order: 1, featured: true, published: true, createdAt: now, updatedAt: now },
+    { title: "Referral Agreement Template", description: "Ready-to-use referral partner agreement. Covers terms, compensation, exclusivity, and tracking methodology.", category: "partner", type: "template", url: "", thumbnailUrl: "", order: 2, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Partner Intro Email Scripts", description: "Email templates your referral partners can use to introduce you to their clients. Pre-written with customization spots.", category: "partner", type: "template", url: "", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Building a Referral Network — Strategy Guide", description: "How to identify, approach, and onboard high-value referral partners (accountants, bookkeepers, POS resellers, business consultants).", category: "partner", type: "pdf", url: "", thumbnailUrl: "", order: 4, featured: false, published: true, createdAt: now, updatedAt: now },
+
+    // Tools & Templates
+    { title: "Weekly KPI Tracking Sheet", description: "Track your outbound calls, emails, walk-ins, appointments, proposals, and closes on a weekly basis. Google Sheets template.", category: "tools", type: "template", url: "", thumbnailUrl: "", order: 1, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Channel Scorecard Template", description: "Per-source conversion funnel tracker — measure contact rate, appointment rate, statement rate, and close rate by channel.", category: "tools", type: "template", url: "", thumbnailUrl: "", order: 2, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "90-Day Sales Launch Plan", description: "A structured 90-day plan to launch your merchant services business from zero. Phases: Foundation, Relationship Building, Active Prospecting.", category: "tools", type: "doc", url: "", thumbnailUrl: "", order: 3, featured: true, published: true, createdAt: now, updatedAt: now },
+    { title: "CRM Setup Guide", description: "How to set up your CRM for payment processing sales — pipeline stages, required fields, automation rules, and follow-up cadences.", category: "tools", type: "doc", url: "", thumbnailUrl: "", order: 4, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "Follow-Up SLA Framework", description: "Response time standards: 24hr for lead magnets, 48hr for partner referrals, same-day for warm leads. Includes tracking template.", category: "tools", type: "template", url: "", thumbnailUrl: "", order: 5, featured: false, published: true, createdAt: now, updatedAt: now },
+  ];
+  items.forEach((item) => {
+    const id = randomUUID();
+    resources.set(id, { id, ...item });
   });
 }
 
@@ -928,6 +991,58 @@ export async function registerRoutes(
     };
 
     res.json({ scorecard, overall });
+  });
+
+  // ─── Resources (Public + Admin CRUD) ────────────────────────────
+
+  app.get("/api/resources", (_req, res) => {
+    seedResourcesIfNeeded();
+    const allResources = Array.from(resources.values());
+    const published = allResources.filter((r) => r.published).sort((a, b) => a.order - b.order);
+    res.json(published);
+  });
+
+  app.get("/api/resources/all", requireAdminSession, (_req, res) => {
+    seedResourcesIfNeeded();
+    res.json(Array.from(resources.values()).sort((a, b) => a.order - b.order));
+  });
+
+  app.post("/api/resources", requireAdminSession, (req, res) => {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const resource: Resource = {
+      id,
+      title: req.body.title || "",
+      description: req.body.description || "",
+      category: req.body.category || "getting-started",
+      type: req.body.type || "doc",
+      url: req.body.url || "",
+      thumbnailUrl: req.body.thumbnailUrl || "",
+      order: req.body.order || resources.size + 1,
+      featured: req.body.featured || false,
+      published: req.body.published !== false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    resources.set(id, resource);
+    logActivity("Resource Added", resource.title, "file");
+    res.status(201).json(resource);
+  });
+
+  app.patch("/api/resources/:id", requireAdminSession, (req, res) => {
+    const resource = resources.get(req.params.id);
+    if (!resource) return res.status(404).json({ error: "Resource not found" });
+    Object.assign(resource, req.body, { updatedAt: new Date().toISOString() });
+    resources.set(req.params.id, resource);
+    logActivity("Resource Updated", resource.title, "file");
+    res.json(resource);
+  });
+
+  app.delete("/api/resources/:id", requireAdminSession, (req, res) => {
+    const resource = resources.get(req.params.id);
+    resources.delete(req.params.id);
+    if (resource) logActivity("Resource Deleted", resource.title, "file");
+    res.json({ success: true });
   });
 
   // ─── Dashboard Stats ───────────────────────────────────────────
