@@ -139,12 +139,8 @@ function Footer() {
                 muted
                 playsInline
                 className="w-48 sm:w-56 h-auto rounded-lg"
-                poster="/images/techsavvy-logo.jpeg"
-              >
-                <source src="/images/techsavvy-logo-video.mov" type="video/quicktime" />
-                <source src="/images/techsavvy-logo-video.mp4" type="video/mp4" />
-                <img src="/images/techsavvy-logo.jpeg" alt="TechSavvy Hawaii" className="w-48 sm:w-56 h-auto rounded-lg" />
-              </video>
+                src="/videos/footer-bg.mp4"
+              />
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-sm mb-3">
               Hawai'i's trusted payment processing and web design company. Zero fees — plus free websites for online-only merchants.
