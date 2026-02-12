@@ -581,7 +581,7 @@ function ContactFormSection() {
           <div className="text-center mb-8">
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
               <Sparkles className="w-3 h-3 mr-1.5" />
-              Get Started
+              Get Started Today
             </Badge>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
               Eliminate{" "}
