@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import PricingPage from "@/pages/pricing";
 import HowItWorksPage from "@/pages/how-it-works";
 import WebDesignPage from "@/pages/web-design";
+import OnlineProcessingPage from "@/pages/online-processing";
 import HighRiskPage from "@/pages/high-risk";
 import ContactPage from "@/pages/contact";
 import AiConfigPage from "@/pages/ai-config";
@@ -35,6 +36,7 @@ function MainRouter() {
         <Route path="/pricing" component={PricingPage} />
         <Route path="/how-it-works" component={HowItWorksPage} />
         <Route path="/our-work" component={WebDesignPage} />
+        <Route path="/online-processing" component={OnlineProcessingPage} />
         <Route path="/high-risk" component={HighRiskPage} />
         <Route path="/contact" component={ContactPage} />
         <Route component={NotFound} />

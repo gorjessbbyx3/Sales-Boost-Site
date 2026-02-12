@@ -226,7 +226,7 @@ function ServicesOverview() {
       icon: Globe,
       title: "Free Custom Website",
       description: "Online-only merchants get a professional business website — mobile-optimized, SEO-ready, and included at no cost.",
-      href: "/our-work",
+      href: "/online-processing",
       cta: "See Examples",
       color: "text-chart-3",
       border: "border-chart-3/20",
@@ -419,8 +419,8 @@ function PortfolioShowcase() {
 
           <motion.div className="text-center mt-6 sm:mt-10" variants={fadeUp}>
             <Button variant="outline" size="lg" asChild>
-              <Link href="/our-work">
-                See Our Work
+              <Link href="/online-processing">
+                Learn More
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
@@ -501,7 +501,7 @@ function WebsiteUpkeepOverview() {
 
           <motion.div className="text-center mt-6 sm:mt-10" variants={fadeUp}>
             <Button variant="outline" size="lg" asChild>
-              <Link href="/our-work">
+              <Link href="/online-processing">
                 See Full Plan Details
                 <ArrowRight className="w-4 h-4" />
               </Link>

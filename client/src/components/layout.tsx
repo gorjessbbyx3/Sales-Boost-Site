@@ -26,7 +26,7 @@ function Navbar() {
   const links = [
     { label: "How It Works", href: "/how-it-works" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Our Work", href: "/our-work" },
+    { label: "Online Processing", href: "/online-processing" },
     { label: "High-Risk", href: "/high-risk" },
     { label: "FAQ", href: "/contact" },
   ];
@@ -174,8 +174,8 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/our-work" className="transition-colors hover:text-foreground" data-testid="link-footer-our-work">
-                  Our Work
+                <Link href="/online-processing" className="transition-colors hover:text-foreground" data-testid="link-footer-online-processing">
+                  Online Processing
                 </Link>
               </li>
               <li>
