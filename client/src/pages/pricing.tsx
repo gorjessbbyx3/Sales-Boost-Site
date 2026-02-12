@@ -217,13 +217,6 @@ function PricingCardsSection() {
                   ))}
                 </ul>
 
-                <div className="pt-2 border-t border-chart-4/10">
-                  <div className="flex items-center gap-2 text-sm text-chart-4 font-medium">
-                    <Palette className="w-4 h-4" />
-                    <span>+ Website for $199 (when you keep)</span>
-                  </div>
-                </div>
-
                 <Button className="w-full" size="lg" variant="outline" asChild>
                   <Link href="/contact">
                     Start Free Trial
