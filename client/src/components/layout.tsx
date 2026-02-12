@@ -147,7 +147,7 @@ function Footer() {
               </video>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-sm mb-3">
-              Hawai'i's trusted payment processing and web design company. Zero fees — plus free websites for every merchant.
+              Hawai'i's trusted payment processing and web design company. Zero fees — plus free websites for online-only merchants.
             </p>
             <div className="space-y-2.5 text-sm text-muted-foreground">
               <a href="tel:+18087675460" className="flex items-center gap-2 transition-colors hover:text-foreground">

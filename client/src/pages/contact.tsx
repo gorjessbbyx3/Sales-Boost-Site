@@ -61,7 +61,7 @@ function FAQSection() {
     },
     {
       q: "Does TechSavvy offer website design for Hawai'i businesses?",
-      a: "Yes. Every TechSavvy payment processing merchant gets a free custom-built business website — no templates, no extra cost. We also offer premium website packages with e-commerce integration, online ordering, booking systems, and custom software. All websites are mobile-optimized, SEO-ready, and built to help your Hawai'i business get found online.",
+      a: "Yes. Online-only processing merchants get a free custom-built business website — no templates, no extra cost. We also offer premium website packages with e-commerce integration, online ordering, booking systems, and custom software for any merchant. All websites are mobile-optimized, SEO-ready, and built to help your Hawai'i business get found online.",
     },
     {
       q: "What areas in Hawai'i does TechSavvy serve?",

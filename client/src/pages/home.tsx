@@ -225,7 +225,7 @@ function ServicesOverview() {
     {
       icon: Globe,
       title: "Free Custom Website",
-      description: "Every TechSavvy merchant gets a professional business website — mobile-optimized and SEO-ready.",
+      description: "Online-only merchants get a professional business website — mobile-optimized, SEO-ready, and included at no cost.",
       href: "/our-work",
       cta: "See Examples",
       color: "text-chart-3",
@@ -390,7 +390,7 @@ function PortfolioShowcase() {
               Websites We Build for Every Industry
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-lg">
-              Every TechSavvy merchant gets a free custom website — here's what yours could look like.
+              Online-only processing merchants get a free custom website — here's what yours could look like.
             </p>
           </motion.div>
 
@@ -554,7 +554,7 @@ function QuickPricingPreview() {
               icon: CreditCard,
               color: "text-primary",
               border: "border-primary/20",
-              features: ["Own it from day one", "Free custom website", "Zero fees forever"],
+              features: ["Own it from day one", "Full setup included", "Zero fees forever"],
             },
             {
               title: "30-Day Trial",
@@ -726,7 +726,7 @@ function CTASection() {
                   </span>
                 </h2>
                 <p className="text-muted-foreground text-sm sm:text-lg mb-6 sm:mb-10 max-w-2xl mx-auto">
-                  Stop losing money to processing fees. Get your terminal starting at $399 — plus a free custom website.
+                  Stop losing money to processing fees. Get your terminal starting at $399 — or go online-only with a free custom website.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Button size="lg" className="w-full sm:w-auto" asChild>

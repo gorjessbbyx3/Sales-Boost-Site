@@ -374,7 +374,7 @@ function BeforeAfterSection() {
               Real Hawai'i Businesses We've Transformed
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg">
-              Every TechSavvy merchant gets a free custom website.
+              Online-only processing merchants get a free custom website.
             </p>
           </motion.div>
 
