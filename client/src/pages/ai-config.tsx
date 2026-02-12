@@ -1959,9 +1959,9 @@ function IntegrationsTab() {
 // ─── Resources Manager Tab ──────────────────────────────────────────
 
 const RESOURCE_CATEGORIES: Record<string, string> = {
+  "classroom": "CashSwipe Classroom",
   "sales-materials": "Client Sales Resources",
   "pos-systems": "POS Systems & Battlecards",
-  "classroom": "CashSwipe Classroom",
 };
 
 const RESOURCE_TYPES: Record<string, string> = {
@@ -1977,7 +1977,7 @@ function ResourcesManagerTab() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingResource, setEditingResource] = useState<AdminResource | null>(null);
   const [filterCat, setFilterCat] = useState("all");
-  const [form, setForm] = useState({ title: "", description: "", category: "sales-materials", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: 1 });
+  const [form, setForm] = useState({ title: "", description: "", category: "classroom", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: 1 });
 
   const createMut = useMutation({
     mutationFn: (data: typeof form) => apiRequest("POST", "/api/resources", data),
@@ -1996,7 +1996,7 @@ function ResourcesManagerTab() {
 
   const openCreate = () => {
     setEditingResource(null);
-    setForm({ title: "", description: "", category: "getting-started", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: resources.length + 1 });
+    setForm({ title: "", description: "", category: "classroom", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: resources.length + 1 });
     setShowDialog(true);
   };
 

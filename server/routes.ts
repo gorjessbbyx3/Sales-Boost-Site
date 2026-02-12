@@ -956,7 +956,7 @@ export async function registerRoutes(
       id,
       title: req.body.title || "",
       description: req.body.description || "",
-      category: req.body.category || "getting-started",
+      category: req.body.category || "classroom",
       type: req.body.type || "doc",
       url: req.body.url || "",
       thumbnailUrl: req.body.thumbnailUrl || "",
