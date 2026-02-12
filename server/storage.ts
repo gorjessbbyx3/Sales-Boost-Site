@@ -1,5 +1,7 @@
-import { type User, type InsertUser, type AiConfig, type InsertAiConfig, type UpdateAiConfig, type ContactLead, type InsertContactLead } from "@shared/schema";
+import { type User, type InsertUser, type AiConfig, type InsertAiConfig, type UpdateAiConfig, type ContactLead, type InsertContactLead, contactLeads } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { desc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -23,12 +25,10 @@ const DEFAULT_AI_CONFIG: AiConfig = {
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private aiConfig: AiConfig;
-  private contactLeads: Map<string, ContactLead>;
 
   constructor() {
     this.users = new Map();
     this.aiConfig = { ...DEFAULT_AI_CONFIG };
-    this.contactLeads = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -58,16 +58,12 @@ export class MemStorage implements IStorage {
   }
 
   async createContactLead(lead: InsertContactLead): Promise<ContactLead> {
-    const id = randomUUID();
-    const contactLead: ContactLead = { ...lead, highRisk: lead.highRisk ?? false, id, createdAt: new Date() };
-    this.contactLeads.set(id, contactLead);
+    const [contactLead] = await db.insert(contactLeads).values(lead).returning();
     return contactLead;
   }
 
   async getContactLeads(): Promise<ContactLead[]> {
-    return Array.from(this.contactLeads.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return db.select().from(contactLeads).orderBy(desc(contactLeads.createdAt));
   }
 }
 

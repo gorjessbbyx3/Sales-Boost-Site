@@ -660,9 +660,15 @@ function ContactFormSection() {
                   <label className="text-sm font-medium text-foreground">Select a Plan</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
-                      { value: "in-store", label: "In-Store Terminal", price: "$399", color: "primary" },
-                      { value: "trial", label: "30-Day Trial", price: "FREE", color: "chart-4" },
-                      { value: "online", label: "Online-Only", price: "FREE", color: "chart-2" },
+                      { value: "in-store", label: "In-Store Terminal", price: "$399",
+                        selectedClasses: "border-primary bg-primary/10 ring-1 ring-primary",
+                        priceClass: "text-primary" },
+                      { value: "trial", label: "30-Day Trial", price: "FREE",
+                        selectedClasses: "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500",
+                        priceClass: "text-emerald-500" },
+                      { value: "online", label: "Online-Only", price: "FREE",
+                        selectedClasses: "border-sky-500 bg-sky-500/10 ring-1 ring-sky-500",
+                        priceClass: "text-sky-500" },
                     ].map((plan) => (
                       <button
                         key={plan.value}
@@ -670,13 +676,13 @@ function ContactFormSection() {
                         onClick={() => set("plan", plan.value)}
                         className={`relative rounded-md border p-3 text-left transition-all ${
                           formData.plan === plan.value
-                            ? `border-${plan.color} bg-${plan.color}/10 ring-1 ring-${plan.color}`
+                            ? plan.selectedClasses
                             : "border-border hover-elevate"
                         }`}
                         data-testid={`button-plan-${plan.value}`}
                       >
                         <div className="text-xs font-semibold text-foreground">{plan.label}</div>
-                        <div className={`text-sm font-extrabold text-${plan.color}`}>{plan.price}</div>
+                        <div className={`text-sm font-extrabold ${plan.priceClass}`}>{plan.price}</div>
                       </button>
                     ))}
                   </div>
