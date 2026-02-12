@@ -235,6 +235,63 @@ export const activityLog = pgTable("activity_log", {
   type: text("type").notNull().default(""),
 });
 
+// ─── Team Members ────────────────────────────────────────────────────
+
+export const teamMembers = pgTable("team_members", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().default(""),
+  role: text("role").notNull().default(""),
+  email: text("email").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  status: text("status").notNull().default("active"),
+  dailyInvolvement: text("daily_involvement").notNull().default("full"),
+  joinedAt: text("joined_at").notNull(),
+});
+
+// ─── Business Info (singleton) ───────────────────────────────────────
+
+export const businessInfo = pgTable("business_info", {
+  id: text("id").primaryKey().default("default"),
+  companyName: text("company_name").notNull().default(""),
+  dba: text("dba").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  email: text("email").notNull().default(""),
+  address: text("address").notNull().default(""),
+  website: text("website").notNull().default(""),
+  taxId: text("tax_id").notNull().default(""),
+  bankPartner: text("bank_partner").notNull().default(""),
+  processorPartner: text("processor_partner").notNull().default("CashSwipe"),
+  currentPhase: text("current_phase").notNull().default("onboarding"),
+  notes: text("notes").notNull().default(""),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// ─── Schedule Items ──────────────────────────────────────────────────
+
+export const scheduleItems = pgTable("schedule_items", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull().default(""),
+  description: text("description").notNull().default(""),
+  date: text("date").notNull(),
+  time: text("time").notNull().default(""),
+  duration: integer("duration").notNull().default(30),
+  assigneeId: text("assignee_id").notNull().default(""),
+  priority: text("priority").notNull().default("medium"),
+  status: text("status").notNull().default("pending"),
+  isAiGenerated: boolean("is_ai_generated").notNull().default(false),
+  category: text("category").notNull().default("general"),
+  createdAt: text("created_at").notNull(),
+});
+
+// ─── Pinned Pitches ──────────────────────────────────────────────────
+
+export const pinnedPitches = pgTable("pinned_pitches", {
+  id: text("id").primaryKey(),
+  scriptKey: text("script_key").notNull(),
+  customContent: text("custom_content").notNull().default(""),
+  pinnedAt: text("pinned_at").notNull(),
+});
+
 // ─── Zod Schemas & Types ─────────────────────────────────────────────
 
 export const insertContactLeadSchema = createInsertSchema(contactLeads).omit({

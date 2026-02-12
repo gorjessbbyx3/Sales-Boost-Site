@@ -955,5 +955,268 @@ export async function registerRoutes(
     });
   });
 
+  // ─── Team Members CRUD ───────────────────────────────────────────
+
+  let teamSeeded = false;
+  async function seedTeamIfNeeded() {
+    if (teamSeeded) return;
+    teamSeeded = true;
+    const existing = await db.select({ id: schema.teamMembers.id }).from(schema.teamMembers).limit(1);
+    if (existing.length > 0) return;
+    const now = new Date().toISOString();
+    await db.insert(schema.teamMembers).values([
+      { id: randomUUID(), name: "Aaron", role: "Investor & Financial Backer", email: "", phone: "", status: "active", dailyInvolvement: "minimal", joinedAt: now },
+      { id: randomUUID(), name: "Joey", role: "Business Operations & Legal (EIN, compliance, registration)", email: "", phone: "", status: "active", dailyInvolvement: "part-time", joinedAt: now },
+      { id: randomUUID(), name: "Kepa", role: "Lead Sales & CashSwipe Point of Contact", email: "", phone: "", status: "active", dailyInvolvement: "full", joinedAt: now },
+      { id: randomUUID(), name: "Jessica", role: "CRM Development, Website, & Marketing Materials", email: "", phone: "", status: "active", dailyInvolvement: "full", joinedAt: now },
+    ]);
+  }
+
+  app.get("/api/team-members", requireAdminSession, async (_req, res) => {
+    await seedTeamIfNeeded();
+    const rows = await db.select().from(schema.teamMembers);
+    res.json(rows);
+  });
+
+  app.post("/api/team-members", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const [member] = await db.insert(schema.teamMembers).values({
+      id,
+      name: req.body.name || "",
+      role: req.body.role || "",
+      email: req.body.email || "",
+      phone: req.body.phone || "",
+      status: req.body.status || "active",
+      dailyInvolvement: req.body.dailyInvolvement || "full",
+      joinedAt: new Date().toISOString(),
+    }).returning();
+    logActivity("Team Member Added", member.name, "client");
+    res.status(201).json(member);
+  });
+
+  app.patch("/api/team-members/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.teamMembers, req.body);
+    const [updated] = await db.update(schema.teamMembers).set(updateData).where(eq(schema.teamMembers.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/team-members/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.teamMembers).where(eq(schema.teamMembers.id, req.params.id as string));
+    res.json({ success: true });
+  });
+
+  // ─── Business Info (singleton) ──────────────────────────────────
+
+  app.get("/api/business-info", requireAdminSession, async (_req, res) => {
+    const [row] = await db.select().from(schema.businessInfo).where(eq(schema.businessInfo.id, "default"));
+    if (!row) {
+      return res.json({
+        companyName: "", dba: "", phone: "", email: "", address: "",
+        website: "", taxId: "", bankPartner: "", processorPartner: "CashSwipe",
+        currentPhase: "onboarding", notes: "", updatedAt: new Date().toISOString(),
+      });
+    }
+    const { id, ...info } = row;
+    res.json(info);
+  });
+
+  app.patch("/api/business-info", requireAdminSession, async (req, res) => {
+    const body = { ...req.body, updatedAt: new Date().toISOString() };
+    const updateData = pickColumns(schema.businessInfo, body);
+    const [existing] = await db.select().from(schema.businessInfo).where(eq(schema.businessInfo.id, "default"));
+    let row;
+    if (existing) {
+      [row] = await db.update(schema.businessInfo).set(updateData).where(eq(schema.businessInfo.id, "default")).returning();
+    } else {
+      [row] = await db.insert(schema.businessInfo).values({ id: "default", ...updateData } as any).returning();
+    }
+    const { id, ...info } = row;
+    logActivity("Business Info Updated", `Phase: ${info.currentPhase}`, "client");
+    res.json(info);
+  });
+
+  // ─── Schedule Items CRUD ────────────────────────────────────────
+
+  app.get("/api/schedule", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.scheduleItems).orderBy(asc(schema.scheduleItems.date));
+    res.json(rows);
+  });
+
+  app.post("/api/schedule", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const [item] = await db.insert(schema.scheduleItems).values({
+      id,
+      title: req.body.title || "",
+      description: req.body.description || "",
+      date: req.body.date || new Date().toISOString().split("T")[0],
+      time: req.body.time || "",
+      duration: req.body.duration || 30,
+      assigneeId: req.body.assigneeId || "",
+      priority: req.body.priority || "medium",
+      status: req.body.status || "pending",
+      isAiGenerated: req.body.isAiGenerated || false,
+      category: req.body.category || "general",
+      createdAt: new Date().toISOString(),
+    }).returning();
+    logActivity("Schedule Item Added", item.title, "task");
+    res.status(201).json(item);
+  });
+
+  app.patch("/api/schedule/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.scheduleItems, req.body);
+    const [updated] = await db.update(schema.scheduleItems).set(updateData).where(eq(schema.scheduleItems.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/schedule/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.scheduleItems).where(eq(schema.scheduleItems.id, req.params.id as string));
+    res.json({ success: true });
+  });
+
+  // ─── AI Ops Assistant (Recommendations) ─────────────────────────
+
+  app.post("/api/ai-ops/recommend", requireAdminSession, async (_req, res) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured." });
+
+    const [teamRows, leadRows, taskRows, scheduleRows, clientRows, businessRow] = await Promise.all([
+      db.select().from(schema.teamMembers),
+      db.select().from(schema.leads),
+      db.select().from(schema.tasks),
+      db.select().from(schema.scheduleItems),
+      db.select().from(schema.clients),
+      db.select().from(schema.businessInfo).where(eq(schema.businessInfo.id, "default")),
+    ]);
+    const biz = businessRow[0];
+    const pendingTasks = taskRows.filter(t => !t.completed);
+    const todayStr = new Date().toISOString().split("T")[0];
+    const todaySchedule = scheduleRows.filter(s => s.date === todayStr);
+
+    const context = `
+BUSINESS CONTEXT:
+- Company: ${biz?.companyName || "TechSavvy Hawaii"} (DBA: ${biz?.dba || "N/A"})
+- Processor Partner: ${biz?.processorPartner || "CashSwipe"}
+- Current Phase: ${biz?.currentPhase || "onboarding"} (still in CashSwipe onboarding/training via Skool)
+- Today: ${todayStr}
+
+TEAM MEMBERS:
+${teamRows.map(m => `- ${m.name}: ${m.role} (involvement: ${m.dailyInvolvement})`).join("\n")}
+
+CURRENT STATE:
+- Pipeline leads: ${leadRows.length} (active: ${leadRows.filter(l => !["won","lost"].includes(l.status)).length})
+- Clients: ${clientRows.length}
+- Pending tasks: ${pendingTasks.length}
+- Today's schedule items: ${todaySchedule.length}
+
+PENDING TASKS:
+${pendingTasks.slice(0, 10).map(t => `- [${t.priority}] ${t.title} (due: ${t.dueDate || "no date"})`).join("\n") || "None"}
+`;
+
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2048,
+        system: `You are the AI Operations Assistant for a merchant services startup. Generate actionable daily recommendations based on the current business state. Return a JSON array of task recommendations. Each item must have: title (string), description (string), assigneeName (string - one of the team member names), priority ("high"|"medium"|"low"), category ("training"|"outreach"|"admin"|"meeting"|"follow-up"|"development"). Focus on what each team member should do TODAY given the current business phase. Be specific and practical. Return ONLY valid JSON array, no other text.`,
+        messages: [{ role: "user", content: context }],
+      });
+      const text = response.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const recommendations = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+      res.json({ recommendations, generatedAt: new Date().toISOString() });
+    } catch (err: any) {
+      console.error("AI Ops recommendation error:", err.message);
+      res.status(500).json({ error: "Failed to generate recommendations." });
+    }
+  });
+
+  app.post("/api/ai-ops/chat", requireAdminSession, async (req, res) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured." });
+
+    const { message, history } = req.body;
+    if (!message) return res.status(400).json({ error: "Message required." });
+
+    const [teamRows, leadRows, taskRows, clientRows, businessRow] = await Promise.all([
+      db.select().from(schema.teamMembers),
+      db.select().from(schema.leads),
+      db.select().from(schema.tasks),
+      db.select().from(schema.clients),
+      db.select().from(schema.businessInfo).where(eq(schema.businessInfo.id, "default")),
+    ]);
+    const biz = businessRow[0];
+
+    const systemPrompt = `You are the AI Operations Assistant for ${biz?.companyName || "TechSavvy Hawaii"}, a merchant services startup currently in the ${biz?.currentPhase || "onboarding"} phase with CashSwipe (training via Skool platform).
+
+TEAM: ${teamRows.map(m => `${m.name} (${m.role}, ${m.dailyInvolvement} involvement)`).join("; ")}
+STATS: ${leadRows.length} leads, ${clientRows.length} clients, ${taskRows.filter(t => !t.completed).length} pending tasks
+
+You help manage daily operations, give reminders, make recommendations, and can suggest tasks to assign to team members or to yourself (AI). Be concise, actionable, and specific. When suggesting tasks, mention which team member should handle it. If asked to "do" something, explain what you'd recommend and offer to create a task for the appropriate team member.`;
+
+    const messages: { role: "user" | "assistant"; content: string }[] = [];
+    if (Array.isArray(history)) {
+      for (const h of history.slice(-10)) {
+        if (h.role && h.content) messages.push({ role: h.role, content: h.content.slice(0, 2000) });
+      }
+    }
+    messages.push({ role: "user", content: message });
+
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages,
+      });
+      const text = response.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
+      res.json({ reply: text });
+    } catch (err: any) {
+      console.error("AI Ops chat error:", err.message);
+      res.status(500).json({ error: "Failed to get AI response." });
+    }
+  });
+
+  // ─── Pinned Pitches ─────────────────────────────────────────────
+
+  app.get("/api/pinned-pitches", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.pinnedPitches);
+    res.json(rows);
+  });
+
+  app.post("/api/pinned-pitches", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const [pitch] = await db.insert(schema.pinnedPitches).values({
+      id,
+      scriptKey: req.body.scriptKey || "",
+      customContent: req.body.customContent || "",
+      pinnedAt: new Date().toISOString(),
+    }).returning();
+    res.status(201).json(pitch);
+  });
+
+  app.patch("/api/pinned-pitches/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.pinnedPitches, req.body);
+    const [updated] = await db.update(schema.pinnedPitches).set(updateData).where(eq(schema.pinnedPitches.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/pinned-pitches/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.pinnedPitches).where(eq(schema.pinnedPitches.id, req.params.id as string));
+    res.json({ success: true });
+  });
+
+  // ─── Client-Team Assignment ─────────────────────────────────────
+
+  app.patch("/api/clients/:id/assign", requireAdminSession, async (req, res) => {
+    const { assigneeId } = req.body;
+    const [updated] = await db.update(schema.clients).set({ notes: `[ASSIGNED:${assigneeId}] ` }).where(eq(schema.clients.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Client not found" });
+    res.json(updated);
+  });
+
   return httpServer;
 }

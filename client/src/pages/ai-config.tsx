@@ -23,6 +23,7 @@ import {
   UserPlus, Building, CheckCircle,
   BarChart3, ArrowUpRight, ArrowDownRight,
   Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
+  Pin, PinOff, Sparkles, Clock, UserCog, Briefcase,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { useState, useEffect, useMemo } from "react";
@@ -215,6 +216,62 @@ interface ActivityEntry {
   details: string;
   timestamp: string;
   type: string;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  status: string;
+  dailyInvolvement: string;
+  joinedAt: string;
+}
+
+interface BusinessInfoData {
+  companyName: string;
+  dba: string;
+  phone: string;
+  email: string;
+  address: string;
+  website: string;
+  taxId: string;
+  bankPartner: string;
+  processorPartner: string;
+  currentPhase: string;
+  notes: string;
+  updatedAt: string;
+}
+
+interface ScheduleItem {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  duration: number;
+  assigneeId: string;
+  priority: string;
+  status: string;
+  isAiGenerated: boolean;
+  category: string;
+  createdAt: string;
+}
+
+interface PinnedPitch {
+  id: string;
+  scriptKey: string;
+  customContent: string;
+  pinnedAt: string;
+}
+
+interface AiRecommendation {
+  title: string;
+  description: string;
+  assigneeName: string;
+  priority: string;
+  category: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -415,6 +472,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { value: "files", icon: FolderOpen, label: "Files" },
     { value: "integrations", icon: Plug, label: "Integrations" },
     { value: "resources", icon: Library, label: "Resources" },
+    { value: "team", icon: UserCog, label: "Team" },
+    { value: "schedule", icon: Clock, label: "Schedule" },
+    { value: "ai-ops", icon: Sparkles, label: "AI Ops" },
     { value: "activity", icon: Activity, label: "Activity" },
     { value: "ai", icon: Bot, label: "AI Chat" },
   ];
@@ -465,6 +525,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           <TabsContent value="files"><FilesTab /></TabsContent>
           <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
           <TabsContent value="resources"><ResourcesManagerTab /></TabsContent>
+          <TabsContent value="team"><TeamTab /></TabsContent>
+          <TabsContent value="schedule"><ScheduleTab /></TabsContent>
+          <TabsContent value="ai-ops"><AiOpsTab /></TabsContent>
           <TabsContent value="activity"><ActivityTab /></TabsContent>
           <TabsContent value="ai"><AiSettingsTab /></TabsContent>
         </Tabs>
@@ -878,19 +941,43 @@ function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClos
 
 // ─── Reusable Script Card ────────────────────────────────────────────
 
-function ScriptCard({ title, content }: { title: string; content: string }) {
+function ScriptCard({ title, content, scriptKey, pinned, onPin, onUnpin, onRefresh }: {
+  title: string; content: string; scriptKey?: string;
+  pinned?: PinnedPitch | null; onPin?: (key: string, content: string) => void;
+  onUnpin?: (id: string) => void; onRefresh?: (key: string) => void;
+}) {
   const [copied, setCopied] = useState(false);
-  const handleCopy = () => { navigator.clipboard.writeText(content); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+  const displayContent = pinned?.customContent || content;
+  const handleCopy = () => { navigator.clipboard.writeText(displayContent); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   return (
-    <Card className="overflow-visible border-border/50">
+    <Card className={`overflow-visible border-border/50 ${pinned ? "ring-1 ring-primary/30" : ""}`}>
       <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold">{title}</span>
-          <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={handleCopy}>
-            {copied ? <><Check className="w-3 h-3" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
-          </Button>
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <span className="text-xs font-semibold flex items-center gap-1.5">
+            {pinned && <Pin className="w-3 h-3 text-primary" />}{title}
+          </span>
+          <div className="flex items-center gap-1">
+            {scriptKey && onRefresh && (
+              <Button variant="ghost" size="sm" className="text-[10px] h-6 px-1.5" onClick={() => onRefresh(scriptKey)} title="Get AI variation">
+                <RefreshCw className="w-3 h-3" />
+              </Button>
+            )}
+            {scriptKey && !pinned && onPin && (
+              <Button variant="ghost" size="sm" className="text-[10px] h-6 px-1.5" onClick={() => onPin(scriptKey, displayContent)} title="Pin this pitch">
+                <Pin className="w-3 h-3" />
+              </Button>
+            )}
+            {pinned && onUnpin && (
+              <Button variant="ghost" size="sm" className="text-[10px] h-6 px-1.5 text-primary" onClick={() => onUnpin(pinned.id)} title="Unpin">
+                <PinOff className="w-3 h-3" />
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={handleCopy}>
+              {copied ? <><Check className="w-3 h-3" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
+            </Button>
+          </div>
         </div>
-        <pre className="text-xs text-muted-foreground whitespace-pre-wrap bg-muted/30 rounded-md p-3 leading-relaxed">{content}</pre>
+        <pre className="text-xs text-muted-foreground whitespace-pre-wrap bg-muted/30 rounded-md p-3 leading-relaxed">{displayContent}</pre>
       </CardContent>
     </Card>
   );
@@ -901,9 +988,41 @@ function ScriptCard({ title, content }: { title: string; content: string }) {
 function PlaybooksTab() {
   const { data: partners = [], refetch: refetchPartners } = useQuery<ReferralPartner[]>({ queryKey: ["/api/referral-partners"] });
   const { data: checks = [], refetch: refetchChecks } = useQuery<PlaybookCheckItem[]>({ queryKey: ["/api/playbook-checks"] });
+  const { data: pinnedPitches = [], refetch: refetchPins } = useQuery<PinnedPitch[]>({ queryKey: ["/api/pinned-pitches"] });
   const [showPartnerForm, setShowPartnerForm] = useState(false);
   const [partnerForm, setPartnerForm] = useState({ name: "", niche: "", clientTypes: "", referralTerms: "", introMethod: "", nextCheckIn: "" });
+  const [refreshing, setRefreshing] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const getPinned = (key: string) => pinnedPitches.find(p => p.scriptKey === key) || null;
+
+  const pinMutation = useMutation({
+    mutationFn: async ({ scriptKey, customContent }: { scriptKey: string; customContent: string }) => {
+      const r = await apiRequest("POST", "/api/pinned-pitches", { scriptKey, customContent }); return r.json();
+    },
+    onSuccess: () => { refetchPins(); toast({ title: "Pitch pinned" }); },
+  });
+
+  const unpinMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/pinned-pitches/${id}`); },
+    onSuccess: () => { refetchPins(); toast({ title: "Pitch unpinned" }); },
+  });
+
+  const handleRefresh = async (scriptKey: string) => {
+    setRefreshing(scriptKey);
+    try {
+      const r = await apiRequest("POST", "/api/ai-ops/chat", {
+        message: `Generate a fresh variation of the "${scriptKey}" sales pitch for a merchant services company. Keep the same intent and key selling points (zero-fee processing, statement review, no obligation) but change the wording to sound natural and different. Return ONLY the pitch text, nothing else.`,
+      });
+      const data = await r.json();
+      if (data.reply) {
+        await apiRequest("POST", "/api/pinned-pitches", { scriptKey, customContent: data.reply });
+        refetchPins();
+        toast({ title: "Fresh pitch generated & pinned" });
+      }
+    } catch { toast({ title: "Failed to refresh", variant: "destructive" }); }
+    setRefreshing(null);
+  };
 
   const createPartnerMutation = useMutation({
     mutationFn: async (data: any) => { const r = await apiRequest("POST", "/api/referral-partners", data); return r.json(); },
@@ -948,7 +1067,7 @@ function PlaybooksTab() {
         <AccordionItem value="referral" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-emerald-400/10 flex items-center justify-center text-emerald-400 text-xs font-bold">R</span>Referral Partner Program</span></AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
-            <ScriptCard title="Partner Outreach Script" content={PLAYBOOK_SCRIPTS.referral.outreach} />
+            <ScriptCard title="Partner Outreach Script" content={PLAYBOOK_SCRIPTS.referral.outreach} scriptKey="referral.outreach" pinned={getPinned("referral.outreach")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
             <div>
               <p className="text-xs font-semibold mb-2">Partner Onboarding Checklist</p>
               <div className="space-y-1.5">{referralChecklist.map((item) => (
@@ -979,7 +1098,7 @@ function PlaybooksTab() {
         <AccordionItem value="networking" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-blue-400/10 flex items-center justify-center text-blue-400 text-xs font-bold">N</span>Networking & Community Presence</span></AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
-            <ScriptCard title="30-Second Elevator Pitch" content={PLAYBOOK_SCRIPTS.networking.elevator} />
+            <ScriptCard title="30-Second Elevator Pitch" content={PLAYBOOK_SCRIPTS.networking.elevator} scriptKey="networking.elevator" pinned={getPinned("networking.elevator")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
             <Card className="overflow-visible border-border/50 bg-blue-400/5">
               <CardContent className="p-3">
                 <p className="text-xs font-semibold mb-1">Event Reminders</p>
@@ -998,7 +1117,7 @@ function PlaybooksTab() {
         <AccordionItem value="social" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-pink-400/10 flex items-center justify-center text-pink-400 text-xs font-bold">S</span>Social Media Outreach</span></AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
-            <ScriptCard title="DM Script (After Engagement)" content={PLAYBOOK_SCRIPTS.social.dm} />
+            <ScriptCard title="DM Script (After Engagement)" content={PLAYBOOK_SCRIPTS.social.dm} scriptKey="social.dm" pinned={getPinned("social.dm")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
             <Card className="overflow-visible border-border/50 bg-pink-400/5">
               <CardContent className="p-3">
                 <p className="text-xs font-semibold mb-1">Content That Converts</p>
@@ -1023,9 +1142,9 @@ function PlaybooksTab() {
         <AccordionItem value="direct" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-orange-400/10 flex items-center justify-center text-orange-400 text-xs font-bold">D</span>Direct Prospecting</span></AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
-            <ScriptCard title="Cold Call Script (30 sec)" content={PLAYBOOK_SCRIPTS.direct.coldCall} />
-            <ScriptCard title="Walk-In Opener" content={PLAYBOOK_SCRIPTS.direct.walkIn} />
-            <ScriptCard title="Personalized Email Template" content={PLAYBOOK_SCRIPTS.direct.email} />
+            <ScriptCard title="Cold Call Script (30 sec)" content={PLAYBOOK_SCRIPTS.direct.coldCall} scriptKey="direct.coldCall" pinned={getPinned("direct.coldCall")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
+            <ScriptCard title="Walk-In Opener" content={PLAYBOOK_SCRIPTS.direct.walkIn} scriptKey="direct.walkIn" pinned={getPinned("direct.walkIn")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
+            <ScriptCard title="Personalized Email Template" content={PLAYBOOK_SCRIPTS.direct.email} scriptKey="direct.email" pinned={getPinned("direct.email")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
             <Card className="overflow-visible border-border/50 bg-orange-400/5">
               <CardContent className="p-3">
                 <p className="text-xs font-semibold mb-1">Direct Prospecting Tips</p>
@@ -1050,7 +1169,7 @@ function PlaybooksTab() {
                 <p className="text-xs font-medium text-destructive">Critical Rule: Follow up within 24 hours of every download</p>
               </CardContent>
             </Card>
-            <ScriptCard title="24-Hour Follow-Up Template" content={PLAYBOOK_SCRIPTS.leadMagnet.followUp24hr} />
+            <ScriptCard title="24-Hour Follow-Up Template" content={PLAYBOOK_SCRIPTS.leadMagnet.followUp24hr} scriptKey="leadMagnet.followUp24hr" pinned={getPinned("leadMagnet.followUp24hr")} onPin={(k, c) => pinMutation.mutate({ scriptKey: k, customContent: c })} onUnpin={(id) => unpinMutation.mutate(id)} onRefresh={handleRefresh} />
             <div>
               <p className="text-xs font-semibold mb-2">High-Converting Resources to Create</p>
               <div className="space-y-1.5">{leadMagnetResources.map((item) => (
@@ -2068,6 +2187,545 @@ function ActivityTab() {
           </div>
         ))}</div>
       )}
+    </div>
+  );
+}
+
+// ─── Team & Business Tab ─────────────────────────────────────────────
+
+function TeamTab() {
+  const { data: team = [], refetch: refetchTeam } = useQuery<TeamMember[]>({ queryKey: ["/api/team-members"] });
+  const { data: biz, refetch: refetchBiz } = useQuery<BusinessInfoData>({ queryKey: ["/api/business-info"] });
+  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
+  const [showMemberForm, setShowMemberForm] = useState(false);
+  const [memberForm, setMemberForm] = useState({ name: "", role: "", email: "", phone: "", dailyInvolvement: "full" });
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [bizForm, setBizForm] = useState<Partial<BusinessInfoData>>({});
+  const [bizDirty, setBizDirty] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => { if (biz) { setBizForm(biz); setBizDirty(false); } }, [biz]);
+
+  const createMemberMutation = useMutation({
+    mutationFn: async (data: any) => { const r = await apiRequest("POST", "/api/team-members", data); return r.json(); },
+    onSuccess: () => { refetchTeam(); toast({ title: "Team member added" }); setShowMemberForm(false); setMemberForm({ name: "", role: "", email: "", phone: "", dailyInvolvement: "full" }); },
+  });
+  const updateMemberMutation = useMutation({
+    mutationFn: async ({ id, ...data }: any) => { const r = await apiRequest("PATCH", `/api/team-members/${id}`, data); return r.json(); },
+    onSuccess: () => { refetchTeam(); setEditingMember(null); toast({ title: "Updated" }); },
+  });
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/team-members/${id}`); },
+    onSuccess: () => { refetchTeam(); },
+  });
+  const saveBizMutation = useMutation({
+    mutationFn: async (data: Partial<BusinessInfoData>) => { const r = await apiRequest("PATCH", "/api/business-info", data); return r.json(); },
+    onSuccess: () => { refetchBiz(); setBizDirty(false); toast({ title: "Business info saved" }); },
+  });
+
+  const PHASE_CONFIG: Record<string, { label: string; color: string }> = {
+    onboarding: { label: "Onboarding & Training", color: "text-blue-400" },
+    training: { label: "Advanced Training", color: "text-cyan-400" },
+    "pre-launch": { label: "Pre-Launch Prep", color: "text-yellow-400" },
+    active: { label: "Active Sales", color: "text-emerald-400" },
+    scaling: { label: "Scaling", color: "text-purple-400" },
+  };
+
+  const INVOLVEMENT_LABELS: Record<string, string> = { minimal: "Minimal", "part-time": "Part-Time", full: "Full-Time" };
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-lg font-bold flex items-center gap-2"><Briefcase className="w-5 h-5 text-primary" />Team & Business</h2><p className="text-xs text-muted-foreground mt-1">Manage your team, business details, and client assignments. Everyone on the team can see this.</p></div>
+
+      {/* Business Info */}
+      <Card className="overflow-visible border-border/50">
+        <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><Building className="w-4 h-4" />Business Information</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label className="text-xs">Company Name</Label><Input value={bizForm.companyName || ""} onChange={(e) => { setBizForm(f => ({ ...f, companyName: e.target.value })); setBizDirty(true); }} placeholder="TechSavvy Hawaii LLC" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">DBA (Doing Business As)</Label><Input value={bizForm.dba || ""} onChange={(e) => { setBizForm(f => ({ ...f, dba: e.target.value })); setBizDirty(true); }} placeholder="TechSavvy" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={bizForm.phone || ""} onChange={(e) => { setBizForm(f => ({ ...f, phone: e.target.value })); setBizDirty(true); }} placeholder="808-767-5460" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={bizForm.email || ""} onChange={(e) => { setBizForm(f => ({ ...f, email: e.target.value })); setBizDirty(true); }} placeholder="contact@techsavvyhawaii.com" /></div>
+            <div className="space-y-1.5 sm:col-span-2"><Label className="text-xs">Address</Label><Input value={bizForm.address || ""} onChange={(e) => { setBizForm(f => ({ ...f, address: e.target.value })); setBizDirty(true); }} placeholder="Honolulu, HI" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Website</Label><Input value={bizForm.website || ""} onChange={(e) => { setBizForm(f => ({ ...f, website: e.target.value })); setBizDirty(true); }} /></div>
+            <div className="space-y-1.5"><Label className="text-xs">EIN / Tax ID</Label><Input value={bizForm.taxId || ""} onChange={(e) => { setBizForm(f => ({ ...f, taxId: e.target.value })); setBizDirty(true); }} placeholder="Pending — Joey is handling" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Processor Partner</Label><Input value={bizForm.processorPartner || ""} onChange={(e) => { setBizForm(f => ({ ...f, processorPartner: e.target.value })); setBizDirty(true); }} /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Current Phase</Label>
+              <Select value={bizForm.currentPhase || "onboarding"} onValueChange={(v) => { setBizForm(f => ({ ...f, currentPhase: v })); setBizDirty(true); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{Object.entries(PHASE_CONFIG).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1.5"><Label className="text-xs">Notes</Label><Textarea value={bizForm.notes || ""} onChange={(e) => { setBizForm(f => ({ ...f, notes: e.target.value })); setBizDirty(true); }} rows={2} className="resize-none text-sm" placeholder="Any notes about the business..." /></div>
+          {bizDirty && <div className="flex justify-end"><Button size="sm" onClick={() => saveBizMutation.mutate(bizForm)}><Save className="w-3.5 h-3.5" />Save Business Info</Button></div>}
+        </CardContent>
+      </Card>
+
+      {/* Team Members */}
+      <Card className="overflow-visible border-border/50">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2"><Users className="w-4 h-4" />Team Members ({team.length})</CardTitle>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowMemberForm(true)}><Plus className="w-3 h-3" />Add Member</Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {team.map((m) => (
+              <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center text-sm font-bold text-primary">{m.name.charAt(0)}</div>
+                  <div>
+                    <p className="text-sm font-semibold">{m.name}</p>
+                    <p className="text-xs text-muted-foreground">{m.role}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Badge variant="outline" className="text-[10px] h-4">{INVOLVEMENT_LABELS[m.dailyInvolvement] || m.dailyInvolvement}</Badge>
+                      {m.email && <span className="text-[10px] text-muted-foreground">{m.email}</span>}
+                      {m.phone && <span className="text-[10px] text-muted-foreground">{m.phone}</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingMember(m)}><Edit3 className="w-3 h-3" /></Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMemberMutation.mutate(m.id)}><Trash2 className="w-3 h-3" /></Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Client Assignments */}
+      <Card className="overflow-visible border-border/50">
+        <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><UserPlus className="w-4 h-4" />Client-Team Assignments</CardTitle></CardHeader>
+        <CardContent>
+          {clients.length === 0 ? <p className="text-xs text-muted-foreground py-2">No clients yet. Once you add clients, you can assign them to team members here.</p> : (
+            <div className="space-y-2">{clients.map((c) => {
+              const assignMatch = c.notes?.match(/\[ASSIGNED:([^\]]+)\]/);
+              const assignedId = assignMatch ? assignMatch[1] : "";
+              const assignedMember = team.find(m => m.id === assignedId);
+              return (
+                <div key={c.id} className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-border/30">
+                  <div><p className="text-xs font-medium">{c.business || c.name}</p><p className="text-[10px] text-muted-foreground">{c.package} — {c.maintenance !== "none" ? c.maintenance : "no maintenance"}</p></div>
+                  <Select value={assignedId || "unassigned"} onValueChange={async (v) => {
+                    const cleanNotes = (c.notes || "").replace(/\[ASSIGNED:[^\]]+\]\s*/g, "");
+                    const newNotes = v !== "unassigned" ? `[ASSIGNED:${v}] ${cleanNotes}` : cleanNotes;
+                    await apiRequest("PATCH", `/api/clients/${c.id}`, { notes: newNotes });
+                    queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+                  }}>
+                    <SelectTrigger className="w-[140px] h-7 text-xs"><SelectValue placeholder="Assign..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {team.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })}</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Member Dialog */}
+      <Dialog open={showMemberForm} onOpenChange={(o) => !o && setShowMemberForm(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Add Team Member</DialogTitle><DialogDescription>Add a new member to the team</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Name *</Label><Input value={memberForm.name} onChange={(e) => setMemberForm(f => ({ ...f, name: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Involvement</Label>
+                <Select value={memberForm.dailyInvolvement} onValueChange={(v) => setMemberForm(f => ({ ...f, dailyInvolvement: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="full">Full-Time</SelectItem><SelectItem value="part-time">Part-Time</SelectItem><SelectItem value="minimal">Minimal</SelectItem></SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Role / Responsibilities</Label><Input value={memberForm.role} onChange={(e) => setMemberForm(f => ({ ...f, role: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={memberForm.email} onChange={(e) => setMemberForm(f => ({ ...f, email: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={memberForm.phone} onChange={(e) => setMemberForm(f => ({ ...f, phone: e.target.value }))} /></div>
+            </div>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setShowMemberForm(false)}>Cancel</Button><Button onClick={() => createMemberMutation.mutate(memberForm)} disabled={!memberForm.name}><Plus className="w-3.5 h-3.5" />Add</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Member Dialog */}
+      <Dialog open={!!editingMember} onOpenChange={(o) => !o && setEditingMember(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Edit Team Member</DialogTitle><DialogDescription>Update member details</DialogDescription></DialogHeader>
+          {editingMember && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5"><Label className="text-xs">Name</Label><Input defaultValue={editingMember.name} onChange={(e) => setEditingMember(m => m ? { ...m, name: e.target.value } : m)} /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Involvement</Label>
+                  <Select value={editingMember.dailyInvolvement} onValueChange={(v) => setEditingMember(m => m ? { ...m, dailyInvolvement: v } : m)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="full">Full-Time</SelectItem><SelectItem value="part-time">Part-Time</SelectItem><SelectItem value="minimal">Minimal</SelectItem></SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5"><Label className="text-xs">Role</Label><Input value={editingMember.role} onChange={(e) => setEditingMember(m => m ? { ...m, role: e.target.value } : m)} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={editingMember.email} onChange={(e) => setEditingMember(m => m ? { ...m, email: e.target.value } : m)} /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={editingMember.phone} onChange={(e) => setEditingMember(m => m ? { ...m, phone: e.target.value } : m)} /></div>
+              </div>
+            </div>
+          )}
+          <DialogFooter><Button variant="outline" onClick={() => setEditingMember(null)}>Cancel</Button><Button onClick={() => editingMember && updateMemberMutation.mutate(editingMember)}><Save className="w-3.5 h-3.5" />Save</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Schedule Tab ────────────────────────────────────────────────────
+
+function ScheduleTab() {
+  const { data: schedule = [], refetch: refetchSchedule } = useQuery<ScheduleItem[]>({ queryKey: ["/api/schedule"] });
+  const { data: team = [] } = useQuery<TeamMember[]>({ queryKey: ["/api/team-members"] });
+  const [showForm, setShowForm] = useState(false);
+  const [viewDate, setViewDate] = useState(today());
+  const [viewMode, setViewMode] = useState<"day" | "week">("day");
+  const [form, setForm] = useState({ title: "", description: "", date: today(), time: "09:00", duration: 30, assigneeId: "", priority: "medium", category: "general" });
+  const { toast } = useToast();
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => { const r = await apiRequest("POST", "/api/schedule", data); return r.json(); },
+    onSuccess: () => { refetchSchedule(); toast({ title: "Scheduled" }); setShowForm(false); setForm({ title: "", description: "", date: today(), time: "09:00", duration: 30, assigneeId: "", priority: "medium", category: "general" }); },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => { const r = await apiRequest("PATCH", `/api/schedule/${id}`, { status }); return r.json(); },
+    onSuccess: () => refetchSchedule(),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/schedule/${id}`); },
+    onSuccess: () => refetchSchedule(),
+  });
+
+  const [aiLoading, setAiLoading] = useState(false);
+  const handleAiRecommend = async () => {
+    setAiLoading(true);
+    try {
+      const r = await apiRequest("POST", "/api/ai-ops/recommend");
+      const data = await r.json();
+      if (data.recommendations?.length > 0) {
+        for (const rec of data.recommendations) {
+          const member = team.find(m => m.name.toLowerCase() === rec.assigneeName?.toLowerCase());
+          await apiRequest("POST", "/api/schedule", {
+            title: rec.title,
+            description: rec.description,
+            date: today(),
+            assigneeId: member?.id || "",
+            priority: rec.priority || "medium",
+            category: rec.category || "general",
+            isAiGenerated: true,
+          });
+        }
+        refetchSchedule();
+        toast({ title: `${data.recommendations.length} AI tasks added to today's schedule` });
+      }
+    } catch { toast({ title: "Failed to get AI recommendations", variant: "destructive" }); }
+    setAiLoading(false);
+  };
+
+  const getWeekDates = (d: string) => {
+    const date = new Date(d + "T12:00:00");
+    const day = date.getDay();
+    const start = new Date(date);
+    start.setDate(date.getDate() - day);
+    return Array.from({ length: 7 }, (_, i) => {
+      const dt = new Date(start);
+      dt.setDate(start.getDate() + i);
+      return dt.toISOString().split("T")[0];
+    });
+  };
+
+  const weekDates = getWeekDates(viewDate);
+  const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const CATEGORY_COLORS: Record<string, string> = { training: "bg-blue-400", outreach: "bg-orange-400", admin: "bg-gray-400", meeting: "bg-purple-400", "follow-up": "bg-cyan-400", development: "bg-pink-400", general: "bg-muted-foreground" };
+  const PRIORITY_COLORS: Record<string, string> = { high: "text-red-400", medium: "text-yellow-400", low: "text-muted-foreground" };
+
+  const filteredItems = viewMode === "day"
+    ? schedule.filter(s => s.date === viewDate)
+    : schedule.filter(s => weekDates.includes(s.date));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div><h2 className="text-lg font-bold flex items-center gap-2"><Clock className="w-5 h-5 text-primary" />Schedule</h2><p className="text-xs text-muted-foreground mt-1">Daily and weekly task schedule — visible to the whole team</p></div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="text-xs h-7" onClick={handleAiRecommend} disabled={aiLoading}>
+            <Sparkles className="w-3 h-3" />{aiLoading ? "Generating..." : "AI Recommend"}
+          </Button>
+          <Button size="sm" className="text-xs h-7" onClick={() => { setForm(f => ({ ...f, date: viewDate })); setShowForm(true); }}><Plus className="w-3 h-3" />Add Task</Button>
+        </div>
+      </div>
+
+      {/* Date nav */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1">
+          <Button variant={viewMode === "day" ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setViewMode("day")}>Day</Button>
+          <Button variant={viewMode === "week" ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setViewMode("week")}>Week</Button>
+        </div>
+        <Input type="date" value={viewDate} onChange={(e) => setViewDate(e.target.value)} className="w-auto h-7 text-xs" />
+        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setViewDate(today())}>Today</Button>
+      </div>
+
+      {/* Schedule items */}
+      {viewMode === "day" ? (
+        <div className="space-y-2">
+          {filteredItems.length === 0 ? (
+            <Card className="border-dashed border-border/50"><CardContent className="p-6 text-center"><p className="text-xs text-muted-foreground">No tasks scheduled for this day. Click "AI Recommend" to get suggestions or add tasks manually.</p></CardContent></Card>
+          ) : filteredItems.sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99")).map((item) => {
+            const member = team.find(m => m.id === item.assigneeId);
+            return (
+              <Card key={item.id} className={`overflow-visible border-border/50 ${item.status === "completed" ? "opacity-60" : ""}`}>
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 flex-1">
+                      <Checkbox checked={item.status === "completed"} onCheckedChange={(v) => toggleStatusMutation.mutate({ id: item.id, status: v ? "completed" : "pending" })} className="mt-0.5" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-xs font-semibold ${item.status === "completed" ? "line-through" : ""}`}>{item.title}</span>
+                          {item.isAiGenerated && <Sparkles className="w-3 h-3 text-primary" />}
+                          <span className={`w-1.5 h-1.5 rounded-full ${CATEGORY_COLORS[item.category] || "bg-muted"}`} />
+                          <span className={`text-[10px] ${PRIORITY_COLORS[item.priority] || ""}`}>{item.priority}</span>
+                        </div>
+                        {item.description && <p className="text-[10px] text-muted-foreground mt-0.5">{item.description}</p>}
+                        <div className="flex items-center gap-2 mt-1">
+                          {item.time && <span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{item.time}</span>}
+                          {member && <Badge variant="outline" className="text-[10px] h-4">{member.name}</Badge>}
+                          {!member && item.assigneeId && <Badge variant="outline" className="text-[10px] h-4">AI</Badge>}
+                        </div>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => deleteMutation.mutate(item.id)}><Trash2 className="w-3 h-3" /></Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="grid grid-cols-7 gap-2">
+          {weekDates.map((d, i) => {
+            const dayItems = schedule.filter(s => s.date === d);
+            const isToday = d === today();
+            return (
+              <div key={d} className={`rounded-lg border p-2 min-h-[120px] ${isToday ? "border-primary/50 bg-primary/5" : "border-border/30"}`}>
+                <p className={`text-[10px] font-semibold mb-1 ${isToday ? "text-primary" : "text-muted-foreground"}`}>{DAY_NAMES[i]} {d.slice(5)}</p>
+                <div className="space-y-1">{dayItems.map((item) => (
+                  <div key={item.id} className={`rounded px-1.5 py-0.5 text-[9px] cursor-pointer ${item.status === "completed" ? "line-through opacity-50" : ""} ${CATEGORY_COLORS[item.category]?.replace("bg-", "bg-") + "/10"}`} onClick={() => toggleStatusMutation.mutate({ id: item.id, status: item.status === "completed" ? "pending" : "completed" })}>
+                    {item.title.slice(0, 25)}{item.title.length > 25 ? "…" : ""}
+                  </div>
+                ))}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add Task Dialog */}
+      <Dialog open={showForm} onOpenChange={(o) => !o && setShowForm(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Add Schedule Item</DialogTitle><DialogDescription>Create a new task on the schedule</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5"><Label className="text-xs">Title *</Label><Input value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Complete CashSwipe Module 3" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Description</Label><Input value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Details..." /></div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Date</Label><Input type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Time</Label><Input type="time" value={form.time} onChange={(e) => setForm(f => ({ ...f, time: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Duration (min)</Label><Input type="number" value={form.duration} onChange={(e) => setForm(f => ({ ...f, duration: Number(e.target.value) }))} /></div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Assign To</Label>
+                <Select value={form.assigneeId || "unassigned"} onValueChange={(v) => setForm(f => ({ ...f, assigneeId: v === "unassigned" ? "" : v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {team.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                    <SelectItem value="ai">AI Assistant</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5"><Label className="text-xs">Priority</Label>
+                <Select value={form.priority} onValueChange={(v) => setForm(f => ({ ...f, priority: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="high">High</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5"><Label className="text-xs">Category</Label>
+                <Select value={form.category} onValueChange={(v) => setForm(f => ({ ...f, category: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="training">Training</SelectItem><SelectItem value="outreach">Outreach</SelectItem><SelectItem value="admin">Admin</SelectItem><SelectItem value="meeting">Meeting</SelectItem><SelectItem value="follow-up">Follow-Up</SelectItem><SelectItem value="development">Development</SelectItem><SelectItem value="general">General</SelectItem></SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button><Button onClick={() => createMutation.mutate(form)} disabled={!form.title}><Plus className="w-3.5 h-3.5" />Add</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── AI Ops Tab ──────────────────────────────────────────────────────
+
+function AiOpsTab() {
+  const { data: team = [] } = useQuery<TeamMember[]>({ queryKey: ["/api/team-members"] });
+  const { data: schedule = [], refetch: refetchSchedule } = useQuery<ScheduleItem[]>({ queryKey: ["/api/schedule"] });
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [recommendations, setRecommendations] = useState<AiRecommendation[]>([]);
+  const [recLoading, setRecLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
+    const newMsg = { role: "user" as const, content: input.trim() };
+    setMessages(prev => [...prev, newMsg]);
+    setInput("");
+    setLoading(true);
+    try {
+      const r = await apiRequest("POST", "/api/ai-ops/chat", { message: newMsg.content, history: messages });
+      const data = await r.json();
+      setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+    } catch { setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I couldn't process that. Please try again." }]); }
+    setLoading(false);
+  };
+
+  const handleGetRecommendations = async () => {
+    setRecLoading(true);
+    try {
+      const r = await apiRequest("POST", "/api/ai-ops/recommend");
+      const data = await r.json();
+      setRecommendations(data.recommendations || []);
+    } catch { toast({ title: "Failed to get recommendations", variant: "destructive" }); }
+    setRecLoading(false);
+  };
+
+  const handleAddToSchedule = async (rec: AiRecommendation) => {
+    const member = team.find(m => m.name.toLowerCase() === rec.assigneeName?.toLowerCase());
+    await apiRequest("POST", "/api/schedule", {
+      title: rec.title,
+      description: rec.description,
+      date: today(),
+      assigneeId: member?.id || "",
+      priority: rec.priority,
+      category: rec.category,
+      isAiGenerated: true,
+    });
+    refetchSchedule();
+    toast({ title: `Added "${rec.title}" to schedule` });
+    setRecommendations(prev => prev.filter(r => r.title !== rec.title));
+  };
+
+  const todayItems = schedule.filter(s => s.date === today());
+  const PRIORITY_ICON: Record<string, string> = { high: "text-red-400", medium: "text-yellow-400", low: "text-green-400" };
+
+  return (
+    <div className="space-y-4">
+      <div><h2 className="text-lg font-bold flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" />AI Operations Assistant</h2><p className="text-xs text-muted-foreground mt-1">Get AI-powered recommendations, reminders, and manage daily ops. Ask anything about your business.</p></div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Chat Panel */}
+        <Card className="overflow-visible border-border/50">
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4" />Chat with AI Ops</CardTitle></CardHeader>
+          <CardContent>
+            <div className="h-[350px] overflow-y-auto mb-3 space-y-2 p-2 rounded-md bg-muted/20 border border-border/30">
+              {messages.length === 0 && (
+                <div className="text-center py-8">
+                  <Sparkles className="w-8 h-8 text-primary/30 mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Ask me about daily tasks, reminders, business strategy, or anything else.</p>
+                  <div className="flex flex-wrap gap-1 mt-3 justify-center">
+                    {["What should the team focus on today?", "Give me a status update", "What tasks are overdue?", "Help me plan this week"].map(q => (
+                      <Button key={q} variant="outline" size="sm" className="text-[10px] h-6" onClick={() => { setInput(q); }}>{q}</Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {messages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] rounded-lg px-3 py-2 text-xs ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                    <pre className="whitespace-pre-wrap font-sans">{m.content}</pre>
+                  </div>
+                </div>
+              ))}
+              {loading && <div className="flex justify-start"><div className="bg-muted rounded-lg px-3 py-2 text-xs text-muted-foreground animate-pulse">Thinking...</div></div>}
+            </div>
+            <div className="flex gap-2">
+              <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask AI anything..." className="text-sm"
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} />
+              <Button size="sm" onClick={handleSend} disabled={!input.trim() || loading}><Send className="w-3.5 h-3.5" /></Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recommendations Panel */}
+        <div className="space-y-4">
+          <Card className="overflow-visible border-border/50">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4" />AI Recommendations</CardTitle>
+                <Button variant="outline" size="sm" className="text-xs h-7" onClick={handleGetRecommendations} disabled={recLoading}>
+                  <RefreshCw className={`w-3 h-3 ${recLoading ? "animate-spin" : ""}`} />{recLoading ? "Loading..." : "Generate"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {recommendations.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-4 text-center">Click "Generate" to get AI-powered task recommendations for today.</p>
+              ) : (
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {recommendations.map((rec, i) => (
+                    <div key={i} className="flex items-start justify-between gap-2 p-2 rounded-md bg-muted/20 border border-border/30">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[10px] font-bold ${PRIORITY_ICON[rec.priority] || ""}`}>{rec.priority?.toUpperCase()}</span>
+                          <span className="text-xs font-medium">{rec.title}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{rec.description}</p>
+                        <Badge variant="outline" className="text-[10px] h-4 mt-1">{rec.assigneeName}</Badge>
+                      </div>
+                      <Button variant="outline" size="sm" className="text-[10px] h-6 shrink-0" onClick={() => handleAddToSchedule(rec)}>
+                        <Plus className="w-2.5 h-2.5" />Add
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Today's Quick View */}
+          <Card className="overflow-visible border-border/50">
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Calendar className="w-4 h-4" />Today's Schedule ({todayItems.length})</CardTitle></CardHeader>
+            <CardContent>
+              {todayItems.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2">No tasks scheduled for today.</p>
+              ) : (
+                <div className="space-y-1 max-h-[200px] overflow-y-auto">
+                  {todayItems.map((item) => {
+                    const member = team.find(m => m.id === item.assigneeId);
+                    return (
+                      <div key={item.id} className={`flex items-center gap-2 p-1.5 rounded text-xs ${item.status === "completed" ? "opacity-50 line-through" : ""}`}>
+                        <Checkbox checked={item.status === "completed"} onCheckedChange={async (v) => { await apiRequest("PATCH", `/api/schedule/${item.id}`, { status: v ? "completed" : "pending" }); refetchSchedule(); }} />
+                        <span className="flex-1">{item.title}</span>
+                        {member && <span className="text-[10px] text-muted-foreground">{member.name}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
