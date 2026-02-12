@@ -145,38 +145,6 @@ function PortfolioSection() {
   );
 }
 
-function WebDesignShowcase() {
-  return (
-    <section className="py-20 relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              Case Study
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-6">Aloha Beauty Salon</h2>
-            <div className="space-y-6">
-              <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/10">
-                <div className="font-bold text-destructive mb-1 text-sm uppercase tracking-wider">Before</div>
-                <p className="text-sm text-muted-foreground">No online presence. Losing customers to competitors. Phone-only bookings.</p>
-              </div>
-              <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
-                <div className="font-bold text-primary mb-1 text-sm uppercase tracking-wider">After</div>
-                <p className="text-sm text-muted-foreground">Professional website with online booking. Resulted in 3x more bookings in the first month.</p>
-              </div>
-              <Button variant="outline" asChild>
-                <Link href="/contact">Get Your Free Mockup</Link>
-              </Button>
-            </div>
-          </div>
-          <div className="rounded-2xl overflow-hidden shadow-2xl">
-            <img src="/images/online-plans.jpeg" alt="Online processing plans - Basic $50/mo, Pro $199/mo, Premium $399/mo" className="w-full h-auto" />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 export default function OnlineProcessingPage() {
   const jsonLd = useMemo(() => ({
@@ -204,7 +172,6 @@ export default function OnlineProcessingPage() {
     <Layout>
       <OnlineHero />
       <PortfolioSection />
-      <WebDesignShowcase />
     </Layout>
   );
 }
