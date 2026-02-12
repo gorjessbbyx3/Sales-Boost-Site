@@ -7,6 +7,7 @@ import { db } from "./db";
 import { eq, desc, asc, getTableColumns } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
+import rateLimit from "express-rate-limit";
 
 /*
  * Anthropic integration - blueprint:javascript_anthropic
@@ -193,18 +194,44 @@ async function seedResourcesIfNeeded() {
     { title: "RPOWER — rPortal Reporting Brochure", description: "Cloud-based reporting portal — real-time sales data, labor costs, inventory tracking, and trend analysis.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1PieDCMCkzMXOJtTCudtEHiwYZwd2uwTh/view", thumbnailUrl: "", order: 17, featured: false, published: true, createdAt: now, updatedAt: now },
 
     // ─── CashSwipe Classroom Resources (Google Drive Folder 3) ─────
-    { title: "CashSwipe Classroom — Resource 1", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/40b17cdff7c34417a62aea3ef08ea6ee021e1d59aad946a39f84685644c112b8/view", thumbnailUrl: "", order: 1, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 2", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/43509cb0a8e74effb56b94de6c048ee83e886245aa6d4752b0a4a2f481e50ca2/view", thumbnailUrl: "", order: 2, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 3", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/44e4254753364137b4c56a284a47670da60001a8f5d747fdba69841d6b31fc45/view", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 4", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/6a5f297f7a18494fa7428e5989e0e0d4085cd388d7b9433db7a3eaa96eb1d2d1/view", thumbnailUrl: "", order: 4, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 5", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/7db3d32d7890487db2eb4543eaaa0af91c439c2f9ef54672bbccf8dc3a23b838/view", thumbnailUrl: "", order: 5, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 6", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/911a2f781ca04a089ac62a0ceb521cc5728491a7203a4d75865096504fd35748/view", thumbnailUrl: "", order: 6, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 7", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/9f49a9a3f06746ab8689c0621ee88fd00cbd9226f49a46cb87c8c8b1f55b6f5e/view", thumbnailUrl: "", order: 7, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 8", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/a4f414e1a8574a25a119d0cd6d473afc4a7144baa81246b881d9acfe053f48bd/view", thumbnailUrl: "", order: 8, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 9", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/af99b60d316a4478b82ac7dcf82e9e390afafa5a28674da8954c29cde7578b92/view", thumbnailUrl: "", order: 9, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 10", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/c7e5b4ad75174e7ba842475ec918f74af7fbdcdee49a433d8475faeb62ed3e39/view", thumbnailUrl: "", order: 10, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 11", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/f45b9938f72e43728d17e430fefbb10b34abc190639f44e0aaf87393b1e4c9e0/view", thumbnailUrl: "", order: 11, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Classroom — Resource 12", description: "Training resource from the CashSwipe Clients classroom. Open to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1RXWIWZQpVIUNfgu4clvn3M9T9XVkq1-r/view", thumbnailUrl: "", order: 12, featured: true, published: true, createdAt: now, updatedAt: now },
+    // 2 Presentations (named files)
+    { title: "5 Powerful Icebreakers to Start Conversations with Merchants", description: "PowerPoint presentation with proven icebreaker techniques for engaging merchants in sales conversations. Essential training for new reps.", category: "classroom", type: "doc", url: "https://drive.google.com/file/d/1RauUWaVTQf_7HqYKOMhv6zkDrlqPPlrg/view", thumbnailUrl: "", order: 1, featured: true, published: true, createdAt: now, updatedAt: now },
+    { title: "Understanding Your Merchant Statement", description: "PowerPoint guide to reading and analyzing merchant processing statements. Key skill for identifying savings opportunities during sales.", category: "classroom", type: "doc", url: "https://drive.google.com/file/d/1w7XMTJYzFiyDYksrzA7jamk_8GlpiYcE/view", thumbnailUrl: "", order: 2, featured: true, published: true, createdAt: now, updatedAt: now },
+    // 34 Training PDFs from CashSwipe classroom
+    { title: "CashSwipe Training — Module 1", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1Us7dWmw7CYhfMP1U2q27n0scmj0Av9Pm/view", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 2", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1BXTK7aTZCW9_fhOJu8KlaeVtR1IDvmUq/view", thumbnailUrl: "", order: 4, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 3", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1l3t7yW1_5oeit0aIZIjCskql3C94Yfa1/view", thumbnailUrl: "", order: 5, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 4", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1TOCLzJh0dg7c181kvo1qUU_okOu1ZfbZ/view", thumbnailUrl: "", order: 6, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 5", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1cGqO1QvA_vuATHvsCtJc6r_1fouwh7No/view", thumbnailUrl: "", order: 7, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 6", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/12-PUec5esxoFjXPsL8oypOe3OuwRWO6D/view", thumbnailUrl: "", order: 8, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 7", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1Rzj3ZETBB6MHCHFaFQ0AjcIHURosoyhS/view", thumbnailUrl: "", order: 9, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 8", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1fogX8lg-UuLfFrQzUR9QEouQVif6R5mQ/view", thumbnailUrl: "", order: 10, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 9", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/12A1fXMG8v9HQpI2r98rCHOmebrXbZRqa/view", thumbnailUrl: "", order: 11, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 10", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1DCNp6oxvbms0PE5PDoEHWLcHzw-IwkyF/view", thumbnailUrl: "", order: 12, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 11", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1q8QZC5LQ_3AieouFfvGmvqtFTk6_knGt/view", thumbnailUrl: "", order: 13, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 12", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1uVFKc4ClEk5tLwx74Xx0QIiqb-pgt-xj/view", thumbnailUrl: "", order: 14, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 13", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1rEiOFLa2HtRlqa8ndbBmPPBthhdmLs_w/view", thumbnailUrl: "", order: 15, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 14", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1ODZ93kA7ieOWRVX3GfQqM334lrx4olgX/view", thumbnailUrl: "", order: 16, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 15", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/14vTjgJb9sJnQbiMM4Tlk6WF4lj0Lc8sF/view", thumbnailUrl: "", order: 17, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 16", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1KcfNeHvEqFGX0pGW1aT9ZLCuHtCNGjN4/view", thumbnailUrl: "", order: 18, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 17", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1sxkGBGDxc7wMjHgMG4vF0H8eDalngZcX/view", thumbnailUrl: "", order: 19, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 18", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1RXWIWZQpVIUNfgu4clvn3M9T9XVkq1-r/view", thumbnailUrl: "", order: 20, featured: true, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 19", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1UFZ9ApuUcSJbNpq33jbNSSDwsmygWH_k/view", thumbnailUrl: "", order: 21, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 20", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1cYvt5iNHSRFpRa3AWurxHCD8WIsZ3-Av/view", thumbnailUrl: "", order: 22, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 21", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1JIKQLLnCPO2s6PYB3HpCaoCzjRqI9ty-/view", thumbnailUrl: "", order: 23, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 22", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/131x-bp7IkvAmn6-hxqz7W9ykNAIGajxa/view", thumbnailUrl: "", order: 24, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 23", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1gxUzlw3WdBRgh9x5rOS_bsJHXTVabbza/view", thumbnailUrl: "", order: 25, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 24", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1RPI5e7V-OLV4Sh8lGPDT0fGXUS-zXzdc/view", thumbnailUrl: "", order: 26, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 25", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1TMRzlQ8XQYTEkeSTGTsX0JCG1pmlyukv/view", thumbnailUrl: "", order: 27, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 26", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1q81ISq3PVU6O1CG1NiJvdSRGLL_bjnES/view", thumbnailUrl: "", order: 28, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 27", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1IfCuI7DdA57VXyJhQCRYZZuWyM9wyYXo/view", thumbnailUrl: "", order: 29, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 28", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1Y9ynOphu3AqU1oP2A_ET8uQ3ptqWjyAG/view", thumbnailUrl: "", order: 30, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 29", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1uJVDvzBno4PMfuDiHRLxhi37k1pc3Vob/view", thumbnailUrl: "", order: 31, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 30", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1rz3r6kW_qUMmliR0YVJeDSV5Mtv6i2cI/view", thumbnailUrl: "", order: 32, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 31", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1i_Z2X6cDgr4WB9lxVzMHYXjNguxGj0PH/view", thumbnailUrl: "", order: 33, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 32", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1BXgkwLkdL0_hCBUWLaF4OFRKoBQJIUT7/view", thumbnailUrl: "", order: 34, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 33", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1qcBAyga_1BD7JfgGuHY-TojajCbU61X_/view", thumbnailUrl: "", order: 35, featured: false, published: true, createdAt: now, updatedAt: now },
+    { title: "CashSwipe Training — Module 34", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1fS3MOxhZ61agT64OQUgCHe6bV7IPtm3Y/view", thumbnailUrl: "", order: 36, featured: false, published: true, createdAt: now, updatedAt: now },
   ];
   await db.insert(schema.resources).values(
     items.map((item) => ({ id: randomUUID(), ...item }))
@@ -217,6 +244,23 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ─── Rate Limiters ────────────────────────────────────────────
+  const chatLimiter = rateLimit({
+    windowMs: 60 * 1000,   // 1 minute
+    max: 10,               // 10 requests per minute per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please wait a moment." },
+  });
+
+  const publicLeadLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,                // 5 submissions per minute per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many submissions. Please try again shortly." },
+  });
 
   // ─── Admin Auth ─────────────────────────────────────────────────
 
@@ -268,7 +312,7 @@ export async function registerRoutes(
 
   // ─── Chat ───────────────────────────────────────────────────────
 
-  app.post("/api/chat", async (req, res) => {
+  app.post("/api/chat", chatLimiter, async (req, res) => {
     const config = await storage.getAiConfig();
 
     if (!config.enabled) {
@@ -381,7 +425,7 @@ export async function registerRoutes(
   });
 
   // Public lead creation from website contact form (no auth required)
-  app.post("/api/leads/public", async (req, res) => {
+  app.post("/api/leads/public", publicLeadLimiter, async (req, res) => {
     const id = randomUUID();
     const now = new Date().toISOString();
     const [lead] = await db.insert(schema.leads).values({
