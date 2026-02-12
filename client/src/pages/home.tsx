@@ -155,19 +155,6 @@ function HeroSection() {
         </motion.div>
 
         <motion.div
-          className="mt-8 sm:mt-14 max-w-4xl mx-auto rounded-xl overflow-hidden"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.7 }}
-        >
-          <img
-            src="/images/hero-hawaii-sunset.jpg"
-            alt="TechSavvy Hawaii — zero-fee payment processing and free custom websites for local businesses"
-            className="w-full h-auto rounded-xl shadow-lg"
-          />
-        </motion.div>
-
-        <motion.div
           className="mt-8 sm:mt-14 max-w-4xl mx-auto"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
