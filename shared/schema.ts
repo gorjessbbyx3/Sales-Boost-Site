@@ -18,6 +18,24 @@ export const aiConfig = pgTable("ai_config", {
   maxTokens: integer("max_tokens").notNull().default(1024),
 });
 
+export const contactLeads = pgTable("contact_leads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  businessName: text("business_name").notNull(),
+  contactName: text("contact_name").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email").notNull(),
+  plan: text("plan").notNull(),
+  highRisk: boolean("high_risk").notNull().default(false),
+  monthlyProcessing: text("monthly_processing").notNull(),
+  bestContactTime: text("best_contact_time").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertContactLeadSchema = createInsertSchema(contactLeads).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -34,3 +52,5 @@ export type User = typeof users.$inferSelect;
 export type AiConfig = typeof aiConfig.$inferSelect;
 export type InsertAiConfig = z.infer<typeof insertAiConfigSchema>;
 export type UpdateAiConfig = z.infer<typeof updateAiConfigSchema>;
+export type ContactLead = typeof contactLeads.$inferSelect;
+export type InsertContactLead = z.infer<typeof insertContactLeadSchema>;

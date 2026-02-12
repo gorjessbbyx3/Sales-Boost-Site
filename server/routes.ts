@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { updateAiConfigSchema } from "@shared/schema";
+import { updateAiConfigSchema, insertContactLeadSchema } from "@shared/schema";
 import Anthropic from "@anthropic-ai/sdk";
 
 /*
@@ -132,6 +132,20 @@ export async function registerRoutes(
       console.error("Anthropic API error:", err.message);
       res.status(500).json({ error: "Failed to get AI response. Please try again." });
     }
+  });
+
+  app.post("/api/contact-leads", async (req: Request, res: Response) => {
+    const parsed = insertContactLeadSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.message });
+    }
+    const lead = await storage.createContactLead(parsed.data);
+    res.status(201).json(lead);
+  });
+
+  app.get("/api/contact-leads", requireAdminSession, async (_req: Request, res: Response) => {
+    const leads = await storage.getContactLeads();
+    res.json(leads);
   });
 
   return httpServer;

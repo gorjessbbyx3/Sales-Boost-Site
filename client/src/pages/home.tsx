@@ -23,7 +23,7 @@ import {
   ShoppingCart,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
@@ -499,9 +499,69 @@ function TestimonialSection() {
   );
 }
 
-function CTASection() {
+function ContactFormSection() {
+  const [formData, setFormData] = useState({
+    businessName: "",
+    contactName: "",
+    phone: "",
+    email: "",
+    plan: "",
+    highRisk: false,
+    monthlyProcessing: "",
+    bestContactTime: "",
+  });
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/contact-leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to submit");
+      }
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const set = (field: string, value: string | boolean) =>
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
+  if (submitted) {
+    return (
+      <section className="py-12 sm:py-24 relative" data-testid="section-contact-form">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Card className="overflow-visible border-primary/20">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/10 to-transparent" />
+            <CardContent className="p-8 sm:p-12 text-center relative">
+              <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-4">
+                <Check className="w-7 h-7 text-primary" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 text-foreground">Thank You!</h2>
+              <p className="text-muted-foreground text-sm sm:text-base">
+                We've received your information and will be in touch soon. Mahalo for choosing TechSavvy!
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="py-12 sm:py-24 relative" data-testid="section-cta">
+    <section className="py-12 sm:py-24 relative" data-testid="section-contact-form">
       <div className="absolute inset-0 -z-10">
         <img
           src="/images/serving-hawaii.jpg"
@@ -511,57 +571,208 @@ function CTASection() {
         <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <div className="relative rounded-xl overflow-visible p-[1px]">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-emerald-300/30 to-primary/50" />
-            <div className="relative rounded-xl bg-gradient-to-b from-card via-card to-background p-6 sm:p-12 lg:p-16 text-center">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/10 to-transparent" />
-              <div className="relative">
-                <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mb-4 text-foreground">
-                  Processing Savings + Website ={" "}
-                  <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-                    More Profit
-                  </span>
-                </h2>
-                <p className="text-muted-foreground text-sm sm:text-lg mb-6 sm:mb-10 max-w-2xl mx-auto">
-                  Stop losing money to processing fees. Get your terminal starting at $399 — or go online-only with a free custom website.
-                </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <Button size="lg" className="w-full sm:w-auto" asChild>
-                    <Link href="/contact">
-                      Get Free Mockup + Savings Quote
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-                    <Link href="/contact">
-                      Have Questions? Let's Talk
-                    </Link>
-                  </Button>
+          <div className="text-center mb-8">
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+              <Sparkles className="w-3 h-3 mr-1.5" />
+              Get Started
+            </Badge>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+              Ready to{" "}
+              <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
+                Keep Every Dollar?
+              </span>
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
+              Fill out the form below and we'll get back to you with a personalized savings quote.
+            </p>
+          </div>
+
+          <Card className="overflow-visible border-primary/10">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
+            <CardContent className="p-5 sm:p-8 relative">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground" htmlFor="businessName">Business Name</label>
+                    <input
+                      id="businessName"
+                      type="text"
+                      required
+                      value={formData.businessName}
+                      onChange={(e) => set("businessName", e.target.value)}
+                      placeholder="Your Business Name"
+                      className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      data-testid="input-business-name"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground" htmlFor="contactName">Contact Name</label>
+                    <input
+                      id="contactName"
+                      type="text"
+                      required
+                      value={formData.contactName}
+                      onChange={(e) => set("contactName", e.target.value)}
+                      placeholder="Your Name"
+                      className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      data-testid="input-contact-name"
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mt-6 sm:mt-10 text-xs sm:text-sm text-muted-foreground">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground" htmlFor="phone">Phone</label>
+                    <input
+                      id="phone"
+                      type="tel"
+                      required
+                      value={formData.phone}
+                      onChange={(e) => set("phone", e.target.value)}
+                      placeholder="(808) 555-1234"
+                      className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      data-testid="input-phone"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground" htmlFor="email">Email</label>
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => set("email", e.target.value)}
+                      placeholder="you@business.com"
+                      className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      data-testid="input-email"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Select a Plan</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { value: "in-store", label: "In-Store Terminal", price: "$399", color: "primary" },
+                      { value: "trial", label: "30-Day Trial", price: "FREE", color: "chart-4" },
+                      { value: "online", label: "Online-Only", price: "FREE", color: "chart-2" },
+                    ].map((plan) => (
+                      <button
+                        key={plan.value}
+                        type="button"
+                        onClick={() => set("plan", plan.value)}
+                        className={`relative rounded-md border p-3 text-left transition-all ${
+                          formData.plan === plan.value
+                            ? `border-${plan.color} bg-${plan.color}/10 ring-1 ring-${plan.color}`
+                            : "border-border hover-elevate"
+                        }`}
+                        data-testid={`button-plan-${plan.value}`}
+                      >
+                        <div className="text-xs font-semibold text-foreground">{plan.label}</div>
+                        <div className={`text-sm font-extrabold text-${plan.color}`}>{plan.price}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {!formData.plan && (
+                    <input tabIndex={-1} required value={formData.plan} onChange={() => {}} className="opacity-0 h-0 w-0 absolute" />
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground" htmlFor="monthlyProcessing">Est. Monthly Processing</label>
+                    <select
+                      id="monthlyProcessing"
+                      required
+                      value={formData.monthlyProcessing}
+                      onChange={(e) => set("monthlyProcessing", e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      data-testid="select-monthly-processing"
+                    >
+                      <option value="">Select range</option>
+                      <option value="under-5k">Under $5,000</option>
+                      <option value="5k-10k">$5,000 - $10,000</option>
+                      <option value="10k-25k">$10,000 - $25,000</option>
+                      <option value="25k-50k">$25,000 - $50,000</option>
+                      <option value="50k-100k">$50,000 - $100,000</option>
+                      <option value="100k-plus">$100,000+</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground" htmlFor="bestContactTime">Best Time to Contact</label>
+                    <select
+                      id="bestContactTime"
+                      required
+                      value={formData.bestContactTime}
+                      onChange={(e) => set("bestContactTime", e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      data-testid="select-contact-time"
+                    >
+                      <option value="">Select time</option>
+                      <option value="morning">Morning (8am - 12pm)</option>
+                      <option value="afternoon">Afternoon (12pm - 4pm)</option>
+                      <option value="evening">Evening (4pm - 6pm)</option>
+                      <option value="anytime">Anytime</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-md border border-border bg-muted/30">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.highRisk}
+                    onClick={() => set("highRisk", !formData.highRisk)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors ${
+                      formData.highRisk ? "bg-primary" : "bg-muted-foreground/30"
+                    }`}
+                    data-testid="switch-high-risk"
+                  >
+                    <span className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-sm transition-transform mt-0.5 ${
+                      formData.highRisk ? "translate-x-4 ml-0.5" : "translate-x-0.5"
+                    }`} />
+                  </button>
+                  <div>
+                    <div className="text-sm font-medium text-foreground">High-Risk Merchant</div>
+                    <div className="text-xs text-muted-foreground">CBD, vape, firearms, gaming, nutraceuticals, etc.</div>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                    {error}
+                  </div>
+                )}
+
+                <Button type="submit" size="lg" className="w-full" disabled={submitting} data-testid="button-submit-contact">
+                  {submitting ? "Submitting..." : "Get Your Free Savings Quote"}
+                  {!submitting && <ArrowRight className="w-4 h-4" />}
+                </Button>
+
+                <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-primary" />
-                    <span>Same-Day Setup</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                    <span>No Obligation</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Palette className="w-3.5 h-3.5 text-primary" />
-                    <span>Free Website</span>
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    <span>Same-Day Response</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <DollarSign className="w-3.5 h-3.5 text-primary" />
                     <span>Zero Fees</span>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              </form>
+            </CardContent>
+          </Card>
         </motion.div>
       </div>
     </section>
@@ -576,7 +787,7 @@ export default function Home() {
       <ServicesOverview />
       <QuickPricingPreview />
       <TestimonialSection />
-      <CTASection />
+      <ContactFormSection />
     </Layout>
   );
 }

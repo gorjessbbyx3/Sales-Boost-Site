@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type AiConfig, type InsertAiConfig, type UpdateAiConfig } from "@shared/schema";
+import { type User, type InsertUser, type AiConfig, type InsertAiConfig, type UpdateAiConfig, type ContactLead, type InsertContactLead } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -7,6 +7,8 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAiConfig(): Promise<AiConfig>;
   updateAiConfig(config: UpdateAiConfig): Promise<AiConfig>;
+  createContactLead(lead: InsertContactLead): Promise<ContactLead>;
+  getContactLeads(): Promise<ContactLead[]>;
 }
 
 const DEFAULT_AI_CONFIG: AiConfig = {
@@ -21,10 +23,12 @@ const DEFAULT_AI_CONFIG: AiConfig = {
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private aiConfig: AiConfig;
+  private contactLeads: Map<string, ContactLead>;
 
   constructor() {
     this.users = new Map();
     this.aiConfig = { ...DEFAULT_AI_CONFIG };
+    this.contactLeads = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -51,6 +55,19 @@ export class MemStorage implements IStorage {
   async updateAiConfig(config: UpdateAiConfig): Promise<AiConfig> {
     this.aiConfig = { ...this.aiConfig, ...config };
     return this.aiConfig;
+  }
+
+  async createContactLead(lead: InsertContactLead): Promise<ContactLead> {
+    const id = randomUUID();
+    const contactLead: ContactLead = { ...lead, highRisk: lead.highRisk ?? false, id, createdAt: new Date() };
+    this.contactLeads.set(id, contactLead);
+    return contactLead;
+  }
+
+  async getContactLeads(): Promise<ContactLead[]> {
+    return Array.from(this.contactLeads.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 }
 
