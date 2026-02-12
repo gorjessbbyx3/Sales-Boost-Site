@@ -28,6 +28,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 type FAQCategory = "all" | "processing" | "pricing" | "setup" | "surcharge" | "websites" | "hawaii";
 
@@ -872,6 +873,13 @@ function ContactSection() {
 }
 
 export default function ContactPage() {
+  useSEO({
+    title: "Contact TechSavvy Hawaii | FAQ | AI Payment Processing & Web Design",
+    description: "Contact TechSavvy Hawaii for AI-powered payment processing and web design. Get answers to FAQs about zero-fee processing, AI terminals, free websites, and high-risk merchant accounts. Serving all Hawaiian Islands.",
+    keywords: "contact TechSavvy Hawaii, payment processing FAQ, AI merchant services contact, Honolulu payment processor phone, zero-fee processing questions, high-risk merchant account Hawaii contact",
+    canonical: "https://techsavvyhawaii.com/contact",
+  });
+
   return (
     <Layout>
       <FAQHero />

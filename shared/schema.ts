@@ -1,7 +1,9 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, integer, timestamp, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// ─── Auth / Config (existing) ────────────────────────────────────────
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -30,6 +32,210 @@ export const contactLeads = pgTable("contact_leads", {
   bestContactTime: text("best_contact_time").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// ─── Admin Dashboard Leads ───────────────────────────────────────────
+
+export const leads = pgTable("leads", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().default(""),
+  business: text("business").notNull().default(""),
+  address: text("address").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  email: text("email").notNull().default(""),
+  decisionMakerName: text("decision_maker_name").notNull().default(""),
+  decisionMakerRole: text("decision_maker_role").notNull().default(""),
+  bestContactMethod: text("best_contact_method").notNull().default("phone"),
+  package: text("package").notNull().default("terminal"),
+  status: text("status").notNull().default("new"),
+  source: text("source").notNull().default("direct"),
+  vertical: text("vertical").notNull().default("other"),
+  currentProcessor: text("current_processor").notNull().default(""),
+  currentEquipment: text("current_equipment").notNull().default(""),
+  monthlyVolume: text("monthly_volume").notNull().default(""),
+  painPoints: text("pain_points").notNull().default(""),
+  nextStep: text("next_step").notNull().default(""),
+  nextStepDate: text("next_step_date").notNull().default(""),
+  attachments: text("attachments").notNull().default("[]"),
+  notes: text("notes").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// ─── Clients ─────────────────────────────────────────────────────────
+
+export const clients = pgTable("clients", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().default(""),
+  business: text("business").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  email: text("email").notNull().default(""),
+  package: text("package").notNull().default("terminal"),
+  maintenance: text("maintenance").notNull().default("none"),
+  websiteUrl: text("website_url").notNull().default(""),
+  websiteStatus: text("website_status").notNull().default("not-started"),
+  terminalId: text("terminal_id").notNull().default(""),
+  monthlyVolume: real("monthly_volume").notNull().default(0),
+  startDate: text("start_date").notNull().default(""),
+  notes: text("notes").notNull().default(""),
+});
+
+// ─── Revenue ─────────────────────────────────────────────────────────
+
+export const revenueEntries = pgTable("revenue", {
+  id: text("id").primaryKey(),
+  date: text("date").notNull(),
+  type: text("type").notNull().default("other"),
+  description: text("description").notNull().default(""),
+  amount: real("amount").notNull().default(0),
+  clientId: text("client_id").notNull().default(""),
+  recurring: boolean("recurring").notNull().default(false),
+});
+
+// ─── Tasks ───────────────────────────────────────────────────────────
+
+export const tasks = pgTable("tasks", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull().default(""),
+  dueDate: text("due_date").notNull().default(""),
+  priority: text("priority").notNull().default("medium"),
+  completed: boolean("completed").notNull().default(false),
+  linkedTo: text("linked_to").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+});
+
+// ─── Admin Files ─────────────────────────────────────────────────────
+
+export const adminFiles = pgTable("admin_files", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().default("untitled"),
+  size: integer("size").notNull().default(0),
+  type: text("type").notNull().default("document"),
+  category: text("category").notNull().default("general"),
+  uploadedAt: text("uploaded_at").notNull(),
+  url: text("url").notNull().default(""),
+});
+
+// ─── Slack Config (singleton row) ────────────────────────────────────
+
+export const slackConfig = pgTable("slack_config", {
+  id: text("id").primaryKey().default("default"),
+  webhookUrl: text("webhook_url").notNull().default(""),
+  channel: text("channel").notNull().default("#general"),
+  enabled: boolean("enabled").notNull().default(false),
+  notifyNewLead: boolean("notify_new_lead").notNull().default(true),
+  notifyNewClient: boolean("notify_new_client").notNull().default(true),
+  notifyRevenue: boolean("notify_revenue").notNull().default(false),
+  notifyTaskDue: boolean("notify_task_due").notNull().default(true),
+});
+
+// ─── Integrations ────────────────────────────────────────────────────
+
+export const integrations = pgTable("integrations", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().default(""),
+  type: text("type").notNull().default("webhook"),
+  enabled: boolean("enabled").notNull().default(false),
+  config: text("config").notNull().default("{}"),
+  lastSync: text("last_sync").notNull().default(""),
+});
+
+// ─── Referral Partners ───────────────────────────────────────────────
+
+export const referralPartners = pgTable("referral_partners", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().default(""),
+  niche: text("niche").notNull().default(""),
+  clientTypes: text("client_types").notNull().default(""),
+  referralTerms: text("referral_terms").notNull().default(""),
+  introMethod: text("intro_method").notNull().default(""),
+  trackingNotes: text("tracking_notes").notNull().default(""),
+  lastCheckIn: text("last_check_in").notNull().default(""),
+  nextCheckIn: text("next_check_in").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+});
+
+// ─── Playbook Checks ────────────────────────────────────────────────
+
+export const playbookChecks = pgTable("playbook_checks", {
+  id: text("id").primaryKey(),
+  channel: text("channel").notNull().default(""),
+  label: text("label").notNull().default(""),
+  completed: boolean("completed").notNull().default(false),
+  completedAt: text("completed_at").notNull().default(""),
+});
+
+// ─── Weekly KPIs ─────────────────────────────────────────────────────
+
+export const weeklyKpis = pgTable("weekly_kpis", {
+  id: text("id").primaryKey(),
+  weekStart: text("week_start").notNull().default(""),
+  outboundCalls: integer("outbound_calls").notNull().default(0),
+  outboundEmails: integer("outbound_emails").notNull().default(0),
+  outboundDMs: integer("outbound_dms").notNull().default(0),
+  walkIns: integer("walk_ins").notNull().default(0),
+  contactsMade: integer("contacts_made").notNull().default(0),
+  appointmentsSet: integer("appointments_set").notNull().default(0),
+  statementsRequested: integer("statements_requested").notNull().default(0),
+  statementsReceived: integer("statements_received").notNull().default(0),
+  proposalsSent: integer("proposals_sent").notNull().default(0),
+  dealsWon: integer("deals_won").notNull().default(0),
+  volumeWon: real("volume_won").notNull().default(0),
+  notes: text("notes").notNull().default(""),
+});
+
+// ─── 90-Day Plan Items ──────────────────────────────────────────────
+
+export const planItems = pgTable("plan_items", {
+  id: text("id").primaryKey(),
+  phase: integer("phase").notNull().default(1),
+  weekRange: text("week_range").notNull().default("1-2"),
+  title: text("title").notNull().default(""),
+  description: text("description").notNull().default(""),
+  completed: boolean("completed").notNull().default(false),
+  completedAt: text("completed_at").notNull().default(""),
+  order: integer("sort_order").notNull().default(0),
+});
+
+// ─── Materials Checklist ─────────────────────────────────────────────
+
+export const materials = pgTable("materials", {
+  id: text("id").primaryKey(),
+  category: text("category").notNull().default("sales"),
+  name: text("name").notNull().default(""),
+  description: text("description").notNull().default(""),
+  status: text("status").notNull().default("not-started"),
+  fileUrl: text("file_url").notNull().default(""),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// ─── Resources ───────────────────────────────────────────────────────
+
+export const resources = pgTable("resources", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull().default(""),
+  description: text("description").notNull().default(""),
+  category: text("category").notNull().default("sales-materials"),
+  type: text("type").notNull().default("doc"),
+  url: text("url").notNull().default(""),
+  thumbnailUrl: text("thumbnail_url").notNull().default(""),
+  order: integer("sort_order").notNull().default(0),
+  featured: boolean("featured").notNull().default(false),
+  published: boolean("published").notNull().default(true),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// ─── Activity Log ────────────────────────────────────────────────────
+
+export const activityLog = pgTable("activity_log", {
+  id: text("id").primaryKey(),
+  action: text("action").notNull().default(""),
+  details: text("details").notNull().default(""),
+  timestamp: text("timestamp").notNull(),
+  type: text("type").notNull().default(""),
+});
+
+// ─── Zod Schemas & Types ─────────────────────────────────────────────
 
 export const insertContactLeadSchema = createInsertSchema(contactLeads).omit({
   id: true,

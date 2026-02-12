@@ -28,6 +28,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 import type { AiConfig } from "@shared/schema";
 
 interface ChatMessage {
@@ -624,6 +625,13 @@ function OnlinePresenceSection() {
 }
 
 export default function ConnectPage() {
+  useSEO({
+    title: "Connect With TechSavvy Hawaii | AI Chat, Schedule Call, Get Started",
+    description: "Connect with TechSavvy Hawaii's AI assistant, schedule a call, or start your free consultation. AI-powered payment processing and web design solutions for Hawaiian businesses.",
+    keywords: "connect TechSavvy Hawaii, AI chat business Hawaii, schedule consultation Honolulu, payment processing demo, AI assistant merchant services",
+    canonical: "https://techsavvyhawaii.com/connect",
+  });
+
   return (
     <Layout>
       <ConnectHero />

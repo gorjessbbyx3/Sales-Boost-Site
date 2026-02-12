@@ -18,6 +18,7 @@ import {
 import { useState } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
+import { useSEO } from "@/hooks/useSEO";
 import processingFeesImg from "@assets/IMG_6402_1770892555479.png";
 import { Link } from "wouter";
 
@@ -491,6 +492,14 @@ function PricingCTA() {
 }
 
 export default function PricingPage() {
+  useSEO({
+    title: "AI Payment Processing Pricing Hawaii | Zero-Fee Terminal Plans | TechSavvy",
+    description: "Compare AI-powered payment processing plans in Hawaii. $399 terminal with free website, 30-day free trial, or free online-only package. Zero monthly fees, zero processing fees. AI-optimized merchant services.",
+    keywords: "AI payment processing pricing Hawaii, zero-fee terminal cost Honolulu, payment processing plans Maui, AI merchant services pricing, smart POS system Hawaii price, free payment terminal trial",
+    canonical: "https://techsavvyhawaii.com/pricing",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
+  });
+
   return (
     <Layout>
       <PricingHero />

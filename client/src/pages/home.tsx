@@ -27,6 +27,7 @@ import { useEffect, useRef, useState } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -786,6 +787,14 @@ function ContactFormSection() {
 }
 
 export default function Home() {
+  useSEO({
+    title: "TechSavvy Hawaii | AI-Powered Zero-Fee Payment Processing & Web Design in Honolulu",
+    description: "Hawaii's #1 AI-powered payment processing company. Zero processing fees, zero monthly fees. Free AI-optimized custom websites for merchants. Serving Honolulu, Maui, Kona & all Hawaiian Islands with intelligent business solutions.",
+    keywords: "AI payment processing Hawaii, artificial intelligence merchant services Honolulu, zero-fee payment processing, AI web design Hawaii, smart POS system, AI chatbot business Hawaii, search engine optimization Hawaii, machine learning payment solutions, free website merchants Hawaii",
+    canonical: "https://techsavvyhawaii.com/",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
+  });
+
   return (
     <Layout>
       <HeroSection />
