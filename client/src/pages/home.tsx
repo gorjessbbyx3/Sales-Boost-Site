@@ -51,6 +51,9 @@ function HeroSection() {
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
       video.play().catch(() => {});
     }
   }, []);
@@ -95,13 +98,12 @@ function HeroSection() {
             variants={fadeUp}
             data-testid="text-hero-title"
           >
-            Hawai'i's #1{" "}
+            Accept Payments.{" "}
             <span className="relative inline-block">
               <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-                Zero-Fee
+                Keep Every Dollar.
               </span>
-            </span>{" "}
-            Payment Processor
+            </span>
           </motion.h1>
 
           <motion.p
@@ -109,10 +111,9 @@ function HeroSection() {
             variants={fadeUp}
             data-testid="text-hero-subtitle"
           >
-            Starting at $399 for a terminal — or try free for 30 days. No monthly fees. No processing fees.
-            Keep{" "}
-            <span className="text-primary font-semibold">100% of every sale</span>. Plus, get a{" "}
-            <span className="text-primary font-semibold">free custom website</span>.
+            Tap, swipe, or insert — your terminal is ready to go from day one.{" "}
+            <span className="text-primary font-semibold">Zero processing fees</span>, no monthly charges, and{" "}
+            <span className="text-primary font-semibold">100% of every sale</span> deposited next business day.
           </motion.p>
 
           <motion.div
