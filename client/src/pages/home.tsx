@@ -74,7 +74,24 @@ function HeroSection() {
           src="/videos/hero-bg.mp4"
           className="w-full h-auto block"
         />
+        <div className="absolute inset-0 bg-black/40" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+        <div className="absolute inset-0 flex items-center justify-center px-4">
+          <motion.h1
+            className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] text-center text-white drop-shadow-lg"
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            data-testid="text-hero-title"
+          >
+            Accept Payments.{" "}
+            <span className="relative inline-block">
+              <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
+                Keep Every Dollar.
+              </span>
+            </span>
+          </motion.h1>
+        </div>
       </div>
 
       <div className="py-10 sm:py-16">
@@ -95,19 +112,6 @@ function HeroSection() {
                 Save $3,600+ Per Year
               </Badge>
             </motion.div>
-
-            <motion.h1
-              className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-8"
-              variants={fadeUp}
-              data-testid="text-hero-title"
-            >
-              Accept Payments.{" "}
-              <span className="relative inline-block">
-                <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-                  Keep Every Dollar.
-                </span>
-              </span>
-            </motion.h1>
 
             <motion.p
               className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-10 max-w-2xl mx-auto"
