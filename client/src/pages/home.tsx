@@ -193,38 +193,7 @@ function SocialProofBar() {
     { icon: Award, value: "99.9%", label: "Uptime" },
   ];
 
-  return (
-    <section className="py-8 sm:py-16 relative" data-testid="section-social-proof">
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <motion.div
-          className="grid grid-cols-4 gap-3 sm:gap-8"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          {stats.map((stat) => (
-            <motion.div
-              key={stat.label}
-              className="text-center"
-              variants={fadeUp}
-            >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-2">
-                <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              </div>
-              <div className="text-lg sm:text-3xl font-extrabold text-foreground mb-0.5">
-                {stat.value}
-              </div>
-              <div className="text-[9px] sm:text-sm text-muted-foreground">
-                {stat.label}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
+  return null;
 }
 
 function ServicesOverview() {
