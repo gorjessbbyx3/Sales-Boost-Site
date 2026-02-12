@@ -584,9 +584,9 @@ function ContactFormSection() {
               Get Started
             </Badge>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Ready to{" "}
+              Eliminate{" "}
               <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-                Keep Every Dollar?
+                Processing Fees
               </span>
             </h2>
             <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
