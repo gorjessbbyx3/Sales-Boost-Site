@@ -3,23 +3,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import {
-  Code,
   Palette,
-  Monitor,
   Globe,
-  Smartphone,
   Zap,
-  ArrowRight,
-  Check,
   TrendingUp,
-  MapPin,
   ShoppingCart,
   Calendar,
   Image,
-  Sparkles,
-  Wrench,
   DollarSign,
-  Settings,
 } from "lucide-react";
 import { useMemo } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
@@ -88,58 +79,182 @@ function OnlineHero() {
   );
 }
 
-function PortfolioSection() {
+function PortfolioShowcase() {
   const portfolioItems = [
     {
       type: "Restaurant & Food",
       description: "Online menu, ordering, reservations & payments",
+      pages: "Home, Menu, Order Online, About, Contact",
       icon: ShoppingCart,
       color: "text-chart-3",
       bgColor: "bg-chart-3/15",
+      borderColor: "border-chart-3/20",
     },
     {
       type: "Salon & Beauty",
       description: "Appointment booking, gallery & service pricing",
+      pages: "Home, Services, Book Now, Gallery, Contact",
       icon: Calendar,
       color: "text-chart-4",
       bgColor: "bg-chart-4/15",
+      borderColor: "border-chart-4/20",
     },
     {
       type: "Retail & E-Commerce",
       description: "Product catalog, shopping cart & secure checkout",
+      pages: "Home, Shop, Cart, About, Contact",
       icon: ShoppingCart,
       color: "text-chart-2",
       bgColor: "bg-chart-2/15",
+      borderColor: "border-chart-2/20",
     },
     {
       type: "Services & Trades",
       description: "Quote requests, service areas & testimonials",
+      pages: "Home, Services, Get a Quote, Reviews, Contact",
       icon: Globe,
       color: "text-primary",
       bgColor: "bg-primary/15",
+      borderColor: "border-primary/20",
+    },
+    {
+      type: "Tourism & Activities",
+      description: "Tour booking, trip calendars & photo galleries",
+      pages: "Home, Tours, Book Now, Gallery, Contact",
+      icon: Image,
+      color: "text-chart-3",
+      bgColor: "bg-chart-3/15",
+      borderColor: "border-chart-3/20",
+    },
+    {
+      type: "CBD & Wellness",
+      description: "Age-gated storefront, lab results & compliance",
+      pages: "Home, Products, Lab Results, About, Contact",
+      icon: Zap,
+      color: "text-chart-2",
+      bgColor: "bg-chart-2/15",
+      borderColor: "border-chart-2/20",
     },
   ];
 
   return (
-    <section className="py-20 bg-muted/30">
+    <section className="py-12 sm:py-24 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Websites for Every Industry</h2>
-          <p className="text-muted-foreground text-lg">Online-only merchants get a free custom website built for their business.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {portfolioItems.map((item, i) => (
-            <Card key={i} className="hover-elevate">
-              <CardContent className="p-6">
-                <div className={`w-12 h-12 rounded-lg ${item.bgColor} flex items-center justify-center mb-4`}>
-                  <item.icon className={`w-6 h-6 ${item.color}`} />
-                </div>
-                <h3 className="font-bold mb-2">{item.type}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+        >
+          <motion.div className="text-center mb-8 sm:mb-14" variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-chart-4 border-chart-4/30 bg-chart-4/5">
+              <Palette className="w-3 h-3 mr-1.5" />
+              Free Custom Websites
+            </Badge>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+              Websites We Build for Every Industry
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-lg">
+              Online-only processing merchants get a free custom website — here's what yours could look like.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5 max-w-5xl mx-auto"
+            variants={staggerContainer}
+          >
+            {portfolioItems.map((item) => (
+              <motion.div key={item.type} variants={scaleIn}>
+                <Card className={`h-full overflow-visible ${item.borderColor}`}>
+                  <CardContent className="p-4 sm:p-5">
+                    <div className={`w-full h-20 sm:h-28 rounded-md ${item.bgColor} flex items-center justify-center mb-3`}>
+                      <item.icon className={`w-8 h-8 sm:w-10 sm:h-10 ${item.color} opacity-60`} />
+                    </div>
+                    <h4 className={`font-semibold text-sm sm:text-base ${item.color} mb-1`}>
+                      {item.type}
+                    </h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function WebsiteUpkeepOverview() {
+  return (
+    <section className="py-12 sm:py-24 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+        >
+          <motion.div className="text-center mb-8 sm:mb-14" variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-chart-4 border-chart-4/30 bg-chart-4/5">
+              <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
+              After the Build
+            </Badge>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+              Website Upkeep — Your Choice
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg">
+              The website is 100% free to get started. After that, upkeep is 100% your choice.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
+            <motion.div variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-2/20">
+                <CardContent className="p-5 sm:p-6 text-center">
+                  <div className="w-10 h-10 rounded-md bg-chart-2/15 flex items-center justify-center mx-auto mb-3">
+                    <Zap className="w-5 h-5 text-chart-2" />
+                  </div>
+                  <h3 className="font-bold text-chart-2 mb-1">Manage It Yourself</h3>
+                  <div className="text-2xl font-extrabold text-chart-2 mb-2">FREE</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Take full ownership — host and maintain the site yourself
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div variants={scaleIn}>
+              <Card className="h-full overflow-visible border-chart-3/20">
+                <CardContent className="p-5 sm:p-6 text-center">
+                  <div className="w-10 h-10 rounded-md bg-chart-3/15 flex items-center justify-center mx-auto mb-3">
+                    <DollarSign className="w-5 h-5 text-chart-3" />
+                  </div>
+                  <h3 className="font-bold text-chart-3 mb-1">One-Off Updates</h3>
+                  <div className="text-2xl font-extrabold text-chart-3 mb-2">From $40</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Pay only when you need changes — prices, photos, new pages
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div variants={scaleIn}>
+              <Card className="h-full overflow-visible border-primary/20">
+                <CardContent className="p-5 sm:p-6 text-center">
+                  <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center mx-auto mb-3">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-primary mb-1">Maintenance Plans</h3>
+                  <div className="text-2xl font-extrabold text-primary mb-2">$50–$399/mo</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Hands-off — we handle hosting, security, SEO & updates
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -171,7 +286,8 @@ export default function OnlineProcessingPage() {
   return (
     <Layout>
       <OnlineHero />
-      <PortfolioSection />
+      <PortfolioShowcase />
+      <WebsiteUpkeepOverview />
     </Layout>
   );
 }
