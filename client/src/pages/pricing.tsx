@@ -18,6 +18,7 @@ import {
 import { useState } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
+import processingFeesImg from "@assets/IMG_6402_1770892555479.png";
 import { Link } from "wouter";
 
 function PricingHero() {
@@ -446,7 +447,7 @@ function SavingsCalculator() {
 function PricingCTA() {
   return (
     <section className="py-12 sm:py-24 relative">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -454,19 +455,33 @@ function PricingCTA() {
         >
           <Card className="overflow-visible border-primary/20">
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 via-emerald-300/5 to-primary/5" />
-            <CardContent className="p-8 relative text-center">
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
-                Ready to Stop Losing Money?
-              </h2>
-              <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-                Get a free savings analysis and personalized website mockup — no commitment required.
-              </p>
-              <Button size="lg" asChild>
-                <Link href="/contact">
-                  Get Free Mockup + Savings Quote
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </Button>
+            <CardContent className="p-0 relative">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="relative overflow-hidden rounded-t-xl md:rounded-l-xl md:rounded-tr-none">
+                  <img
+                    src={processingFeesImg}
+                    alt="Business owner frustrated by processing fees"
+                    className="w-full h-full object-cover min-h-[200px] md:min-h-full"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent md:bg-gradient-to-r md:from-transparent md:to-black/20" />
+                </div>
+                <div className="p-6 sm:p-8 flex flex-col justify-center text-center md:text-left">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
+                    Don't Let Fees Eat Your Profits
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    The average business loses thousands each year to processing fees. Get a free savings analysis — see exactly how much you'd keep with zero-fee processing.
+                  </p>
+                  <div>
+                    <Button size="lg" asChild>
+                      <Link href="/contact">
+                        Get Your Free Savings Analysis
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
