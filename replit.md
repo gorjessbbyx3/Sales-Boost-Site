@@ -69,6 +69,7 @@ script/           → Build scripts
 - **/online-processing** — Online payment gateway, website portfolio by industry, case study
 - **/high-risk** — High-risk merchant solutions (industries served, why choose us)
 - **/contact** — Schedule a Call form with phone/email sidebar
+- **/connect** — Connect with TechSavvy page: embedded AI chat, schedule a call form, online presence services showcase
 - **/how-it-works** — Dedicated How It Works detail page (also integrated into home)
 - **/our-work** — Web design portfolio detail page
 - **/ai-config** — Admin AI chatbot configuration

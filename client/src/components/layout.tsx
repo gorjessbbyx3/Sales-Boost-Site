@@ -67,8 +67,8 @@ function Navbar() {
 
           <div className="hidden md:flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/contact" data-testid="link-nav-contact">
-                Contact Us
+              <Link href="/connect" data-testid="link-nav-connect">
+                Connect
               </Link>
             </Button>
             <Button size="sm" asChild>
@@ -107,8 +107,13 @@ function Navbar() {
             </Link>
           ))}
           <div className="mt-3 flex flex-col gap-2">
+            <Button variant="outline" size="sm" asChild className="w-full">
+              <Link href="/connect" data-testid="link-mobile-connect" onClick={() => setMobileOpen(false)}>
+                Connect With Us
+              </Link>
+            </Button>
             <Button size="sm" asChild className="w-full">
-              <Link href="/contact" data-testid="link-mobile-get-terminal">
+              <Link href="/contact" data-testid="link-mobile-get-terminal" onClick={() => setMobileOpen(false)}>
                 Get Your Terminal
               </Link>
             </Button>
@@ -206,6 +211,11 @@ function Footer() {
               <li>
                 <Link href="/contact" className="transition-colors hover:text-white" data-testid="link-footer-contact">
                   Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link href="/connect" className="transition-colors hover:text-white" data-testid="link-footer-connect">
+                  Connect With Us
                 </Link>
               </li>
               <li>
