@@ -11,12 +11,15 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Bot, Save, Zap, Settings, MessageSquare, Lock, LogOut,
   LayoutDashboard, Users, DollarSign, ClipboardList, Phone, Mail,
   Plus, Trash2, Edit3, Check, TrendingUp, CreditCard, Globe,
-  AlertTriangle, Calendar, Search, Filter,
+  AlertTriangle, Calendar, Search, Filter, Copy, MapPin, Paperclip, Target, BookOpen,
   UserPlus, Building, CheckCircle,
   BarChart3, ArrowUpRight, ArrowDownRight,
   Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash,
@@ -36,20 +39,103 @@ interface Lead {
   id: string;
   name: string;
   business: string;
+  address: string;
   phone: string;
   email: string;
+  decisionMakerName: string;
+  decisionMakerRole: string;
+  bestContactMethod: string;
   package: PackageType;
   status: PipelineStage;
   source: LeadSource;
   vertical: Vertical;
   currentProcessor: string;
+  currentEquipment: string;
   monthlyVolume: string;
   painPoints: string;
   nextStep: string;
   nextStepDate: string;
+  attachments: Array<{ name: string; url: string }>;
   notes: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface ReferralPartner {
+  id: string;
+  name: string;
+  niche: string;
+  clientTypes: string;
+  referralTerms: string;
+  introMethod: string;
+  trackingNotes: string;
+  lastCheckIn: string;
+  nextCheckIn: string;
+  createdAt: string;
+}
+
+interface PlaybookCheckItem {
+  id: string;
+  channel: string;
+  label: string;
+  completed: boolean;
+  completedAt: string;
+}
+
+interface WeeklyKPI {
+  id: string;
+  weekStart: string;
+  outboundCalls: number;
+  outboundEmails: number;
+  outboundDMs: number;
+  walkIns: number;
+  contactsMade: number;
+  appointmentsSet: number;
+  statementsRequested: number;
+  statementsReceived: number;
+  proposalsSent: number;
+  dealsWon: number;
+  volumeWon: number;
+  notes: string;
+}
+
+interface PlanItem {
+  id: string;
+  phase: number;
+  weekRange: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  completedAt: string;
+  order: number;
+}
+
+interface MaterialItem {
+  id: string;
+  category: string;
+  name: string;
+  description: string;
+  status: string;
+  fileUrl: string;
+  updatedAt: string;
+}
+
+interface ChannelScore {
+  source: string;
+  total: number;
+  contacted: number;
+  contactRate: number;
+  qualified: number;
+  appointmentRate: number;
+  stmtRequested: number;
+  stmtReceived: number;
+  stmtReceivedRate: number;
+  proposalSent: number;
+  won: number;
+  lost: number;
+  closeRate: number;
+  avgTimeToClose: number;
+  avgVolumeWon: number;
 }
 
 interface Client {
@@ -189,9 +275,46 @@ const MODELS = [
   { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (Fast)" },
 ];
 
+const CONTACT_METHODS: Record<string, string> = {
+  phone: "Phone Call", email: "Email", text: "Text/SMS", "in-person": "In-Person",
+};
+
 const ACTIVITY_COLORS: Record<string, string> = {
   lead: "bg-blue-400", client: "bg-emerald-400", revenue: "bg-purple-400",
   task: "bg-yellow-400", file: "bg-orange-400", integration: "bg-pink-400", auth: "bg-gray-400",
+};
+
+const MATERIAL_CATEGORIES: Record<string, { label: string; icon: string }> = {
+  sales: { label: "Sales & Outreach Assets", icon: "S" },
+  "lead-gen": { label: "Lead Generation Assets", icon: "L" },
+  partner: { label: "Partner Program Assets", icon: "P" },
+  tracking: { label: "Tracking & Ops Assets", icon: "T" },
+};
+
+const PLAYBOOK_SCRIPTS = {
+  referral: {
+    outreach: `I work with local businesses to lower processing costs and upgrade payment reliability. You already advise businesses on operations/financials — if you have clients complaining about fees or equipment, I can do a no-obligation statement review. If it helps, I'll pay a referral fee and track everything cleanly.`,
+  },
+  networking: {
+    elevator: `I help local businesses stop bleeding money on hidden processing fees and outdated equipment. If you bring me a recent statement, I'll highlight what's actually being charged and what could be improved — no obligation.`,
+  },
+  social: {
+    dm: `Appreciate you checking that post. If you want, I can do a quick statement check and tell you where the extra fees usually hide. It's a simple yes/no: either it's already solid, or there's money on the table.`,
+  },
+  direct: {
+    coldCall: `Hi — I'm local and I help businesses reduce processing costs and fix the usual problems like hidden fees or outdated terminals. I'm not calling to sell you on the spot — I'm offering a no-obligation statement review. If you've got last month's statement, I'll show you exactly what you're paying and what can be improved.`,
+    walkIn: `Hey, I'm in the area helping businesses compare statements — processing fees are all over the place right now. Who handles your merchant account? I can do a quick statement check and show you what's normal vs. what's inflated.`,
+    email: `Subject: Quick question about your payment setup
+
+Hi {Name} — I stopped by / noticed {specific observation}. I work with local {vertical} businesses to reduce processing fees and modernize checkout without disruption.
+
+If you send a recent statement, I'll mark up what you're paying (including the sneaky line items) and give you a clear comparison — no obligation.
+
+Best contact for a 10-minute review?`,
+  },
+  leadMagnet: {
+    followUp24hr: `Hey {Name} — saw you grabbed the {Lead Magnet}. If you want, send a recent statement and I'll point out exactly where fees tend to stack up for {their vertical}. No pressure — you'll just know what's real.`,
+  },
 };
 
 // ─── Login ───────────────────────────────────────────────────────────
@@ -267,6 +390,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const tabs = [
     { value: "overview", icon: BarChart3, label: "Dashboard" },
     { value: "leads", icon: UserPlus, label: "Leads" },
+    { value: "playbooks", icon: BookOpen, label: "Playbooks" },
+    { value: "scorecard", icon: Target, label: "Scorecard" },
+    { value: "plan", icon: Calendar, label: "90-Day Plan" },
+    { value: "materials", icon: ClipboardList, label: "Materials" },
     { value: "clients", icon: Users, label: "Clients" },
     { value: "revenue", icon: DollarSign, label: "Revenue" },
     { value: "tasks", icon: ClipboardList, label: "Tasks" },
@@ -310,8 +437,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsContent value="overview"><OverviewTab /></TabsContent>
+          <TabsContent value="overview"><OverviewTab setActiveTab={setActiveTab} /></TabsContent>
           <TabsContent value="leads"><LeadsTab /></TabsContent>
+          <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>
+          <TabsContent value="scorecard"><ScorecardTab /></TabsContent>
+          <TabsContent value="plan"><PlanTab /></TabsContent>
+          <TabsContent value="materials"><MaterialsTab /></TabsContent>
           <TabsContent value="clients"><ClientsTab /></TabsContent>
           <TabsContent value="revenue"><RevenueTab /></TabsContent>
           <TabsContent value="tasks"><TasksTab /></TabsContent>
@@ -344,7 +475,7 @@ function MetricCard({ icon: Icon, label, value, subtext, color, bgColor }: {
   );
 }
 
-function OverviewTab() {
+function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
   const { data: leads = [] } = useQuery<Lead[]>({ queryKey: ["/api/leads"] });
   const { data: clients = [] } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
   const { data: revenueEntries = [] } = useQuery<RevenueEntry[]>({ queryKey: ["/api/revenue"] });
@@ -352,6 +483,8 @@ function OverviewTab() {
   const { data: activityData = [] } = useQuery<ActivityEntry[]>({ queryKey: ["/api/activity"] });
   const { data: slackCfg } = useQuery<SlackConfig>({ queryKey: ["/api/integrations/slack"] });
   const { data: filesData = [] } = useQuery<AdminFile[]>({ queryKey: ["/api/files"] });
+  const { data: planData = [] } = useQuery<PlanItem[]>({ queryKey: ["/api/plan-items"] });
+  const { data: materialsData = [] } = useQuery<MaterialItem[]>({ queryKey: ["/api/materials"] });
 
   const activeLeads = leads.filter((l) => !["won", "lost", "nurture"].includes(l.status));
   const wonThisMonth = leads.filter((l) => { const d = new Date(l.updatedAt); const n = new Date(); return l.status === "won" && d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); });
@@ -406,9 +539,40 @@ function OverviewTab() {
         </Card>
       )}
 
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("leads")}><Plus className="w-3.5 h-3.5 mr-1.5" />Add New Lead</Button>
+        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("playbooks")}><BookOpen className="w-3.5 h-3.5 mr-1.5" />Open Playbooks</Button>
+        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("scorecard")}><Target className="w-3.5 h-3.5 mr-1.5" />View Scorecard</Button>
+        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("plan")}><Calendar className="w-3.5 h-3.5 mr-1.5" />90-Day Plan</Button>
+      </div>
+
+      {/* Plan + Materials Progress */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("plan")}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2"><Calendar className="w-4 h-4 text-blue-400" /><span className="text-xs font-semibold">90-Day Plan Progress</span></div>
+            <Progress value={planData.length > 0 ? (planData.filter(p => p.completed).length / planData.length) * 100 : 0} className="h-2 mb-1.5" />
+            <p className="text-[10px] text-muted-foreground">{planData.filter(p => p.completed).length} / {planData.length} tasks completed</p>
+          </CardContent>
+        </Card>
+        <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("materials")}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2"><ClipboardList className="w-4 h-4 text-emerald-400" /><span className="text-xs font-semibold">Materials Checklist</span></div>
+            <Progress value={materialsData.length > 0 ? (materialsData.filter(m => m.status === "completed").length / materialsData.length) * 100 : 0} className="h-2 mb-1.5" />
+            <p className="text-[10px] text-muted-foreground">{materialsData.filter(m => m.status === "completed").length} / {materialsData.length} assets ready</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Channel Scorecard */}
       <Card className="overflow-visible border-border/50">
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Channel Scorecard</CardTitle></CardHeader>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Channel Scorecard</CardTitle>
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("scorecard")}>Full Scorecard <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+          </div>
+        </CardHeader>
         <CardContent className="pt-0">
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {(Object.keys(SOURCE_CONFIG) as LeadSource[]).map((src) => {
@@ -575,13 +739,17 @@ function LeadsTab() {
                     <Badge variant="outline" className={`text-[10px] ${SOURCE_CONFIG[lead.source]?.color || ""}`}>{SOURCE_CONFIG[lead.source]?.label || lead.source}</Badge>
                     <Badge variant="outline" className={`text-[10px] ${PACKAGE_CONFIG[lead.package].color}`}>{PACKAGE_CONFIG[lead.package].label}</Badge>
                   </div>
-                  {lead.business && lead.name && <p className="text-xs text-muted-foreground">{lead.name}</p>}
+                  {lead.business && lead.name && <p className="text-xs text-muted-foreground">{lead.name}{lead.decisionMakerName ? ` — DM: ${lead.decisionMakerName}${lead.decisionMakerRole ? ` (${lead.decisionMakerRole})` : ""}` : ""}</p>}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
                     {lead.phone && <a href={`tel:${lead.phone}`} className="flex items-center gap-1 hover:text-foreground"><Phone className="w-3 h-3" />{lead.phone}</a>}
                     {lead.email && <a href={`mailto:${lead.email}`} className="flex items-center gap-1 hover:text-foreground"><Mail className="w-3 h-3" />{lead.email}</a>}
+                    {lead.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{lead.address}</span>}
                     {lead.vertical && <span className="text-[10px]">{VERTICAL_CONFIG[lead.vertical] || lead.vertical}</span>}
                     {lead.currentProcessor && <span className="text-[10px]">Processor: {lead.currentProcessor}</span>}
+                    {lead.currentEquipment && <span className="text-[10px]">POS: {lead.currentEquipment}</span>}
                     {lead.monthlyVolume && <span className="text-[10px]">Vol: {lead.monthlyVolume}</span>}
+                    {lead.bestContactMethod && lead.bestContactMethod !== "phone" && <Badge variant="outline" className="text-[9px]">{CONTACT_METHODS[lead.bestContactMethod] || lead.bestContactMethod}</Badge>}
+                    {lead.attachments?.length > 0 && <span className="flex items-center gap-1 text-[10px]"><Paperclip className="w-3 h-3" />{lead.attachments.length} file{lead.attachments.length > 1 ? "s" : ""}</span>}
                     <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(lead.createdAt).toLocaleDateString()}</span>
                   </div>
                   {lead.nextStep && <p className="text-xs text-primary mt-1.5">Next: {lead.nextStep}{lead.nextStepDate ? ` (${lead.nextStepDate})` : ""}</p>}
@@ -614,9 +782,10 @@ function LeadsTab() {
 function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClose: () => void; onSave: (form: Partial<Lead>) => void; lead: Lead | null; }) {
   const [form, setForm] = useState<Partial<Lead>>({});
   useEffect(() => {
-    if (open) setForm(lead || { name: "", business: "", phone: "", email: "", package: "terminal", status: "new", source: "direct", vertical: "other", currentProcessor: "", monthlyVolume: "", painPoints: "", nextStep: "", nextStepDate: "", notes: "" });
+    if (open) setForm(lead || { name: "", business: "", address: "", phone: "", email: "", decisionMakerName: "", decisionMakerRole: "", bestContactMethod: "phone", package: "terminal", status: "new", source: "direct", vertical: "other", currentProcessor: "", currentEquipment: "", monthlyVolume: "", painPoints: "", nextStep: "", nextStepDate: "", attachments: [], notes: "" });
   }, [open, lead]);
-  const set = (key: keyof Lead, value: string) => setForm((p) => ({ ...p, [key]: value }));
+  const set = (key: keyof Lead, value: any) => setForm((p) => ({ ...p, [key]: value }));
+  const attachments = (form.attachments || []) as Array<{ name: string; url: string }>;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -627,9 +796,18 @@ function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClos
             <div className="space-y-1.5"><Label className="text-xs">Contact Name *</Label><Input value={form.name || ""} onChange={(e) => set("name", e.target.value)} placeholder="John Doe" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Business Name *</Label><Input value={form.business || ""} onChange={(e) => set("business", e.target.value)} placeholder="Aloha Cafe" /></div>
           </div>
+          <div className="space-y-1.5"><Label className="text-xs">Business Address</Label><Input value={form.address || ""} onChange={(e) => set("address", e.target.value)} placeholder="123 Main St, City, State" /></div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} placeholder="808-555-1234" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={form.email || ""} onChange={(e) => set("email", e.target.value)} placeholder="john@aloha.com" /></div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5"><Label className="text-xs">Decision Maker</Label><Input value={form.decisionMakerName || ""} onChange={(e) => set("decisionMakerName", e.target.value)} placeholder="Owner name" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Role</Label><Input value={form.decisionMakerRole || ""} onChange={(e) => set("decisionMakerRole", e.target.value)} placeholder="Owner, Manager..." /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Best Contact</Label>
+              <Select value={form.bestContactMethod || "phone"} onValueChange={(v) => set("bestContactMethod", v)}><SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{Object.entries(CONTACT_METHODS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent></Select>
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">Lead Source</Label>
@@ -653,18 +831,601 @@ function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClos
             <div className="space-y-1.5"><Label className="text-xs">Current Processor</Label><Input value={form.currentProcessor || ""} onChange={(e) => set("currentProcessor", e.target.value)} placeholder="Square, Clover, etc." /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label className="text-xs">Current Equipment/POS</Label><Input value={form.currentEquipment || ""} onChange={(e) => set("currentEquipment", e.target.value)} placeholder="Clover Mini, Verifone..." /></div>
             <div className="space-y-1.5"><Label className="text-xs">Est. Monthly Volume</Label><Input value={form.monthlyVolume || ""} onChange={(e) => set("monthlyVolume", e.target.value)} placeholder="$5K-$10K" /></div>
-            <div className="space-y-1.5"><Label className="text-xs">Pain Points</Label><Input value={form.painPoints || ""} onChange={(e) => set("painPoints", e.target.value)} placeholder="High fees, old terminal..." /></div>
           </div>
+          <div className="space-y-1.5"><Label className="text-xs">Pain Points</Label><Input value={form.painPoints || ""} onChange={(e) => set("painPoints", e.target.value)} placeholder="High fees, old terminal, chargebacks, funding delays..." /></div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">Next Step</Label><Input value={form.nextStep || ""} onChange={(e) => set("nextStep", e.target.value)} placeholder="Statement review call" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Next Step Date</Label><Input type="date" value={form.nextStepDate || ""} onChange={(e) => set("nextStepDate", e.target.value)} /></div>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between"><Label className="text-xs">Attachments</Label>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => set("attachments", [...attachments, { name: "", url: "" }])}><Plus className="w-3 h-3" />Add</Button>
+            </div>
+            {attachments.map((att, i) => (
+              <div key={i} className="flex gap-2 items-center">
+                <Input className="flex-1 h-8 text-xs" value={att.name} onChange={(e) => { const a = [...attachments]; a[i] = { ...a[i], name: e.target.value }; set("attachments", a); }} placeholder="Statement PDF" />
+                <Input className="flex-1 h-8 text-xs" value={att.url} onChange={(e) => { const a = [...attachments]; a[i] = { ...a[i], url: e.target.value }; set("attachments", a); }} placeholder="https://drive.google.com/..." />
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => set("attachments", attachments.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
+              </div>
+            ))}
           </div>
           <div className="space-y-1.5"><Label className="text-xs">Notes</Label><Textarea value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} rows={3} className="resize-none text-sm" placeholder="Details, observations..." /></div>
         </div>
         <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => onSave(form)} disabled={!form.name && !form.business}><Save className="w-3.5 h-3.5" />{lead ? "Update" : "Add Lead"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Reusable Script Card ────────────────────────────────────────────
+
+function ScriptCard({ title, content }: { title: string; content: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => { navigator.clipboard.writeText(content); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+  return (
+    <Card className="overflow-visible border-border/50">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold">{title}</span>
+          <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={handleCopy}>
+            {copied ? <><Check className="w-3 h-3" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
+          </Button>
+        </div>
+        <pre className="text-xs text-muted-foreground whitespace-pre-wrap bg-muted/30 rounded-md p-3 leading-relaxed">{content}</pre>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Playbooks Tab ──────────────────────────────────────────────────
+
+function PlaybooksTab() {
+  const { data: partners = [], refetch: refetchPartners } = useQuery<ReferralPartner[]>({ queryKey: ["/api/referral-partners"] });
+  const { data: checks = [], refetch: refetchChecks } = useQuery<PlaybookCheckItem[]>({ queryKey: ["/api/playbook-checks"] });
+  const [showPartnerForm, setShowPartnerForm] = useState(false);
+  const [partnerForm, setPartnerForm] = useState({ name: "", niche: "", clientTypes: "", referralTerms: "", introMethod: "", nextCheckIn: "" });
+  const { toast } = useToast();
+
+  const createPartnerMutation = useMutation({
+    mutationFn: async (data: any) => { const r = await apiRequest("POST", "/api/referral-partners", data); return r.json(); },
+    onSuccess: () => { refetchPartners(); toast({ title: "Partner added" }); setShowPartnerForm(false); setPartnerForm({ name: "", niche: "", clientTypes: "", referralTerms: "", introMethod: "", nextCheckIn: "" }); },
+  });
+  const deletePartnerMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/referral-partners/${id}`); },
+    onSuccess: () => { refetchPartners(); },
+  });
+  const toggleCheckMutation = useMutation({
+    mutationFn: async ({ id, channel, label, completed }: { id: string; channel: string; label: string; completed: boolean }) => {
+      const existing = checks.find((c) => c.id === id);
+      if (existing) { await apiRequest("PATCH", `/api/playbook-checks/${id}`, { completed }); }
+      else { await apiRequest("POST", "/api/playbook-checks", { id, channel, label, completed }); }
+    },
+    onSuccess: () => { refetchChecks(); },
+  });
+
+  const isChecked = (id: string) => checks.find((c) => c.id === id)?.completed || false;
+
+  const referralChecklist = [
+    { id: "ref-1", label: "Identify 20 referral partner targets (local + niche)" },
+    { id: "ref-2", label: "Draft referral agreement with commission terms" },
+    { id: "ref-3", label: "Create intro email template for partners" },
+    { id: "ref-4", label: "Set up partner tracking field in CRM" },
+    { id: "ref-5", label: "Schedule first 5 partner outreach meetings" },
+  ];
+
+  const leadMagnetResources = [
+    { id: "lm-1", label: "Top 10 Things to Check on Your Merchant Statement" },
+    { id: "lm-2", label: "Cash Discount Program Explained: Is It Right for Your Business?" },
+    { id: "lm-3", label: "Payment Security Checklist for Small Businesses" },
+    { id: "lm-4", label: "Industry-Specific Rate Comparison Guide" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div><h2 className="text-lg font-bold flex items-center gap-2"><BookOpen className="w-5 h-5 text-primary" />Channel Playbooks</h2><p className="text-xs text-muted-foreground mt-1">Scripts, workflows, and checklists for each prospecting channel</p></div>
+
+      <Accordion type="multiple" defaultValue={["referral"]} className="space-y-2">
+        {/* Referral Partners */}
+        <AccordionItem value="referral" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-emerald-400/10 flex items-center justify-center text-emerald-400 text-xs font-bold">R</span>Referral Partner Program</span></AccordionTrigger>
+          <AccordionContent className="space-y-3 pb-4">
+            <ScriptCard title="Partner Outreach Script" content={PLAYBOOK_SCRIPTS.referral.outreach} />
+            <div>
+              <p className="text-xs font-semibold mb-2">Partner Onboarding Checklist</p>
+              <div className="space-y-1.5">{referralChecklist.map((item) => (
+                <div key={item.id} className="flex items-center gap-2">
+                  <Checkbox checked={isChecked(item.id)} onCheckedChange={(v) => toggleCheckMutation.mutate({ id: item.id, channel: "referral", label: item.label, completed: !!v })} />
+                  <span className={`text-xs ${isChecked(item.id) ? "line-through text-muted-foreground" : ""}`}>{item.label}</span>
+                </div>
+              ))}</div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold">Active Partners ({partners.length})</p>
+                <Button variant="outline" size="sm" className="h-6 text-[10px]" onClick={() => setShowPartnerForm(true)}><Plus className="w-3 h-3" />Add Partner</Button>
+              </div>
+              {partners.length === 0 ? <p className="text-xs text-muted-foreground py-2">No partners yet. Start by adding your first referral partner.</p> : (
+                <div className="space-y-1.5">{partners.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30 border border-border/30">
+                    <div><p className="text-xs font-medium">{p.name}</p><p className="text-[10px] text-muted-foreground">{p.niche}{p.referralTerms ? ` — ${p.referralTerms}` : ""}{p.nextCheckIn ? ` — Next check-in: ${p.nextCheckIn}` : ""}</p></div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deletePartnerMutation.mutate(p.id)}><Trash2 className="w-3 h-3" /></Button>
+                  </div>
+                ))}</div>
+              )}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Networking */}
+        <AccordionItem value="networking" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-blue-400/10 flex items-center justify-center text-blue-400 text-xs font-bold">N</span>Networking & Community Presence</span></AccordionTrigger>
+          <AccordionContent className="space-y-3 pb-4">
+            <ScriptCard title="30-Second Elevator Pitch" content={PLAYBOOK_SCRIPTS.networking.elevator} />
+            <Card className="overflow-visible border-border/50 bg-blue-400/5">
+              <CardContent className="p-3">
+                <p className="text-xs font-semibold mb-1">Event Reminders</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>- Always bring a "Statement Review Offer" card and QR code to lead magnet</li>
+                  <li>- Focus on relationship + credibility, not rate pitching</li>
+                  <li>- Target: Chamber of Commerce, BNI, industry events</li>
+                  <li>- Weekly cadence: 1 networking event/week</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Social Outreach */}
+        <AccordionItem value="social" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-pink-400/10 flex items-center justify-center text-pink-400 text-xs font-bold">S</span>Social Media Outreach</span></AccordionTrigger>
+          <AccordionContent className="space-y-3 pb-4">
+            <ScriptCard title="DM Script (After Engagement)" content={PLAYBOOK_SCRIPTS.social.dm} />
+            <Card className="overflow-visible border-border/50 bg-pink-400/5">
+              <CardContent className="p-3">
+                <p className="text-xs font-semibold mb-1">Content That Converts</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>- Educational posts about hidden fees and cash discount programs</li>
+                  <li>- Payment security tips and updates</li>
+                  <li>- Fee comparisons and success stories (with permission)</li>
+                  <li>- Cadence: 3 posts/week + 10 targeted comments/day</li>
+                </ul>
+                <p className="text-xs font-semibold mt-2 mb-1">Platforms</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>- LinkedIn: insights + industry group engagement</li>
+                  <li>- Instagram: visuals, fee comparisons, success stories</li>
+                  <li>- Facebook: local business groups (help first, pitch later)</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Direct Prospecting */}
+        <AccordionItem value="direct" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-orange-400/10 flex items-center justify-center text-orange-400 text-xs font-bold">D</span>Direct Prospecting</span></AccordionTrigger>
+          <AccordionContent className="space-y-3 pb-4">
+            <ScriptCard title="Cold Call Script (30 sec)" content={PLAYBOOK_SCRIPTS.direct.coldCall} />
+            <ScriptCard title="Walk-In Opener" content={PLAYBOOK_SCRIPTS.direct.walkIn} />
+            <ScriptCard title="Personalized Email Template" content={PLAYBOOK_SCRIPTS.direct.email} />
+            <Card className="overflow-visible border-border/50 bg-orange-400/5">
+              <CardContent className="p-3">
+                <p className="text-xs font-semibold mb-1">Direct Prospecting Tips</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>- Research first: estimate volume, identify pain points before contact</li>
+                  <li>- Walk-ins: go during off-peak hours with a one-page value prop</li>
+                  <li>- Personalize emails with specific observations about their business</li>
+                  <li>- Target: 100 businesses over weeks 7-12</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Lead Magnets */}
+        <AccordionItem value="lead-magnet" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold py-3"><span className="flex items-center gap-2"><span className="w-6 h-6 rounded bg-purple-400/10 flex items-center justify-center text-purple-400 text-xs font-bold">L</span>Educational Lead Magnets</span></AccordionTrigger>
+          <AccordionContent className="space-y-3 pb-4">
+            <Card className="overflow-visible border-destructive/30 bg-destructive/5">
+              <CardContent className="p-3 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                <p className="text-xs font-medium text-destructive">Critical Rule: Follow up within 24 hours of every download</p>
+              </CardContent>
+            </Card>
+            <ScriptCard title="24-Hour Follow-Up Template" content={PLAYBOOK_SCRIPTS.leadMagnet.followUp24hr} />
+            <div>
+              <p className="text-xs font-semibold mb-2">High-Converting Resources to Create</p>
+              <div className="space-y-1.5">{leadMagnetResources.map((item) => (
+                <div key={item.id} className="flex items-center gap-2">
+                  <Checkbox checked={isChecked(item.id)} onCheckedChange={(v) => toggleCheckMutation.mutate({ id: item.id, channel: "lead-magnet", label: item.label, completed: !!v })} />
+                  <span className={`text-xs ${isChecked(item.id) ? "line-through text-muted-foreground" : ""}`}>{item.label}</span>
+                </div>
+              ))}</div>
+            </div>
+            <Card className="overflow-visible border-border/50 bg-purple-400/5">
+              <CardContent className="p-3">
+                <p className="text-xs font-semibold mb-1">Distribution Channels</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>- Social ads targeted to local business owners</li>
+                  <li>- Email newsletter to existing contacts</li>
+                  <li>- Landing pages with opt-in forms</li>
+                  <li>- QR codes on printed materials and leave-behinds</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      {/* Partner Form Dialog */}
+      <Dialog open={showPartnerForm} onOpenChange={(o) => !o && setShowPartnerForm(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Add Referral Partner</DialogTitle><DialogDescription>Track a referral partner relationship</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Partner Name *</Label><Input value={partnerForm.name} onChange={(e) => setPartnerForm(p => ({ ...p, name: e.target.value }))} placeholder="Jane Smith, CPA" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Niche/Industry</Label><Input value={partnerForm.niche} onChange={(e) => setPartnerForm(p => ({ ...p, niche: e.target.value }))} placeholder="Accounting, POS reseller..." /></div>
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Client Types They Serve</Label><Input value={partnerForm.clientTypes} onChange={(e) => setPartnerForm(p => ({ ...p, clientTypes: e.target.value }))} placeholder="Restaurants, retail shops..." /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Referral Terms</Label><Input value={partnerForm.referralTerms} onChange={(e) => setPartnerForm(p => ({ ...p, referralTerms: e.target.value }))} placeholder="$100 flat or 10% residual" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Intro Method</Label><Input value={partnerForm.introMethod} onChange={(e) => setPartnerForm(p => ({ ...p, introMethod: e.target.value }))} placeholder="Email intro, shared form..." /></div>
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Next Check-In Date</Label><Input type="date" value={partnerForm.nextCheckIn} onChange={(e) => setPartnerForm(p => ({ ...p, nextCheckIn: e.target.value }))} /></div>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setShowPartnerForm(false)}>Cancel</Button><Button onClick={() => createPartnerMutation.mutate(partnerForm)} disabled={!partnerForm.name}><Save className="w-3.5 h-3.5" />Add Partner</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Scorecard Tab ──────────────────────────────────────────────────
+
+function ScorecardTab() {
+  const { data: scoreData } = useQuery<{ scorecard: ChannelScore[]; overall: { totalLeads: number; activeLeads: number; totalWon: number; totalLost: number } }>({ queryKey: ["/api/metrics/scorecard"] });
+  const { data: kpis = [], refetch: refetchKPIs } = useQuery<WeeklyKPI[]>({ queryKey: ["/api/kpis"] });
+  const [showKPIForm, setShowKPIForm] = useState(false);
+  const [kpiForm, setKpiForm] = useState<Partial<WeeklyKPI>>({ weekStart: today(), outboundCalls: 0, outboundEmails: 0, outboundDMs: 0, walkIns: 0, contactsMade: 0, appointmentsSet: 0, statementsRequested: 0, statementsReceived: 0, proposalsSent: 0, dealsWon: 0, volumeWon: 0, notes: "" });
+  const { toast } = useToast();
+
+  const createKPIMutation = useMutation({
+    mutationFn: async (data: Partial<WeeklyKPI>) => { const r = await apiRequest("POST", "/api/kpis", data); return r.json(); },
+    onSuccess: () => { refetchKPIs(); toast({ title: "KPI logged" }); setShowKPIForm(false); },
+  });
+  const deleteKPIMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/kpis/${id}`); },
+    onSuccess: () => { refetchKPIs(); },
+  });
+
+  const rateColor = (rate: number) => rate >= 50 ? "text-emerald-400" : rate >= 25 ? "text-yellow-400" : "text-red-400";
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-lg font-bold flex items-center gap-2"><Target className="w-5 h-5 text-primary" />Channel Scorecard</h2><p className="text-xs text-muted-foreground mt-1">Full pipeline metrics by lead source channel</p></div>
+
+      {scoreData?.overall && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="text-center py-3 rounded-lg bg-muted/30 border border-border/30"><div className="text-lg font-bold">{scoreData.overall.totalLeads}</div><div className="text-[10px] text-muted-foreground">Total Leads</div></div>
+          <div className="text-center py-3 rounded-lg bg-muted/30 border border-border/30"><div className="text-lg font-bold text-blue-400">{scoreData.overall.activeLeads}</div><div className="text-[10px] text-muted-foreground">Active Pipeline</div></div>
+          <div className="text-center py-3 rounded-lg bg-muted/30 border border-border/30"><div className="text-lg font-bold text-emerald-400">{scoreData.overall.totalWon}</div><div className="text-[10px] text-muted-foreground">Won</div></div>
+          <div className="text-center py-3 rounded-lg bg-muted/30 border border-border/30"><div className="text-lg font-bold text-red-400">{scoreData.overall.totalLost}</div><div className="text-[10px] text-muted-foreground">Lost</div></div>
+        </div>
+      )}
+
+      {scoreData?.scorecard && (
+        <Card className="overflow-visible border-border/50">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-[10px]">Channel</TableHead>
+                  <TableHead className="text-[10px] text-center">Total</TableHead>
+                  <TableHead className="text-[10px] text-center">Contacted</TableHead>
+                  <TableHead className="text-[10px] text-center">Contact %</TableHead>
+                  <TableHead className="text-[10px] text-center">Qualified</TableHead>
+                  <TableHead className="text-[10px] text-center">Appt %</TableHead>
+                  <TableHead className="text-[10px] text-center">Stmt Recv</TableHead>
+                  <TableHead className="text-[10px] text-center">Stmt %</TableHead>
+                  <TableHead className="text-[10px] text-center">Won</TableHead>
+                  <TableHead className="text-[10px] text-center">Close %</TableHead>
+                  <TableHead className="text-[10px] text-center">Avg Days</TableHead>
+                  <TableHead className="text-[10px] text-center">Avg Vol</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {scoreData.scorecard.map((ch) => (
+                  <TableRow key={ch.source}>
+                    <TableCell className={`text-xs font-semibold ${SOURCE_CONFIG[ch.source as LeadSource]?.color || ""}`}>{SOURCE_CONFIG[ch.source as LeadSource]?.label || ch.source}</TableCell>
+                    <TableCell className="text-xs text-center font-medium">{ch.total}</TableCell>
+                    <TableCell className="text-xs text-center">{ch.contacted}</TableCell>
+                    <TableCell className={`text-xs text-center font-semibold ${rateColor(ch.contactRate)}`}>{ch.contactRate}%</TableCell>
+                    <TableCell className="text-xs text-center">{ch.qualified}</TableCell>
+                    <TableCell className={`text-xs text-center font-semibold ${rateColor(ch.appointmentRate)}`}>{ch.appointmentRate}%</TableCell>
+                    <TableCell className="text-xs text-center">{ch.stmtReceived}</TableCell>
+                    <TableCell className={`text-xs text-center font-semibold ${rateColor(ch.stmtReceivedRate)}`}>{ch.stmtReceivedRate}%</TableCell>
+                    <TableCell className="text-xs text-center font-semibold text-emerald-400">{ch.won}</TableCell>
+                    <TableCell className={`text-xs text-center font-semibold ${rateColor(ch.closeRate)}`}>{ch.closeRate}%</TableCell>
+                    <TableCell className="text-xs text-center">{ch.avgTimeToClose}d</TableCell>
+                    <TableCell className="text-xs text-center">${ch.avgVolumeWon.toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
+
+      {/* Weekly KPI Logger */}
+      <div className="flex items-center justify-between">
+        <div><h3 className="text-sm font-bold">Weekly KPI Log</h3><p className="text-[10px] text-muted-foreground">Track outreach activity week by week</p></div>
+        <Button size="sm" onClick={() => { setKpiForm({ weekStart: today(), outboundCalls: 0, outboundEmails: 0, outboundDMs: 0, walkIns: 0, contactsMade: 0, appointmentsSet: 0, statementsRequested: 0, statementsReceived: 0, proposalsSent: 0, dealsWon: 0, volumeWon: 0, notes: "" }); setShowKPIForm(true); }}><Plus className="w-3.5 h-3.5" />Log This Week</Button>
+      </div>
+
+      {kpis.length === 0 ? (
+        <Card className="overflow-visible border-dashed"><CardContent className="p-6 text-center"><BarChart3 className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" /><p className="text-sm text-muted-foreground">No KPIs logged yet. Start tracking your weekly activity.</p></CardContent></Card>
+      ) : (
+        <Card className="overflow-visible border-border/50"><div className="overflow-x-auto"><Table><TableHeader><TableRow>
+          <TableHead className="text-[10px]">Week</TableHead>
+          <TableHead className="text-[10px] text-center">Calls</TableHead>
+          <TableHead className="text-[10px] text-center">Emails</TableHead>
+          <TableHead className="text-[10px] text-center">DMs</TableHead>
+          <TableHead className="text-[10px] text-center">Walk-Ins</TableHead>
+          <TableHead className="text-[10px] text-center">Contacts</TableHead>
+          <TableHead className="text-[10px] text-center">Appts</TableHead>
+          <TableHead className="text-[10px] text-center">Stmts</TableHead>
+          <TableHead className="text-[10px] text-center">Won</TableHead>
+          <TableHead className="text-[10px] text-center">Vol $</TableHead>
+          <TableHead className="text-[10px] w-10"></TableHead>
+        </TableRow></TableHeader><TableBody>
+          {[...kpis].sort((a, b) => b.weekStart.localeCompare(a.weekStart)).map((k) => (
+            <TableRow key={k.id}>
+              <TableCell className="text-xs font-medium">{k.weekStart}</TableCell>
+              <TableCell className="text-xs text-center">{k.outboundCalls}</TableCell>
+              <TableCell className="text-xs text-center">{k.outboundEmails}</TableCell>
+              <TableCell className="text-xs text-center">{k.outboundDMs}</TableCell>
+              <TableCell className="text-xs text-center">{k.walkIns}</TableCell>
+              <TableCell className="text-xs text-center">{k.contactsMade}</TableCell>
+              <TableCell className="text-xs text-center">{k.appointmentsSet}</TableCell>
+              <TableCell className="text-xs text-center">{k.statementsReceived}</TableCell>
+              <TableCell className="text-xs text-center font-semibold text-emerald-400">{k.dealsWon}</TableCell>
+              <TableCell className="text-xs text-center">${k.volumeWon.toLocaleString()}</TableCell>
+              <TableCell><Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteKPIMutation.mutate(k.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+            </TableRow>
+          ))}
+        </TableBody></Table></div></Card>
+      )}
+
+      <Dialog open={showKPIForm} onOpenChange={(o) => !o && setShowKPIForm(false)}>
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Log Weekly KPIs</DialogTitle><DialogDescription>Track your outreach and conversion metrics</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5"><Label className="text-xs">Week Starting</Label><Input type="date" value={kpiForm.weekStart || today()} onChange={(e) => setKpiForm(p => ({ ...p, weekStart: e.target.value }))} /></div>
+            <p className="text-xs font-semibold text-muted-foreground">Outreach Activity</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Outbound Calls</Label><Input type="number" value={kpiForm.outboundCalls || ""} onChange={(e) => setKpiForm(p => ({ ...p, outboundCalls: Number(e.target.value) }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Outbound Emails</Label><Input type="number" value={kpiForm.outboundEmails || ""} onChange={(e) => setKpiForm(p => ({ ...p, outboundEmails: Number(e.target.value) }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Social DMs</Label><Input type="number" value={kpiForm.outboundDMs || ""} onChange={(e) => setKpiForm(p => ({ ...p, outboundDMs: Number(e.target.value) }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Walk-Ins</Label><Input type="number" value={kpiForm.walkIns || ""} onChange={(e) => setKpiForm(p => ({ ...p, walkIns: Number(e.target.value) }))} /></div>
+            </div>
+            <p className="text-xs font-semibold text-muted-foreground">Conversions</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Contacts Made</Label><Input type="number" value={kpiForm.contactsMade || ""} onChange={(e) => setKpiForm(p => ({ ...p, contactsMade: Number(e.target.value) }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Appointments Set</Label><Input type="number" value={kpiForm.appointmentsSet || ""} onChange={(e) => setKpiForm(p => ({ ...p, appointmentsSet: Number(e.target.value) }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Stmts Requested</Label><Input type="number" value={kpiForm.statementsRequested || ""} onChange={(e) => setKpiForm(p => ({ ...p, statementsRequested: Number(e.target.value) }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Stmts Received</Label><Input type="number" value={kpiForm.statementsReceived || ""} onChange={(e) => setKpiForm(p => ({ ...p, statementsReceived: Number(e.target.value) }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Proposals Sent</Label><Input type="number" value={kpiForm.proposalsSent || ""} onChange={(e) => setKpiForm(p => ({ ...p, proposalsSent: Number(e.target.value) }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Deals Won</Label><Input type="number" value={kpiForm.dealsWon || ""} onChange={(e) => setKpiForm(p => ({ ...p, dealsWon: Number(e.target.value) }))} /></div>
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Volume Won ($)</Label><Input type="number" value={kpiForm.volumeWon || ""} onChange={(e) => setKpiForm(p => ({ ...p, volumeWon: Number(e.target.value) }))} placeholder="Total monthly processing volume from wins" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Notes</Label><Input value={kpiForm.notes || ""} onChange={(e) => setKpiForm(p => ({ ...p, notes: e.target.value }))} placeholder="What worked this week..." /></div>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setShowKPIForm(false)}>Cancel</Button><Button onClick={() => createKPIMutation.mutate(kpiForm)}><Save className="w-3.5 h-3.5" />Log KPIs</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── 90-Day Plan Tab ────────────────────────────────────────────────
+
+function PlanTab() {
+  const { data: items = [], refetch } = useQuery<PlanItem[]>({ queryKey: ["/api/plan-items"] });
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addPhase, setAddPhase] = useState(1);
+  const [addTitle, setAddTitle] = useState("");
+  const [addDesc, setAddDesc] = useState("");
+  const { toast } = useToast();
+
+  const [startDate, setStartDate] = useState(() => {
+    try { return localStorage.getItem("plan-start-date") || ""; } catch { return ""; }
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => { await apiRequest("PATCH", `/api/plan-items/${id}`, { completed }); },
+    onSuccess: () => { refetch(); },
+  });
+  const addMutation = useMutation({
+    mutationFn: async (data: any) => { const r = await apiRequest("POST", "/api/plan-items", data); return r.json(); },
+    onSuccess: () => { refetch(); toast({ title: "Item added" }); setShowAddForm(false); setAddTitle(""); setAddDesc(""); },
+  });
+
+  const totalCompleted = items.filter((i) => i.completed).length;
+  const progress = items.length > 0 ? Math.round((totalCompleted / items.length) * 100) : 0;
+
+  const currentWeek = startDate ? Math.max(1, Math.ceil((Date.now() - new Date(startDate).getTime()) / (7 * 86400000))) : null;
+  const currentPhase = currentWeek ? (currentWeek <= 2 ? 1 : currentWeek <= 6 ? 2 : 3) : null;
+
+  const handleSetStart = (date: string) => {
+    setStartDate(date);
+    try { localStorage.setItem("plan-start-date", date); } catch {}
+  };
+
+  const phases = [
+    { num: 1, range: "1-2", title: "Foundation", color: "blue", borderColor: "border-l-blue-400" },
+    { num: 2, range: "3-6", title: "Relationship Building", color: "amber", borderColor: "border-l-amber-400" },
+    { num: 3, range: "7-12", title: "Active Prospecting", color: "emerald", borderColor: "border-l-emerald-400" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div><h2 className="text-lg font-bold flex items-center gap-2"><Calendar className="w-5 h-5 text-primary" />90-Day Execution Plan</h2><p className="text-xs text-muted-foreground mt-1">From the sales playbook — operationalized and trackable</p></div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Day 1:</Label>
+          <Input type="date" className="h-8 w-36 text-xs" value={startDate} onChange={(e) => handleSetStart(e.target.value)} />
+        </div>
+      </div>
+
+      <Card className="overflow-visible border-border/50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold">Overall Progress</span>
+            <span className="text-xs text-muted-foreground">{totalCompleted} / {items.length} ({progress}%)</span>
+          </div>
+          <Progress value={progress} className="h-2.5" />
+          {currentWeek && <p className="text-[10px] text-primary mt-2">You're in Week {Math.min(currentWeek, 12)} — Phase {currentPhase}: {phases[(currentPhase || 1) - 1]?.title}</p>}
+        </CardContent>
+      </Card>
+
+      {phases.map((phase) => {
+        const phaseItems = items.filter((i) => i.phase === phase.num);
+        const phaseCompleted = phaseItems.filter((i) => i.completed).length;
+        const isActive = currentPhase === phase.num;
+        return (
+          <Card key={phase.num} className={`overflow-visible border-border/50 border-l-4 ${phase.borderColor} ${isActive ? "ring-1 ring-primary/20" : ""}`}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold">Phase {phase.num}: {phase.title}</CardTitle>
+                  <Badge variant="outline" className="text-[10px]">Weeks {phase.range}</Badge>
+                  {isActive && <Badge className="text-[9px]">Current</Badge>}
+                </div>
+                <span className="text-xs text-muted-foreground">{phaseCompleted}/{phaseItems.length}</span>
+              </div>
+              <Progress value={phaseItems.length > 0 ? (phaseCompleted / phaseItems.length) * 100 : 0} className="h-1.5 mt-1" />
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-1.5">
+                {phaseItems.map((item) => (
+                  <div key={item.id} className="flex items-start gap-2 py-1.5">
+                    <Checkbox className="mt-0.5" checked={item.completed} onCheckedChange={(v) => toggleMutation.mutate({ id: item.id, completed: !!v })} />
+                    <div>
+                      <p className={`text-xs ${item.completed ? "line-through text-muted-foreground" : "font-medium"}`}>{item.title}</p>
+                      {item.description && <p className="text-[10px] text-muted-foreground">{item.description}</p>}
+                      {item.completed && item.completedAt && <p className="text-[9px] text-emerald-400 mt-0.5">Completed {new Date(item.completedAt).toLocaleDateString()}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button variant="ghost" size="sm" className="text-[10px] h-6 mt-2" onClick={() => { setAddPhase(phase.num); setShowAddForm(true); }}><Plus className="w-3 h-3" />Add custom item</Button>
+            </CardContent>
+          </Card>
+        );
+      })}
+
+      <Dialog open={showAddForm} onOpenChange={(o) => !o && setShowAddForm(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Add Plan Item</DialogTitle><DialogDescription>Add a custom item to Phase {addPhase}</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5"><Label className="text-xs">Title *</Label><Input value={addTitle} onChange={(e) => setAddTitle(e.target.value)} placeholder="What needs to be done" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Description</Label><Input value={addDesc} onChange={(e) => setAddDesc(e.target.value)} placeholder="Details or context" /></div>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button><Button onClick={() => addMutation.mutate({ phase: addPhase, weekRange: phases[addPhase - 1].range, title: addTitle, description: addDesc })} disabled={!addTitle}><Save className="w-3.5 h-3.5" />Add</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Materials Tab ──────────────────────────────────────────────────
+
+function MaterialsTab() {
+  const { data: items = [], refetch } = useQuery<MaterialItem[]>({ queryKey: ["/api/materials"] });
+  const [editingUrl, setEditingUrl] = useState<string | null>(null);
+  const [urlValue, setUrlValue] = useState("");
+  const { toast } = useToast();
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: { id: string } & Partial<MaterialItem>) => { const r = await apiRequest("PATCH", `/api/materials/${id}`, data); return r.json(); },
+    onSuccess: () => { refetch(); },
+  });
+
+  const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+    "not-started": { label: "Not Started", color: "text-muted-foreground", bg: "bg-muted/30" },
+    "in-progress": { label: "In Progress", color: "text-yellow-400", bg: "bg-yellow-400/10" },
+    completed: { label: "Completed", color: "text-emerald-400", bg: "bg-emerald-400/10" },
+  };
+
+  const categories = ["sales", "lead-gen", "partner", "tracking"];
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-lg font-bold flex items-center gap-2"><ClipboardList className="w-5 h-5 text-primary" />Materials Checklist</h2><p className="text-xs text-muted-foreground mt-1">Track creation of all sales, lead gen, partner, and tracking assets</p></div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {categories.map((cat) => {
+          const catItems = items.filter((i) => i.category === cat);
+          const completed = catItems.filter((i) => i.status === "completed").length;
+          const pct = catItems.length > 0 ? Math.round((completed / catItems.length) * 100) : 0;
+          return (
+            <Card key={cat} className="overflow-visible border-border/50">
+              <CardContent className="p-3">
+                <p className="text-[10px] font-semibold text-muted-foreground mb-1">{MATERIAL_CATEGORIES[cat]?.label || cat}</p>
+                <div className="flex items-center justify-between mb-1"><span className="text-sm font-bold">{completed}/{catItems.length}</span><span className="text-[10px] text-muted-foreground">{pct}%</span></div>
+                <Progress value={pct} className="h-1.5" />
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {categories.map((cat) => {
+        const catItems = items.filter((i) => i.category === cat);
+        if (catItems.length === 0) return null;
+        return (
+          <Card key={cat} className="overflow-visible border-border/50">
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">{MATERIAL_CATEGORIES[cat]?.label || cat}</CardTitle></CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-2">
+                {catItems.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
+                    <Select value={item.status} onValueChange={(v) => { updateMutation.mutate({ id: item.id, status: v }); toast({ title: `Status: ${statusConfig[v]?.label}` }); }}>
+                      <SelectTrigger className={`h-7 w-28 text-[10px] shrink-0 ${statusConfig[item.status]?.bg} ${statusConfig[item.status]?.color}`}><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="not-started">Not Started</SelectItem>
+                        <SelectItem value="in-progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs font-medium ${item.status === "completed" ? "line-through text-muted-foreground" : ""}`}>{item.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.description}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {editingUrl === item.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input className="h-7 w-40 text-[10px]" value={urlValue} onChange={(e) => setUrlValue(e.target.value)} placeholder="File URL..." />
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { updateMutation.mutate({ id: item.id, fileUrl: urlValue }); setEditingUrl(null); }}><Check className="w-3 h-3" /></Button>
+                        </div>
+                      ) : (
+                        <>
+                          {item.fileUrl ? (
+                            <a href={item.fileUrl} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-primary"><ExternalLink className="w-3 h-3" /></Button></a>
+                          ) : null}
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingUrl(item.id); setUrlValue(item.fileUrl || ""); }} title="Attach file URL"><Paperclip className="w-3 h-3" /></Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
   );
 }
 
