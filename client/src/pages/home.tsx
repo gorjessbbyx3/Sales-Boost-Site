@@ -46,6 +46,15 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
 }
 
 function HeroSection() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.play().catch(() => {});
+    }
+  }, []);
+
   return (
     <section
       className="relative overflow-hidden pt-20 pb-12 sm:pt-36 sm:pb-24"
@@ -53,6 +62,7 @@ function HeroSection() {
     >
       <div className="absolute inset-0 -z-10">
         <video
+          ref={videoRef}
           autoPlay
           loop
           muted
