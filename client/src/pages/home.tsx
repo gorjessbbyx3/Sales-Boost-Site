@@ -60,126 +60,130 @@ function HeroSection() {
 
   return (
     <section
-      className="relative overflow-hidden pt-44 pb-12 sm:pt-64 sm:pb-24"
+      className="relative"
       data-testid="section-hero"
     >
-      <video
-        ref={videoRef}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        src="/videos/hero-bg.mp4"
-        className="absolute inset-0 w-full h-auto min-w-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0"
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-background z-[1]" />
+      <div className="relative w-full overflow-hidden">
+        <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          src="/videos/hero-bg.mp4"
+          className="w-full h-auto block"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-[2]">
-        <motion.div
-          className="max-w-4xl mx-auto text-center"
-          variants={staggerContainer}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.div className="flex flex-wrap items-center justify-center gap-2" variants={fadeUp}>
-            <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
-              <MapPin className="w-3 h-3 mr-1" />
-              Proudly Serving Hawai'i
-            </Badge>
-            <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
-              <CircleDollarSign className="w-3 h-3 mr-1" />
-              Save $3,600+ Per Year
-            </Badge>
-          </motion.div>
-
-          <motion.h1
-            className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-8"
-            variants={fadeUp}
-            data-testid="text-hero-title"
+      <div className="py-10 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            className="max-w-4xl mx-auto text-center"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
           >
-            Accept Payments.{" "}
-            <span className="relative inline-block">
-              <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-                Keep Every Dollar.
+            <motion.div className="flex flex-wrap items-center justify-center gap-2" variants={fadeUp}>
+              <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
+                <MapPin className="w-3 h-3 mr-1" />
+                Proudly Serving Hawai'i
+              </Badge>
+              <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
+                <CircleDollarSign className="w-3 h-3 mr-1" />
+                Save $3,600+ Per Year
+              </Badge>
+            </motion.div>
+
+            <motion.h1
+              className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5 sm:mb-8"
+              variants={fadeUp}
+              data-testid="text-hero-title"
+            >
+              Accept Payments.{" "}
+              <span className="relative inline-block">
+                <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
+                  Keep Every Dollar.
+                </span>
               </span>
-            </span>
-          </motion.h1>
+            </motion.h1>
 
-          <motion.p
-            className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-10 max-w-2xl mx-auto"
-            variants={fadeUp}
-            data-testid="text-hero-subtitle"
-          >
-            Tap, swipe, or insert — your terminal is ready to go from day one.{" "}
-            <span className="text-primary font-semibold">Zero processing fees</span>, no monthly charges, and{" "}
-            <span className="text-primary font-semibold">100% of every sale</span> deposited next business day.
-          </motion.p>
+            <motion.p
+              className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-10 max-w-2xl mx-auto"
+              variants={fadeUp}
+              data-testid="text-hero-subtitle"
+            >
+              Tap, swipe, or insert — your terminal is ready to go from day one.{" "}
+              <span className="text-primary font-semibold">Zero processing fees</span>, no monthly charges, and{" "}
+              <span className="text-primary font-semibold">100% of every sale</span> deposited next business day.
+            </motion.p>
 
-          <motion.div
-            className="flex flex-col sm:flex-row items-center justify-center gap-3"
-            variants={fadeUp}
-          >
-            <Button size="lg" className="w-full sm:w-auto" asChild>
-              <Link href="/contact" data-testid="link-hero-get-terminal">
-                Get Your Terminal
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-            <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
-              <Link href="/how-it-works" data-testid="link-hero-learn-more">
-                See How It Works
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </Button>
+            <motion.div
+              className="flex flex-col sm:flex-row items-center justify-center gap-3"
+              variants={fadeUp}
+            >
+              <Button size="lg" className="w-full sm:w-auto" asChild>
+                <Link href="/contact" data-testid="link-hero-get-terminal">
+                  Get Your Terminal
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
+                <Link href="/how-it-works" data-testid="link-hero-learn-more">
+                  See How It Works
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </Button>
+            </motion.div>
+
+            <motion.div
+              className="mt-8 sm:mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground"
+              variants={fadeUp}
+            >
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                <span>PCI Compliant</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span>Same-Day Setup</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-primary" />
+                <span>Zero Monthly Fees</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-primary" />
+                <span>Free Website</span>
+              </div>
+            </motion.div>
           </motion.div>
 
           <motion.div
-            className="mt-8 sm:mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground"
-            variants={fadeUp}
+            className="mt-8 sm:mt-14 max-w-4xl mx-auto"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.7 }}
           >
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-              <span>PCI Compliant</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-primary" />
-              <span>Same-Day Setup</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-primary" />
-              <span>Zero Monthly Fees</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Palette className="w-3.5 h-3.5 text-primary" />
-              <span>Free Website</span>
+            <div className="grid grid-cols-3 gap-3 sm:gap-6">
+              {[
+                { value: 5400, prefix: "$", suffix: "+", label: "Saved/Year", color: "text-primary" },
+                { value: 0, prefix: "$", suffix: "", label: "Monthly Fees", color: "text-foreground" },
+                { value: 100, prefix: "", suffix: "%", label: "Revenue Kept", color: "text-foreground" },
+              ].map((stat, i) => (
+                <Card key={stat.label} className="overflow-visible text-center border-primary/10">
+                  <CardContent className="p-3 sm:p-6">
+                    <div className={`text-xl sm:text-3xl lg:text-5xl font-extrabold ${stat.color} mb-1`}>
+                      <AnimatedCounter target={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
+                    </div>
+                    <div className="text-[10px] sm:text-sm text-muted-foreground">{stat.label}</div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </motion.div>
-        </motion.div>
-
-        <motion.div
-          className="mt-8 sm:mt-14 max-w-4xl mx-auto"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.7 }}
-        >
-          <div className="grid grid-cols-3 gap-3 sm:gap-6">
-            {[
-              { value: 5400, prefix: "$", suffix: "+", label: "Saved/Year", color: "text-primary" },
-              { value: 0, prefix: "$", suffix: "", label: "Monthly Fees", color: "text-foreground" },
-              { value: 100, prefix: "", suffix: "%", label: "Revenue Kept", color: "text-foreground" },
-            ].map((stat, i) => (
-              <Card key={stat.label} className="overflow-visible text-center border-primary/10">
-                <CardContent className="p-3 sm:p-6">
-                  <div className={`text-xl sm:text-3xl lg:text-5xl font-extrabold ${stat.color} mb-1`}>
-                    <AnimatedCounter target={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
-                  </div>
-                  <div className="text-[10px] sm:text-sm text-muted-foreground">{stat.label}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
