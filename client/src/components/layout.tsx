@@ -47,7 +47,7 @@ function Navbar() {
             className="font-bold text-xl tracking-tight flex items-center gap-2.5"
             data-testid="link-logo"
           >
-            <img src="/images/techsavvy-logo.jpeg" alt="TechSavvy Hawaii" className="w-9 h-9 rounded" />
+            <img src="/images/techsavvy-logo.jpeg" alt="TechSavvy Hawaii" className="w-12 h-12 rounded" />
             <span className="text-foreground">TechSavvy</span>
           </Link>
 
