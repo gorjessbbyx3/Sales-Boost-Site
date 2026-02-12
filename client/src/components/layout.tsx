@@ -128,29 +128,28 @@ function Navbar() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border/50 py-8 sm:py-14 relative" data-testid="section-footer">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer className="relative py-8 sm:py-14 overflow-hidden" data-testid="section-footer">
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+        src="/videos/footer-bg.mp4"
+      />
+      <div className="absolute inset-0 bg-black/75" />
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
           <div className="col-span-2 md:col-span-1">
-            <div className="mb-4">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-48 sm:w-56 h-auto rounded-lg"
-                src="/videos/footer-bg.mp4"
-              />
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-sm mb-3">
+            <p className="text-xs sm:text-sm text-white/70 leading-relaxed max-w-sm mb-3">
               Hawai'i's trusted payment processing and web design company. Zero fees — plus free websites for online-only merchants.
             </p>
-            <div className="space-y-2.5 text-sm text-muted-foreground">
-              <a href="tel:+18087675460" className="flex items-center gap-2 transition-colors hover:text-foreground">
+            <div className="space-y-2.5 text-sm text-white/60">
+              <a href="tel:+18087675460" className="flex items-center gap-2 transition-colors hover:text-white">
                 <Phone className="w-3.5 h-3.5 text-primary" />
                 <span>(808) 767-5460</span>
               </a>
-              <a href="mailto:contact@techsavvyhawaii.com" className="flex items-center gap-2 transition-colors hover:text-foreground">
+              <a href="mailto:contact@techsavvyhawaii.com" className="flex items-center gap-2 transition-colors hover:text-white">
                 <Mail className="w-3.5 h-3.5 text-primary" />
                 <span>contact@techsavvyhawaii.com</span>
               </a>
@@ -166,25 +165,25 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm mb-4 text-foreground">Services</h4>
-            <ul className="space-y-3 text-sm text-muted-foreground">
+            <h4 className="font-semibold text-sm mb-4 text-white">Services</h4>
+            <ul className="space-y-3 text-sm text-white/60">
               <li>
-                <Link href="/pricing" className="transition-colors hover:text-foreground" data-testid="link-footer-pricing">
+                <Link href="/pricing" className="transition-colors hover:text-white" data-testid="link-footer-pricing">
                   Payment Processing
                 </Link>
               </li>
               <li>
-                <Link href="/online-processing" className="transition-colors hover:text-foreground" data-testid="link-footer-online-processing">
+                <Link href="/online-processing" className="transition-colors hover:text-white" data-testid="link-footer-online-processing">
                   Online Processing
                 </Link>
               </li>
               <li>
-                <Link href="/high-risk" className="transition-colors hover:text-foreground" data-testid="link-footer-high-risk">
+                <Link href="/high-risk" className="transition-colors hover:text-white" data-testid="link-footer-high-risk">
                   High-Risk Merchants
                 </Link>
               </li>
               <li>
-                <Link href="/how-it-works" className="transition-colors hover:text-foreground" data-testid="link-footer-features">
+                <Link href="/how-it-works" className="transition-colors hover:text-white" data-testid="link-footer-features">
                   How It Works
                 </Link>
               </li>
@@ -192,25 +191,25 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm mb-4 text-foreground">Quick Links</h4>
-            <ul className="space-y-3 text-sm text-muted-foreground">
+            <h4 className="font-semibold text-sm mb-4 text-white">Quick Links</h4>
+            <ul className="space-y-3 text-sm text-white/60">
               <li>
-                <Link href="/how-it-works" className="transition-colors hover:text-foreground" data-testid="link-footer-how">
+                <Link href="/how-it-works" className="transition-colors hover:text-white" data-testid="link-footer-how">
                   How It Works
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="transition-colors hover:text-foreground" data-testid="link-footer-faq">
+                <Link href="/contact" className="transition-colors hover:text-white" data-testid="link-footer-faq">
                   FAQ
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="transition-colors hover:text-foreground" data-testid="link-footer-contact">
+                <Link href="/contact" className="transition-colors hover:text-white" data-testid="link-footer-contact">
                   Contact Us
                 </Link>
               </li>
               <li>
-                <Link href="/" className="transition-colors hover:text-foreground" data-testid="link-footer-top">
+                <Link href="/" className="transition-colors hover:text-white" data-testid="link-footer-top">
                   Home
                 </Link>
               </li>
@@ -218,8 +217,8 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm mb-4 text-foreground">Serving Hawai'i</h4>
-            <ul className="space-y-3 text-sm text-muted-foreground">
+            <h4 className="font-semibold text-sm mb-4 text-white">Serving Hawai'i</h4>
+            <ul className="space-y-3 text-sm text-white/60">
               <li>Honolulu & O'ahu</li>
               <li>Maui</li>
               <li>Big Island (Kona & Hilo)</li>
@@ -228,7 +227,7 @@ function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border/50 mt-10 pt-8 text-center text-xs text-muted-foreground">
+        <div className="border-t border-white/10 mt-10 pt-8 text-center text-xs text-white/50">
           &copy; {new Date().getFullYear()} TechSavvy Hawaii. All rights reserved.
         </div>
       </div>
