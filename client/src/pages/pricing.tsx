@@ -157,13 +157,6 @@ function PricingCardsSection() {
                   ))}
                 </ul>
 
-                <div className="pt-2 border-t border-primary/10">
-                  <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                    <Palette className="w-4 h-4" />
-                    <span>+ FREE Custom Website ($997 value)</span>
-                  </div>
-                </div>
-
                 <Button className="w-full" size="lg" asChild>
                   <Link href="/contact">
                     Get Terminal + Free Website
