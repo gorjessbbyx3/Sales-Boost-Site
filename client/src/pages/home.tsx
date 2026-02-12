@@ -29,7 +29,6 @@ import { useEffect, useRef } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
-import heroVideo from "@assets/Grok-Video-44538243-2D13-4E77-AD95-1161023B842A_1770882433390.mp4";
 
 function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -58,7 +57,8 @@ function HeroSection() {
           loop
           muted
           playsInline
-          src={heroVideo}
+          preload="auto"
+          src="/videos/hero-bg.mp4"
           className="w-full h-full object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-background" />
