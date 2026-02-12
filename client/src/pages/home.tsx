@@ -68,7 +68,7 @@ function HeroSection() {
         playsInline
         preload="auto"
         src="/videos/hero-bg.mp4"
-        className="absolute inset-0 w-full h-full object-contain object-center z-0"
+        className="absolute inset-0 w-full h-auto min-w-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-background z-[1]" />
 
