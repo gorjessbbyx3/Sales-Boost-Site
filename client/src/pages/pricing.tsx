@@ -95,7 +95,7 @@ function PricingCardsSection() {
     "Mobile-optimized & SEO-ready",
     "You own the site — host it yourself (free)",
     "One-off updates from $40 when you need them",
-    "Optional maintenance plans from $99/mo",
+    "Optional maintenance plans from $50/mo",
   ];
 
   return (
@@ -297,7 +297,7 @@ function PricingCardsSection() {
                     <span>Free website — you own it</span>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Manage it yourself (free), pay for one-off updates ($40+), or choose a hands-off maintenance plan ($99–$399/mo).
+                    Manage it yourself (free), pay for one-off updates ($40+), or choose a hands-off maintenance plan ($50–$399/mo).
                   </p>
                 </div>
 

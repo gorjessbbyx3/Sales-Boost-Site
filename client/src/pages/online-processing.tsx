@@ -170,7 +170,7 @@ function WebDesignShowcase() {
             </div>
           </div>
           <div className="rounded-2xl overflow-hidden shadow-2xl">
-            <img src="/images/website-before-after.jpg" alt="Website transformation showcase" className="w-full h-auto" />
+            <img src="/images/online-plans.jpeg" alt="Online processing plans - Basic $50/mo, Pro $199/mo, Premium $399/mo" className="w-full h-auto" />
           </div>
         </div>
       </div>

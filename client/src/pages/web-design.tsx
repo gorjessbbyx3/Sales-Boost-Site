@@ -268,7 +268,7 @@ function UpkeepOptionsSection() {
                     <TrendingUp className="w-5 h-5 text-primary" />
                   </div>
                   <h3 className="font-bold text-primary mb-1">Maintenance Plans</h3>
-                  <div className="text-2xl font-extrabold text-primary mb-3">$99–$399/mo</div>
+                  <div className="text-2xl font-extrabold text-primary mb-3">$50–$399/mo</div>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                     We handle all the tech while you focus on growing your business. Month-to-month — cancel anytime, no penalties.
                   </p>
@@ -622,13 +622,14 @@ function SubscriptionTiersSection() {
   const subscriptionTiers = [
     {
       name: "Basic",
-      price: "$99",
+      price: "$50",
       period: "/month",
       description: "Keep your site running smoothly",
       features: [
         "Hosting & SSL security",
         "Monthly backups",
         "Basic content changes (hours, prices, photos)",
+        "Other content changes start at $40+",
         "Uptime monitoring",
         "Email support",
       ],

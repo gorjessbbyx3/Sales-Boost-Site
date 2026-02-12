@@ -490,7 +490,7 @@ function WebsiteUpkeepOverview() {
                     <TrendingUp className="w-5 h-5 text-primary" />
                   </div>
                   <h3 className="font-bold text-primary mb-1">Maintenance Plans</h3>
-                  <div className="text-2xl font-extrabold text-primary mb-2">$99–$399/mo</div>
+                  <div className="text-2xl font-extrabold text-primary mb-2">$50–$399/mo</div>
                   <p className="text-xs sm:text-sm text-muted-foreground">
                     Hands-off — we handle hosting, security, SEO & updates
                   </p>

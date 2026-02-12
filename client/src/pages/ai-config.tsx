@@ -103,7 +103,7 @@ const PACKAGE_CONFIG: Record<PackageType, { label: string; color: string }> = {
 
 const MAINTENANCE_CONFIG: Record<MaintenancePlan, { label: string; price: string }> = {
   none: { label: "None / Self-Hosted", price: "$0" },
-  basic: { label: "Basic", price: "$99/mo" },
+  basic: { label: "Basic", price: "$50/mo" },
   pro: { label: "Pro", price: "$199/mo" },
   premium: { label: "Premium", price: "$399/mo" },
 };
@@ -862,7 +862,7 @@ function ClientFormDialog({ open, onClose, onSave, client }: {
               <Label className="text-xs">Maintenance Plan</Label>
               <Select value={form.maintenance || "none"} onValueChange={(v) => set("maintenance", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="none">None / Self-Hosted</SelectItem><SelectItem value="basic">Basic ($99/mo)</SelectItem><SelectItem value="pro">Pro ($199/mo)</SelectItem><SelectItem value="premium">Premium ($399/mo)</SelectItem></SelectContent>
+                <SelectContent><SelectItem value="none">None / Self-Hosted</SelectItem><SelectItem value="basic">Basic ($50/mo)</SelectItem><SelectItem value="pro">Pro ($199/mo)</SelectItem><SelectItem value="premium">Premium ($399/mo)</SelectItem></SelectContent>
               </Select>
             </div>
           </div>
