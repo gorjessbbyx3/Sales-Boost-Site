@@ -18,6 +18,9 @@ import {
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
+import stepChoosePlan from "@/assets/images/step-choose-plan.png";
+import stepSetup from "@/assets/images/step-setup.png";
+import stepKeepProfits from "@/assets/images/step-keep-profits.png";
 
 function HowItWorksHero() {
   return (
@@ -87,6 +90,8 @@ function StepsSection() {
       accent: "from-primary/20 to-primary/5",
       color: "text-primary",
       border: "border-primary/20",
+      image: stepChoosePlan,
+      imageAlt: "Business owner choosing a payment plan",
     },
     {
       step: "02",
@@ -102,6 +107,8 @@ function StepsSection() {
       accent: "from-chart-2/20 to-chart-2/5",
       color: "text-chart-2",
       border: "border-chart-2/20",
+      image: stepSetup,
+      imageAlt: "Technician setting up a payment terminal",
     },
     {
       step: "03",
@@ -117,6 +124,8 @@ function StepsSection() {
       accent: "from-chart-3/20 to-chart-3/5",
       color: "text-chart-3",
       border: "border-chart-3/20",
+      image: stepKeepProfits,
+      imageAlt: "Happy business owner keeping all their profits",
     },
   ];
 
@@ -134,31 +143,43 @@ function StepsSection() {
             >
               <Card className={`overflow-visible relative ${s.border}`}>
                 <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
-                <CardContent className="p-5 sm:p-8 relative">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <s.icon className={`w-6 h-6 ${s.color}`} />
+                <CardContent className="p-0 relative">
+                  <div className={`grid grid-cols-1 md:grid-cols-2 ${i % 2 === 1 ? "md:grid-flow-dense" : ""}`}>
+                    <div className={`relative overflow-hidden ${i % 2 === 1 ? "md:col-start-2" : ""} rounded-t-xl md:rounded-t-none ${i % 2 === 0 ? "md:rounded-l-xl" : "md:rounded-r-xl"}`}>
+                      <img
+                        src={s.image}
+                        alt={s.imageAlt}
+                        className="w-full h-48 md:h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent md:bg-gradient-to-r md:from-transparent md:to-black/10" />
                     </div>
-                    <div>
-                      <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
-                        Step {s.step}
+                    <div className="p-5 sm:p-8 flex flex-col justify-center">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <s.icon className={`w-6 h-6 ${s.color}`} />
+                        </div>
+                        <div>
+                          <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
+                            Step {s.step}
+                          </div>
+                          <h2 className="text-lg sm:text-2xl font-bold text-foreground">
+                            {s.title}
+                          </h2>
+                        </div>
                       </div>
-                      <h2 className="text-lg sm:text-2xl font-bold text-foreground">
-                        {s.title}
-                      </h2>
+                      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4">
+                        {s.description}
+                      </p>
+                      <ul className="space-y-2">
+                        {s.details.map((detail) => (
+                          <li key={detail} className="flex items-start gap-2 text-sm">
+                            <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
+                            <span className="text-foreground/80">{detail}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4">
-                    {s.description}
-                  </p>
-                  <ul className="space-y-2">
-                    {s.details.map((detail) => (
-                      <li key={detail} className="flex items-start gap-2 text-sm">
-                        <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
-                        <span className="text-foreground/80">{detail}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </CardContent>
               </Card>
             </motion.div>
