@@ -60,7 +60,7 @@ function HeroSection() {
 
   return (
     <section
-      className="relative overflow-hidden pt-20 pb-12 sm:pt-36 sm:pb-24"
+      className="relative overflow-hidden pt-44 pb-12 sm:pt-64 sm:pb-24"
       data-testid="section-hero"
     >
       <video
