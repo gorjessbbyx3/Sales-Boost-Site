@@ -5,6 +5,7 @@ interface Env {
   DB: D1Database;
   SESSION_SECRET: string;
   ANTHROPIC_API_KEY: string;
+  RESEND_API_KEY: string;
 }
 
 type Ctx = EventContext<Env, string, unknown>;
@@ -305,6 +306,70 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json({ success: true });
     }
 
+    // POST /api/contact-leads (public — contact form submission)
+    if (path === "/api/contact-leads" && method === "POST") {
+      const body: any = await request.json();
+      const id = genId();
+      const ts = now();
+      try {
+        await env.DB.prepare(
+          "INSERT INTO contact_leads (id, business_name, contact_name, phone, email, plan, high_risk, monthly_processing, best_contact_time, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ).bind(id, body.businessName || "", body.contactName || "", body.phone || "", body.email || "", body.plan || "", body.highRisk ? 1 : 0, body.monthlyProcessing || "", body.bestContactTime || "", ts).run();
+        const row = await env.DB.prepare("SELECT * FROM contact_leads WHERE id = ?").bind(id).first();
+        return json(mapContactLead(row!), 201);
+      } catch (e: any) {
+        // Table might not exist yet — create it and retry
+        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS contact_leads (
+          id TEXT PRIMARY KEY, business_name TEXT NOT NULL DEFAULT '', contact_name TEXT NOT NULL DEFAULT '',
+          phone TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', plan TEXT NOT NULL DEFAULT '',
+          high_risk INTEGER NOT NULL DEFAULT 0, monthly_processing TEXT NOT NULL DEFAULT '',
+          best_contact_time TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL
+        )`).run();
+        await env.DB.prepare(
+          "INSERT INTO contact_leads (id, business_name, contact_name, phone, email, plan, high_risk, monthly_processing, best_contact_time, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ).bind(id, body.businessName || "", body.contactName || "", body.phone || "", body.email || "", body.plan || "", body.highRisk ? 1 : 0, body.monthlyProcessing || "", body.bestContactTime || "", ts).run();
+        const row = await env.DB.prepare("SELECT * FROM contact_leads WHERE id = ?").bind(id).first();
+        return json(mapContactLead(row!), 201);
+      }
+    }
+
+    // POST /api/email/inbound (public webhook — Resend sends inbound emails here)
+    if (path === "/api/email/inbound" && method === "POST") {
+      const body: any = await request.json();
+      const { from, to, subject, text, html } = body;
+      if (!from) return err("Invalid webhook payload");
+
+      const ts = now();
+      const threadId = genId();
+      const msgId = genId();
+
+      // Extract sender info
+      const fromMatch = from.match(/^(.+)\s*<(.+)>$/);
+      const fromName = fromMatch ? fromMatch[1].trim() : from;
+      const fromEmail = fromMatch ? fromMatch[2] : from;
+
+      // Check for existing thread by email
+      const existingThread = await env.DB.prepare(
+        "SELECT id FROM email_threads WHERE contact_email = ? ORDER BY last_message_at DESC LIMIT 1"
+      ).bind(fromEmail).first();
+
+      const tid = existingThread ? (existingThread.id as string) : threadId;
+
+      if (existingThread) {
+        await env.DB.prepare("UPDATE email_threads SET last_message_at = ?, unread = 1, status = 'open' WHERE id = ?").bind(ts, tid).run();
+      } else {
+        await env.DB.prepare(
+          "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, '', ?, ?, 'direct', 'open', 1, ?, ?)"
+        ).bind(tid, subject || "(no subject)", fromEmail, fromName, ts, ts).run();
+      }
+
+      await env.DB.prepare(
+        "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, ?, ?, ?, ?, '', 'received', ?)"
+      ).bind(msgId, tid, fromEmail, fromName, to || "contact@techsavvyhawaii.com", subject || "", text || "", html || "", ts).run();
+
+      return json({ success: true, threadId: tid });
+    }
+
     // ─── Protected routes (require auth) ───────────────────────────
 
     const authed = await isAuthenticated(env.DB, request);
@@ -510,8 +575,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const body: any = await request.json();
       const id = genId();
       await env.DB.prepare(
-        "INSERT INTO tasks (id, title, due_date, priority, completed, linked_to, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-      ).bind(id, body.title || "", body.dueDate || "", body.priority || "medium", body.completed ? 1 : 0, body.linkedTo || "", now()).run();
+        "INSERT INTO tasks (id, title, due_date, priority, completed, linked_to, assignee, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      ).bind(id, body.title || "", body.dueDate || "", body.priority || "medium", body.completed ? 1 : 0, body.linkedTo || "", body.assignee || "", now()).run();
       const row = await env.DB.prepare("SELECT * FROM tasks WHERE id = ?").bind(id).first();
       return json(mapTask(row!), 201);
     }
@@ -528,6 +593,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       if (body.priority !== undefined) { updates.push("priority = ?"); values.push(body.priority); }
       if (body.completed !== undefined) { updates.push("completed = ?"); values.push(body.completed ? 1 : 0); }
       if (body.linkedTo !== undefined) { updates.push("linked_to = ?"); values.push(body.linkedTo); }
+      if (body.assignee !== undefined) { updates.push("assignee = ?"); values.push(body.assignee); }
       if (updates.length > 0) {
         await env.DB.prepare(`UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`).bind(...values, id).run();
       }
@@ -542,6 +608,485 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       await env.DB.prepare("DELETE FROM tasks WHERE id = ?").bind(id).run();
       return json({ success: true });
     }
+
+    // ─── EMAIL CONFIG ──────────────────────────────────────────────────
+
+    // GET /api/email/config
+    if (path === "/api/email/config" && method === "GET") {
+      try {
+        const row = await env.DB.prepare("SELECT * FROM resend_config WHERE id = 'default'").first();
+        if (!row) {
+          return json({ enabled: false, fromEmail: "contact@techsavvyhawaii.com", fromName: "TechSavvy Hawaii", autoConfirmEnabled: true, forwardCopyTo: "" });
+        }
+        return json({
+          enabled: !!row.enabled,
+          fromEmail: row.from_email,
+          fromName: row.from_name,
+          autoConfirmEnabled: !!row.auto_confirm_enabled,
+          forwardCopyTo: row.forward_copy_to || "",
+        });
+      } catch {
+        return json({ enabled: false, fromEmail: "contact@techsavvyhawaii.com", fromName: "TechSavvy Hawaii", autoConfirmEnabled: true, forwardCopyTo: "" });
+      }
+    }
+
+    // PATCH /api/email/config
+    if (path === "/api/email/config" && method === "PATCH") {
+      const body: any = await request.json();
+      const ts = now();
+      // Ensure table exists
+      await env.DB.prepare(`CREATE TABLE IF NOT EXISTS resend_config (
+        id TEXT PRIMARY KEY DEFAULT 'default',
+        enabled INTEGER NOT NULL DEFAULT 0,
+        from_email TEXT NOT NULL DEFAULT 'contact@techsavvyhawaii.com',
+        from_name TEXT NOT NULL DEFAULT 'TechSavvy Hawaii',
+        auto_confirm_enabled INTEGER NOT NULL DEFAULT 1,
+        forward_copy_to TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL DEFAULT ''
+      )`).run();
+
+      const existing = await env.DB.prepare("SELECT id FROM resend_config WHERE id = 'default'").first();
+      if (existing) {
+        const updates: string[] = [];
+        const values: any[] = [];
+        if (body.enabled !== undefined) { updates.push("enabled = ?"); values.push(body.enabled ? 1 : 0); }
+        if (body.fromEmail !== undefined) { updates.push("from_email = ?"); values.push(body.fromEmail); }
+        if (body.fromName !== undefined) { updates.push("from_name = ?"); values.push(body.fromName); }
+        if (body.autoConfirmEnabled !== undefined) { updates.push("auto_confirm_enabled = ?"); values.push(body.autoConfirmEnabled ? 1 : 0); }
+        if (body.forwardCopyTo !== undefined) { updates.push("forward_copy_to = ?"); values.push(body.forwardCopyTo); }
+        updates.push("updated_at = ?"); values.push(ts);
+        await env.DB.prepare(`UPDATE resend_config SET ${updates.join(", ")} WHERE id = 'default'`).bind(...values).run();
+      } else {
+        await env.DB.prepare(
+          "INSERT INTO resend_config (id, enabled, from_email, from_name, auto_confirm_enabled, forward_copy_to, updated_at) VALUES ('default', ?, ?, ?, ?, ?, ?)"
+        ).bind(
+          body.enabled ? 1 : 0,
+          body.fromEmail || "contact@techsavvyhawaii.com",
+          body.fromName || "TechSavvy Hawaii",
+          body.autoConfirmEnabled !== false ? 1 : 0,
+          body.forwardCopyTo || "",
+          ts
+        ).run();
+      }
+      const row = await env.DB.prepare("SELECT * FROM resend_config WHERE id = 'default'").first();
+      return json({
+        enabled: !!row!.enabled,
+        fromEmail: row!.from_email,
+        fromName: row!.from_name,
+        autoConfirmEnabled: !!row!.auto_confirm_enabled,
+        forwardCopyTo: row!.forward_copy_to || "",
+      });
+    }
+
+    // ─── EMAIL THREADS (INBOX) ──────────────────────────────────────────
+
+    // GET /api/email/threads
+    if (path === "/api/email/threads" && method === "GET") {
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM email_threads ORDER BY last_message_at DESC").all();
+        return json(results.map(mapThread));
+      } catch {
+        return json([]);
+      }
+    }
+
+    // GET /api/email/threads/:id
+    const threadMatch = path.match(/^\/api\/email\/threads\/([^/]+)$/);
+    if (threadMatch && method === "GET") {
+      const id = threadMatch[1];
+      const thread = await env.DB.prepare("SELECT * FROM email_threads WHERE id = ?").bind(id).first();
+      if (!thread) return err("Thread not found", 404);
+      const { results: messages } = await env.DB.prepare("SELECT * FROM email_messages WHERE thread_id = ? ORDER BY sent_at ASC").bind(id).all();
+      // Mark as read
+      if (thread.unread) {
+        await env.DB.prepare("UPDATE email_threads SET unread = 0 WHERE id = ?").bind(id).run();
+      }
+      return json({ ...mapThread(thread), messages: messages.map(mapMessage) });
+    }
+
+    // DELETE /api/email/threads/:id
+    if (threadMatch && method === "DELETE") {
+      const id = threadMatch[1];
+      await env.DB.prepare("DELETE FROM email_messages WHERE thread_id = ?").bind(id).run();
+      await env.DB.prepare("DELETE FROM email_threads WHERE id = ?").bind(id).run();
+      return json({ success: true });
+    }
+
+    // PATCH /api/email/threads/:id
+    if (threadMatch && method === "PATCH") {
+      const id = threadMatch[1];
+      const body: any = await request.json();
+      const updates: string[] = [];
+      const values: any[] = [];
+      if (body.unread !== undefined) { updates.push("unread = ?"); values.push(body.unread ? 1 : 0); }
+      if (body.status !== undefined) { updates.push("status = ?"); values.push(body.status); }
+      if (updates.length > 0) {
+        await env.DB.prepare(`UPDATE email_threads SET ${updates.join(", ")} WHERE id = ?`).bind(...values, id).run();
+      }
+      const row = await env.DB.prepare("SELECT * FROM email_threads WHERE id = ?").bind(id).first();
+      if (!row) return err("Thread not found", 404);
+      return json(mapThread(row));
+    }
+
+    // GET /api/email/stats
+    if (path === "/api/email/stats" && method === "GET") {
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM email_threads").all();
+        const threads = results || [];
+        return json({
+          total: threads.length,
+          unread: threads.filter((t: any) => t.unread).length,
+          outreach: threads.filter((t: any) => t.source === "outreach").length,
+          replies: threads.filter((t: any) => t.source === "outreach-reply").length,
+          directInbound: threads.filter((t: any) => t.source === "direct").length,
+          contactForm: threads.filter((t: any) => t.source === "contact-form").length,
+        });
+      } catch {
+        return json({ total: 0, unread: 0, outreach: 0, replies: 0, directInbound: 0, contactForm: 0 });
+      }
+    }
+
+    // POST /api/email/send
+    if (path === "/api/email/send" && method === "POST") {
+      const body: any = await request.json();
+      const { to, subject, html, text, threadId } = body;
+      if (!to || !subject || !html) return err("to, subject, and html are required");
+
+      const apiKey = env.RESEND_API_KEY;
+      if (!apiKey) return err("RESEND_API_KEY not configured", 500);
+
+      // Get email config
+      let fromEmail = "contact@techsavvyhawaii.com";
+      let fromName = "TechSavvy Hawaii";
+      try {
+        const cfg = await env.DB.prepare("SELECT * FROM resend_config WHERE id = 'default'").first();
+        if (cfg && cfg.enabled) {
+          fromEmail = (cfg.from_email as string) || fromEmail;
+          fromName = (cfg.from_name as string) || fromName;
+        }
+      } catch { /* use defaults */ }
+
+      // Send via Resend API
+      const resendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          from: `${fromName} <${fromEmail}>`,
+          to: [to],
+          subject,
+          html,
+          text: text || undefined,
+        }),
+      });
+
+      if (!resendRes.ok) {
+        const errText = await resendRes.text();
+        console.error("Resend API error:", errText);
+        return err("Failed to send email", 500);
+      }
+
+      const resendData: any = await resendRes.json();
+      const msgId = genId();
+      const ts = now();
+
+      // Create or update thread
+      let tid = threadId;
+      if (!tid) {
+        tid = genId();
+        await env.DB.prepare(
+          "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, '', ?, ?, 'direct', 'open', 0, ?, ?)"
+        ).bind(tid, subject, to, to, ts, ts).run();
+      } else {
+        await env.DB.prepare("UPDATE email_threads SET last_message_at = ?, status = 'replied' WHERE id = ?").bind(ts, tid).run();
+      }
+
+      // Save outbound message
+      await env.DB.prepare(
+        "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'outbound', ?, ?, ?, ?, ?, ?, ?, 'sent', ?)"
+      ).bind(msgId, tid, fromEmail, fromName, to, subject, text || "", html, resendData.id || "", ts).run();
+
+      return json({ success: true, threadId: tid, messageId: msgId });
+    }
+
+    // POST /api/email/inbound (webhook — no auth required, handled above auth check)
+
+    // ─── ACTIVITY LOG ──────────────────────────────────────────────────
+
+    if (path === "/api/activity" && method === "GET") {
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT 50").all();
+        return json(results.map(mapActivity));
+      } catch {
+        return json([]);
+      }
+    }
+
+    // ─── SCHEDULE ITEMS ─────────────────────────────────────────────────
+
+    if (path === "/api/schedule" && method === "GET") {
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM schedule_items ORDER BY date ASC, time ASC").all();
+        return json(results.map(mapSchedule));
+      } catch {
+        return json([]);
+      }
+    }
+
+    const schedMatch = path.match(/^\/api\/schedule\/([^/]+)$/);
+    if (schedMatch && method === "PATCH") {
+      const id = schedMatch[1];
+      const body: any = await request.json();
+      const updates: string[] = [];
+      const values: any[] = [];
+      if (body.status !== undefined) { updates.push("status = ?"); values.push(body.status); }
+      if (body.title !== undefined) { updates.push("title = ?"); values.push(body.title); }
+      if (updates.length > 0) {
+        await env.DB.prepare(`UPDATE schedule_items SET ${updates.join(", ")} WHERE id = ?`).bind(...values, id).run();
+      }
+      const row = await env.DB.prepare("SELECT * FROM schedule_items WHERE id = ?").bind(id).first();
+      if (!row) return err("Schedule item not found", 404);
+      return json(mapSchedule(row));
+    }
+
+    // ─── DASHBOARD BRIEFING ─────────────────────────────────────────────
+
+    if (path === "/api/dashboard/briefing" && method === "GET") {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const { results: allLeads } = await env.DB.prepare("SELECT * FROM leads").all();
+      const { results: allTasks } = await env.DB.prepare("SELECT * FROM tasks").all();
+      const { results: allRevenue } = await env.DB.prepare("SELECT * FROM revenue").all();
+      const { results: allClients } = await env.DB.prepare("SELECT * FROM clients").all();
+
+      let schedItems: any[] = [];
+      try { const r = await env.DB.prepare("SELECT * FROM schedule_items WHERE date = ?").bind(todayStr).all(); schedItems = r.results || []; } catch { /* table may not exist */ }
+
+      let planItems: any[] = [];
+      try { const r = await env.DB.prepare("SELECT * FROM plan_items").all(); planItems = r.results || []; } catch { /* table may not exist */ }
+
+      const leads = allLeads || [];
+      const tasks = allTasks || [];
+      const revenue = allRevenue || [];
+      const clients = allClients || [];
+
+      // Stale leads (no update in 7+ days, active pipeline)
+      const activeStatuses = ["new", "contacted", "qualified", "statement-requested", "statement-received", "analysis-delivered", "proposal-sent", "negotiation"];
+      const staleLeads = leads.filter((l: any) => {
+        if (!activeStatuses.includes(l.status)) return false;
+        const daysSince = Math.floor((Date.now() - new Date(l.updated_at).getTime()) / 86400000);
+        return daysSince >= 7;
+      }).map((l: any) => ({
+        id: l.id, name: l.name, business: l.business, status: l.status,
+        daysSinceUpdate: Math.floor((Date.now() - new Date(l.updated_at).getTime()) / 86400000),
+        nextStep: "",
+      }));
+
+      // Follow-ups due
+      const followUpsDue = leads.filter((l: any) => {
+        if (!activeStatuses.includes(l.status)) return false;
+        if (!l.next_follow_up) return false;
+        return l.next_follow_up <= todayStr;
+      }).map((l: any) => ({
+        id: l.id, name: l.name, business: l.business, status: l.status,
+        nextStep: l.next_follow_up || "", overdue: l.next_follow_up < todayStr,
+      }));
+
+      // Upcoming follow-ups (next 7 days)
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      const nextWeekStr = nextWeek.toISOString().split("T")[0];
+      const upcomingFollowUps = leads.filter((l: any) => {
+        if (!activeStatuses.includes(l.status)) return false;
+        return l.next_follow_up && l.next_follow_up > todayStr && l.next_follow_up <= nextWeekStr;
+      }).map((l: any) => ({
+        id: l.id, name: l.name, business: l.business, status: l.status, nextStep: l.next_follow_up || "",
+      }));
+
+      // Overdue tasks
+      const overdueTasks = tasks.filter((t: any) => !t.completed && t.due_date && t.due_date < todayStr).map((t: any) => ({
+        id: t.id, title: t.title, dueDate: t.due_date, priority: t.priority,
+      }));
+
+      // Today's tasks
+      const todayTasks = tasks.filter((t: any) => !t.completed && t.due_date === todayStr).map((t: any) => ({
+        id: t.id, title: t.title, priority: t.priority,
+      }));
+
+      // Today's schedule
+      const todaySchedule = schedItems.map((s: any) => ({
+        id: s.id, title: s.title, time: s.time, category: s.category,
+      }));
+
+      // Revenue calculations
+      const nowDate = new Date();
+      const thisMonth = revenue.filter((r: any) => {
+        const d = new Date(r.date as string);
+        return d.getMonth() === nowDate.getMonth() && d.getFullYear() === nowDate.getFullYear();
+      });
+      const lastMonthDate = new Date(nowDate.getFullYear(), nowDate.getMonth() - 1, 1);
+      const lastMonth = revenue.filter((r: any) => {
+        const d = new Date(r.date as string);
+        return d.getMonth() === lastMonthDate.getMonth() && d.getFullYear() === lastMonthDate.getFullYear();
+      });
+      const thisMonthTotal = thisMonth.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+      const lastMonthTotal = lastMonth.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+      const mrr = revenue.filter((r: any) => r.recurring).reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+
+      // Pipeline counts
+      const pipeline = {
+        new: leads.filter((l: any) => l.status === "new").length,
+        contacted: leads.filter((l: any) => l.status === "contacted").length,
+        qualified: leads.filter((l: any) => l.status === "qualified").length,
+        proposalSent: leads.filter((l: any) => l.status === "proposal-sent").length,
+        negotiation: leads.filter((l: any) => l.status === "negotiation").length,
+        totalActive: leads.filter((l: any) => activeStatuses.includes(l.status)).length,
+        wonThisMonth: leads.filter((l: any) => {
+          if (l.status !== "won") return false;
+          const d = new Date(l.updated_at as string);
+          return d.getMonth() === nowDate.getMonth() && d.getFullYear() === nowDate.getFullYear();
+        }).length,
+      };
+
+      // Client alerts
+      const clientAlerts = clients.filter((c: any) => {
+        const issues: string[] = [];
+        if (c.website_status === "not-started" && c.package !== "terminal") issues.push("Website not started");
+        if ((Number(c.monthly_volume) || 0) < 5000) issues.push("Low volume");
+        return issues.length > 0;
+      }).map((c: any) => ({
+        id: c.id, business: c.business,
+        issues: [
+          ...(c.website_status === "not-started" && c.package !== "terminal" ? ["Website not started"] : []),
+          ...((Number(c.monthly_volume) || 0) < 5000 ? ["Low volume"] : []),
+        ],
+      })).slice(0, 5);
+
+      // Plan progress
+      const planTotal = planItems.length;
+      const planCompleted = planItems.filter((p: any) => p.completed).length;
+      const planPercent = planTotal > 0 ? Math.round((planCompleted / planTotal) * 100) : 0;
+
+      return json({
+        date: todayStr,
+        staleLeads, followUpsDue, upcomingFollowUps,
+        overdueTasks, todayTasks, todaySchedule,
+        revenue: { thisMonth: thisMonthTotal, lastMonth: lastMonthTotal, mrr },
+        pipeline, clientAlerts,
+        planProgress: { total: planTotal, completed: planCompleted, percent: planPercent },
+      });
+    }
+
+    // ─── TEAM MEMBERS ──────────────────────────────────────────────────
+
+    if (path === "/api/team-members" && method === "GET") {
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM team_members ORDER BY name ASC").all();
+        return json(results.map(mapTeamMember));
+      } catch {
+        return json([]);
+      }
+    }
+
+    // ─── CONTACT LEADS ──────────────────────────────────────────────────
+
+    if (path === "/api/contact-leads" && method === "GET") {
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM contact_leads ORDER BY created_at DESC").all();
+        return json(results.map(mapContactLead));
+      } catch {
+        return json([]);
+      }
+    }
+
+    // ─── OPPORTUNITIES (DEALS) ────────────────────────────────────────
+
+    if (path === "/api/opportunities" && method === "GET") {
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM opportunities ORDER BY updated_at DESC").all();
+        const { results: leadRows } = await env.DB.prepare("SELECT id, name, business FROM leads").all();
+        const leadMap: Record<string, any> = {};
+        (leadRows || []).forEach((l: any) => { leadMap[l.id] = l; });
+
+        let teamMap: Record<string, any> = {};
+        try {
+          const { results: teamRows } = await env.DB.prepare("SELECT id, name FROM team_members").all();
+          (teamRows || []).forEach((t: any) => { teamMap[t.id] = t; });
+        } catch { /* table may not exist */ }
+
+        return json((results || []).map((o: any) => ({
+          id: o.id, title: o.title, leadId: o.lead_id || "", clientId: o.client_id || "",
+          stage: o.stage, value: Number(o.value) || 0, probability: Number(o.probability) || 0,
+          weightedValue: (Number(o.value) || 0) * ((Number(o.probability) || 0) / 100),
+          expectedCloseDate: o.expected_close_date || "", actualCloseDate: o.actual_close_date || "",
+          lossReason: o.loss_reason || "", notes: o.notes || "", assigneeId: o.assignee_id || "",
+          createdAt: o.created_at, updatedAt: o.updated_at, stageChangedAt: o.stage_changed_at || "",
+          leadName: leadMap[o.lead_id]?.name || "", leadBusiness: leadMap[o.lead_id]?.business || "",
+          assigneeName: teamMap[o.assignee_id]?.name || "",
+        })));
+      } catch {
+        return json([]);
+      }
+    }
+
+    if (path === "/api/opportunities" && method === "POST") {
+      const body: any = await request.json();
+      const id = genId();
+      const ts = now();
+      const stageProbMap: Record<string, number> = {
+        prospecting: 10, qualification: 25, proposal: 50, negotiation: 75, "closed-won": 100, "closed-lost": 0,
+      };
+      const stage = body.stage || "prospecting";
+      const probability = body.probability ?? stageProbMap[stage] ?? 10;
+
+      await env.DB.prepare(
+        "INSERT INTO opportunities (id, title, lead_id, client_id, stage, value, probability, expected_close_date, actual_close_date, loss_reason, notes, assignee_id, created_at, updated_at, stage_changed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?)"
+      ).bind(id, body.title || "", body.leadId || "", body.clientId || "", stage, body.value || 0, probability, body.expectedCloseDate || "", body.notes || "", body.assigneeId || "", ts, ts, ts).run();
+      const row = await env.DB.prepare("SELECT * FROM opportunities WHERE id = ?").bind(id).first();
+      return json({
+        id: row!.id, title: row!.title, leadId: row!.lead_id, clientId: row!.client_id,
+        stage: row!.stage, value: Number(row!.value), probability: Number(row!.probability),
+        weightedValue: Number(row!.value) * (Number(row!.probability) / 100),
+        expectedCloseDate: row!.expected_close_date || "", actualCloseDate: row!.actual_close_date || "",
+        lossReason: row!.loss_reason || "", notes: row!.notes || "", assigneeId: row!.assignee_id || "",
+        createdAt: row!.created_at, updatedAt: row!.updated_at, stageChangedAt: row!.stage_changed_at || "",
+        leadName: "", leadBusiness: "", assigneeName: "",
+      }, 201);
+    }
+
+    const oppMatch = path.match(/^\/api\/opportunities\/([^/]+)$/);
+    if (oppMatch && method === "PATCH") {
+      const id = oppMatch[1];
+      const body: any = await request.json();
+      const fieldMap: Record<string, string> = {
+        title: "title", leadId: "lead_id", clientId: "client_id", stage: "stage",
+        value: "value", probability: "probability", expectedCloseDate: "expected_close_date",
+        actualCloseDate: "actual_close_date", lossReason: "loss_reason", notes: "notes", assigneeId: "assignee_id",
+      };
+      const updates: string[] = ["updated_at = ?"];
+      const values: any[] = [now()];
+      for (const [jsKey, dbCol] of Object.entries(fieldMap)) {
+        if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(body[jsKey]); }
+      }
+      if (body.stage !== undefined) { updates.push("stage_changed_at = ?"); values.push(now()); }
+      await env.DB.prepare(`UPDATE opportunities SET ${updates.join(", ")} WHERE id = ?`).bind(...values, id).run();
+      const row = await env.DB.prepare("SELECT * FROM opportunities WHERE id = ?").bind(id).first();
+      if (!row) return err("Opportunity not found", 404);
+      return json({
+        id: row.id, title: row.title, leadId: row.lead_id, clientId: row.client_id,
+        stage: row.stage, value: Number(row.value), probability: Number(row.probability),
+        weightedValue: Number(row.value) * (Number(row.probability) / 100),
+        expectedCloseDate: row.expected_close_date || "", actualCloseDate: row.actual_close_date || "",
+        lossReason: row.loss_reason || "", notes: row.notes || "", assigneeId: row.assignee_id || "",
+        createdAt: row.created_at, updatedAt: row.updated_at, stageChangedAt: row.stage_changed_at || "",
+        leadName: "", leadBusiness: "", assigneeName: "",
+      });
+    }
+
+    if (oppMatch && method === "DELETE") {
+      await env.DB.prepare("DELETE FROM opportunities WHERE id = ?").bind(oppMatch[1]).run();
+      return json({ success: true });
+    }
+
+    // ─── CATCH-ALL for routes that exist on Express but not yet here ─────
 
     return err("Not found", 404);
   } catch (e: any) {
@@ -605,6 +1150,94 @@ function mapTask(row: Record<string, unknown>) {
     priority: row.priority,
     completed: !!row.completed,
     linkedTo: row.linked_to,
+    assignee: row.assignee || "",
+    createdAt: row.created_at,
+  };
+}
+
+function mapThread(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    subject: row.subject,
+    leadId: row.lead_id || "",
+    contactEmail: row.contact_email,
+    contactName: row.contact_name,
+    source: row.source,
+    status: row.status,
+    unread: !!row.unread,
+    lastMessageAt: row.last_message_at,
+    createdAt: row.created_at,
+  };
+}
+
+function mapMessage(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    threadId: row.thread_id,
+    direction: row.direction,
+    fromEmail: row.from_email,
+    fromName: row.from_name,
+    toEmail: row.to_email,
+    subject: row.subject,
+    body: row.body,
+    htmlBody: row.html_body,
+    resendId: row.resend_id || "",
+    status: row.status,
+    sentAt: row.sent_at,
+  };
+}
+
+function mapActivity(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    action: row.action,
+    details: row.details,
+    type: row.type,
+    timestamp: row.timestamp,
+  };
+}
+
+function mapSchedule(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    date: row.date,
+    time: row.time,
+    duration: row.duration,
+    assigneeId: row.assignee_id || "",
+    priority: row.priority,
+    status: row.status,
+    isAiGenerated: !!row.is_ai_generated,
+    category: row.category,
+    createdAt: row.created_at,
+  };
+}
+
+function mapTeamMember(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    email: row.email,
+    phone: row.phone,
+    status: row.status,
+    dailyInvolvement: row.daily_involvement || "",
+    joinedAt: row.joined_at,
+  };
+}
+
+function mapContactLead(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    businessName: row.business_name,
+    contactName: row.contact_name,
+    phone: row.phone,
+    email: row.email,
+    plan: row.plan,
+    highRisk: !!row.high_risk,
+    monthlyProcessing: row.monthly_processing,
+    bestContactTime: row.best_contact_time,
     createdAt: row.created_at,
   };
 }

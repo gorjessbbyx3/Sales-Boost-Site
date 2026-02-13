@@ -100,6 +100,7 @@ export const tasks = pgTable("tasks", {
   priority: text("priority").notNull().default("medium"),
   completed: boolean("completed").notNull().default(false),
   linkedTo: text("linked_to").notNull().default(""),
+  assignee: text("assignee").notNull().default(""),
   createdAt: text("created_at").notNull(),
 });
 

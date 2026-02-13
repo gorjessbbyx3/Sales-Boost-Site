@@ -193,8 +193,17 @@ interface Task {
   priority: "low" | "medium" | "high";
   completed: boolean;
   linkedTo: string;
+  assignee: string;
   createdAt: string;
 }
+
+const TEAM_MEMBERS_LIST = [
+  { value: "kepa", label: "Kepa", color: "bg-blue-500" },
+  { value: "jessica", label: "Jessica", color: "bg-pink-500" },
+  { value: "joey", label: "Joey", color: "bg-emerald-500" },
+  { value: "aaron", label: "Aaron", color: "bg-amber-500" },
+] as const;
+type TeamAssignee = typeof TEAM_MEMBERS_LIST[number]["value"];
 
 interface AdminFile {
   id: string;
@@ -840,6 +849,9 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
   const { data: clients = [] } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
   const { data: activityData = [] } = useQuery<ActivityEntry[]>({ queryKey: ["/api/activity"] });
   const { data: revenueData = [] } = useQuery<RevenueEntry[]>({ queryKey: ["/api/revenue"] });
+  const { data: tasks = [] } = useQuery<Task[]>({ queryKey: ["/api/tasks"] });
+  const { data: threads = [] } = useQuery<EmailThread[]>({ queryKey: ["/api/email/threads"] });
+  const { data: schedule = [] } = useQuery<ScheduleItem[]>({ queryKey: ["/api/schedule"] });
 
   const b = briefing;
   const urgentCount = (b?.overdueTasks.length || 0) + (b?.followUpsDue.length || 0) + (b?.staleLeads.length || 0);
@@ -852,39 +864,54 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
   const lostLeads = leads.filter(l => l.status === "lost").length;
   const closedLeads = wonLeads + lostLeads;
   const winRate = closedLeads > 0 ? Math.round((wonLeads / closedLeads) * 100) : 0;
-  const avgVolume = clients.length > 0 ? Math.round(clients.reduce((s, c) => s + (c.monthlyVolume || 0), 0) / clients.length) : 0;
 
-  // Pipeline funnel stages (active selling stages only)
-  const funnelStages: { key: PipelineStage; label: string }[] = [
-    { key: "new", label: "New" },
-    { key: "contacted", label: "Contacted" },
-    { key: "qualified", label: "Qualified" },
-    { key: "statement-requested", label: "Stmt Req" },
-    { key: "statement-received", label: "Stmt Recv" },
-    { key: "analysis-delivered", label: "Analysis" },
-    { key: "proposal-sent", label: "Proposal" },
-    { key: "negotiation", label: "Negotiation" },
-  ];
-  const funnelCounts = funnelStages.map(s => ({ ...s, count: leads.filter(l => l.status === s.key).length }));
-  const maxFunnel = Math.max(...funnelCounts.map(f => f.count), 1);
+  // Active pipeline leads (not won/lost/nurture) for the pipeline section
+  const activeLeads = leads.filter(l => !["won", "lost", "nurture"].includes(l.status));
 
-  // Revenue by type this month
-  const now = new Date();
-  const thisMonthRevenue = revenueData.filter(r => {
-    const d = new Date(r.date);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const revenueByType = Object.entries(REVENUE_TYPES).map(([type, label]) => ({
-    type, label,
-    amount: thisMonthRevenue.filter(r => r.type === type).reduce((s, r) => s + r.amount, 0),
-    count: thisMonthRevenue.filter(r => r.type === type).length,
-  })).filter(r => r.amount > 0);
+  // AI-recommended quick actions per lead
+  const getAiActions = (lead: Lead): { label: string; icon: React.ElementType; action: string }[] => {
+    const actions: { label: string; icon: React.ElementType; action: string }[] = [];
+    const daysSinceUpdate = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / 86400000);
+    if (lead.status === "new") {
+      actions.push({ label: "Call", icon: Phone, action: "leads" });
+      actions.push({ label: "Email", icon: Mail, action: "inbox" });
+    } else if (lead.status === "contacted" || lead.status === "qualified") {
+      actions.push({ label: "Request Statement", icon: FileText, action: "leads" });
+      if (daysSinceUpdate > 3) actions.push({ label: "Follow Up", icon: Phone, action: "leads" });
+    } else if (lead.status === "statement-requested") {
+      actions.push({ label: "Check Status", icon: Phone, action: "leads" });
+    } else if (lead.status === "statement-received" || lead.status === "analysis-delivered") {
+      actions.push({ label: "Send Proposal", icon: Send, action: "leads" });
+    } else if (lead.status === "proposal-sent" || lead.status === "negotiation") {
+      actions.push({ label: "Follow Up", icon: Phone, action: "leads" });
+      actions.push({ label: "Close Deal", icon: CheckCircle, action: "leads" });
+    }
+    if (daysSinceUpdate > 5 && !actions.find(a => a.label === "Follow Up")) {
+      actions.push({ label: "Re-engage", icon: RefreshCw, action: "leads" });
+    }
+    return actions.slice(0, 2);
+  };
 
-  // Recent conversions (leads won, sorted by most recent)
-  const recentWins = leads
-    .filter(l => l.status === "won")
-    .sort((a, c) => new Date(c.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 5);
+  // Per-user pending tasks
+  const todayStr = today();
+  const pendingTasks = tasks.filter(t => !t.completed);
+
+  // Mini weekly calendar
+  const weekDays = useMemo(() => {
+    const d = new Date();
+    const dayOfWeek = d.getDay();
+    const start = new Date(d);
+    start.setDate(d.getDate() - dayOfWeek);
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(start);
+      day.setDate(start.getDate() + i);
+      return day.toISOString().split("T")[0];
+    });
+  }, []);
+
+  // Unread inbox threads
+  const unreadThreads = threads.filter(t => t.unread);
+  const recentThreads = threads.slice(0, 5);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -972,284 +999,288 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
         </Card>
       </div>
 
-      {/* Main content: Action Items + Pipeline Funnel */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Action Items — combined urgent list */}
-        <Card className="overflow-visible border-border/50 lg:col-span-2">
+      {/* Row 2: Pipeline Leads with AI Actions + Team Task Lists */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Pipeline Leads with AI Quick Actions */}
+        <Card className="overflow-visible border-border/50">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                {urgentCount > 0 ? <Bell className="w-4 h-4 text-destructive" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
-                Action Items
-                {urgentCount > 0 && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 ml-1">{urgentCount}</Badge>}
+                <Sparkles className="w-4 h-4 text-primary" />Pipeline Leads
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-1">{activeLeads.length}</Badge>
               </CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("tasks")}>Tasks <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("leads")}>View All <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
             </div>
           </CardHeader>
-          <CardContent className="pt-0 max-h-[340px] overflow-y-auto">
-            {urgentCount === 0 && (!b || (b.todaySchedule.length === 0 && b.todayTasks.length === 0)) ? (
+          <CardContent className="pt-0 max-h-[380px] overflow-y-auto">
+            {activeLeads.length === 0 ? (
               <div className="text-center py-8">
-                <CheckCircle className="w-8 h-8 text-emerald-400/40 mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">Nothing urgent. Go prospect!</p>
-                <Button variant="outline" size="sm" className="mt-3 text-xs h-7" onClick={() => setActiveTab("prospector")}><Search className="w-3 h-3 mr-1.5" />Find Prospects</Button>
+                <UserPlus className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">No active leads in pipeline</p>
+                <Button variant="outline" size="sm" className="mt-3 text-xs h-7" onClick={() => setActiveTab("leads")}><Plus className="w-3 h-3 mr-1.5" />Add Lead</Button>
               </div>
             ) : (
-              <div className="space-y-0.5">
-                {/* Overdue tasks */}
-                {b?.overdueTasks.map(t => (
-                  <div key={`task-${t.id}`} className="flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 cursor-pointer border-l-2 border-red-400/60" onClick={() => setActiveTab("tasks")}>
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${t.priority === "high" ? "bg-red-400" : "bg-yellow-400"}`} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs truncate font-medium">{t.title}</p>
-                      <p className="text-[10px] text-destructive">Overdue — due {t.dueDate}</p>
+              <div className="space-y-1">
+                {activeLeads.slice(0, 10).map(lead => {
+                  const cfg = PIPELINE_CONFIG[lead.status as PipelineStage];
+                  const actions = getAiActions(lead);
+                  const daysSinceUpdate = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / 86400000);
+                  return (
+                    <div key={lead.id} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-muted/30 group">
+                      <div className={`w-1.5 h-full min-h-[36px] rounded-full shrink-0 ${cfg?.bg.split(" ")[0] || "bg-muted"}`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium truncate">{lead.business || lead.name}</span>
+                          <Badge variant="outline" className={`text-[9px] px-1 py-0 shrink-0 ${cfg?.color || ""}`}>{cfg?.short || lead.status}</Badge>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-muted-foreground">{lead.name}{lead.vertical ? ` · ${VERTICAL_CONFIG[lead.vertical] || lead.vertical}` : ""}</span>
+                          {daysSinceUpdate > 3 && <span className="text-[9px] text-yellow-500">{daysSinceUpdate}d ago</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {actions.map((a, i) => (
+                          <Button key={i} variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setActiveTab(a.action)}>
+                            <a.icon className="w-3 h-3 mr-1" />{a.label}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {/* Follow-ups due */}
-                {b?.followUpsDue.map(l => (
-                  <div key={`fu-${l.id}`} className="flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 cursor-pointer border-l-2 border-orange-400/60" onClick={() => setActiveTab("leads")}>
-                    <Phone className="w-3 h-3 text-orange-400 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs truncate font-medium">{l.business || l.name}</p>
-                      <p className="text-[10px] text-orange-400">{l.overdue ? "Overdue follow-up" : "Follow up today"}</p>
-                    </div>
-                  </div>
-                ))}
-                {/* Stale leads */}
-                {b?.staleLeads.slice(0, 4).map(l => (
-                  <div key={`stale-${l.id}`} className="flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 cursor-pointer border-l-2 border-yellow-400/40" onClick={() => setActiveTab("leads")}>
-                    <AlertTriangle className="w-3 h-3 text-yellow-400 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs truncate font-medium">{l.business || l.name}</p>
-                      <p className="text-[10px] text-muted-foreground">No update in {l.daysSinceUpdate}d — {PIPELINE_CONFIG[l.status as PipelineStage]?.short || l.status}</p>
-                    </div>
-                  </div>
-                ))}
-                {/* Today's schedule items */}
-                {b?.todaySchedule.map(s => (
-                  <div key={`sched-${s.id}`} className="flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 cursor-pointer border-l-2 border-blue-400/40" onClick={() => setActiveTab("tasks")}>
-                    <Clock className="w-3 h-3 text-blue-400 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs truncate">{s.title}</p>
-                      <p className="text-[10px] text-muted-foreground">{s.time} — {s.category}</p>
-                    </div>
-                  </div>
-                ))}
-                {/* Today's tasks */}
-                {b?.todayTasks.map(t => (
-                  <div key={`today-${t.id}`} className="flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 cursor-pointer border-l-2 border-border/50" onClick={() => setActiveTab("tasks")}>
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${t.priority === "high" ? "bg-red-400" : t.priority === "medium" ? "bg-yellow-400" : "bg-green-400"}`} />
-                    <p className="text-xs truncate">{t.title}</p>
-                  </div>
-                ))}
+                  );
+                })}
+                {activeLeads.length > 10 && (
+                  <p className="text-[10px] text-muted-foreground text-center pt-2 cursor-pointer hover:text-primary" onClick={() => setActiveTab("leads")}>
+                    +{activeLeads.length - 10} more leads
+                  </p>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Pipeline Funnel */}
-        <Card className="overflow-visible border-border/50 lg:col-span-3">
+        {/* Color-coded Task Lists per Team Member */}
+        <Card className="overflow-visible border-border/50">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Pipeline Funnel</CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("leads")}>View All <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <ClipboardList className="w-4 h-4 text-primary" />Team Tasks
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-1">{pendingTasks.length} pending</Badge>
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("tasks")}>All Tasks <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
             </div>
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-2">
-              {funnelCounts.map(stage => {
-                const pct = maxFunnel > 0 ? (stage.count / maxFunnel) * 100 : 0;
-                const cfg = PIPELINE_CONFIG[stage.key];
+          <CardContent className="pt-0 max-h-[380px] overflow-y-auto">
+            <div className="space-y-3">
+              {TEAM_MEMBERS_LIST.map(member => {
+                const memberTasks = pendingTasks.filter(t => t.assignee === member.value);
+                const overdue = memberTasks.filter(t => t.dueDate && t.dueDate < todayStr);
                 return (
-                  <div key={stage.key} className="flex items-center gap-3 cursor-pointer hover:bg-muted/20 rounded-md px-1 py-1" onClick={() => setActiveTab("leads")}>
-                    <span className="text-[11px] text-muted-foreground w-20 shrink-0 text-right">{stage.label}</span>
-                    <div className="flex-1 h-6 bg-muted/20 rounded-md overflow-hidden relative">
-                      <div
-                        className={`h-full rounded-md transition-all duration-500 ${cfg.bg.split(" ")[0]}`}
-                        style={{ width: `${Math.max(pct, stage.count > 0 ? 8 : 0)}%` }}
-                      />
-                      {stage.count > 0 && (
-                        <span className={`absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-bold ${cfg.color}`}>
-                          {stage.count}
-                        </span>
-                      )}
+                  <div key={member.value}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className={`w-2.5 h-2.5 rounded-full ${member.color}`} />
+                      <span className="text-xs font-semibold">{member.label}</span>
+                      <span className="text-[10px] text-muted-foreground">{memberTasks.length} task{memberTasks.length !== 1 ? "s" : ""}</span>
+                      {overdue.length > 0 && <Badge variant="destructive" className="text-[9px] px-1 py-0">{overdue.length} overdue</Badge>}
                     </div>
+                    {memberTasks.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground pl-5 pb-1">No tasks assigned</p>
+                    ) : (
+                      <div className="space-y-0.5 pl-1">
+                        {memberTasks.slice(0, 4).map(task => (
+                          <div key={task.id} className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-muted/30 cursor-pointer border-l-2`} style={{ borderLeftColor: `var(--${member.color.replace("bg-", "").replace("-500", "-400")}, ${member.color === "bg-blue-500" ? "#60a5fa" : member.color === "bg-pink-500" ? "#f472b6" : member.color === "bg-emerald-500" ? "#34d399" : "#fbbf24"})` }} onClick={() => setActiveTab("tasks")}>
+                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"}`} />
+                            <span className="text-[11px] truncate flex-1">{task.title}</span>
+                            {task.dueDate && <span className={`text-[9px] shrink-0 ${task.dueDate < todayStr ? "text-destructive font-medium" : "text-muted-foreground"}`}>{task.dueDate < todayStr ? "Overdue" : task.dueDate === todayStr ? "Today" : task.dueDate}</span>}
+                          </div>
+                        ))}
+                        {memberTasks.length > 4 && <p className="text-[9px] text-muted-foreground pl-4">+{memberTasks.length - 4} more</p>}
+                      </div>
+                    )}
                   </div>
                 );
               })}
-            </div>
-            {/* Outcomes row */}
-            <div className="flex items-center gap-3 mt-4 pt-3 border-t border-border/30">
-              <div className="flex-1 text-center py-2 rounded-lg bg-emerald-400/5 border border-emerald-400/20 cursor-pointer hover:bg-emerald-400/10 transition-colors" onClick={() => setActiveTab("leads")}>
-                <div className="text-lg font-bold text-emerald-400">{wonLeads}</div>
-                <div className="text-[10px] text-muted-foreground">Won</div>
-              </div>
-              <div className="flex-1 text-center py-2 rounded-lg bg-red-400/5 border border-red-400/20 cursor-pointer hover:bg-red-400/10 transition-colors" onClick={() => setActiveTab("leads")}>
-                <div className="text-lg font-bold text-red-400">{lostLeads}</div>
-                <div className="text-[10px] text-muted-foreground">Lost</div>
-              </div>
-              <div className="flex-1 text-center py-2 rounded-lg bg-violet-400/5 border border-violet-400/20 cursor-pointer hover:bg-violet-400/10 transition-colors" onClick={() => setActiveTab("leads")}>
-                <div className="text-lg font-bold text-violet-400">{leads.filter(l => l.status === "nurture").length}</div>
-                <div className="text-[10px] text-muted-foreground">Nurture</div>
-              </div>
+              {/* Unassigned tasks */}
+              {(() => {
+                const unassigned = pendingTasks.filter(t => !t.assignee);
+                if (unassigned.length === 0) return null;
+                return (
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+                      <span className="text-xs font-semibold text-muted-foreground">Unassigned</span>
+                      <span className="text-[10px] text-muted-foreground">{unassigned.length}</span>
+                    </div>
+                    <div className="space-y-0.5 pl-1">
+                      {unassigned.slice(0, 3).map(task => (
+                        <div key={task.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-muted/30 cursor-pointer border-l-2 border-gray-400/40" onClick={() => setActiveTab("tasks")}>
+                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"}`} />
+                          <span className="text-[11px] truncate flex-1">{task.title}</span>
+                        </div>
+                      ))}
+                      {unassigned.length > 3 && <p className="text-[9px] text-muted-foreground pl-4">+{unassigned.length - 3} more</p>}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Revenue Breakdown + Recent Wins + Client Alerts */}
+      {/* Row 3: Inbox Quick Actions + Mini Weekly Calendar */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Inbox with Quick Actions */}
+        <Card className="overflow-visible border-border/50">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />Inbox
+                {unreadThreads.length > 0 && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 ml-1">{unreadThreads.length} new</Badge>}
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("inbox")}>Open Inbox <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {recentThreads.length === 0 ? (
+              <div className="text-center py-6">
+                <Mail className="w-6 h-6 text-muted-foreground/30 mx-auto mb-1.5" />
+                <p className="text-xs text-muted-foreground">No messages yet</p>
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {recentThreads.map(thread => {
+                  const sourceColors: Record<string, string> = {
+                    direct: "text-blue-400", "contact-form": "text-emerald-400",
+                    outreach: "text-purple-400", "outreach-reply": "text-orange-400",
+                  };
+                  const sourceLabels: Record<string, string> = {
+                    direct: "Direct", "contact-form": "Form",
+                    outreach: "Outreach", "outreach-reply": "Reply",
+                  };
+                  return (
+                    <div key={thread.id} className={`flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-muted/30 cursor-pointer group ${thread.unread ? "bg-primary/5" : ""}`} onClick={() => setActiveTab("inbox")}>
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${thread.unread ? "bg-primary" : "bg-transparent"}`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs truncate ${thread.unread ? "font-bold" : "font-medium"}`}>{thread.contactName || thread.contactEmail}</span>
+                          <span className={`text-[9px] shrink-0 ${sourceColors[thread.source] || "text-muted-foreground"}`}>{sourceLabels[thread.source] || thread.source}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground truncate">{thread.subject || "(no subject)"}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-[9px] text-muted-foreground">{timeAgo(thread.lastMessageAt)}</span>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 ml-1">
+                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={(e) => { e.stopPropagation(); setActiveTab("inbox"); }}>
+                            <Send className="w-2.5 h-2.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {threads.length > 5 && (
+                  <p className="text-[10px] text-muted-foreground text-center pt-1 cursor-pointer hover:text-primary" onClick={() => setActiveTab("inbox")}>
+                    View all {threads.length} conversations
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Mini Weekly Calendar */}
+        <Card className="overflow-visible border-border/50">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-400" />This Week
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("tasks")}>Full Calendar <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-7 gap-1">
+              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => <div key={`hdr-${i}`} className="text-[9px] text-center text-muted-foreground font-semibold pb-1">{d}</div>)}
+              {weekDays.map(day => {
+                const dayTasks = tasks.filter(t => t.dueDate === day && !t.completed);
+                const daySchedule = schedule.filter(s => s.date === day && s.status !== "completed");
+                const isToday = day === todayStr;
+                const dayNum = new Date(day + "T12:00:00").getDate();
+                const allItems = [
+                  ...daySchedule.map(s => ({ id: s.id, label: s.title, time: s.time, type: "schedule" as const, category: s.category })),
+                  ...dayTasks.map(t => ({ id: t.id, label: t.title, time: "", type: "task" as const, category: t.priority })),
+                ];
+                const MINI_SCHED_COLORS: Record<string, string> = { training: "bg-purple-400/20 text-purple-300", outreach: "bg-blue-400/20 text-blue-300", admin: "bg-gray-400/20 text-gray-400", meeting: "bg-emerald-400/20 text-emerald-300", "follow-up": "bg-orange-400/20 text-orange-300", development: "bg-cyan-400/20 text-cyan-300", general: "bg-gray-400/20 text-gray-400" };
+                return (
+                  <div key={day} className={`min-h-[90px] border rounded-md p-1 ${isToday ? "border-primary/50 bg-primary/5" : "border-border/30"}`}>
+                    <div className={`text-[10px] font-bold mb-0.5 text-center ${isToday ? "text-primary" : "text-muted-foreground"}`}>{dayNum}</div>
+                    <div className="space-y-0.5">
+                      {allItems.slice(0, 4).map(item => (
+                        <div key={item.id} className={`text-[8px] px-0.5 py-0.5 rounded truncate cursor-pointer ${
+                          item.type === "schedule"
+                            ? (MINI_SCHED_COLORS[item.category] || MINI_SCHED_COLORS.general)
+                            : item.category === "high" ? "bg-red-400/15 text-red-400" : item.category === "medium" ? "bg-yellow-400/15 text-yellow-500" : "bg-blue-400/15 text-blue-400"
+                        }`} title={item.label} onClick={() => setActiveTab("tasks")}>
+                          {item.time ? `${item.time} ` : ""}{item.label.slice(0, 12)}
+                        </div>
+                      ))}
+                      {allItems.length > 4 && <div className="text-[8px] text-muted-foreground text-center">+{allItems.length - 4}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 4: Revenue + Recent Wins + Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Revenue Breakdown */}
         <Card className="overflow-visible border-border/50">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2"><DollarSign className="w-4 h-4 text-chart-4" />Revenue Breakdown</CardTitle>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><DollarSign className="w-4 h-4 text-chart-4" />Revenue</CardTitle>
               <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("revenue")}>Details <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            {revenueByType.length === 0 ? (
-              <div className="text-center py-6">
-                <DollarSign className="w-6 h-6 text-muted-foreground/30 mx-auto mb-1.5" />
-                <p className="text-xs text-muted-foreground">No revenue logged this month</p>
-                <Button variant="outline" size="sm" className="mt-2 text-xs h-7" onClick={() => setActiveTab("revenue")}><Plus className="w-3 h-3 mr-1" />Log Revenue</Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {revenueByType.sort((a, c) => c.amount - a.amount).map(r => (
-                  <div key={r.type} className="flex items-center justify-between py-1.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                      <span className="text-xs">{r.label}</span>
-                      <span className="text-[10px] text-muted-foreground">({r.count})</span>
-                    </div>
-                    <span className="text-xs font-semibold">${r.amount.toLocaleString()}</span>
-                  </div>
-                ))}
-                <div className="pt-2 mt-1 border-t border-border/30 flex items-center justify-between">
-                  <span className="text-xs font-semibold">Total</span>
-                  <span className="text-sm font-extrabold">${(b?.revenue.thisMonth || 0).toLocaleString()}</span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Wins */}
-        <Card className="overflow-visible border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-400" />Recent Wins</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {recentWins.length === 0 ? (
-              <div className="text-center py-6">
-                <Target className="w-6 h-6 text-muted-foreground/30 mx-auto mb-1.5" />
-                <p className="text-xs text-muted-foreground">No closed deals yet</p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {recentWins.map(l => (
-                  <div key={l.id} className="flex items-center justify-between py-1.5 px-1 rounded hover:bg-muted/20 cursor-pointer" onClick={() => setActiveTab("clients")}>
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium truncate">{l.business || l.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{VERTICAL_CONFIG[l.vertical] || l.vertical} — {PACKAGE_CONFIG[l.package]?.label || l.package}</p>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{timeAgo(l.updatedAt)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Client Alerts + Channel Performance */}
-        <Card className="overflow-visible border-border/50">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-primary" />Channels</CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("scorecard")}>Scorecard <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            <div className="flex items-end gap-3 mb-3">
+              <div className="text-2xl font-extrabold tracking-tight">${(b?.revenue.thisMonth || 0).toLocaleString()}</div>
+              <p className="text-[10px] pb-0.5">
+                {revenueChange !== 0 ? (
+                  <span className={revenueChange > 0 ? "text-emerald-400" : "text-red-400"}>
+                    {revenueChange > 0 ? <ArrowUpRight className="w-3 h-3 inline" /> : <ArrowDownRight className="w-3 h-3 inline" />}
+                    {Math.abs(revenueChange)}%
+                  </span>
+                ) : <span className="text-muted-foreground">This month</span>}
+              </p>
             </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-1.5">
-              {(Object.keys(SOURCE_CONFIG) as LeadSource[]).map(src => {
-                const srcLeads = leads.filter(l => l.source === src);
-                const won = srcLeads.filter(l => l.status === "won").length;
-                const rate = srcLeads.length > 0 ? Math.round((won / srcLeads.length) * 100) : 0;
-                return (
-                  <div key={src} className="flex items-center justify-between py-1.5 px-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-1.5 h-1.5 rounded-full ${SOURCE_CONFIG[src].color.replace("text-", "bg-")}`} />
-                      <span className="text-[11px]">{SOURCE_CONFIG[src].label}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-semibold">{srcLeads.length}</span>
-                      <span className="text-[10px] text-muted-foreground w-12 text-right">{rate}% win</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {/* Client alerts inline */}
-            {b && b.clientAlerts.length > 0 && (
-              <div className="pt-2.5 mt-2.5 border-t border-border/30">
-                <p className="text-[10px] font-semibold text-yellow-400 mb-1.5 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{b.clientAlerts.length} client alert{b.clientAlerts.length > 1 ? "s" : ""}</p>
-                {b.clientAlerts.slice(0, 3).map(c => (
-                  <div key={c.id} className="flex items-center justify-between py-1 cursor-pointer hover:bg-muted/20 rounded px-1" onClick={() => setActiveTab("clients")}>
-                    <span className="text-[11px] truncate">{c.business}</span>
-                    <Badge variant="outline" className="text-[9px] text-yellow-500 border-yellow-500/30 shrink-0 ml-1">{c.issues[0]}</Badge>
-                  </div>
-                ))}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2 rounded-lg bg-muted/20 text-center">
+                <div className="text-sm font-bold">${(b?.revenue.mrr || 0).toLocaleString()}</div>
+                <div className="text-[9px] text-muted-foreground">MRR</div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bottom row: Coming Up + 90-Day Plan + Activity Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Coming Up */}
-        <Card className="overflow-visible border-border/50">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Calendar className="w-4 h-4 text-blue-400" />Coming Up</CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("tasks")}>Schedule <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {b && b.upcomingFollowUps.length > 0 ? (
-              <div className="space-y-1">
-                {b.upcomingFollowUps.map(l => (
-                  <div key={l.id} className="flex items-center justify-between py-1.5 px-1 rounded hover:bg-muted/20 cursor-pointer" onClick={() => setActiveTab("leads")}>
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium truncate">{l.business || l.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{PIPELINE_CONFIG[l.status as PipelineStage]?.short || l.status}</p>
-                    </div>
-                    <span className="text-[10px] text-blue-400 shrink-0 ml-2">{l.nextStep}</span>
-                  </div>
-                ))}
+              <div className="p-2 rounded-lg bg-muted/20 text-center">
+                <div className="text-sm font-bold">{maintenanceClients}</div>
+                <div className="text-[9px] text-muted-foreground">Active Plans</div>
               </div>
-            ) : (
-              <p className="text-xs text-muted-foreground py-4 text-center">No upcoming follow-ups</p>
-            )}
+            </div>
           </CardContent>
         </Card>
 
         {/* 90-Day Plan progress */}
         <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("plan")}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2"><ClipboardList className="w-4 h-4 text-primary" />90-Day Plan</CardTitle>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-primary" />90-Day Plan</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="flex items-end gap-3 mb-3">
               <div className="text-3xl font-extrabold tracking-tight">{b?.planProgress.percent || 0}%</div>
-              <p className="text-[10px] text-muted-foreground pb-1">{b?.planProgress.completed || 0} of {b?.planProgress.total || 0} tasks done</p>
+              <p className="text-[10px] text-muted-foreground pb-1">{b?.planProgress.completed || 0} of {b?.planProgress.total || 0} done</p>
             </div>
             <Progress value={b?.planProgress.percent || 0} className="h-2.5" />
-            <div className="flex items-center justify-between mt-3 text-[10px] text-muted-foreground">
-              <span>Avg volume/client: ${avgVolume.toLocaleString()}/mo</span>
-              <span className="text-primary font-medium">View Plan →</span>
-            </div>
+            <p className="text-[10px] text-primary font-medium mt-3 text-right">View Plan →</p>
           </CardContent>
         </Card>
 
@@ -2293,6 +2324,7 @@ function TasksTab() {
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "completed" | "overdue">("pending");
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [calendarDate, setCalendarDate] = useState(today());
   const { toast } = useToast();
@@ -2312,14 +2344,20 @@ function TasksTab() {
     if (filter === "pending") return !t.completed;
     if (filter === "completed") return t.completed;
     return true;
+  }).filter((t) => {
+    if (assigneeFilter === "all") return true;
+    if (assigneeFilter === "pending") return !t.assignee;
+    return t.assignee === assigneeFilter;
   }).sort((a, b) => {
     if (a.completed !== b.completed) return a.completed ? 1 : -1;
     const o: Record<string, number> = { high: 0, medium: 1, low: 2 };
     if (a.priority !== b.priority) return o[a.priority] - o[b.priority];
     return (a.dueDate || "9").localeCompare(b.dueDate || "9");
-  }), [tasks, filter, todayStr]);
+  }), [tasks, filter, assigneeFilter, todayStr]);
 
   const overdueCount = tasks.filter(t => !t.completed && t.dueDate && t.dueDate < todayStr).length;
+
+  const getAssigneeInfo = (assignee: string) => TEAM_MEMBERS_LIST.find(m => m.value === assignee);
 
   // Calendar view: get week days from calendarDate
   const weekDays = useMemo(() => {
@@ -2344,6 +2382,18 @@ function TasksTab() {
           <p className="text-xs text-muted-foreground">{tasks.filter(t => !t.completed).length} pending{overdueCount > 0 ? ` · ${overdueCount} overdue` : ""}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Team</SelectItem>
+              <SelectItem value="pending">Unassigned</SelectItem>
+              {TEAM_MEMBERS_LIST.map(m => (
+                <SelectItem key={m.value} value={m.value}>
+                  <span className="flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${m.color}`} />{m.label}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <div className="flex rounded-md border border-border/50">
             <Button variant={viewMode === "list" ? "default" : "ghost"} size="sm" className="text-xs h-8 rounded-r-none" onClick={() => setViewMode("list")}>List</Button>
             <Button variant={viewMode === "calendar" ? "default" : "ghost"} size="sm" className="text-xs h-8 rounded-l-none" onClick={() => setViewMode("calendar")}>Calendar</Button>
@@ -2364,16 +2414,23 @@ function TasksTab() {
           {filtered.length === 0 ? (
             <Card className="overflow-visible border-dashed"><CardContent className="p-8 text-center"><CheckCircle className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" /><p className="text-sm text-muted-foreground">{filter === "overdue" ? "No overdue tasks!" : "No tasks match."}</p></CardContent></Card>
           ) : (
-            <div className="space-y-1.5">{filtered.map((task) => (
+            <div className="space-y-1.5">{filtered.map((task) => {
+              const assigneeInfo = getAssigneeInfo(task.assignee);
+              return (
               <Card key={task.id} className={`overflow-visible border-border/50 ${task.completed ? "opacity-60" : ""} ${!task.completed && task.dueDate && task.dueDate < todayStr ? "border-destructive/30" : ""}`}><CardContent className="p-3 flex items-center gap-3">
                 <button onClick={() => updateMutation.mutate({ id: task.id, completed: !task.completed })} className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${task.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30 hover:border-primary"}`}>{task.completed && <Check className="w-3 h-3" />}</button>
+                {assigneeInfo && <div className={`w-1 h-8 rounded-full shrink-0 ${assigneeInfo.color}`} />}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2"><span className={`text-sm ${task.completed ? "line-through text-muted-foreground" : ""}`}>{task.title}</span><div className={`w-1.5 h-1.5 rounded-full ${task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"}`} /></div>
-                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">{task.dueDate && <span className={!task.completed && task.dueDate < todayStr ? "text-destructive font-medium" : ""}>Due {task.dueDate}</span>}{task.linkedTo && <span>{task.linkedTo}</span>}</div>
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
+                    {assigneeInfo && <span className={`font-medium ${assigneeInfo.color.replace("bg-", "text-")}`}>{assigneeInfo.label}</span>}
+                    {task.dueDate && <span className={!task.completed && task.dueDate < todayStr ? "text-destructive font-medium" : ""}>Due {task.dueDate}</span>}
+                    {task.linkedTo && <span>{task.linkedTo}</span>}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingTask(task); setShowForm(true); }}><Edit3 className="w-3 h-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(task.id)}><Trash2 className="w-3 h-3" /></Button></div>
               </CardContent></Card>
-            ))}</div>
+            );})}</div>
           )}
         </>
       ) : (
@@ -2388,7 +2445,7 @@ function TasksTab() {
             <div className="grid grid-cols-7 gap-1">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => <div key={d} className="text-[10px] text-center text-muted-foreground font-semibold pb-1">{d}</div>)}
               {weekDays.map(day => {
-                const dayTasks = tasks.filter(t => t.dueDate === day && !t.completed);
+                const dayTasks = tasks.filter(t => t.dueDate === day && !t.completed).filter(t => assigneeFilter === "all" || t.assignee === assigneeFilter);
                 const daySchedule = schedule.filter(s => s.date === day && s.status !== "completed");
                 const isToday = day === todayStr;
                 return (
@@ -2401,12 +2458,15 @@ function TasksTab() {
                           {s.time && <span className="font-mono">{s.time} </span>}{s.title.slice(0, 20)}
                         </div>
                       ))}
-                      {dayTasks.map(t => (
-                        <div key={t.id} className={`text-[9px] px-1 py-0.5 rounded cursor-pointer ${t.priority === "high" ? "bg-red-400/15 text-red-400" : t.priority === "medium" ? "bg-yellow-400/15 text-yellow-500" : "bg-blue-400/15 text-blue-400"}`}
+                      {dayTasks.map(t => {
+                        const ai = getAssigneeInfo(t.assignee);
+                        return (
+                        <div key={t.id} className={`text-[9px] px-1 py-0.5 rounded cursor-pointer flex items-center gap-1 ${t.priority === "high" ? "bg-red-400/15 text-red-400" : t.priority === "medium" ? "bg-yellow-400/15 text-yellow-500" : "bg-blue-400/15 text-blue-400"}`}
                           onClick={() => updateMutation.mutate({ id: t.id, completed: true })}>
-                          {t.title.slice(0, 20)}
+                          {ai && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ai.color}`} />}
+                          {t.title.slice(0, 18)}
                         </div>
-                      ))}
+                      );})}
                     </div>
                   </div>
                 );
@@ -2422,7 +2482,7 @@ function TasksTab() {
 
 function TaskFormDialog({ open, onClose, onSave, task }: { open: boolean; onClose: () => void; onSave: (f: Partial<Task>) => void; task: Task | null; }) {
   const [form, setForm] = useState<Partial<Task>>({});
-  useEffect(() => { if (open) setForm(task || { title: "", dueDate: "", priority: "medium", completed: false, linkedTo: "" }); }, [open, task]);
+  useEffect(() => { if (open) setForm(task || { title: "", dueDate: "", priority: "medium", completed: false, linkedTo: "", assignee: "" }); }, [open, task]);
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -2433,7 +2493,10 @@ function TaskFormDialog({ open, onClose, onSave, task }: { open: boolean; onClos
             <div className="space-y-1.5"><Label className="text-xs">Due Date</Label><Input type="date" value={form.dueDate || ""} onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))} /></div>
             <div className="space-y-1.5"><Label className="text-xs">Priority</Label><Select value={form.priority || "medium"} onValueChange={(v) => setForm((p) => ({ ...p, priority: v as Task["priority"] }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="high">High</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent></Select></div>
           </div>
-          <div className="space-y-1.5"><Label className="text-xs">Linked To</Label><Input value={form.linkedTo || ""} onChange={(e) => setForm((p) => ({ ...p, linkedTo: e.target.value }))} placeholder="Business name" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label className="text-xs">Assign To</Label><Select value={form.assignee || ""} onValueChange={(v) => setForm((p) => ({ ...p, assignee: v }))}><SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger><SelectContent><SelectItem value="">Unassigned</SelectItem>{TEAM_MEMBERS_LIST.map(m => <SelectItem key={m.value} value={m.value}><span className="flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${m.color}`} />{m.label}</span></SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label className="text-xs">Linked To</Label><Input value={form.linkedTo || ""} onChange={(e) => setForm((p) => ({ ...p, linkedTo: e.target.value }))} placeholder="Business name" /></div>
+          </div>
         </div>
         <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => onSave(form)} disabled={!form.title}><Save className="w-3.5 h-3.5" />{task ? "Update" : "Add"}</Button></DialogFooter>
       </DialogContent>
