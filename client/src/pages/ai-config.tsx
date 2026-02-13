@@ -493,11 +493,12 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
 export default function AiConfigPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
-  const { data: authStatus } = useQuery<{ authenticated: boolean }>({ queryKey: ["/api/admin/check"] });
+  const { data: authStatus, isError } = useQuery<{ authenticated: boolean }>({ queryKey: ["/api/admin/check"] });
 
   useEffect(() => {
     if (authStatus !== undefined) { setIsAuthenticated(authStatus.authenticated); setAuthChecked(true); }
-  }, [authStatus]);
+    else if (isError) { setIsAuthenticated(false); setAuthChecked(true); }
+  }, [authStatus, isError]);
 
   const logoutMutation = useMutation({
     mutationFn: async () => { await apiRequest("POST", "/api/admin/logout"); },
