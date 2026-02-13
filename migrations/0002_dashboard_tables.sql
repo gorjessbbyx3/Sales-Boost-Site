@@ -194,5 +194,8 @@ CREATE TABLE IF NOT EXISTS activity_log (
   type TEXT NOT NULL DEFAULT ''
 );
 
--- Drop old admin_sessions table (sessions now use express-session)
-DROP TABLE IF EXISTS admin_sessions;
+-- Keep admin_sessions table (used by Cloudflare Workers auth)
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  token TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL
+);
