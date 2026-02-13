@@ -10,6 +10,32 @@ import { randomUUID, scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import rateLimit from "express-rate-limit";
 import { sendEmail, sendContactFormConfirmation, sendOutreachEmail, generateOutreachEmail, generateCallScript, handleInboundEmail } from "./email";
 import { startAutopilot, stopAutopilot, runAutopilot, generateAIEmail, autoEnrichLead } from "./autopilot";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// ─── File Upload Config ──────────────────────────────────────────
+const UPLOADS_DIR = path.resolve(process.cwd(), "public", "uploads", "resources");
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+      cb(null, `${Date.now()}-${base}${ext}`);
+    },
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".png", ".jpg", ".jpeg", ".gif", ".mp4", ".webm", ".zip"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, allowed.includes(ext));
+  },
+});
 
 /*
  * Anthropic integration - blueprint:javascript_anthropic
@@ -157,88 +183,7 @@ async function seedMaterialsIfNeeded() {
   );
 }
 
-let resourcesSeeded = false;
-async function seedResourcesIfNeeded() {
-  if (resourcesSeeded) return;
-  resourcesSeeded = true;
-  const existing = await db.select({ id: schema.resources.id }).from(schema.resources).limit(1);
-  if (existing.length > 0) return;
-  const now = new Date().toISOString();
-  const items = [
-    // ─── Client Sales Resources (Google Drive Folder 1) ────────────
-    { title: "Cash Discount Program — Part 1", description: "Comprehensive guide to the Cash Discount Program covering compliance, implementation, and customer communication. PDF format.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1yiqqPiOkcTUizcncUYE7v0fs5ezPDMFu/view", thumbnailUrl: "", order: 1, featured: true, published: true, createdAt: now, updatedAt: now },
-    { title: "Cash Discount Program — Part 2", description: "Visual companion to the Cash Discount Program guide. Print-ready infographic with program details and signage requirements.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1FYLYcqF9Wm0vi4da2WQI4aaIyCw193qs/view", thumbnailUrl: "", order: 2, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "3x4 Sticker Design", description: "Print-ready 3x4 sticker design for terminal branding and point-of-sale signage.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/11Gi1iVlaQAxKA0FxkzQ_JxJBocs0N012/view", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "Sales Flyer 1", description: "Professional sales flyer for merchant outreach — highlights zero-fee processing benefits and terminal offer.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1U2JEMh6qh-c_YoYODsQePykFUXcstXti/view", thumbnailUrl: "", order: 4, featured: true, published: true, createdAt: now, updatedAt: now },
-    { title: "Sales Flyer 2", description: "Alternative flyer design for different merchant verticals. Print-ready format.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/18Q68EIHNAmyYD6Sc57NA9r05cP4tgCbx/view", thumbnailUrl: "", order: 5, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "Sales Flyer 3", description: "Detailed sales flyer with pricing breakdown and feature comparison. PDF format.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1Pn9QfiffkruzyuK2YAiOPlipNuexmqWc/view", thumbnailUrl: "", order: 6, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "Sales Flyer 4", description: "Walk-in leave-behind flyer designed for high-impact first impressions.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1X2zv7bIA9QxYPhbfUg9IEL74tpkElvxK/view", thumbnailUrl: "", order: 7, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "Savings Calculator — Page 1", description: "Visual savings calculator showing merchants exactly how much they save with zero-fee processing vs. traditional processors.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1_DSpS5jGL1AIe9mlzr2S19Nz-_-gIv6f/view", thumbnailUrl: "", order: 8, featured: true, published: true, createdAt: now, updatedAt: now },
-    { title: "Savings Calculator — Page 2", description: "Extended savings breakdown with annual projections and comparison charts.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1Pxc9mgUKGCExnT5PEbBCJoY06EheVQYh/view", thumbnailUrl: "", order: 9, featured: false, published: true, createdAt: now, updatedAt: now },
-
-    // ─── RPower POS Marketing Assets (Google Drive Folder 2) ───────
-    { title: "Battlecard — Aloha POS", description: "Competitive battlecard: RPOWER vs. Aloha POS. Key differentiators, objection handlers, and win strategies.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1q1-eylUdUoeVKoUgntf1cGLmZ8_Pg_Yi/view", thumbnailUrl: "", order: 1, featured: true, published: true, createdAt: now, updatedAt: now },
-    { title: "Battlecard — Clover", description: "Competitive battlecard: RPOWER vs. Clover. Feature comparison, pricing advantages, and sales talking points.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1Ha067oNONsNA4ZRI3NAchQq41yTrM5vT/view", thumbnailUrl: "", order: 2, featured: true, published: true, createdAt: now, updatedAt: now },
-    { title: "Battlecard — SkyTab", description: "Competitive battlecard: RPOWER vs. SkyTab. Side-by-side comparison for restaurant merchants.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/12lf3AEDrdpn8eU1du81bKHUIWb2pknR3/view", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "Battlecard — Toast", description: "Competitive battlecard: RPOWER vs. Toast. Counter-arguments for the most common POS competitor in restaurants.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/11VtrwKmJGV0HdWK8ZwgZNH5RyeQfXWxC/view", thumbnailUrl: "", order: 4, featured: true, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER Reseller Presentation", description: "Complete reseller overview presentation covering RPOWER POS capabilities, pricing, and partnership model. PowerPoint format.", category: "pos-systems", type: "doc", url: "https://drive.google.com/file/d/1etbM1RikvCfRP-Xj7fQWcGZOUtxdcYFO/view", thumbnailUrl: "", order: 5, featured: true, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER Buyer's Guide", description: "Comprehensive buyer's guide for RPOWER POS system — features, pricing tiers, hardware options, and ROI calculator.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1I7WYWDtQNr30BQyPZ4ypIYFoAFiWZBZi/view", thumbnailUrl: "", order: 6, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER Reference Information", description: "Quick reference sheet with RPOWER technical specs, support contacts, and implementation timeline.", category: "pos-systems", type: "doc", url: "https://drive.google.com/file/d/1RM-7N44B8mxUkB2trR2NGlLjpbOYoZBt/view", thumbnailUrl: "", order: 7, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER mPay — Contactless Payments Brochure", description: "mPay contactless payment solution brochure — tap-to-pay, mobile wallets, NFC capabilities.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1dlQJheSIL2YlfPUTcGe_XlKksrBn-NYK/view", thumbnailUrl: "", order: 8, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER — Accounting Integration Brochure", description: "How RPOWER integrates with accounting platforms for seamless financial reporting and reconciliation.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1FjsBCRO1ytBTklXfdDUEXzKv8kaSFd7L/view", thumbnailUrl: "", order: 9, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER — Bar & Nightclub Brochure", description: "RPOWER POS solutions designed for bars and nightclubs — tab management, speed ordering, ID verification.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/12qfP2eAU3quFOcygDCd6eTW6XUnm6e2k/view", thumbnailUrl: "", order: 10, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER — Full POS Brochure", description: "Complete RPOWER POS system brochure covering all features, hardware, and service plans.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/105yY_FGwTcoCcpGAfkHkWseIw8p6h0md/view", thumbnailUrl: "", order: 11, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER — Counter Service Brochure", description: "POS solutions for counter-service restaurants — quick ordering, kitchen display, and customer-facing screens.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/191MbqX_JPkCVxMsKfFWvGNbQvS9sROlp/view", thumbnailUrl: "", order: 12, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER — Delivery & Pickup Brochure", description: "Online ordering, delivery dispatch, and curbside pickup capabilities with RPOWER POS.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1tmCe3OJNu298zDdKJ1V4qptlqJGj8iIr/view", thumbnailUrl: "", order: 13, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER — Fine Dining Brochure", description: "Premium POS features for fine dining — coursing, split checks, wine list management, and tableside ordering.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1DQ2gehnSQqn6Cgh5S6OeiyPw4Adeituf/view", thumbnailUrl: "", order: 14, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER — Gift & Loyalty Brochure", description: "Built-in gift card and loyalty program features to drive repeat business and increase ticket size.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1Y-QuyMP04A83tS7ONAgOCOioIPVf9_xC/view", thumbnailUrl: "", order: 15, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER — Mobile POS Brochure", description: "Handheld and tablet POS solutions for tableside ordering, food trucks, and events.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1hz3ID7cvAyuStE5NTqvNJJnf-T2b5eP2/view", thumbnailUrl: "", order: 16, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "RPOWER — rPortal Reporting Brochure", description: "Cloud-based reporting portal — real-time sales data, labor costs, inventory tracking, and trend analysis.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1PieDCMCkzMXOJtTCudtEHiwYZwd2uwTh/view", thumbnailUrl: "", order: 17, featured: false, published: true, createdAt: now, updatedAt: now },
-
-    // ─── CashSwipe Classroom Resources (Google Drive Folder 3) ─────
-    // 2 Presentations (named files)
-    { title: "5 Powerful Icebreakers to Start Conversations with Merchants", description: "PowerPoint presentation with proven icebreaker techniques for engaging merchants in sales conversations. Essential training for new reps.", category: "classroom", type: "doc", url: "https://drive.google.com/file/d/1RauUWaVTQf_7HqYKOMhv6zkDrlqPPlrg/view", thumbnailUrl: "", order: 1, featured: true, published: true, createdAt: now, updatedAt: now },
-    { title: "Understanding Your Merchant Statement", description: "PowerPoint guide to reading and analyzing merchant processing statements. Key skill for identifying savings opportunities during sales.", category: "classroom", type: "doc", url: "https://drive.google.com/file/d/1w7XMTJYzFiyDYksrzA7jamk_8GlpiYcE/view", thumbnailUrl: "", order: 2, featured: true, published: true, createdAt: now, updatedAt: now },
-    // 34 Training PDFs from CashSwipe classroom
-    { title: "CashSwipe Training — Module 1", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1Us7dWmw7CYhfMP1U2q27n0scmj0Av9Pm/view", thumbnailUrl: "", order: 3, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 2", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1BXTK7aTZCW9_fhOJu8KlaeVtR1IDvmUq/view", thumbnailUrl: "", order: 4, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 3", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1l3t7yW1_5oeit0aIZIjCskql3C94Yfa1/view", thumbnailUrl: "", order: 5, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 4", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1TOCLzJh0dg7c181kvo1qUU_okOu1ZfbZ/view", thumbnailUrl: "", order: 6, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 5", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1cGqO1QvA_vuATHvsCtJc6r_1fouwh7No/view", thumbnailUrl: "", order: 7, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 6", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/12-PUec5esxoFjXPsL8oypOe3OuwRWO6D/view", thumbnailUrl: "", order: 8, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 7", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1Rzj3ZETBB6MHCHFaFQ0AjcIHURosoyhS/view", thumbnailUrl: "", order: 9, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 8", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1fogX8lg-UuLfFrQzUR9QEouQVif6R5mQ/view", thumbnailUrl: "", order: 10, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 9", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/12A1fXMG8v9HQpI2r98rCHOmebrXbZRqa/view", thumbnailUrl: "", order: 11, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 10", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1DCNp6oxvbms0PE5PDoEHWLcHzw-IwkyF/view", thumbnailUrl: "", order: 12, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 11", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1q8QZC5LQ_3AieouFfvGmvqtFTk6_knGt/view", thumbnailUrl: "", order: 13, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 12", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1uVFKc4ClEk5tLwx74Xx0QIiqb-pgt-xj/view", thumbnailUrl: "", order: 14, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 13", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1rEiOFLa2HtRlqa8ndbBmPPBthhdmLs_w/view", thumbnailUrl: "", order: 15, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 14", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1ODZ93kA7ieOWRVX3GfQqM334lrx4olgX/view", thumbnailUrl: "", order: 16, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 15", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/14vTjgJb9sJnQbiMM4Tlk6WF4lj0Lc8sF/view", thumbnailUrl: "", order: 17, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 16", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1KcfNeHvEqFGX0pGW1aT9ZLCuHtCNGjN4/view", thumbnailUrl: "", order: 18, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 17", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1sxkGBGDxc7wMjHgMG4vF0H8eDalngZcX/view", thumbnailUrl: "", order: 19, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 18", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1RXWIWZQpVIUNfgu4clvn3M9T9XVkq1-r/view", thumbnailUrl: "", order: 20, featured: true, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 19", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1UFZ9ApuUcSJbNpq33jbNSSDwsmygWH_k/view", thumbnailUrl: "", order: 21, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 20", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1cYvt5iNHSRFpRa3AWurxHCD8WIsZ3-Av/view", thumbnailUrl: "", order: 22, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 21", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1JIKQLLnCPO2s6PYB3HpCaoCzjRqI9ty-/view", thumbnailUrl: "", order: 23, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 22", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/131x-bp7IkvAmn6-hxqz7W9ykNAIGajxa/view", thumbnailUrl: "", order: 24, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 23", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1gxUzlw3WdBRgh9x5rOS_bsJHXTVabbza/view", thumbnailUrl: "", order: 25, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 24", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1RPI5e7V-OLV4Sh8lGPDT0fGXUS-zXzdc/view", thumbnailUrl: "", order: 26, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 25", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1TMRzlQ8XQYTEkeSTGTsX0JCG1pmlyukv/view", thumbnailUrl: "", order: 27, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 26", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1q81ISq3PVU6O1CG1NiJvdSRGLL_bjnES/view", thumbnailUrl: "", order: 28, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 27", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1IfCuI7DdA57VXyJhQCRYZZuWyM9wyYXo/view", thumbnailUrl: "", order: 29, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 28", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1Y9ynOphu3AqU1oP2A_ET8uQ3ptqWjyAG/view", thumbnailUrl: "", order: 30, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 29", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1uJVDvzBno4PMfuDiHRLxhi37k1pc3Vob/view", thumbnailUrl: "", order: 31, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 30", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1rz3r6kW_qUMmliR0YVJeDSV5Mtv6i2cI/view", thumbnailUrl: "", order: 32, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 31", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1i_Z2X6cDgr4WB9lxVzMHYXjNguxGj0PH/view", thumbnailUrl: "", order: 33, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 32", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1BXgkwLkdL0_hCBUWLaF4OFRKoBQJIUT7/view", thumbnailUrl: "", order: 34, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 33", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1qcBAyga_1BD7JfgGuHY-TojajCbU61X_/view", thumbnailUrl: "", order: 35, featured: false, published: true, createdAt: now, updatedAt: now },
-    { title: "CashSwipe Training — Module 34", description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.", category: "classroom", type: "pdf", url: "https://drive.google.com/file/d/1fS3MOxhZ61agT64OQUgCHe6bV7IPtm3Y/view", thumbnailUrl: "", order: 36, featured: false, published: true, createdAt: now, updatedAt: now },
-  ];
-  await db.insert(schema.resources).values(
-    items.map((item) => ({ id: randomUUID(), ...item }))
-  );
-}
+// Seed function removed — resources are now uploaded manually via admin
 
 // ─── Routes ────────────────────────────────────────────────────────
 
@@ -1043,7 +988,6 @@ export async function registerRoutes(
   // ─── Resources (Public + Admin CRUD) ────────────────────────────
 
   app.get("/api/resources", async (_req, res) => {
-    await seedResourcesIfNeeded();
     const published = await db.select().from(schema.resources)
       .where(eq(schema.resources.published, true))
       .orderBy(asc(schema.resources.order));
@@ -1052,7 +996,6 @@ export async function registerRoutes(
   });
 
   app.get("/api/resources/all", requireAdminSession, async (_req, res) => {
-    await seedResourcesIfNeeded();
     const rows = await db.select().from(schema.resources).orderBy(asc(schema.resources.order));
     res.json(rows);
   });
@@ -1094,14 +1037,36 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  // Re-seed resources (admin only) — clears table and re-inserts default Drive files
-  app.post("/api/resources/reseed", requireAdminSession, async (_req, res) => {
-    await db.delete(schema.resources);
-    resourcesSeeded = false;
-    await seedResourcesIfNeeded();
-    const rows = await db.select().from(schema.resources).orderBy(asc(schema.resources.order));
-    logActivity("Resources Re-seeded", `${rows.length} resources loaded`, "file");
-    res.json({ success: true, count: rows.length });
+  // Upload file + create resource in one step
+  app.post("/api/resources/upload", requireAdminSession, upload.single("file"), async (req: any, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+      const file = req.file as Express.Multer.File;
+      const fileUrl = `/uploads/resources/${file.filename}`;
+      const ext = path.extname(file.originalname).toLowerCase().replace(".", "");
+      const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "template", xlsx: "template", ppt: "doc", pptx: "doc", png: "link", jpg: "link", jpeg: "link", gif: "link", mp4: "video", webm: "video", zip: "template" };
+      const id = randomUUID();
+      const now = new Date().toISOString();
+      const allResources = await db.select({ id: schema.resources.id }).from(schema.resources);
+      const [resource] = await db.insert(schema.resources).values({
+        id,
+        title: req.body.title || file.originalname.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
+        description: req.body.description || "",
+        category: req.body.category || "classroom",
+        type: typeMap[ext] || "doc",
+        url: fileUrl,
+        thumbnailUrl: "",
+        order: req.body.order ? parseInt(req.body.order) : allResources.length + 1,
+        featured: req.body.featured === "true",
+        published: req.body.published !== "false",
+        createdAt: now,
+        updatedAt: now,
+      }).returning();
+      logActivity("Resource Uploaded", resource.title, "file");
+      res.status(201).json(resource);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Upload failed" });
+    }
   });
 
   // ─── Dashboard Stats ───────────────────────────────────────────

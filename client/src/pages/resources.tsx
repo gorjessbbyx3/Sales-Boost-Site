@@ -98,7 +98,7 @@ function HeroSection({ count }: { count: number }) {
             variants={fadeUp}
           >
             Sales materials, POS battlecards, and all training modules from
-            the CashSwipe Clients classroom — hosted on Google Drive.
+            the CashSwipe Clients classroom.
           </motion.p>
 
           <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
@@ -150,7 +150,7 @@ function FileCard({ file }: { file: Resource }) {
             </p>
 
             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary group-hover:text-primary/80 transition-colors">
-              Open in Google Drive
+              {file.url.startsWith("/uploads") ? "View File" : "Open Resource"}
               <ExternalLink className="w-3.5 h-3.5" />
             </span>
           </CardContent>
