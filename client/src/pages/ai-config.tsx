@@ -608,6 +608,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       { value: "forecast", icon: TrendingUp, label: "Forecast" },
       { value: "plan", icon: Calendar, label: "90-Day Plan" },
       { value: "revenue", icon: DollarSign, label: "Revenue" },
+      { value: "invoices", icon: FileText, label: "Invoices" },
     ]},
     { label: "AI & TOOLS", tabs: [
       { value: "autopilot", icon: Zap, label: "Autopilot" },
@@ -727,6 +728,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsContent value="materials"><MaterialsTab /></TabsContent>
               <TabsContent value="clients"><ClientsTab /></TabsContent>
               <TabsContent value="revenue"><RevenueTab /></TabsContent>
+              <TabsContent value="invoices"><InvoicesTab /></TabsContent>
               <TabsContent value="tasks"><TasksTab /></TabsContent>
               <TabsContent value="files"><FilesTab /></TabsContent>
               <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
@@ -2421,6 +2423,311 @@ function IntegrationsTab() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ─── Invoices Tab ───────────────────────────────────────────────────
+
+interface InvoiceRecord {
+  id: string;
+  invoiceNumber: string;
+  clientName: string;
+  amount: number;
+  status: string;
+  dueDate: string;
+  paidDate: string | null;
+  notes: string;
+  fileUrl: string;
+  fileName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const INVOICE_STATUSES: Record<string, { label: string; color: string }> = {
+  pending: { label: "Pending", color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
+  paid: { label: "Paid", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+  overdue: { label: "Overdue", color: "text-red-400 bg-red-400/10 border-red-400/20" },
+  void: { label: "Void", color: "text-muted-foreground bg-muted/30 border-muted-foreground/20" },
+};
+
+function InvoicesTab() {
+  const { toast } = useToast();
+  const { data: invoices = [], refetch } = useQuery<InvoiceRecord[]>({
+    queryKey: ["/api/invoices"],
+    queryFn: async () => { const r = await fetch("/api/invoices", { credentials: "include" }); if (!r.ok) throw new Error("Failed"); return r.json(); },
+  });
+  const [showDialog, setShowDialog] = useState(false);
+  const [editing, setEditing] = useState<InvoiceRecord | null>(null);
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogFileRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [form, setForm] = useState({ invoiceNumber: "", clientName: "", amount: "", status: "pending", dueDate: "", notes: "" });
+
+  const createInvoice = async (file?: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      if (file) fd.append("file", file);
+      fd.append("invoiceNumber", form.invoiceNumber);
+      fd.append("clientName", form.clientName);
+      fd.append("amount", String(Math.round(parseFloat(form.amount || "0") * 100)));
+      fd.append("status", form.status);
+      fd.append("dueDate", form.dueDate);
+      fd.append("notes", form.notes);
+      const resp = await fetch("/api/invoices", { method: "POST", body: fd, credentials: "include" });
+      if (!resp.ok) throw new Error("Failed to create invoice");
+      refetch();
+      setShowDialog(false);
+      setSelectedFile(null);
+      toast({ title: "Invoice added" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setUploading(false);
+  };
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, ...data }: Partial<InvoiceRecord> & { id: string }) => apiRequest("PATCH", `/api/invoices/${id}`, data),
+    onSuccess: () => { refetch(); setShowDialog(false); setEditing(null); toast({ title: "Invoice updated" }); },
+    onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/invoices/${id}`),
+    onSuccess: () => { refetch(); toast({ title: "Invoice deleted" }); },
+  });
+
+  const quickUpload = async (files: FileList | File[]) => {
+    setUploading(true);
+    let count = 0;
+    for (const file of Array.from(files)) {
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("invoiceNumber", `INV-${Date.now().toString().slice(-6)}`);
+        fd.append("clientName", "");
+        fd.append("amount", "0");
+        fd.append("status", "pending");
+        const resp = await fetch("/api/invoices", { method: "POST", body: fd, credentials: "include" });
+        if (!resp.ok) throw new Error("Upload failed");
+        count++;
+      } catch { /* skip */ }
+    }
+    setUploading(false);
+    if (count > 0) { refetch(); toast({ title: `${count} invoice${count > 1 ? "s" : ""} uploaded` }); }
+  };
+
+  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); if (e.dataTransfer.files.length) quickUpload(e.dataTransfer.files); };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
+  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
+
+  const openCreate = () => {
+    setEditing(null);
+    setSelectedFile(null);
+    setForm({ invoiceNumber: `INV-${Date.now().toString().slice(-6)}`, clientName: "", amount: "", status: "pending", dueDate: "", notes: "" });
+    setShowDialog(true);
+  };
+
+  const openEdit = (inv: InvoiceRecord) => {
+    setEditing(inv);
+    setSelectedFile(null);
+    setForm({ invoiceNumber: inv.invoiceNumber, clientName: inv.clientName, amount: (inv.amount / 100).toFixed(2), status: inv.status, dueDate: inv.dueDate, notes: inv.notes });
+    setShowDialog(true);
+  };
+
+  const handleSave = () => {
+    if (editing) {
+      updateMut.mutate({ id: editing.id, invoiceNumber: form.invoiceNumber, clientName: form.clientName, amount: Math.round(parseFloat(form.amount || "0") * 100), status: form.status, dueDate: form.dueDate, notes: form.notes });
+    } else {
+      createInvoice(selectedFile || undefined);
+    }
+  };
+
+  const filtered = filterStatus === "all" ? invoices : invoices.filter(i => i.status === filterStatus);
+  const totalPending = invoices.filter(i => i.status === "pending").reduce((s, i) => s + i.amount, 0);
+  const totalPaid = invoices.filter(i => i.status === "paid").reduce((s, i) => s + i.amount, 0);
+  const totalOverdue = invoices.filter(i => i.status === "overdue").reduce((s, i) => s + i.amount, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2"><FileText className="w-5 h-5 text-primary" />Invoices</h2>
+          <p className="text-xs text-muted-foreground mt-1">{invoices.length} invoices — upload and track payments</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {Object.entries(INVOICE_STATUSES).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={openCreate}><Plus className="w-3.5 h-3.5" />New Invoice</Button>
+        </div>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card><CardContent className="p-4 text-center">
+          <p className="text-[10px] text-muted-foreground uppercase">Pending</p>
+          <p className="text-lg font-bold text-yellow-400">${(totalPending / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 text-center">
+          <p className="text-[10px] text-muted-foreground uppercase">Paid</p>
+          <p className="text-lg font-bold text-emerald-400">${(totalPaid / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 text-center">
+          <p className="text-[10px] text-muted-foreground uppercase">Overdue</p>
+          <p className="text-lg font-bold text-red-400">${(totalOverdue / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+        </CardContent></Card>
+      </div>
+
+      {/* Drop zone */}
+      <Card
+        className={`border-2 border-dashed transition-all cursor-pointer ${isDragging ? "border-primary bg-primary/5" : "border-border/50 hover:border-primary/30"}`}
+        onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <CardContent className="py-6 text-center">
+          <input ref={fileInputRef} type="file" multiple className="hidden" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+            onChange={(e) => { if (e.target.files?.length) quickUpload(e.target.files); e.target.value = ""; }} />
+          {uploading ? (
+            <><RefreshCw className="w-8 h-8 text-primary mx-auto mb-2 animate-spin" /><p className="text-sm">Uploading...</p></>
+          ) : (
+            <><Upload className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+            <p className="text-sm font-medium">{isDragging ? "Drop invoices here" : "Quick upload — drag & drop invoice files"}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">PDF, images, DOC, XLS — up to 25MB. Creates draft entries you can edit.</p></>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Invoice table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Invoice #</TableHead>
+                <TableHead className="text-xs">Client</TableHead>
+                <TableHead className="text-xs w-24">Amount</TableHead>
+                <TableHead className="text-xs w-24">Status</TableHead>
+                <TableHead className="text-xs w-24">Due Date</TableHead>
+                <TableHead className="text-xs w-16">File</TableHead>
+                <TableHead className="text-xs w-24 text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && (
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-sm text-muted-foreground">No invoices yet. Upload some files or create one manually.</TableCell></TableRow>
+              )}
+              {filtered.map((inv) => {
+                const st = INVOICE_STATUSES[inv.status] || INVOICE_STATUSES.pending;
+                return (
+                  <TableRow key={inv.id}>
+                    <TableCell className="text-sm font-medium">{inv.invoiceNumber || "—"}</TableCell>
+                    <TableCell className="text-sm">{inv.clientName || <span className="text-muted-foreground italic">No client</span>}</TableCell>
+                    <TableCell className="text-sm font-medium">${(inv.amount / 100).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[10px] ${st.color}`}>{st.label}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{inv.dueDate || "—"}</TableCell>
+                    <TableCell>
+                      {inv.fileUrl ? (
+                        <a href={inv.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-[10px] flex items-center gap-0.5"><Paperclip className="w-2.5 h-2.5" />View</a>
+                      ) : <span className="text-[10px] text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center gap-1 justify-end">
+                        {inv.status !== "paid" && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400 hover:text-emerald-300" title="Mark Paid"
+                            onClick={() => updateMut.mutate({ id: inv.id, status: "paid", paidDate: new Date().toISOString().split("T")[0] })}>
+                            <Check className="w-3 h-3" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)}><Edit3 className="w-3 h-3" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-300"
+                          onClick={() => { if (confirm("Delete this invoice?")) deleteMut.mutate(inv.id); }}><Trash2 className="w-3 h-3" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={showDialog} onOpenChange={(o) => { setShowDialog(o); if (!o) { setEditing(null); setSelectedFile(null); } }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit Invoice" : "New Invoice"}</DialogTitle>
+            <DialogDescription>{editing ? "Update invoice details." : "Create an invoice and optionally attach a file."}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Invoice #</Label>
+                <Input value={form.invoiceNumber} onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })} placeholder="INV-001" />
+              </div>
+              <div>
+                <Label className="text-xs">Client Name</Label>
+                <Input value={form.clientName} onChange={(e) => setForm({ ...form, clientName: e.target.value })} placeholder="Business name" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Amount ($)</Label>
+                <Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0.00" />
+              </div>
+              <div>
+                <Label className="text-xs">Status</Label>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(INVOICE_STATUSES).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Due Date</Label>
+              <Input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+            </div>
+            <div>
+              <Label className="text-xs">Notes</Label>
+              <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes" rows={2} />
+            </div>
+            {!editing && (
+              <div>
+                <Label className="text-xs">Attach File</Label>
+                <input ref={dialogFileRef} type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+                  onChange={(e) => { if (e.target.files?.[0]) setSelectedFile(e.target.files[0]); }} />
+                <div className="mt-1">
+                  {selectedFile ? (
+                    <div className="flex items-center gap-2 text-sm p-2 border rounded">
+                      <Paperclip className="w-3.5 h-3.5 text-primary" />
+                      <span className="truncate flex-1">{selectedFile.name}</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedFile(null)}><X className="w-3 h-3" /></Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => dialogFileRef.current?.click()}>
+                      <Upload className="w-3.5 h-3.5" />Choose File
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={uploading}>{editing ? "Update" : "Create"} Invoice</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
