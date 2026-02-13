@@ -288,13 +288,30 @@ export async function registerRoutes(
 
   // Check if first-time setup is needed (no password stored yet)
   app.get("/api/admin/setup-status", async (_req: Request, res: Response) => {
-    const settings = await getAdminSettings();
-    const needsSetup = !settings || !settings.passwordHash;
-    return res.json({ needsSetup });
+    try {
+      const settings = await getAdminSettings();
+      const needsSetup = !settings || !settings.passwordHash;
+      return res.json({ needsSetup });
+    } catch {
+      // Table may not exist yet — treat as needs setup
+      return res.json({ needsSetup: true });
+    }
   });
+
+  // Auto-create admin_settings table if it doesn't exist
+  async function ensureAdminSettingsTable() {
+    await db.execute(
+      `CREATE TABLE IF NOT EXISTS admin_settings (
+        id TEXT PRIMARY KEY DEFAULT 'default',
+        password_hash TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL
+      )`
+    );
+  }
 
   // First-time password setup
   app.post("/api/admin/setup", async (req: Request, res: Response) => {
+    await ensureAdminSettingsTable();
     const settings = await getAdminSettings();
     if (settings && settings.passwordHash) {
       return res.status(400).json({ error: "Password already configured. Use change-password instead." });
