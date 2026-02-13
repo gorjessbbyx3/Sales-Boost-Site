@@ -445,6 +445,58 @@ Best contact for a 10-minute review?`,
   },
 };
 
+// ─── First-Time Setup ────────────────────────────────────────────────
+
+function AdminSetup({ onComplete }: { onComplete: () => void }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+  const { toast } = useToast();
+
+  const setupMutation = useMutation({
+    mutationFn: async (pw: string) => { const res = await apiRequest("POST", "/api/admin/setup", { password: pw }); return res.json(); },
+    onSuccess: () => { onComplete(); toast({ title: "Password created", description: "You're now logged in." }); },
+    onError: (err: Error) => { setError(err.message.replace(/^\d+:\s*/, "")); },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (password !== confirm) { setError("Passwords do not match."); return; }
+    setupMutation.mutate(password);
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <Card className="w-full max-w-sm overflow-visible border-primary/10">
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
+        <CardHeader className="text-center relative">
+          <div className="w-14 h-14 rounded-md bg-emerald-500/15 flex items-center justify-center mx-auto mb-3"><Lock className="w-7 h-7 text-emerald-500" /></div>
+          <CardTitle className="text-xl">Welcome — Set Your Password</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">Create a password for your admin dashboard</p>
+        </CardHeader>
+        <CardContent className="relative">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-muted rounded-md px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50" placeholder="At least 6 characters" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <input id="confirm-password" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                className="w-full bg-muted rounded-md px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50" placeholder="Re-enter your password" />
+            </div>
+            {error && <p className="text-destructive text-sm">{error}</p>}
+            <Button type="submit" className="w-full" disabled={setupMutation.isPending || !password || !confirm}>{setupMutation.isPending ? "Creating..." : "Create Password & Log In"}</Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Login ───────────────────────────────────────────────────────────
 
 function AdminLogin({ onLogin }: { onLogin: () => void }) {
@@ -494,6 +546,7 @@ export default function AiConfigPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const { data: authStatus, isError } = useQuery<{ authenticated: boolean }>({ queryKey: ["/api/admin/check"] });
+  const { data: setupStatus } = useQuery<{ needsSetup: boolean }>({ queryKey: ["/api/admin/setup-status"] });
 
   useEffect(() => {
     if (authStatus !== undefined) { setIsAuthenticated(authStatus.authenticated); setAuthChecked(true); }
@@ -505,7 +558,16 @@ export default function AiConfigPage() {
     onSuccess: () => { setIsAuthenticated(false); queryClient.invalidateQueries({ queryKey: ["/api/admin/check"] }); },
   });
 
-  if (!authChecked) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>;
+  if (!authChecked || setupStatus === undefined) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>;
+
+  if (setupStatus.needsSetup && !isAuthenticated) {
+    return <AdminSetup onComplete={() => {
+      setIsAuthenticated(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/check"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/setup-status"] });
+    }} />;
+  }
+
   if (!isAuthenticated) return <AdminLogin onLogin={() => { setIsAuthenticated(true); queryClient.invalidateQueries({ queryKey: ["/api/admin/check"] }); }} />;
   return <AdminDashboard onLogout={() => logoutMutation.mutate()} />;
 }
@@ -536,6 +598,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { value: "ai-ops", icon: Sparkles, label: "AI Ops" },
     { value: "activity", icon: Activity, label: "Activity" },
     { value: "ai", icon: Bot, label: "AI Chat" },
+    { value: "security", icon: Lock, label: "Security" },
   ];
 
   return (
@@ -596,8 +659,77 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           <TabsContent value="ai-ops"><AiOpsTab /></TabsContent>
           <TabsContent value="activity"><ActivityTab /></TabsContent>
           <TabsContent value="ai"><AiSettingsTab /></TabsContent>
+          <TabsContent value="security"><SecurityTab /></TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+// ─── Security Tab ────────────────────────────────────────────────────
+
+function SecurityTab() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const { toast } = useToast();
+
+  const changeMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      const res = await apiRequest("POST", "/api/admin/change-password", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Password updated", description: "Your admin password has been changed." });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setError("");
+    },
+    onError: (err: Error) => { setError(err.message.replace(/^\d+:\s*/, "")); },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (newPassword.length < 6) { setError("New password must be at least 6 characters."); return; }
+    if (newPassword !== confirmPassword) { setError("New passwords do not match."); return; }
+    if (newPassword === currentPassword) { setError("New password must be different from current password."); return; }
+    changeMutation.mutate({ currentPassword, newPassword });
+  };
+
+  return (
+    <div className="space-y-6 max-w-lg">
+      <div>
+        <h2 className="text-lg font-bold flex items-center gap-2"><Lock className="w-5 h-5" /> Change Password</h2>
+        <p className="text-sm text-muted-foreground mt-1">Update your admin dashboard password</p>
+      </div>
+      <Card className="border-border/50">
+        <CardContent className="pt-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="cur-pw">Current Password</Label>
+              <input id="cur-pw" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full bg-muted rounded-md px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50" placeholder="Enter current password" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-pw">New Password</Label>
+              <input id="new-pw" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full bg-muted rounded-md px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50" placeholder="At least 6 characters" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-pw">Confirm New Password</Label>
+              <input id="confirm-pw" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full bg-muted rounded-md px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50" placeholder="Re-enter new password" />
+            </div>
+            {error && <p className="text-destructive text-sm">{error}</p>}
+            <Button type="submit" disabled={changeMutation.isPending || !currentPassword || !newPassword || !confirmPassword}>
+              {changeMutation.isPending ? "Updating..." : "Update Password"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
