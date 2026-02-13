@@ -17,7 +17,7 @@ import {
   Target,
   Megaphone,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
@@ -111,6 +111,8 @@ function ResourceCard({ resource }: { resource: Resource }) {
             <img
               src={resource.thumbnailUrl}
               alt={resource.title}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             {resource.type === "video" && (
@@ -197,14 +199,17 @@ function FeaturedResources({ resources }: { resources: Resource[] }) {
 function CategoryResources({ resources, searchQuery }: { resources: Resource[]; searchQuery: string }) {
   const [activeCategory, setActiveCategory] = useState("all");
 
-  const filtered = resources.filter((r) => {
-    const matchesCategory = activeCategory === "all" || r.category === activeCategory;
-    const matchesSearch =
-      !searchQuery ||
-      r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filtered = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return resources.filter((r) => {
+      const matchesCategory = activeCategory === "all" || r.category === activeCategory;
+      const matchesSearch =
+        !query ||
+        r.title.toLowerCase().includes(query) ||
+        r.description.toLowerCase().includes(query);
+      return matchesCategory && matchesSearch;
+    });
+  }, [resources, activeCategory, searchQuery]);
 
   return (
     <section className="py-10 sm:py-16">
@@ -303,12 +308,25 @@ function CTASection() {
 }
 
 export default function ResourcesPage() {
+  const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setSearchQuery(value), 250);
+  }, []);
+
+  useEffect(() => {
+    return () => clearTimeout(debounceRef.current);
+  }, []);
 
   useSEO({
     title: "Resources — CashSwipe Clients | TechSavvy Hawaii",
     description: "Access sales scripts, training videos, marketing materials, and tools from the CashSwipe Clients classroom. Everything to build your merchant services business.",
-    canonical: "/resources",
+    canonical: "https://techsavvyhawaii.com/resources",
   });
 
   const { data: resources = [], isLoading } = useQuery<Resource[]>({
@@ -318,6 +336,7 @@ export default function ResourcesPage() {
       if (!res.ok) throw new Error("Failed to fetch resources");
       return res.json();
     },
+    staleTime: 5 * 60 * 1000,
   });
 
   return (
@@ -330,8 +349,8 @@ export default function ResourcesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search resources..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={inputValue}
+            onChange={handleSearchChange}
             className="pl-9 bg-card/50 border-border/50"
           />
         </div>
