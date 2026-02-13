@@ -940,8 +940,10 @@ export async function registerRoutes(
 
   app.get("/api/resources", async (_req, res) => {
     await seedResourcesIfNeeded();
-    const rows = await db.select().from(schema.resources).orderBy(asc(schema.resources.order));
-    const published = rows.filter((r) => r.published);
+    const published = await db.select().from(schema.resources)
+      .where(eq(schema.resources.published, true))
+      .orderBy(asc(schema.resources.order));
+    res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
     res.json(published);
   });
 
