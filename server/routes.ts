@@ -985,6 +985,16 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  // Re-seed resources (admin only) — clears table and re-inserts default Drive files
+  app.post("/api/resources/reseed", requireAdminSession, async (_req, res) => {
+    await db.delete(schema.resources);
+    resourcesSeeded = false;
+    await seedResourcesIfNeeded();
+    const rows = await db.select().from(schema.resources).orderBy(asc(schema.resources.order));
+    logActivity("Resources Re-seeded", `${rows.length} resources loaded`, "file");
+    res.json({ success: true, count: rows.length });
+  });
+
   // ─── Dashboard Stats ───────────────────────────────────────────
 
   app.get("/api/dashboard/stats", requireAdminSession, async (_req, res) => {

@@ -1994,6 +1994,11 @@ function ResourcesManagerTab() {
     onSuccess: () => { refetch(); toast({ title: "Resource deleted" }); },
   });
 
+  const reseedMut = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/resources/reseed"),
+    onSuccess: () => { refetch(); toast({ title: "Resources re-seeded with latest Drive files" }); },
+  });
+
   const openCreate = () => {
     setEditingResource(null);
     setForm({ title: "", description: "", category: "classroom", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: resources.length + 1 });
@@ -2036,6 +2041,9 @@ function ResourcesManagerTab() {
               {Object.entries(RESOURCE_CATEGORIES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Button size="sm" variant="outline" onClick={() => { if (confirm("This will reset all resources to defaults with the latest Drive files. Continue?")) reseedMut.mutate(); }} disabled={reseedMut.isPending}>
+            <RefreshCw className={`w-3.5 h-3.5 ${reseedMut.isPending ? "animate-spin" : ""}`} />{reseedMut.isPending ? "Re-seeding..." : "Re-seed"}
+          </Button>
           <Button size="sm" onClick={openCreate}><Plus className="w-3.5 h-3.5" />Add Resource</Button>
         </div>
       </div>
