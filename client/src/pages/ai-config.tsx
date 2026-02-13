@@ -275,6 +275,61 @@ interface AiRecommendation {
   category: string;
 }
 
+interface EmailThread {
+  id: string;
+  subject: string;
+  leadId: string;
+  contactEmail: string;
+  contactName: string;
+  source: "direct" | "contact-form" | "outreach" | "outreach-reply";
+  status: "open" | "replied" | "closed";
+  unread: boolean;
+  lastMessageAt: string;
+  createdAt: string;
+  messages?: EmailMessage[];
+}
+
+interface EmailMessage {
+  id: string;
+  threadId: string;
+  direction: "inbound" | "outbound";
+  fromEmail: string;
+  fromName: string;
+  toEmail: string;
+  subject: string;
+  body: string;
+  htmlBody: string;
+  resendId: string;
+  status: string;
+  sentAt: string;
+}
+
+interface EmailStats {
+  total: number;
+  unread: number;
+  outreach: number;
+  replies: number;
+  directInbound: number;
+  contactForm: number;
+}
+
+interface ResendEmailConfig {
+  enabled: boolean;
+  fromEmail: string;
+  fromName: string;
+  autoConfirmEnabled: boolean;
+  forwardCopyTo: string;
+}
+
+interface CallScriptData {
+  id: string;
+  leadId: string;
+  script: string;
+  talkingPoints: string[];
+  objections: Array<{ objection: string; response: string }>;
+  generatedAt: string;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────
 
 function today() { return new Date().toISOString().split("T")[0]; }
@@ -464,6 +519,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const tabs = [
     { value: "overview", icon: BarChart3, label: "Dashboard" },
     { value: "leads", icon: UserPlus, label: "Leads" },
+    { value: "inbox", icon: Mail, label: "Inbox" },
     { value: "playbooks", icon: BookOpen, label: "Playbooks" },
     { value: "scorecard", icon: Target, label: "Scorecard" },
     { value: "plan", icon: Calendar, label: "90-Day Plan" },
@@ -523,6 +579,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsContent value="overview"><OverviewTab setActiveTab={setActiveTab} /></TabsContent>
           <TabsContent value="leads"><LeadsTab /></TabsContent>
+          <TabsContent value="inbox"><InboxTab /></TabsContent>
           <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>
           <TabsContent value="scorecard"><ScorecardTab /></TabsContent>
           <TabsContent value="plan"><PlanTab /></TabsContent>
@@ -1994,6 +2051,11 @@ function ResourcesManagerTab() {
     onSuccess: () => { refetch(); toast({ title: "Resource deleted" }); },
   });
 
+  const reseedMut = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/resources/reseed"),
+    onSuccess: () => { refetch(); toast({ title: "Resources re-seeded with latest Drive files" }); },
+  });
+
   const openCreate = () => {
     setEditingResource(null);
     setForm({ title: "", description: "", category: "classroom", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: resources.length + 1 });
@@ -2036,6 +2098,9 @@ function ResourcesManagerTab() {
               {Object.entries(RESOURCE_CATEGORIES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Button size="sm" variant="outline" onClick={() => { if (confirm("This will reset all resources to defaults with the latest Drive files. Continue?")) reseedMut.mutate(); }} disabled={reseedMut.isPending}>
+            <RefreshCw className={`w-3.5 h-3.5 ${reseedMut.isPending ? "animate-spin" : ""}`} />{reseedMut.isPending ? "Re-seeding..." : "Re-seed"}
+          </Button>
           <Button size="sm" onClick={openCreate}><Plus className="w-3.5 h-3.5" />Add Resource</Button>
         </div>
       </div>
@@ -2739,6 +2804,459 @@ function AiOpsTab() {
           </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Inbox Tab ──────────────────────────────────────────────────────
+
+function InboxTab() {
+  const { toast } = useToast();
+  const { data: threads = [], refetch: refetchThreads } = useQuery<EmailThread[]>({ queryKey: ["/api/email/threads"] });
+  const { data: stats } = useQuery<EmailStats>({ queryKey: ["/api/email/stats"] });
+  const { data: emailConfig } = useQuery<ResendEmailConfig>({ queryKey: ["/api/email/config"] });
+  const { data: leads = [] } = useQuery<Lead[]>({ queryKey: ["/api/leads"] });
+
+  const [selectedThread, setSelectedThread] = useState<EmailThread | null>(null);
+  const [showCompose, setShowCompose] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+  const [showOutreach, setShowOutreach] = useState(false);
+  const [selectedLeadId, setSelectedLeadId] = useState("");
+  const [filter, setFilter] = useState<"all" | "unread" | "outreach" | "direct" | "contact-form">("all");
+
+  // Compose state
+  const [composeTo, setComposeTo] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+
+  // Config state
+  const [cfgEnabled, setCfgEnabled] = useState(false);
+  const [cfgFromEmail, setCfgFromEmail] = useState("contact@techsavvyhawaii.com");
+  const [cfgFromName, setCfgFromName] = useState("TechSavvy Hawaii");
+  const [cfgAutoConfirm, setCfgAutoConfirm] = useState(true);
+  const [cfgForwardTo, setCfgForwardTo] = useState("");
+
+  useEffect(() => {
+    if (emailConfig) {
+      setCfgEnabled(emailConfig.enabled);
+      setCfgFromEmail(emailConfig.fromEmail);
+      setCfgFromName(emailConfig.fromName);
+      setCfgAutoConfirm(emailConfig.autoConfirmEnabled);
+      setCfgForwardTo(emailConfig.forwardCopyTo);
+    }
+  }, [emailConfig]);
+
+  // Outreach state
+  const [outreachPreview, setOutreachPreview] = useState<{ subject: string; html: string; text: string } | null>(null);
+  const [outreachEditSubject, setOutreachEditSubject] = useState("");
+  const [outreachEditBody, setOutreachEditBody] = useState("");
+
+  // Thread detail query
+  const { data: threadDetail, refetch: refetchDetail } = useQuery<EmailThread & { messages: EmailMessage[] }>({
+    queryKey: ["/api/email/threads", selectedThread?.id],
+    enabled: !!selectedThread,
+  });
+
+  // Reply state
+  const [replyBody, setReplyBody] = useState("");
+
+  const filteredThreads = threads.filter(t => {
+    if (filter === "all") return true;
+    if (filter === "unread") return t.unread;
+    if (filter === "outreach") return t.source === "outreach" || t.source === "outreach-reply";
+    if (filter === "direct") return t.source === "direct";
+    if (filter === "contact-form") return t.source === "contact-form";
+    return true;
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: async (data: { to: string; subject: string; html: string; threadId?: string }) => {
+      const res = await apiRequest("POST", "/api/email/send", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Email sent" });
+      setShowCompose(false);
+      setComposeTo("");
+      setComposeSubject("");
+      setComposeBody("");
+      setReplyBody("");
+      refetchThreads();
+      if (selectedThread) refetchDetail();
+    },
+    onError: (err: Error) => toast({ title: "Send failed", description: err.message, variant: "destructive" }),
+  });
+
+  const configMutation = useMutation({
+    mutationFn: async (data: Partial<ResendEmailConfig>) => {
+      const res = await apiRequest("PATCH", "/api/email/config", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Email config saved" });
+      queryClient.invalidateQueries({ queryKey: ["/api/email/config"] });
+    },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const outreachGenerateMutation = useMutation({
+    mutationFn: async (leadId: string) => {
+      const res = await apiRequest("POST", "/api/email/outreach/generate", { leadId });
+      return res.json();
+    },
+    onSuccess: (data: { subject: string; html: string; text: string }) => {
+      setOutreachPreview(data);
+      setOutreachEditSubject(data.subject);
+      setOutreachEditBody(data.text);
+    },
+  });
+
+  const outreachSendMutation = useMutation({
+    mutationFn: async (data: { leadId: string; subject: string; html: string; text: string }) => {
+      const res = await apiRequest("POST", "/api/email/outreach/send", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Outreach email sent!" });
+      setShowOutreach(false);
+      setOutreachPreview(null);
+      setSelectedLeadId("");
+      refetchThreads();
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+    },
+    onError: (err: Error) => toast({ title: "Send failed", description: err.message, variant: "destructive" }),
+  });
+
+  const callScriptMutation = useMutation({
+    mutationFn: async (leadId: string) => {
+      const res = await apiRequest("POST", "/api/email/call-script/generate", { leadId });
+      return res.json();
+    },
+  });
+
+  const deleteThreadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/email/threads/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      setSelectedThread(null);
+      refetchThreads();
+    },
+  });
+
+  const sourceLabel: Record<string, string> = {
+    direct: "Direct Email",
+    "contact-form": "Contact Form",
+    outreach: "Outreach",
+    "outreach-reply": "Outreach Reply",
+  };
+
+  const sourceBadge: Record<string, string> = {
+    direct: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    "contact-form": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    outreach: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    "outreach-reply": "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+  };
+
+  // Thread Detail View
+  if (selectedThread && threadDetail) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedThread(null)}><ArrowLeft className="w-4 h-4" /><span className="ml-1">Back</span></Button>
+          <div className="flex-1">
+            <h3 className="text-sm font-bold">{threadDetail.subject || "(no subject)"}</h3>
+            <p className="text-xs text-muted-foreground">{threadDetail.contactName} &lt;{threadDetail.contactEmail}&gt; · <span className={sourceBadge[threadDetail.source] + " px-1.5 py-0.5 rounded text-[10px] font-medium"}>{sourceLabel[threadDetail.source]}</span></p>
+          </div>
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { if (confirm("Delete this thread?")) deleteThreadMutation.mutate(threadDetail.id); }}><Trash2 className="w-4 h-4" /></Button>
+        </div>
+
+        {threadDetail.leadId && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg text-xs">
+            <UserPlus className="w-3.5 h-3.5 text-primary" />
+            <span className="text-muted-foreground">Linked to lead:</span>
+            <span className="font-medium">{leads.find(l => l.id === threadDetail.leadId)?.business || threadDetail.leadId}</span>
+          </div>
+        )}
+
+        <div className="space-y-3 max-h-[500px] overflow-y-auto">
+          {(threadDetail.messages || []).map((msg) => (
+            <Card key={msg.id} className={`border-border/50 ${msg.direction === "outbound" ? "ml-8 border-primary/20" : "mr-8"}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${msg.direction === "outbound" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                      {msg.direction === "outbound" ? "TS" : (msg.fromName?.[0] || "?")}
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium">{msg.direction === "outbound" ? "TechSavvy Hawaii" : msg.fromName}</span>
+                      <span className="text-[10px] text-muted-foreground ml-2">&lt;{msg.fromEmail}&gt;</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">{timeAgo(msg.sentAt)}</span>
+                </div>
+                {msg.htmlBody ? (
+                  <div className="text-sm prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: msg.htmlBody }} />
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card className="border-border/50">
+          <CardContent className="p-4 space-y-3">
+            <p className="text-xs font-medium text-muted-foreground">Reply to {threadDetail.contactEmail}</p>
+            <Textarea value={replyBody} onChange={(e) => setReplyBody(e.target.value)} placeholder="Type your reply..." rows={4} className="resize-none text-sm" />
+            <div className="flex justify-end">
+              <Button size="sm" disabled={!replyBody.trim() || sendMutation.isPending} onClick={() => sendMutation.mutate({
+                to: threadDetail.contactEmail,
+                subject: `Re: ${threadDetail.subject}`,
+                html: `<p>${replyBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | contact@techsavvyhawaii.com</p></div>`,
+                threadId: threadDetail.id,
+              })}><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send Reply"}</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header with stats */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2"><Mail className="w-5 h-5 text-primary" />Inbox</h2>
+          <p className="text-xs text-muted-foreground mt-1">Manage all emails for contact@techsavvyhawaii.com</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}><Settings className="w-4 h-4 mr-1" />Config</Button>
+          <Button variant="outline" size="sm" onClick={() => setShowOutreach(true)}><Zap className="w-4 h-4 mr-1" />Outreach</Button>
+          <Button size="sm" onClick={() => setShowCompose(true)}><Plus className="w-4 h-4 mr-1" />Compose</Button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+          <Card className="border-border/50"><CardContent className="p-3 text-center"><p className="text-xl font-bold">{stats.total}</p><p className="text-[10px] text-muted-foreground">Total Threads</p></CardContent></Card>
+          <Card className="border-border/50"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-orange-500">{stats.unread}</p><p className="text-[10px] text-muted-foreground">Unread</p></CardContent></Card>
+          <Card className="border-border/50"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-purple-500">{stats.outreach}</p><p className="text-[10px] text-muted-foreground">Outreach Sent</p></CardContent></Card>
+          <Card className="border-border/50"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-green-500">{stats.replies}</p><p className="text-[10px] text-muted-foreground">Replies</p></CardContent></Card>
+          <Card className="border-border/50"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-blue-500">{stats.directInbound}</p><p className="text-[10px] text-muted-foreground">Direct Emails</p></CardContent></Card>
+          <Card className="border-border/50"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-emerald-500">{stats.contactForm}</p><p className="text-[10px] text-muted-foreground">Contact Form</p></CardContent></Card>
+        </div>
+      )}
+
+      {/* Email enabled status banner */}
+      {emailConfig && !emailConfig.enabled && (
+        <Card className="border-yellow-500/30 bg-yellow-500/5">
+          <CardContent className="p-4 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Email sending is disabled</p>
+              <p className="text-xs text-muted-foreground">Enable it in Config to send outreach emails, auto-confirmations, and replies.</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setShowConfig(true)}>Configure</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {(["all", "unread", "outreach", "direct", "contact-form"] as const).map(f => (
+          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setFilter(f)}>
+            {f === "all" ? "All" : f === "unread" ? `Unread (${stats?.unread || 0})` : f === "outreach" ? "Outreach" : f === "direct" ? "Direct" : "Contact Form"}
+          </Button>
+        ))}
+      </div>
+
+      {/* Thread List */}
+      <div className="space-y-1">
+        {filteredThreads.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            <Mail className="w-8 h-8 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">No emails yet</p>
+            <p className="text-xs mt-1">Send an outreach email or wait for inbound emails to appear here</p>
+          </div>
+        )}
+        {filteredThreads.map((thread) => (
+          <div key={thread.id}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${thread.unread ? "bg-primary/5 border border-primary/10" : "border border-transparent"}`}
+            onClick={() => setSelectedThread(thread)}>
+            <div className={`w-2 h-2 rounded-full shrink-0 ${thread.unread ? "bg-primary" : "bg-transparent"}`} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className={`text-sm truncate ${thread.unread ? "font-bold" : "font-medium"}`}>{thread.contactName || thread.contactEmail}</span>
+                <span className={`${sourceBadge[thread.source]} px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0`}>{sourceLabel[thread.source]}</span>
+              </div>
+              <p className={`text-xs truncate mt-0.5 ${thread.unread ? "text-foreground" : "text-muted-foreground"}`}>{thread.subject || "(no subject)"}</p>
+            </div>
+            <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(thread.lastMessageAt)}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Compose Dialog */}
+      <Dialog open={showCompose} onOpenChange={setShowCompose}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Compose Email</DialogTitle><DialogDescription>Send from contact@techsavvyhawaii.com</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5"><Label className="text-xs">To</Label><Input value={composeTo} onChange={(e) => setComposeTo(e.target.value)} placeholder="recipient@email.com" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Subject</Label><Input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} placeholder="Email subject" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Message</Label><Textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} placeholder="Write your email..." rows={8} className="resize-none text-sm" /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCompose(false)}>Cancel</Button>
+            <Button disabled={!composeTo || !composeSubject || !composeBody || sendMutation.isPending} onClick={() => sendMutation.mutate({
+              to: composeTo,
+              subject: composeSubject,
+              html: `<p>${composeBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | contact@techsavvyhawaii.com</p></div>`,
+            })}><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Config Dialog */}
+      <Dialog open={showConfig} onOpenChange={setShowConfig}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Email Configuration</DialogTitle><DialogDescription>Configure Resend email settings</DialogDescription></DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div><p className="text-sm font-medium">Email Sending</p><p className="text-xs text-muted-foreground">Enable outbound email via Resend</p></div>
+              <Switch checked={cfgEnabled} onCheckedChange={setCfgEnabled} />
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs">From Email</Label><Input value={cfgFromEmail} onChange={(e) => setCfgFromEmail(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label className="text-xs">From Name</Label><Input value={cfgFromName} onChange={(e) => setCfgFromName(e.target.value)} /></div>
+            <div className="flex items-center justify-between">
+              <div><p className="text-sm font-medium">Auto-Confirm Contact Forms</p><p className="text-xs text-muted-foreground">Send confirmation email to form submitters</p></div>
+              <Switch checked={cfgAutoConfirm} onCheckedChange={setCfgAutoConfirm} />
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Forward Copy To (Personal Email)</Label><Input value={cfgForwardTo} onChange={(e) => setCfgForwardTo(e.target.value)} placeholder="your@email.com" /><p className="text-[10px] text-muted-foreground">Get a copy of all inbound emails on your phone</p></div>
+
+            {!process.env.RESEND_API_KEY && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 rounded text-xs text-yellow-700 dark:text-yellow-400">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                Set RESEND_API_KEY environment variable to enable email
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfig(false)}>Cancel</Button>
+            <Button disabled={configMutation.isPending} onClick={() => configMutation.mutate({
+              enabled: cfgEnabled,
+              fromEmail: cfgFromEmail,
+              fromName: cfgFromName,
+              autoConfirmEnabled: cfgAutoConfirm,
+              forwardCopyTo: cfgForwardTo,
+            })}><Save className="w-4 h-4 mr-1" />{configMutation.isPending ? "Saving..." : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Outreach Dialog */}
+      <Dialog open={showOutreach} onOpenChange={(v) => { setShowOutreach(v); if (!v) { setOutreachPreview(null); setSelectedLeadId(""); } }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle><Zap className="w-5 h-5 inline mr-2 text-primary" />Send Outreach Email</DialogTitle><DialogDescription>Select a lead to generate a personalized outreach email and call script</DialogDescription></DialogHeader>
+
+          {!outreachPreview ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Select Lead</Label>
+                <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
+                  <SelectTrigger><SelectValue placeholder="Choose a lead..." /></SelectTrigger>
+                  <SelectContent>
+                    {leads.filter(l => l.email && l.status !== "won" && l.status !== "lost").map(l => (
+                      <SelectItem key={l.id} value={l.id}>{l.business || l.name} — {l.email}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedLeadId && (() => {
+                const lead = leads.find(l => l.id === selectedLeadId);
+                if (!lead) return null;
+                return (
+                  <Card className="border-border/50">
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div><span className="text-muted-foreground">Business:</span> <span className="font-medium">{lead.business}</span></div>
+                        <div><span className="text-muted-foreground">Contact:</span> <span className="font-medium">{lead.name}</span></div>
+                        <div><span className="text-muted-foreground">Processor:</span> <span className="font-medium">{lead.currentProcessor || "Unknown"}</span></div>
+                        <div><span className="text-muted-foreground">Volume:</span> <span className="font-medium">{lead.monthlyVolume || "Unknown"}</span></div>
+                        <div><span className="text-muted-foreground">Vertical:</span> <span className="font-medium">{lead.vertical}</span></div>
+                        <div><span className="text-muted-foreground">Status:</span> <span className="font-medium">{lead.status}</span></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+              <div className="flex gap-2">
+                <Button disabled={!selectedLeadId || outreachGenerateMutation.isPending} onClick={() => outreachGenerateMutation.mutate(selectedLeadId)}>
+                  <Sparkles className="w-4 h-4 mr-1" />{outreachGenerateMutation.isPending ? "Generating..." : "Generate Email"}
+                </Button>
+                <Button variant="outline" disabled={!selectedLeadId || callScriptMutation.isPending} onClick={() => callScriptMutation.mutate(selectedLeadId)}>
+                  <Phone className="w-4 h-4 mr-1" />{callScriptMutation.isPending ? "Generating..." : "Generate Call Script"}
+                </Button>
+              </div>
+
+              {/* Show call script if generated */}
+              {callScriptMutation.data && (
+                <Card className="border-border/50">
+                  <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Phone className="w-4 h-4 text-primary" />Call Script</CardTitle></CardHeader>
+                  <CardContent className="space-y-3">
+                    <pre className="text-xs whitespace-pre-wrap bg-muted/50 p-4 rounded-lg max-h-[300px] overflow-y-auto font-mono">{callScriptMutation.data.script}</pre>
+                    <div>
+                      <p className="text-xs font-semibold mb-1">Talking Points:</p>
+                      <ul className="text-xs space-y-1">{callScriptMutation.data.talkingPoints.map((tp: string, i: number) => <li key={i} className="flex items-start gap-1.5"><Check className="w-3 h-3 text-green-500 mt-0.5 shrink-0" />{tp}</li>)}</ul>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold mb-1">Objection Handlers:</p>
+                      <div className="space-y-2">{callScriptMutation.data.objections.map((obj: { objection: string; response: string }, i: number) => (
+                        <div key={i} className="bg-muted/30 p-2 rounded text-xs">
+                          <p className="font-medium text-orange-600 dark:text-orange-400">"{obj.objection}"</p>
+                          <p className="mt-1 text-muted-foreground">{obj.response}</p>
+                        </div>
+                      ))}</div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(callScriptMutation.data.script); toast({ title: "Script copied!" }); }}><Copy className="w-3 h-3 mr-1" />Copy Script</Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Subject (editable)</Label>
+                <Input value={outreachEditSubject} onChange={(e) => setOutreachEditSubject(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Preview</Label>
+                <div className="border rounded-lg p-4 bg-white dark:bg-card max-h-[300px] overflow-y-auto">
+                  <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: outreachPreview.html }} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Plain Text (editable)</Label>
+                <Textarea value={outreachEditBody} onChange={(e) => setOutreachEditBody(e.target.value)} rows={6} className="resize-none text-sm font-mono" />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setOutreachPreview(null)}>Back</Button>
+                <Button disabled={outreachSendMutation.isPending} onClick={() => outreachSendMutation.mutate({
+                  leadId: selectedLeadId,
+                  subject: outreachEditSubject,
+                  html: outreachPreview.html,
+                  text: outreachEditBody,
+                })}>
+                  <Send className="w-4 h-4 mr-1" />{outreachSendMutation.isPending ? "Sending..." : "Approve & Send"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
