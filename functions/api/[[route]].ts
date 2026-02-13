@@ -37,6 +37,26 @@ function now() {
 
 // ─── Auth helpers ────────────────────────────────────────────────────
 
+async function ensureSessionsTable(db: D1Database) {
+  await db.prepare(
+    "CREATE TABLE IF NOT EXISTS admin_sessions (token TEXT PRIMARY KEY, created_at TEXT NOT NULL)"
+  ).run();
+}
+
+async function ensureAdminSettingsTable(db: D1Database) {
+  await db.prepare(
+    "CREATE TABLE IF NOT EXISTS admin_settings (id TEXT PRIMARY KEY DEFAULT 'default', password_hash TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)"
+  ).run();
+}
+
+async function getAdminSettings(db: D1Database) {
+  try {
+    return await db.prepare("SELECT * FROM admin_settings WHERE id = 'default'").first();
+  } catch {
+    return null;
+  }
+}
+
 function getSessionToken(request: Request): string | null {
   const cookie = request.headers.get("Cookie") || "";
   const match = cookie.match(/techsavvy_session=([^;]+)/);
@@ -46,8 +66,14 @@ function getSessionToken(request: Request): string | null {
 async function isAuthenticated(db: D1Database, request: Request): Promise<boolean> {
   const token = getSessionToken(request);
   if (!token) return false;
-  const row = await db.prepare("SELECT token FROM admin_sessions WHERE token = ?").bind(token).first();
-  return !!row;
+  try {
+    const row = await db.prepare("SELECT token FROM admin_sessions WHERE token = ?").bind(token).first();
+    return !!row;
+  } catch {
+    await ensureSessionsTable(db);
+    const row = await db.prepare("SELECT token FROM admin_sessions WHERE token = ?").bind(token).first();
+    return !!row;
+  }
 }
 
 function setSessionCookie(token: string): string {
@@ -56,6 +82,26 @@ function setSessionCookie(token: string): string {
 
 function clearSessionCookie(): string {
   return "techsavvy_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
+}
+
+// Web Crypto password hashing (Workers-compatible)
+async function hashPassword(password: string): Promise<string> {
+  const salt = genId() + genId();
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: enc.encode(salt), iterations: 100000, hash: "SHA-256" }, keyMaterial, 256);
+  const hash = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return `${salt}:${hash}`;
+}
+
+async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: enc.encode(salt), iterations: 100000, hash: "SHA-256" }, keyMaterial, 256);
+  const computed = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return computed === hash;
 }
 
 // ─── Allowed AI models ───────────────────────────────────────────────
@@ -158,17 +204,59 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json({ reply: text });
     }
 
-    // POST /api/admin/login
-    if (path === "/api/admin/login" && method === "POST") {
+    // GET /api/admin/setup-status
+    if (path === "/api/admin/setup-status" && method === "GET") {
+      const settings = await getAdminSettings(env.DB);
+      const needsSetup = !settings || !settings.password_hash;
+      return json({ needsSetup });
+    }
+
+    // POST /api/admin/setup (first-time password creation)
+    if (path === "/api/admin/setup" && method === "POST") {
+      await ensureAdminSettingsTable(env.DB);
+      await ensureSessionsTable(env.DB);
+      const settings = await getAdminSettings(env.DB);
+      if (settings && settings.password_hash) {
+        return err("Password already configured. Use change-password instead.", 400);
+      }
       const body: any = await request.json();
       const { password } = body || {};
-      const adminPassword = env.SESSION_SECRET;
-      if (!adminPassword) return err("Admin access not configured.", 500);
+      if (!password || typeof password !== "string" || password.length < 6) {
+        return err("Password must be at least 6 characters.");
+      }
+      const ts = now();
+      const pw = await hashPassword(password);
+      await env.DB.prepare(
+        "INSERT INTO admin_settings (id, password_hash, updated_at) VALUES ('default', ?, ?) ON CONFLICT(id) DO UPDATE SET password_hash = ?, updated_at = ?"
+      ).bind(pw, ts, pw, ts).run();
+      const token = genId() + genId() + genId();
+      await env.DB.prepare("INSERT INTO admin_sessions (token, created_at) VALUES (?, ?)").bind(token, ts).run();
+      return json({ success: true }, 200, { "Set-Cookie": setSessionCookie(token) });
+    }
 
-      if (password === adminPassword) {
+    // POST /api/admin/login
+    if (path === "/api/admin/login" && method === "POST") {
+      await ensureSessionsTable(env.DB);
+      const body: any = await request.json();
+      const { password } = body || {};
+
+      // Check stored password first
+      const settings = await getAdminSettings(env.DB);
+      if (settings && settings.password_hash) {
+        if (await verifyPassword(password, settings.password_hash as string)) {
+          const token = genId() + genId() + genId();
+          await env.DB.prepare("INSERT INTO admin_sessions (token, created_at) VALUES (?, ?)").bind(token, now()).run();
+          await env.DB.prepare("DELETE FROM admin_sessions WHERE created_at < datetime('now', '-1 day')").run();
+          return json({ success: true }, 200, { "Set-Cookie": setSessionCookie(token) });
+        }
+        return err("Invalid password.", 401);
+      }
+
+      // Fallback to SESSION_SECRET env var
+      const adminPassword = env.SESSION_SECRET;
+      if (adminPassword && password === adminPassword) {
         const token = genId() + genId() + genId();
         await env.DB.prepare("INSERT INTO admin_sessions (token, created_at) VALUES (?, ?)").bind(token, now()).run();
-        // Clean up old sessions (older than 24h)
         await env.DB.prepare("DELETE FROM admin_sessions WHERE created_at < datetime('now', '-1 day')").run();
         return json({ success: true }, 200, { "Set-Cookie": setSessionCookie(token) });
       }
@@ -185,9 +273,36 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (path === "/api/admin/logout" && method === "POST") {
       const token = getSessionToken(request);
       if (token) {
-        await env.DB.prepare("DELETE FROM admin_sessions WHERE token = ?").bind(token).run();
+        try { await env.DB.prepare("DELETE FROM admin_sessions WHERE token = ?").bind(token).run(); } catch {}
       }
       return json({ success: true }, 200, { "Set-Cookie": clearSessionCookie() });
+    }
+
+    // POST /api/admin/change-password (requires auth)
+    if (path === "/api/admin/change-password" && method === "POST") {
+      const authed = await isAuthenticated(env.DB, request);
+      if (!authed) return err("Unauthorized", 401);
+      const body: any = await request.json();
+      const { currentPassword, newPassword } = body || {};
+      if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+        return err("New password must be at least 6 characters.");
+      }
+      const settings = await getAdminSettings(env.DB);
+      if (settings && settings.password_hash) {
+        if (!await verifyPassword(currentPassword, settings.password_hash as string)) {
+          return err("Current password is incorrect.", 401);
+        }
+      } else {
+        const envPw = env.SESSION_SECRET;
+        if (currentPassword !== envPw) return err("Current password is incorrect.", 401);
+      }
+      await ensureAdminSettingsTable(env.DB);
+      const ts = now();
+      const pw = await hashPassword(newPassword);
+      await env.DB.prepare(
+        "INSERT INTO admin_settings (id, password_hash, updated_at) VALUES ('default', ?, ?) ON CONFLICT(id) DO UPDATE SET password_hash = ?, updated_at = ?"
+      ).bind(pw, ts, pw, ts).run();
+      return json({ success: true });
     }
 
     // ─── Protected routes (require auth) ───────────────────────────
