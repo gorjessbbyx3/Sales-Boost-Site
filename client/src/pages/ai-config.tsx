@@ -24,6 +24,7 @@ import {
   BarChart3, ArrowUpRight, ArrowDownRight,
   Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
   Pin, PinOff, Sparkles, Clock, UserCog, Briefcase, Sun, Moon,
+  ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { useTheme } from "@/hooks/use-theme";
@@ -579,6 +580,8 @@ export default function AiConfigPage() {
 
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const mainDomain = window.location.hostname.startsWith("admin.") ? `https://${window.location.hostname.replace("admin.", "")}` : "/";
 
@@ -604,12 +607,21 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { value: "security", icon: Lock, label: "Security" },
   ];
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSidebarOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Top bar */}
+      <div className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                <Menu className="w-4 h-4" />
+              </Button>
               <a href={mainDomain} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="w-4 h-4" /></a>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded bg-primary/15 flex items-center justify-center"><LayoutDashboard className="w-4 h-4 text-primary" /></div>
@@ -626,44 +638,81 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      <div className="border-b border-border/50 bg-card/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-transparent h-auto p-0 gap-0 rounded-none w-full justify-start overflow-x-auto scrollbar-none">
-              {tabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-2.5 sm:px-4 py-3 text-[11px] sm:text-sm gap-1 sm:gap-1.5 shrink-0"
-                  title={tab.label}>
-                  <tab.icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" /><span className="hidden sm:inline">{tab.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-      </div>
+      <div className="flex">
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsContent value="overview"><OverviewTab setActiveTab={setActiveTab} /></TabsContent>
-          <TabsContent value="leads"><LeadsTab /></TabsContent>
-          <TabsContent value="inbox"><InboxTab /></TabsContent>
-          <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>
-          <TabsContent value="scorecard"><ScorecardTab /></TabsContent>
-          <TabsContent value="plan"><PlanTab /></TabsContent>
-          <TabsContent value="materials"><MaterialsTab /></TabsContent>
-          <TabsContent value="clients"><ClientsTab /></TabsContent>
-          <TabsContent value="revenue"><RevenueTab /></TabsContent>
-          <TabsContent value="tasks"><TasksTab /></TabsContent>
-          <TabsContent value="files"><FilesTab /></TabsContent>
-          <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
-          <TabsContent value="resources"><ResourcesManagerTab /></TabsContent>
-          <TabsContent value="team"><TeamTab /></TabsContent>
-          <TabsContent value="schedule"><ScheduleTab /></TabsContent>
-          <TabsContent value="ai-ops"><AiOpsTab /></TabsContent>
-          <TabsContent value="activity"><ActivityTab /></TabsContent>
-          <TabsContent value="ai"><AiSettingsTab /></TabsContent>
-          <TabsContent value="security"><SecurityTab /></TabsContent>
-        </Tabs>
+        {/* Sidebar */}
+        <aside className={`
+          fixed lg:sticky top-14 z-40 h-[calc(100vh-3.5rem)] bg-card/80 backdrop-blur-xl border-r border-border/50 overflow-y-auto scrollbar-none
+          transition-all duration-300 ease-in-out
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          ${sidebarCollapsed ? "lg:w-16" : "lg:w-56"}
+          w-64
+        `}>
+          <div className="flex flex-col h-full">
+            {/* Mobile close + Desktop collapse */}
+            <div className="flex items-center justify-between p-2 border-b border-border/30">
+              <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="hidden lg:flex h-8 w-8 ml-auto" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+                {sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+              </Button>
+            </div>
+
+            {/* Nav items */}
+            <nav className="flex-1 p-2 space-y-0.5">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.value}
+                  onClick={() => handleTabChange(tab.value)}
+                  title={tab.label}
+                  className={`
+                    w-full flex items-center gap-2.5 rounded-md transition-colors text-left
+                    ${sidebarCollapsed ? "justify-center px-2 py-2.5" : "px-3 py-2"}
+                    ${activeTab === tab.value
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    }
+                  `}
+                >
+                  <tab.icon className="w-4 h-4 shrink-0" />
+                  {!sidebarCollapsed && <span className="text-xs truncate">{tab.label}</span>}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <main className={`flex-1 min-w-0 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-0" : "lg:ml-0"}`}>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsContent value="overview"><OverviewTab setActiveTab={handleTabChange} /></TabsContent>
+              <TabsContent value="leads"><LeadsTab /></TabsContent>
+              <TabsContent value="inbox"><InboxTab /></TabsContent>
+              <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>
+              <TabsContent value="scorecard"><ScorecardTab /></TabsContent>
+              <TabsContent value="plan"><PlanTab /></TabsContent>
+              <TabsContent value="materials"><MaterialsTab /></TabsContent>
+              <TabsContent value="clients"><ClientsTab /></TabsContent>
+              <TabsContent value="revenue"><RevenueTab /></TabsContent>
+              <TabsContent value="tasks"><TasksTab /></TabsContent>
+              <TabsContent value="files"><FilesTab /></TabsContent>
+              <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
+              <TabsContent value="resources"><ResourcesManagerTab /></TabsContent>
+              <TabsContent value="team"><TeamTab /></TabsContent>
+              <TabsContent value="schedule"><ScheduleTab /></TabsContent>
+              <TabsContent value="ai-ops"><AiOpsTab /></TabsContent>
+              <TabsContent value="activity"><ActivityTab /></TabsContent>
+              <TabsContent value="ai"><AiSettingsTab /></TabsContent>
+              <TabsContent value="security"><SecurityTab /></TabsContent>
+            </Tabs>
+          </div>
+        </main>
       </div>
     </div>
   );
@@ -2123,25 +2172,34 @@ function IntegrationsTab() {
         </CardContent>
       </Card>
 
-      {/* Integration Ideas */}
+      {/* Skool Integration */}
       <Card className="overflow-visible border-border/50">
-        <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4 text-blue-400" />Available Integrations</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { name: "Google Sheets", desc: "Sync leads & revenue to a spreadsheet", status: "coming-soon" },
-              { name: "Zapier", desc: "Connect 5000+ apps with webhooks", status: "coming-soon" },
-              { name: "Email (SMTP)", desc: "Auto-send follow-up emails to leads", status: "coming-soon" },
-              { name: "Google Calendar", desc: "Sync task due dates to your calendar", status: "coming-soon" },
-              { name: "Twilio SMS", desc: "Auto-text leads within 24hrs of download", status: "coming-soon" },
-              { name: "QuickBooks", desc: "Sync revenue entries to accounting", status: "coming-soon" },
-            ].map((i) => (
-              <div key={i.name} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">
-                <div className="w-8 h-8 rounded-md bg-muted/50 flex items-center justify-center"><Plug className="w-4 h-4 text-muted-foreground" /></div>
-                <div className="min-w-0 flex-1"><p className="text-sm font-medium">{i.name}</p><p className="text-[10px] text-muted-foreground">{i.desc}</p></div>
-                <Badge variant="outline" className="text-[9px] shrink-0">Soon</Badge>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-md bg-emerald-500/15 flex items-center justify-center"><GraduationCap className="w-5 h-5 text-emerald-500" /></div>
+            <div><CardTitle className="text-sm">Skool Community</CardTitle><p className="text-xs text-muted-foreground">CashSwipe Clients community hub for training, updates & support</p></div>
+            <div className="ml-auto">
+              <Badge variant="default" className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30">Active</Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg bg-muted/30 border border-border/30 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 space-y-2">
+                <p className="text-xs text-muted-foreground">Your clients and team can access the CashSwipe Clients community on Skool for onboarding resources, sales training, and group support.</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Globe className="w-3 h-3" />
+                  <span className="truncate">skool.com/cashswipe-clients</span>
+                </div>
               </div>
-            ))}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" asChild>
+              <a href="https://www.skool.com/cashswipe-clients/about?ref=ddf5a5a74b274ecfa88bad706ad88a82" target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3.5 h-3.5" />Open Community</a>
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText("https://www.skool.com/cashswipe-clients/about?ref=ddf5a5a74b274ecfa88bad706ad88a82"); }}><Copy className="w-3.5 h-3.5" />Copy Invite Link</Button>
           </div>
         </CardContent>
       </Card>
