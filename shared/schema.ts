@@ -225,6 +225,14 @@ export const resources = pgTable("resources", {
   updatedAt: text("updated_at").notNull(),
 });
 
+// ─── Admin Settings (singleton — stores hashed password) ────────────
+
+export const adminSettings = pgTable("admin_settings", {
+  id: text("id").primaryKey().default("default"),
+  passwordHash: text("password_hash").notNull().default(""),
+  updatedAt: text("updated_at").notNull(),
+});
+
 // ─── Activity Log ────────────────────────────────────────────────────
 
 export const activityLog = pgTable("activity_log", {

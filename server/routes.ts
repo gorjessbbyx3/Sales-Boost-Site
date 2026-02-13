@@ -6,7 +6,7 @@ import * as schema from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, getTableColumns } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
-import { randomUUID } from "crypto";
+import { randomUUID, scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import rateLimit from "express-rate-limit";
 import { sendEmail, sendContactFormConfirmation, sendOutreachEmail, generateOutreachEmail, generateCallScript, handleInboundEmail } from "./email";
 
@@ -263,17 +263,106 @@ export async function registerRoutes(
     message: { error: "Too many submissions. Please try again shortly." },
   });
 
+  // ─── Password helpers ────────────────────────────────────────────
+
+  function hashPassword(password: string): string {
+    const salt = randomBytes(16).toString("hex");
+    const hash = scryptSync(password, salt, 64).toString("hex");
+    return `${salt}:${hash}`;
+  }
+
+  function verifyPassword(password: string, stored: string): boolean {
+    const [salt, hash] = stored.split(":");
+    if (!salt || !hash) return false;
+    const hashBuf = Buffer.from(hash, "hex");
+    const supplied = scryptSync(password, salt, 64);
+    return timingSafeEqual(hashBuf, supplied);
+  }
+
+  async function getAdminSettings() {
+    const rows = await db.select().from(schema.adminSettings).limit(1);
+    return rows[0] || null;
+  }
+
   // ─── Admin Auth ─────────────────────────────────────────────────
+
+  // Check if first-time setup is needed (no password stored yet)
+  app.get("/api/admin/setup-status", async (_req: Request, res: Response) => {
+    const settings = await getAdminSettings();
+    const needsSetup = !settings || !settings.passwordHash;
+    return res.json({ needsSetup });
+  });
+
+  // First-time password setup
+  app.post("/api/admin/setup", async (req: Request, res: Response) => {
+    const settings = await getAdminSettings();
+    if (settings && settings.passwordHash) {
+      return res.status(400).json({ error: "Password already configured. Use change-password instead." });
+    }
+    const { password } = req.body;
+    if (!password || typeof password !== "string" || password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters." });
+    }
+    const now = new Date().toISOString();
+    const passwordHash = hashPassword(password);
+    await db.insert(schema.adminSettings).values({ id: "default", passwordHash, updatedAt: now })
+      .onConflictDoUpdate({ target: schema.adminSettings.id, set: { passwordHash, updatedAt: now } });
+    req.session.isAdmin = true;
+    logActivity("Setup", "Admin password created", "auth");
+    return res.json({ success: true });
+  });
 
   app.post("/api/admin/login", async (req: Request, res: Response) => {
     const { password } = req.body;
-    const adminPassword = process.env.SESSION_SECRET || "techsavvy-dev-secret";
-    if (password === adminPassword) {
+    const settings = await getAdminSettings();
+
+    // If a stored password exists, verify against it
+    if (settings && settings.passwordHash) {
+      if (verifyPassword(password, settings.passwordHash)) {
+        req.session.isAdmin = true;
+        logActivity("Login", "Admin logged in", "auth");
+        return res.json({ success: true });
+      }
+      return res.status(401).json({ error: "Invalid password." });
+    }
+
+    // Fallback to SESSION_SECRET for backwards compatibility (before first setup)
+    const envPassword = process.env.SESSION_SECRET || "techsavvy-dev-secret";
+    if (password === envPassword) {
       req.session.isAdmin = true;
-      logActivity("Login", "Admin logged in", "auth");
+      logActivity("Login", "Admin logged in (env fallback)", "auth");
       return res.json({ success: true });
     }
     return res.status(401).json({ error: "Invalid password." });
+  });
+
+  // Change password (requires current session)
+  app.post("/api/admin/change-password", requireAdminSession, async (req: Request, res: Response) => {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+      return res.status(400).json({ error: "New password must be at least 6 characters." });
+    }
+    const settings = await getAdminSettings();
+
+    // Verify the current password
+    if (settings && settings.passwordHash) {
+      if (!verifyPassword(currentPassword, settings.passwordHash)) {
+        return res.status(401).json({ error: "Current password is incorrect." });
+      }
+    } else {
+      // No stored password yet — verify against env fallback
+      const envPassword = process.env.SESSION_SECRET || "techsavvy-dev-secret";
+      if (currentPassword !== envPassword) {
+        return res.status(401).json({ error: "Current password is incorrect." });
+      }
+    }
+
+    const now = new Date().toISOString();
+    const passwordHash = hashPassword(newPassword);
+    await db.insert(schema.adminSettings).values({ id: "default", passwordHash, updatedAt: now })
+      .onConflictDoUpdate({ target: schema.adminSettings.id, set: { passwordHash, updatedAt: now } });
+    logActivity("Security", "Admin password changed", "auth");
+    return res.json({ success: true });
   });
 
   app.post("/api/admin/logout", (req: Request, res: Response) => {
