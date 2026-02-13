@@ -1,9 +1,9 @@
-import { defineConfig } from "vite";
+import { defineConfig, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig(async () => {
-  const plugins = [react()];
+  const plugins: PluginOption[] = [react()];
 
   // Replit-specific plugins — only load when available (skipped on Vercel)
   if (process.env.NODE_ENV !== "production") {
