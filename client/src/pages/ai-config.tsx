@@ -585,28 +585,38 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const { theme, toggleTheme } = useTheme();
   const mainDomain = window.location.hostname.startsWith("admin.") ? `https://${window.location.hostname.replace("admin.", "")}` : "/";
 
-  const tabs = [
-    { value: "overview", icon: BarChart3, label: "Dashboard" },
-    { value: "leads", icon: UserPlus, label: "Leads" },
-    { value: "inbox", icon: Mail, label: "Inbox" },
-    { value: "playbooks", icon: BookOpen, label: "Playbooks" },
-    { value: "scorecard", icon: Target, label: "Scorecard" },
-    { value: "plan", icon: Calendar, label: "90-Day Plan" },
-    { value: "materials", icon: ClipboardList, label: "Materials" },
-    { value: "clients", icon: Users, label: "Clients" },
-    { value: "revenue", icon: DollarSign, label: "Revenue" },
-    { value: "tasks", icon: ClipboardList, label: "Tasks" },
-    { value: "files", icon: FolderOpen, label: "Files" },
-    { value: "integrations", icon: Plug, label: "Integrations" },
-    { value: "resources", icon: Library, label: "Resources" },
-    { value: "team", icon: UserCog, label: "Team" },
-    { value: "schedule", icon: Clock, label: "Schedule" },
-    { value: "prospector", icon: Search, label: "Prospector" },
-    { value: "ai-ops", icon: Sparkles, label: "AI Ops" },
-    { value: "activity", icon: Activity, label: "Activity" },
-    { value: "ai", icon: Bot, label: "AI Chat" },
-    { value: "security", icon: Lock, label: "Security" },
+  const tabGroups = [
+    { label: "COMMAND CENTER", tabs: [
+      { value: "overview", icon: BarChart3, label: "Today" },
+      { value: "tasks", icon: ClipboardList, label: "Tasks & Schedule" },
+      { value: "activity", icon: Activity, label: "Activity" },
+    ]},
+    { label: "SALES", tabs: [
+      { value: "leads", icon: UserPlus, label: "Pipeline" },
+      { value: "clients", icon: Users, label: "Clients" },
+      { value: "prospector", icon: Search, label: "Prospector" },
+      { value: "inbox", icon: Mail, label: "Inbox" },
+    ]},
+    { label: "STRATEGY", tabs: [
+      { value: "playbooks", icon: BookOpen, label: "Playbooks" },
+      { value: "scorecard", icon: Target, label: "Scorecard" },
+      { value: "plan", icon: Calendar, label: "90-Day Plan" },
+      { value: "revenue", icon: DollarSign, label: "Revenue" },
+    ]},
+    { label: "AI & TOOLS", tabs: [
+      { value: "ai-ops", icon: Sparkles, label: "AI Ops" },
+      { value: "ai", icon: Bot, label: "AI Chat" },
+    ]},
+    { label: "SETTINGS", tabs: [
+      { value: "team", icon: UserCog, label: "Team" },
+      { value: "materials", icon: ClipboardList, label: "Materials" },
+      { value: "files", icon: FolderOpen, label: "Files" },
+      { value: "resources", icon: Library, label: "Resources" },
+      { value: "integrations", icon: Plug, label: "Integrations" },
+      { value: "security", icon: Lock, label: "Security" },
+    ]},
   ];
+  const tabs = tabGroups.flatMap(g => g.tabs);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -665,24 +675,30 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
 
             {/* Nav items */}
-            <nav className="flex-1 p-2 space-y-0.5">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.value}
-                  onClick={() => handleTabChange(tab.value)}
-                  title={tab.label}
-                  className={`
-                    w-full flex items-center gap-2.5 rounded-md transition-colors text-left
-                    ${sidebarCollapsed ? "justify-center px-2 py-2.5" : "px-3 py-2"}
-                    ${activeTab === tab.value
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    }
-                  `}
-                >
-                  <tab.icon className="w-4 h-4 shrink-0" />
-                  {!sidebarCollapsed && <span className="text-xs truncate">{tab.label}</span>}
-                </button>
+            <nav className="flex-1 p-2 space-y-1">
+              {tabGroups.map((group) => (
+                <div key={group.label}>
+                  {!sidebarCollapsed && <p className="text-[9px] font-bold text-muted-foreground/50 tracking-wider px-3 pt-3 pb-1">{group.label}</p>}
+                  {sidebarCollapsed && <div className="border-t border-border/20 my-1.5" />}
+                  {group.tabs.map((tab) => (
+                    <button
+                      key={tab.value}
+                      onClick={() => handleTabChange(tab.value)}
+                      title={tab.label}
+                      className={`
+                        w-full flex items-center gap-2.5 rounded-md transition-colors text-left
+                        ${sidebarCollapsed ? "justify-center px-2 py-2.5" : "px-3 py-2"}
+                        ${activeTab === tab.value
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        }
+                      `}
+                    >
+                      <tab.icon className="w-4 h-4 shrink-0" />
+                      {!sidebarCollapsed && <span className="text-xs truncate">{tab.label}</span>}
+                    </button>
+                  ))}
+                </div>
               ))}
             </nav>
           </div>
@@ -807,178 +823,268 @@ function MetricCard({ icon: Icon, label, value, subtext, color, bgColor }: {
   );
 }
 
+interface BriefingData {
+  date: string;
+  staleLeads: { id: string; name: string; business: string; status: string; daysSinceUpdate: number; nextStep: string }[];
+  followUpsDue: { id: string; name: string; business: string; status: string; nextStep: string; overdue: boolean }[];
+  upcomingFollowUps: { id: string; name: string; business: string; status: string; nextStep: string }[];
+  overdueTasks: { id: string; title: string; dueDate: string; priority: string }[];
+  todayTasks: { id: string; title: string; priority: string }[];
+  todaySchedule: { id: string; title: string; time: string; category: string }[];
+  revenue: { thisMonth: number; lastMonth: number; mrr: number };
+  pipeline: { new: number; contacted: number; qualified: number; proposalSent: number; negotiation: number; totalActive: number; wonThisMonth: number };
+  clientAlerts: { id: string; business: string; issues: string[] }[];
+  planProgress: { total: number; completed: number; percent: number };
+}
+
 function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
+  const { data: briefing } = useQuery<BriefingData>({ queryKey: ["/api/dashboard/briefing"] });
   const { data: leads = [] } = useQuery<Lead[]>({ queryKey: ["/api/leads"] });
   const { data: clients = [] } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
-  const { data: revenueEntries = [] } = useQuery<RevenueEntry[]>({ queryKey: ["/api/revenue"] });
-  const { data: tasks = [] } = useQuery<Task[]>({ queryKey: ["/api/tasks"] });
   const { data: activityData = [] } = useQuery<ActivityEntry[]>({ queryKey: ["/api/activity"] });
-  const { data: slackCfg } = useQuery<SlackConfig>({ queryKey: ["/api/integrations/slack"] });
-  const { data: filesData = [] } = useQuery<AdminFile[]>({ queryKey: ["/api/files"] });
-  const { data: planData = [] } = useQuery<PlanItem[]>({ queryKey: ["/api/plan-items"] });
   const { data: materialsData = [] } = useQuery<MaterialItem[]>({ queryKey: ["/api/materials"] });
 
-  const activeLeads = leads.filter((l) => !["won", "lost", "nurture"].includes(l.status));
-  const wonThisMonth = leads.filter((l) => { const d = new Date(l.updatedAt); const n = new Date(); return l.status === "won" && d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); });
-  const monthlyRecurring = clients.reduce((sum, c) => { const p: Record<MaintenancePlan, number> = { none: 0, basic: 50, pro: 199, premium: 399 }; return sum + p[c.maintenance]; }, 0);
-  const now = new Date();
-  const thisMonthRevenue = revenueEntries.filter((r) => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, r) => s + r.amount, 0);
-  const pendingTasks = tasks.filter((t) => !t.completed);
-  const overdueTasks = pendingTasks.filter((t) => t.dueDate && new Date(t.dueDate) < new Date(today()));
-  const recentLeads = [...leads].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
-  const upcomingTasks = [...pendingTasks].sort((a, b) => (a.dueDate || "9").localeCompare(b.dueDate || "9")).slice(0, 5);
+  const b = briefing;
+  const urgentCount = (b?.overdueTasks.length || 0) + (b?.followUpsDue.length || 0) + (b?.staleLeads.length || 0);
+  const revenueChange = b && b.revenue.lastMonth > 0 ? Math.round(((b.revenue.thisMonth - b.revenue.lastMonth) / b.revenue.lastMonth) * 100) : 0;
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    return "Good evening";
+  })();
 
   return (
-    <div className="space-y-6">
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <MetricCard icon={UserPlus} label="Active Pipeline" value={activeLeads.length.toString()} subtext={`${wonThisMonth.length} won this month`} color="text-blue-400" bgColor="bg-blue-400/10" />
-        <MetricCard icon={Users} label="Total Clients" value={clients.length.toString()} subtext={`${clients.filter((c) => c.maintenance !== "none").length} on maintenance`} color="text-emerald-400" bgColor="bg-emerald-400/10" />
-        <MetricCard icon={TrendingUp} label="Monthly Recurring" value={`$${monthlyRecurring.toLocaleString()}`} subtext={`${clients.filter((c) => c.maintenance !== "none").length} active plans`} color="text-primary" bgColor="bg-primary/10" />
-        <MetricCard icon={DollarSign} label="Revenue This Month" value={`$${thisMonthRevenue.toLocaleString()}`} subtext={`${revenueEntries.filter((r) => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).length} txns`} color="text-chart-4" bgColor="bg-chart-4/10" />
+    <div className="space-y-5">
+      {/* Greeting + Urgent Banner */}
+      <div>
+        <h2 className="text-lg font-bold">{greeting}</h2>
+        <p className="text-sm text-muted-foreground">
+          {urgentCount > 0
+            ? `You have ${urgentCount} item${urgentCount > 1 ? "s" : ""} that need attention today.`
+            : "You're all caught up. Time to prospect!"}
+        </p>
       </div>
 
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-        <div className="text-center py-3 rounded-lg bg-muted/30 border border-border/30">
-          <div className="text-lg font-bold">{pendingTasks.length}</div>
-          <div className="text-[10px] text-muted-foreground">Pending Tasks</div>
-        </div>
-        <div className="text-center py-3 rounded-lg bg-muted/30 border border-border/30">
-          <div className={`text-lg font-bold ${overdueTasks.length > 0 ? "text-red-400" : ""}`}>{overdueTasks.length}</div>
-          <div className="text-[10px] text-muted-foreground">Overdue</div>
-        </div>
-        <div className="text-center py-3 rounded-lg bg-muted/30 border border-border/30">
-          <div className="text-lg font-bold">{filesData.length}</div>
-          <div className="text-[10px] text-muted-foreground">Files</div>
-        </div>
-        <div className="text-center py-3 rounded-lg bg-muted/30 border border-border/30 hidden sm:block">
-          <div className={`text-lg font-bold ${slackCfg?.enabled ? "text-emerald-400" : "text-muted-foreground"}`}>{slackCfg?.enabled ? "ON" : "OFF"}</div>
-          <div className="text-[10px] text-muted-foreground">Slack</div>
-        </div>
-        <div className="text-center py-3 rounded-lg bg-muted/30 border border-border/30 hidden sm:block">
-          <div className="text-lg font-bold">{clients.filter((c) => c.websiteStatus === "live").length}</div>
-          <div className="text-[10px] text-muted-foreground">Sites Live</div>
-        </div>
-      </div>
-
-      {overdueTasks.length > 0 && (
+      {/* Urgent Alerts */}
+      {b && (b.overdueTasks.length > 0 || b.followUpsDue.length > 0) && (
         <Card className="border-destructive/30 overflow-visible">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-md bg-destructive/10 flex items-center justify-center shrink-0"><AlertTriangle className="w-4 h-4 text-destructive" /></div>
-            <div><p className="text-sm font-medium text-destructive">{overdueTasks.length} overdue task{overdueTasks.length > 1 ? "s" : ""}</p><p className="text-xs text-muted-foreground">Check your task list for follow-ups</p></div>
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 text-destructive" /><span className="text-sm font-semibold text-destructive">Needs Attention</span></div>
+            {b.overdueTasks.map(t => (
+              <div key={t.id} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${t.priority === "high" ? "bg-red-400" : "bg-yellow-400"}`} />
+                  <span className="text-xs">{t.title}</span>
+                </div>
+                <span className="text-[10px] text-destructive">Due {t.dueDate}</span>
+              </div>
+            ))}
+            {b.followUpsDue.map(l => (
+              <div key={l.id} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0 cursor-pointer hover:bg-muted/20 rounded px-1" onClick={() => setActiveTab("leads")}>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-3 h-3 text-orange-400" />
+                  <span className="text-xs">Follow up: <span className="font-medium">{l.business || l.name}</span></span>
+                </div>
+                <span className={`text-[10px] ${l.overdue ? "text-destructive" : "text-orange-400"}`}>{l.overdue ? "Overdue" : "Due today"}</span>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}
 
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <MetricCard icon={UserPlus} label="Active Pipeline" value={b?.pipeline.totalActive.toString() || "0"} subtext={`${b?.pipeline.wonThisMonth || 0} won this month`} color="text-blue-400" bgColor="bg-blue-400/10" />
+        <MetricCard icon={Users} label="Total Clients" value={clients.length.toString()} subtext={`${clients.filter(c => c.maintenance !== "none").length} on maintenance`} color="text-emerald-400" bgColor="bg-emerald-400/10" />
+        <MetricCard icon={TrendingUp} label="MRR" value={`$${(b?.revenue.mrr || 0).toLocaleString()}`} subtext={`${clients.filter(c => c.maintenance !== "none").length} active plans`} color="text-primary" bgColor="bg-primary/10" />
+        <MetricCard icon={DollarSign} label="Revenue This Month" value={`$${(b?.revenue.thisMonth || 0).toLocaleString()}`} subtext={revenueChange !== 0 ? `${revenueChange > 0 ? "+" : ""}${revenueChange}% vs last month` : "First month tracking"} color="text-chart-4" bgColor="bg-chart-4/10" />
+      </div>
+
+      {/* Today's Agenda + Stale Leads */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Today's Agenda */}
+        <Card className="overflow-visible border-border/50">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Clock className="w-4 h-4 text-blue-400" />Today's Agenda</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("tasks")}>All Tasks <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-1">
+            {b && b.todaySchedule.length > 0 && b.todaySchedule.map(s => (
+              <div key={s.id} className="flex items-center gap-2 py-1.5 text-xs">
+                <span className="text-[10px] font-mono text-muted-foreground w-12">{s.time}</span>
+                <div className={`w-1.5 h-1.5 rounded-full ${s.category === "meeting" ? "bg-purple-400" : s.category === "outreach" ? "bg-blue-400" : s.category === "follow-up" ? "bg-orange-400" : "bg-gray-400"}`} />
+                <span>{s.title}</span>
+              </div>
+            ))}
+            {b && b.todayTasks.length > 0 && b.todayTasks.map(t => (
+              <div key={t.id} className="flex items-center gap-2 py-1.5 text-xs">
+                <span className="text-[10px] font-mono text-muted-foreground w-12">Task</span>
+                <div className={`w-1.5 h-1.5 rounded-full ${t.priority === "high" ? "bg-red-400" : t.priority === "medium" ? "bg-yellow-400" : "bg-green-400"}`} />
+                <span>{t.title}</span>
+              </div>
+            ))}
+            {b && b.upcomingFollowUps.length > 0 && (
+              <div className="pt-2 mt-2 border-t border-border/30">
+                <p className="text-[10px] font-semibold text-muted-foreground mb-1">Coming Up (Next 3 Days)</p>
+                {b.upcomingFollowUps.map(l => (
+                  <div key={l.id} className="flex items-center justify-between py-1 text-xs cursor-pointer hover:bg-muted/20 rounded px-1" onClick={() => setActiveTab("leads")}>
+                    <span>{l.business || l.name}</span>
+                    <span className="text-[10px] text-muted-foreground">{l.nextStep}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {(!b || (b.todaySchedule.length === 0 && b.todayTasks.length === 0 && b.upcomingFollowUps.length === 0)) && (
+              <p className="text-xs text-muted-foreground py-3 text-center">No agenda items today</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Stale Leads */}
+        <Card className="overflow-visible border-border/50">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-400" />Stale Leads</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("leads")}>Pipeline <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {b && b.staleLeads.length > 0 ? (
+              <div className="space-y-1">
+                {b.staleLeads.slice(0, 6).map(l => (
+                  <div key={l.id} className="flex items-center justify-between py-1.5 text-xs cursor-pointer hover:bg-muted/20 rounded px-1" onClick={() => setActiveTab("leads")}>
+                    <div>
+                      <span className="font-medium">{l.business || l.name}</span>
+                      <Badge variant="outline" className={`text-[9px] ml-2 ${PIPELINE_CONFIG[l.status as PipelineStage]?.color || ""}`}>{PIPELINE_CONFIG[l.status as PipelineStage]?.short || l.status}</Badge>
+                    </div>
+                    <span className="text-[10px] text-orange-400">{l.daysSinceUpdate}d ago</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground py-3 text-center">No stale leads — pipeline is active!</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("leads")}><Plus className="w-3.5 h-3.5 mr-1.5" />Add New Lead</Button>
+        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("prospector")}><Search className="w-3.5 h-3.5 mr-1.5" />Find Prospects</Button>
         <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("playbooks")}><BookOpen className="w-3.5 h-3.5 mr-1.5" />Open Playbooks</Button>
-        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("scorecard")}><Target className="w-3.5 h-3.5 mr-1.5" />View Scorecard</Button>
-        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("plan")}><Calendar className="w-3.5 h-3.5 mr-1.5" />90-Day Plan</Button>
+        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("revenue")}><DollarSign className="w-3.5 h-3.5 mr-1.5" />Log Revenue</Button>
       </div>
 
-      {/* Plan + Materials Progress */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("plan")}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2"><Calendar className="w-4 h-4 text-blue-400" /><span className="text-xs font-semibold">90-Day Plan Progress</span></div>
-            <Progress value={planData.length > 0 ? (planData.filter(p => p.completed).length / planData.length) * 100 : 0} className="h-2 mb-1.5" />
-            <p className="text-[10px] text-muted-foreground">{planData.filter(p => p.completed).length} / {planData.length} tasks completed</p>
+      {/* Pipeline + Progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="overflow-visible border-border/50 lg:col-span-2">
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Sales Pipeline</CardTitle></CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-11 gap-1.5">
+              {(Object.keys(PIPELINE_CONFIG) as PipelineStage[]).map(stage => {
+                const count = leads.filter(l => l.status === stage).length;
+                return (
+                  <div key={stage} className="text-center py-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setActiveTab("leads")}>
+                    <div className={`text-lg font-bold ${PIPELINE_CONFIG[stage].color}`}>{count}</div>
+                    <div className="text-[9px] text-muted-foreground leading-tight">{PIPELINE_CONFIG[stage].short}</div>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
-        <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("materials")}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2"><ClipboardList className="w-4 h-4 text-emerald-400" /><span className="text-xs font-semibold">Materials Checklist</span></div>
-            <Progress value={materialsData.length > 0 ? (materialsData.filter(m => m.status === "completed").length / materialsData.length) * 100 : 0} className="h-2 mb-1.5" />
-            <p className="text-[10px] text-muted-foreground">{materialsData.filter(m => m.status === "completed").length} / {materialsData.length} assets ready</p>
+
+        <div className="space-y-3">
+          <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("plan")}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2"><Calendar className="w-4 h-4 text-blue-400" /><span className="text-xs font-semibold">90-Day Plan</span></div>
+              <Progress value={b?.planProgress.percent || 0} className="h-2 mb-1.5" />
+              <p className="text-[10px] text-muted-foreground">{b?.planProgress.completed || 0} / {b?.planProgress.total || 0} completed ({b?.planProgress.percent || 0}%)</p>
+            </CardContent>
+          </Card>
+          <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("materials")}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2"><ClipboardList className="w-4 h-4 text-emerald-400" /><span className="text-xs font-semibold">Materials</span></div>
+              <Progress value={materialsData.length > 0 ? (materialsData.filter(m => m.status === "completed").length / materialsData.length) * 100 : 0} className="h-2 mb-1.5" />
+              <p className="text-[10px] text-muted-foreground">{materialsData.filter(m => m.status === "completed").length} / {materialsData.length} assets</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Client Alerts + Channel Scorecard */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Client Alerts */}
+        {b && b.clientAlerts.length > 0 && (
+          <Card className="overflow-visible border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-yellow-400" />Client Alerts</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {b.clientAlerts.map(c => (
+                <div key={c.id} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0 cursor-pointer hover:bg-muted/20 rounded px-1" onClick={() => setActiveTab("clients")}>
+                  <span className="text-xs font-medium">{c.business}</span>
+                  <div className="flex gap-1">{c.issues.map(i => <Badge key={i} variant="outline" className="text-[9px] text-yellow-500 border-yellow-500/30">{i}</Badge>)}</div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Channel Scorecard */}
+        <Card className={`overflow-visible border-border/50 ${b && b.clientAlerts.length > 0 ? "" : "lg:col-span-2"}`}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-primary" />Channel Performance</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("scorecard")}>Full Scorecard <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {(Object.keys(SOURCE_CONFIG) as LeadSource[]).map(src => {
+                const srcLeads = leads.filter(l => l.source === src);
+                const won = srcLeads.filter(l => l.status === "won").length;
+                const rate = srcLeads.length > 0 ? Math.round((won / srcLeads.length) * 100) : 0;
+                return (
+                  <div key={src} className="text-center py-3 rounded-lg bg-muted/30">
+                    <div className={`text-xs font-semibold ${SOURCE_CONFIG[src].color} mb-1`}>{SOURCE_CONFIG[src].label}</div>
+                    <div className="text-lg font-bold">{srcLeads.length}</div>
+                    <div className="text-[10px] text-muted-foreground">{won} won ({rate}%)</div>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Channel Scorecard */}
+      {/* Recent Activity */}
       <Card className="overflow-visible border-border/50">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Channel Scorecard</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("scorecard")}>Full Scorecard <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2"><Activity className="w-4 h-4 text-chart-4" />Recent Activity</CardTitle>
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("activity")}>All Activity <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {(Object.keys(SOURCE_CONFIG) as LeadSource[]).map((src) => {
-              const srcLeads = leads.filter((l) => l.source === src);
-              const won = srcLeads.filter((l) => l.status === "won").length;
-              const rate = srcLeads.length > 0 ? Math.round((won / srcLeads.length) * 100) : 0;
-              return (
-                <div key={src} className="text-center py-3 rounded-lg bg-muted/30">
-                  <div className={`text-xs font-semibold ${SOURCE_CONFIG[src].color} mb-1`}>{SOURCE_CONFIG[src].label}</div>
-                  <div className="text-lg font-bold">{srcLeads.length}</div>
-                  <div className="text-[10px] text-muted-foreground">{won} won ({rate}%)</div>
+          {activityData.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">No activity yet.</p> : (
+            <div className="space-y-2">{activityData.slice(0, 6).map(a => (
+              <div key={a.id} className="flex items-center gap-3 py-1.5 border-b border-border/30 last:border-0">
+                <div className={`w-2 h-2 rounded-full shrink-0 ${ACTIVITY_COLORS[a.type] || "bg-gray-400"}`} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs truncate"><span className="font-medium">{a.action}</span> — {a.details}</p>
+                  <p className="text-[10px] text-muted-foreground">{timeAgo(a.timestamp)}</p>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            ))}</div>
+          )}
         </CardContent>
       </Card>
-
-      {/* Pipeline + Recent */}
-      <Card className="overflow-visible border-border/50">
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Sales Pipeline</CardTitle></CardHeader>
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-11 gap-1.5">
-            {(Object.keys(PIPELINE_CONFIG) as PipelineStage[]).map((stage) => {
-              const count = leads.filter((l) => l.status === stage).length;
-              return (
-                <div key={stage} className="text-center py-2 rounded-lg bg-muted/30">
-                  <div className={`text-lg font-bold ${PIPELINE_CONFIG[stage].color}`}>{count}</div>
-                  <div className="text-[9px] text-muted-foreground leading-tight">{PIPELINE_CONFIG[stage].short}</div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <Card className="overflow-visible border-border/50">
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><UserPlus className="w-4 h-4 text-blue-400" />Recent Leads</CardTitle></CardHeader>
-          <CardContent className="pt-0">
-            {recentLeads.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">No leads yet.</p> : (
-              <div className="space-y-2">{recentLeads.map((lead) => (
-                <div key={lead.id} className="flex items-center justify-between gap-3 py-2 border-b border-border/30 last:border-0">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{lead.business || lead.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-[10px] ${SOURCE_CONFIG[lead.source]?.color || "text-muted-foreground"}`}>{SOURCE_CONFIG[lead.source]?.label || lead.source}</span>
-                      <span className="text-[10px] text-muted-foreground">{PACKAGE_CONFIG[lead.package].label}</span>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className={`text-[10px] shrink-0 ${PIPELINE_CONFIG[lead.status].bg} ${PIPELINE_CONFIG[lead.status].color}`}>{PIPELINE_CONFIG[lead.status].short}</Badge>
-                </div>
-              ))}</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-visible border-border/50">
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Activity className="w-4 h-4 text-chart-4" />Recent Activity</CardTitle></CardHeader>
-          <CardContent className="pt-0">
-            {activityData.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">No activity yet.</p> : (
-              <div className="space-y-2">{activityData.slice(0, 8).map((a) => (
-                <div key={a.id} className="flex items-center gap-3 py-1.5 border-b border-border/30 last:border-0">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${ACTIVITY_COLORS[a.type] || "bg-gray-400"}`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs truncate"><span className="font-medium">{a.action}</span> — {a.details}</p>
-                    <p className="text-[10px] text-muted-foreground">{timeAgo(a.timestamp)}</p>
-                  </div>
-                </div>
-              ))}</div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
@@ -1011,10 +1117,14 @@ function LeadsTab() {
   });
   const convertMutation = useMutation({
     mutationFn: async (lead: Lead) => {
-      await apiRequest("POST", "/api/clients", { name: lead.name, business: lead.business, phone: lead.phone, email: lead.email, package: lead.package, maintenance: "none", websiteUrl: "", websiteStatus: "not-started", terminalId: "", monthlyVolume: 0, startDate: today(), notes: lead.notes });
+      const clientRes = await apiRequest("POST", "/api/clients", { name: lead.name, business: lead.business, phone: lead.phone, email: lead.email, package: lead.package, maintenance: "none", websiteUrl: "", websiteStatus: "not-started", terminalId: "", monthlyVolume: 0, startDate: today(), notes: lead.notes });
+      const client = await clientRes.json();
       await apiRequest("PATCH", `/api/leads/${lead.id}`, { status: "won" });
+      // Auto-create onboarding tasks
+      try { await apiRequest("POST", "/api/automations/onboard-client", { clientId: client.id, clientName: lead.business || lead.name }); } catch { /* non-critical */ }
+      return client;
     },
-    onSuccess: () => { refetch(); queryClient.invalidateQueries({ queryKey: ["/api/clients"] }); toast({ title: "Lead converted to client" }); },
+    onSuccess: () => { refetch(); queryClient.invalidateQueries({ queryKey: ["/api/clients"] }); queryClient.invalidateQueries({ queryKey: ["/api/tasks"] }); toast({ title: "Lead converted to client", description: "Onboarding tasks created automatically" }); },
     onError: () => { toast({ title: "Failed to convert lead", variant: "destructive" }); },
   });
 
@@ -1983,43 +2093,132 @@ function RevenueFormDialog({ open, onClose, onSave, entry, clients }: { open: bo
 
 function TasksTab() {
   const { data: tasks = [], refetch } = useQuery<Task[]>({ queryKey: ["/api/tasks"] });
+  const { data: schedule = [], refetch: refetchSchedule } = useQuery<ScheduleItem[]>({ queryKey: ["/api/schedule"] });
+  const { data: team = [] } = useQuery<TeamMember[]>({ queryKey: ["/api/team-members"] });
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [filter, setFilter] = useState<"all" | "pending" | "completed">("pending");
+  const [filter, setFilter] = useState<"all" | "pending" | "completed" | "overdue">("pending");
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calendarDate, setCalendarDate] = useState(today());
   const { toast } = useToast();
 
   const createMutation = useMutation({ mutationFn: async (d: Partial<Task>) => { const r = await apiRequest("POST", "/api/tasks", d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "Task added" }); setShowForm(false); setEditingTask(null); }, onError: () => { toast({ title: "Failed to add task", variant: "destructive" }); } });
   const updateMutation = useMutation({ mutationFn: async ({ id, ...d }: Partial<Task> & { id: string }) => { const r = await apiRequest("PATCH", `/api/tasks/${id}`, d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "Task updated" }); }, onError: () => { toast({ title: "Failed to update task", variant: "destructive" }); } });
   const deleteMutation = useMutation({ mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/tasks/${id}`); }, onSuccess: () => { refetch(); toast({ title: "Task deleted" }); }, onError: () => { toast({ title: "Failed to delete task", variant: "destructive" }); } });
+  const toggleScheduleMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => { const r = await apiRequest("PATCH", `/api/schedule/${id}`, { status }); return r.json(); },
+    onSuccess: () => { refetchSchedule(); }, onError: () => { toast({ title: "Failed to update", variant: "destructive" }); },
+  });
   const handleSave = (form: Partial<Task>) => { if (editingTask) { updateMutation.mutate({ ...form, id: editingTask.id } as Task & { id: string }); setShowForm(false); setEditingTask(null); } else createMutation.mutate(form); };
 
-  const filtered = useMemo(() => tasks.filter((t) => filter === "all" || (filter === "pending" ? !t.completed : t.completed)).sort((a, b) => {
+  const todayStr = today();
+  const filtered = useMemo(() => tasks.filter((t) => {
+    if (filter === "overdue") return !t.completed && t.dueDate && t.dueDate < todayStr;
+    if (filter === "pending") return !t.completed;
+    if (filter === "completed") return t.completed;
+    return true;
+  }).sort((a, b) => {
     if (a.completed !== b.completed) return a.completed ? 1 : -1;
     const o: Record<string, number> = { high: 0, medium: 1, low: 2 };
     if (a.priority !== b.priority) return o[a.priority] - o[b.priority];
     return (a.dueDate || "9").localeCompare(b.dueDate || "9");
-  }), [tasks, filter]);
+  }), [tasks, filter, todayStr]);
+
+  const overdueCount = tasks.filter(t => !t.completed && t.dueDate && t.dueDate < todayStr).length;
+
+  // Calendar view: get week days from calendarDate
+  const weekDays = useMemo(() => {
+    const d = new Date(calendarDate + "T12:00:00");
+    const dayOfWeek = d.getDay();
+    const start = new Date(d);
+    start.setDate(d.getDate() - dayOfWeek);
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(start);
+      day.setDate(start.getDate() + i);
+      return day.toISOString().split("T")[0];
+    });
+  }, [calendarDate]);
+
+  const SCHED_COLORS: Record<string, string> = { training: "bg-purple-400/20 text-purple-400", outreach: "bg-blue-400/20 text-blue-400", admin: "bg-gray-400/20 text-gray-400", meeting: "bg-emerald-400/20 text-emerald-400", "follow-up": "bg-orange-400/20 text-orange-400", development: "bg-cyan-400/20 text-cyan-400", general: "bg-gray-400/20 text-gray-400" };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div><h2 className="text-lg font-bold">Tasks & Follow-Ups</h2><p className="text-xs text-muted-foreground">{tasks.filter((t) => !t.completed).length} pending</p></div>
-        <Button size="sm" onClick={() => { setEditingTask(null); setShowForm(true); }}><Plus className="w-3.5 h-3.5" />Add Task</Button>
+        <div>
+          <h2 className="text-lg font-bold">Tasks & Schedule</h2>
+          <p className="text-xs text-muted-foreground">{tasks.filter(t => !t.completed).length} pending{overdueCount > 0 ? ` · ${overdueCount} overdue` : ""}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-md border border-border/50">
+            <Button variant={viewMode === "list" ? "default" : "ghost"} size="sm" className="text-xs h-8 rounded-r-none" onClick={() => setViewMode("list")}>List</Button>
+            <Button variant={viewMode === "calendar" ? "default" : "ghost"} size="sm" className="text-xs h-8 rounded-l-none" onClick={() => setViewMode("calendar")}>Calendar</Button>
+          </div>
+          <Button size="sm" onClick={() => { setEditingTask(null); setShowForm(true); }}><Plus className="w-3.5 h-3.5" />Add Task</Button>
+        </div>
       </div>
-      <div className="flex gap-2">{(["pending", "all", "completed"] as const).map((f) => <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" className="text-xs" onClick={() => setFilter(f)}>{f === "pending" ? "Pending" : f === "all" ? "All" : "Completed"}</Button>)}</div>
-      {filtered.length === 0 ? (
-        <Card className="overflow-visible border-dashed"><CardContent className="p-8 text-center"><CheckCircle className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" /><p className="text-sm text-muted-foreground">No tasks match.</p></CardContent></Card>
+
+      {viewMode === "list" ? (
+        <>
+          <div className="flex gap-2 flex-wrap">
+            {(["pending", "overdue", "all", "completed"] as const).map((f) => (
+              <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" className={`text-xs ${f === "overdue" && overdueCount > 0 ? "border-destructive/50" : ""}`} onClick={() => setFilter(f)}>
+                {f === "pending" ? "Pending" : f === "overdue" ? `Overdue (${overdueCount})` : f === "all" ? "All" : "Completed"}
+              </Button>
+            ))}
+          </div>
+          {filtered.length === 0 ? (
+            <Card className="overflow-visible border-dashed"><CardContent className="p-8 text-center"><CheckCircle className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" /><p className="text-sm text-muted-foreground">{filter === "overdue" ? "No overdue tasks!" : "No tasks match."}</p></CardContent></Card>
+          ) : (
+            <div className="space-y-1.5">{filtered.map((task) => (
+              <Card key={task.id} className={`overflow-visible border-border/50 ${task.completed ? "opacity-60" : ""} ${!task.completed && task.dueDate && task.dueDate < todayStr ? "border-destructive/30" : ""}`}><CardContent className="p-3 flex items-center gap-3">
+                <button onClick={() => updateMutation.mutate({ id: task.id, completed: !task.completed })} className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${task.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30 hover:border-primary"}`}>{task.completed && <Check className="w-3 h-3" />}</button>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2"><span className={`text-sm ${task.completed ? "line-through text-muted-foreground" : ""}`}>{task.title}</span><div className={`w-1.5 h-1.5 rounded-full ${task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"}`} /></div>
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">{task.dueDate && <span className={!task.completed && task.dueDate < todayStr ? "text-destructive font-medium" : ""}>Due {task.dueDate}</span>}{task.linkedTo && <span>{task.linkedTo}</span>}</div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingTask(task); setShowForm(true); }}><Edit3 className="w-3 h-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(task.id)}><Trash2 className="w-3 h-3" /></Button></div>
+              </CardContent></Card>
+            ))}</div>
+          )}
+        </>
       ) : (
-        <div className="space-y-1.5">{filtered.map((task) => (
-          <Card key={task.id} className={`overflow-visible border-border/50 ${task.completed ? "opacity-60" : ""}`}><CardContent className="p-3 flex items-center gap-3">
-            <button onClick={() => updateMutation.mutate({ id: task.id, completed: !task.completed })} className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${task.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30 hover:border-primary"}`}>{task.completed && <Check className="w-3 h-3" />}</button>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2"><span className={`text-sm ${task.completed ? "line-through text-muted-foreground" : ""}`}>{task.title}</span><div className={`w-1.5 h-1.5 rounded-full ${task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"}`} /></div>
-              <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">{task.dueDate && <span className={!task.completed && new Date(task.dueDate) < new Date(today()) ? "text-destructive font-medium" : ""}>Due {task.dueDate}</span>}{task.linkedTo && <span>{task.linkedTo}</span>}</div>
+        /* Calendar View */
+        <Card className="overflow-visible border-border/50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { const d = new Date(calendarDate + "T12:00:00"); d.setDate(d.getDate() - 7); setCalendarDate(d.toISOString().split("T")[0]); }}><ChevronLeft className="w-4 h-4" /></Button>
+              <div className="text-sm font-semibold">{new Date(calendarDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { const d = new Date(calendarDate + "T12:00:00"); d.setDate(d.getDate() + 7); setCalendarDate(d.toISOString().split("T")[0]); }}><ChevronRight className="w-4 h-4" /></Button>
             </div>
-            <div className="flex items-center gap-1 shrink-0"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingTask(task); setShowForm(true); }}><Edit3 className="w-3 h-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(task.id)}><Trash2 className="w-3 h-3" /></Button></div>
-          </CardContent></Card>
-        ))}</div>
+            <div className="grid grid-cols-7 gap-1">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => <div key={d} className="text-[10px] text-center text-muted-foreground font-semibold pb-1">{d}</div>)}
+              {weekDays.map(day => {
+                const dayTasks = tasks.filter(t => t.dueDate === day && !t.completed);
+                const daySchedule = schedule.filter(s => s.date === day && s.status !== "completed");
+                const isToday = day === todayStr;
+                return (
+                  <div key={day} className={`min-h-[100px] border rounded-md p-1.5 ${isToday ? "border-primary/50 bg-primary/5" : "border-border/30"}`}>
+                    <div className={`text-[10px] font-semibold mb-1 ${isToday ? "text-primary" : "text-muted-foreground"}`}>{new Date(day + "T12:00:00").getDate()}</div>
+                    <div className="space-y-0.5">
+                      {daySchedule.map(s => (
+                        <div key={s.id} className={`text-[9px] px-1 py-0.5 rounded ${SCHED_COLORS[s.category] || SCHED_COLORS.general} cursor-pointer`} title={s.title}
+                          onClick={() => toggleScheduleMutation.mutate({ id: s.id, status: "completed" })}>
+                          {s.time && <span className="font-mono">{s.time} </span>}{s.title.slice(0, 20)}
+                        </div>
+                      ))}
+                      {dayTasks.map(t => (
+                        <div key={t.id} className={`text-[9px] px-1 py-0.5 rounded cursor-pointer ${t.priority === "high" ? "bg-red-400/15 text-red-400" : t.priority === "medium" ? "bg-yellow-400/15 text-yellow-500" : "bg-blue-400/15 text-blue-400"}`}
+                          onClick={() => updateMutation.mutate({ id: t.id, completed: true })}>
+                          {t.title.slice(0, 20)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
       <TaskFormDialog open={showForm} onClose={() => { setShowForm(false); setEditingTask(null); }} onSave={handleSave} task={editingTask} />
     </div>
@@ -2960,15 +3159,16 @@ function ProspectorTab() {
       return r.json();
     },
     onSuccess: (data) => {
-      if (data.blocked) {
-        toast({ title: "Google blocked automated search", description: "Copy the dork query and search manually, then paste URLs into URL Scanner" });
+      if (data.aiGenerated) {
+        toast({ title: "Google blocked — AI generated leads instead", description: "Results are AI-suggested prospects based on your search criteria" });
       }
       const newProspects = (data.results || []).map((p: Prospect) => ({ ...p, _selected: true }));
       setProspects(prev => [...prev, ...newProspects]);
       setDorkUrls(data.urls || []);
-      if (newProspects.length > 0) toast({ title: `Found ${newProspects.length} result(s) from Google` });
+      if (newProspects.length > 0) toast({ title: `Found ${newProspects.length} prospect(s)` });
+      else if (!data.aiGenerated) toast({ title: "No results found", description: "Try a different dork query or location" });
     },
-    onError: () => { toast({ title: "Dork search failed", variant: "destructive" }); },
+    onError: (err: Error) => { toast({ title: "Search failed", description: err.message.replace(/^\d+:\s*/, ""), variant: "destructive" }); },
   });
 
   const importMutation = useMutation({

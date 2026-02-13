@@ -1144,6 +1144,141 @@ export async function registerRoutes(
     });
   });
 
+  // ─── Daily Briefing / Action Center ────────────────────────────────
+  app.get("/api/dashboard/briefing", requireAdminSession, async (_req, res) => {
+    const allLeads = await db.select().from(schema.leads);
+    const allClients = await db.select().from(schema.clients);
+    const allRevenue = await db.select().from(schema.revenueEntries);
+    const allTasks = await db.select().from(schema.tasks);
+    const allSchedule = await db.select().from(schema.scheduleItems);
+    const allPlan = await db.select().from(schema.planItems);
+
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+    // Stale leads: active pipeline leads with no update in 7+ days
+    const staleLeads = allLeads.filter(l => {
+      if (["won", "lost", "nurture"].includes(l.status)) return false;
+      const updated = new Date(l.updatedAt);
+      return updated < sevenDaysAgo;
+    }).map(l => ({ id: l.id, name: l.name, business: l.business, status: l.status, daysSinceUpdate: Math.floor((now.getTime() - new Date(l.updatedAt).getTime()) / (1000 * 60 * 60 * 24)), nextStep: l.nextStepDate }));
+
+    // Leads with next step due today or overdue
+    const followUpsDue = allLeads.filter(l => {
+      if (["won", "lost"].includes(l.status)) return false;
+      return l.nextStepDate && l.nextStepDate <= todayStr;
+    }).map(l => ({ id: l.id, name: l.name, business: l.business, status: l.status, nextStep: l.nextStepDate, overdue: l.nextStepDate < todayStr }));
+
+    // Upcoming follow-ups (next 3 days)
+    const upcomingFollowUps = allLeads.filter(l => {
+      if (["won", "lost"].includes(l.status)) return false;
+      return l.nextStepDate && l.nextStepDate > todayStr && l.nextStepDate <= threeDaysFromNow;
+    }).map(l => ({ id: l.id, name: l.name, business: l.business, status: l.status, nextStep: l.nextStepDate }));
+
+    // Overdue tasks
+    const overdueTasks = allTasks.filter(t => !t.completed && t.dueDate && t.dueDate < todayStr)
+      .map(t => ({ id: t.id, title: t.title, dueDate: t.dueDate, priority: t.priority }));
+
+    // Today's tasks
+    const todayTasks = allTasks.filter(t => !t.completed && t.dueDate === todayStr)
+      .map(t => ({ id: t.id, title: t.title, priority: t.priority }));
+
+    // Today's schedule
+    const todaySchedule = allSchedule.filter(s => s.date === todayStr && s.status !== "completed")
+      .map(s => ({ id: s.id, title: s.title, time: s.time, category: s.category }));
+
+    // Revenue this month vs last month
+    const thisMonthRevenue = allRevenue.filter(r => {
+      const d = new Date(r.date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).reduce((s, r) => s + r.amount, 0);
+
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthRevenue = allRevenue.filter(r => {
+      const d = new Date(r.date);
+      return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear();
+    }).reduce((s, r) => s + r.amount, 0);
+
+    // Pipeline summary
+    const pipeline = {
+      new: allLeads.filter(l => l.status === "new").length,
+      contacted: allLeads.filter(l => l.status === "contacted").length,
+      qualified: allLeads.filter(l => l.status === "qualified").length,
+      proposalSent: allLeads.filter(l => l.status === "proposal-sent").length,
+      negotiation: allLeads.filter(l => l.status === "negotiation").length,
+      totalActive: allLeads.filter(l => !["won", "lost", "nurture"].includes(l.status)).length,
+      wonThisMonth: allLeads.filter(l => { const d = new Date(l.updatedAt); return l.status === "won" && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).length,
+    };
+
+    // Clients needing attention (no maintenance, website not live)
+    const clientAlerts = allClients.filter(c => c.maintenance === "none" || c.websiteStatus === "not-started")
+      .map(c => ({
+        id: c.id, business: c.business || c.name,
+        issues: [
+          ...(c.maintenance === "none" ? ["No maintenance plan"] : []),
+          ...(c.websiteStatus === "not-started" ? ["Website not started"] : []),
+        ]
+      }));
+
+    // 90-Day Plan progress
+    const planProgress = {
+      total: allPlan.length,
+      completed: allPlan.filter(p => p.completed).length,
+      percent: allPlan.length > 0 ? Math.round((allPlan.filter(p => p.completed).length / allPlan.length) * 100) : 0,
+    };
+
+    // MRR from clients
+    const mrrPrices: Record<string, number> = { none: 0, basic: 50, pro: 199, premium: 399 };
+    const mrr = allClients.reduce((sum, c) => sum + (mrrPrices[c.maintenance] || 0), 0);
+
+    res.json({
+      date: todayStr,
+      staleLeads,
+      followUpsDue,
+      upcomingFollowUps,
+      overdueTasks,
+      todayTasks,
+      todaySchedule,
+      revenue: { thisMonth: thisMonthRevenue, lastMonth: lastMonthRevenue, mrr },
+      pipeline,
+      clientAlerts: clientAlerts.slice(0, 5),
+      planProgress,
+    });
+  });
+
+  // ─── Auto-create tasks from lead conversion ──────────────────────
+  app.post("/api/automations/onboard-client", requireAdminSession, async (req, res) => {
+    const { clientId, clientName } = req.body;
+    if (!clientId) return res.status(400).json({ error: "Client ID required" });
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const tasks = [
+      { title: `Set up terminal for ${clientName}`, dueDate: todayStr, priority: "high" },
+      { title: `Send welcome email to ${clientName}`, dueDate: todayStr, priority: "high" },
+      { title: `Begin website build for ${clientName}`, dueDate: new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0], priority: "medium" },
+      { title: `First check-in call with ${clientName}`, dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0], priority: "medium" },
+    ];
+
+    const created = [];
+    for (const t of tasks) {
+      const [row] = await db.insert(schema.tasks).values({
+        id: randomUUID(),
+        title: t.title,
+        dueDate: t.dueDate,
+        priority: t.priority,
+        completed: false,
+        linkedTo: clientId,
+        createdAt: new Date().toISOString(),
+      }).returning();
+      created.push(row);
+    }
+
+    logActivity("Onboarding Tasks Created", `${created.length} tasks for ${clientName}`, "task");
+    res.json({ created: created.length, tasks: created });
+  });
+
   // ─── Team Members CRUD ───────────────────────────────────────────
 
   let teamSeeded = false;
@@ -2010,23 +2145,76 @@ If the page is a single business, return an array with one item. If it's a direc
   // Google dork execution
   app.post("/api/ai-ops/google-dork", requireAdminSession, async (req, res) => {
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured." });
+    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured. Add ANTHROPIC_API_KEY to your environment variables." });
 
     const { query, location } = req.body;
     if (!query) return res.status(400).json({ error: "Query is required." });
 
     try {
-      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=20`;
-      const response = await fetch(searchUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-        signal: AbortSignal.timeout(15000),
-      });
+      // Try fetching Google search results
+      let html = "";
+      let googleBlocked = false;
+      try {
+        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=20`;
+        const response = await fetch(searchUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+          },
+          signal: AbortSignal.timeout(15000),
+        });
+        html = await response.text();
+        // Detect if Google returned a CAPTCHA or block page
+        if (html.includes("unusual traffic") || html.includes("captcha") || html.includes("sorry/index") || response.status === 429) {
+          googleBlocked = true;
+        }
+      } catch {
+        googleBlocked = true;
+      }
 
-      const html = await response.text();
+      if (googleBlocked || !html || html.length < 500) {
+        // Google blocked us — use Claude's own knowledge to generate leads for the query
+        const anthropic = new Anthropic({ apiKey });
+        const aiResponse = await anthropic.messages.create({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 4096,
+          system: `You are a lead generation AI for a merchant services sales team${location ? ` in ${location}` : ""}. The user wants to find businesses matching a Google search query, but direct Google access is unavailable.
+
+Based on your knowledge, generate realistic business leads that would match this search query. Focus on real business types, realistic contact patterns, and accurate locations for the area.
+
+Return a JSON object:
+{
+  "results": [
+    {
+      "business": "string (business name)",
+      "name": "string (owner/manager name if you can infer)",
+      "address": "string (realistic address for the area)",
+      "phone": "string",
+      "email": "string",
+      "website": "string",
+      "vertical": "restaurant|retail|salon|auto|medical|cbd|vape|firearms|ecommerce|services|other",
+      "currentProcessor": "string (likely processor based on the search query)",
+      "notes": "string (why this is a good prospect)",
+      "confidence": "high|medium|low"
+    }
+  ],
+  "urls": ["string (real URLs that could be scraped for more data)"],
+  "aiGenerated": true
+}
+
+Return ONLY valid JSON, no other text. Generate 5-10 realistic results.`,
+          messages: [{ role: "user", content: `Search query: "${query}"\nLocation focus: ${location || "general"}` }],
+        });
+
+        const text = aiResponse.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { results: [], urls: [] };
+        res.json({ ...parsed, query, searchedAt: new Date().toISOString(), googleBlocked: true, aiGenerated: true });
+        return;
+      }
+
+      // Google returned results — parse them with AI
       const cleaned = html
         .replace(/<script[\s\S]*?<\/script>/gi, "")
         .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -2071,7 +2259,15 @@ Return ONLY valid JSON, no other text.`,
       res.json({ ...parsed, query, searchedAt: new Date().toISOString() });
     } catch (err: any) {
       console.error("Google dork error:", err.message);
-      res.json({ results: [], urls: [], query, blocked: true, message: "Google blocked automated access. Use the dork query manually in your browser, then paste interesting URLs into the URL Scanner." });
+      // Return actual error info instead of always claiming "blocked"
+      const isApiKeyError = err.message?.includes("api_key") || err.message?.includes("authentication");
+      const isRateLimit = err.message?.includes("rate") || err.message?.includes("429");
+      res.status(500).json({
+        error: isApiKeyError ? "Anthropic API key is invalid or expired." :
+               isRateLimit ? "Rate limited — wait a moment and try again." :
+               "Search failed. Try using 'Open in Google' to search manually, then paste URLs into URL Scanner.",
+        details: err.message,
+      });
     }
   });
 
