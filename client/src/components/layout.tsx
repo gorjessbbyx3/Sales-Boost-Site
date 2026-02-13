@@ -28,7 +28,6 @@ function Navbar() {
     { label: "Pricing", href: "/pricing" },
     { label: "Online Processing", href: "/online-processing" },
     { label: "High-Risk", href: "/high-risk" },
-    { label: "Resources", href: "/resources" },
     { label: "FAQ", href: "/contact" },
   ];
 
@@ -207,11 +206,6 @@ function Footer() {
               <li>
                 <Link href="/contact" className="transition-colors hover:text-white" data-testid="link-footer-faq">
                   FAQ
-                </Link>
-              </li>
-              <li>
-                <Link href="/resources" className="transition-colors hover:text-white" data-testid="link-footer-resources">
-                  Resources
                 </Link>
               </li>
               <li>

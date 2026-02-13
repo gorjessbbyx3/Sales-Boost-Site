@@ -820,23 +820,6 @@ function SecurityTab() {
 
 // ─── Overview Tab ────────────────────────────────────────────────────
 
-function MetricCard({ icon: Icon, label, value, subtext, color, bgColor }: {
-  icon: React.ElementType; label: string; value: string; subtext: string; color: string; bgColor: string;
-}) {
-  return (
-    <Card className="overflow-visible border-border/50">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className={`w-9 h-9 rounded-md ${bgColor} flex items-center justify-center`}><Icon className={`w-4 h-4 ${color}`} /></div>
-          <span className="text-xs text-muted-foreground">{label}</span>
-        </div>
-        <div className="text-xl sm:text-2xl font-extrabold">{value}</div>
-        <div className="text-[10px] sm:text-xs text-muted-foreground mt-1">{subtext}</div>
-      </CardContent>
-    </Card>
-  );
-}
-
 interface BriefingData {
   date: string;
   staleLeads: { id: string; name: string; business: string; status: string; daysSinceUpdate: number; nextStep: string }[];
@@ -856,11 +839,52 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
   const { data: leads = [] } = useQuery<Lead[]>({ queryKey: ["/api/leads"] });
   const { data: clients = [] } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
   const { data: activityData = [] } = useQuery<ActivityEntry[]>({ queryKey: ["/api/activity"] });
-  const { data: materialsData = [] } = useQuery<MaterialItem[]>({ queryKey: ["/api/materials"] });
+  const { data: revenueData = [] } = useQuery<RevenueEntry[]>({ queryKey: ["/api/revenue"] });
 
   const b = briefing;
   const urgentCount = (b?.overdueTasks.length || 0) + (b?.followUpsDue.length || 0) + (b?.staleLeads.length || 0);
   const revenueChange = b && b.revenue.lastMonth > 0 ? Math.round(((b.revenue.thisMonth - b.revenue.lastMonth) / b.revenue.lastMonth) * 100) : 0;
+
+  // Computed metrics
+  const maintenanceClients = clients.filter(c => c.maintenance !== "none").length;
+  const totalLeads = leads.length;
+  const wonLeads = leads.filter(l => l.status === "won").length;
+  const lostLeads = leads.filter(l => l.status === "lost").length;
+  const closedLeads = wonLeads + lostLeads;
+  const winRate = closedLeads > 0 ? Math.round((wonLeads / closedLeads) * 100) : 0;
+  const avgVolume = clients.length > 0 ? Math.round(clients.reduce((s, c) => s + (c.monthlyVolume || 0), 0) / clients.length) : 0;
+
+  // Pipeline funnel stages (active selling stages only)
+  const funnelStages: { key: PipelineStage; label: string }[] = [
+    { key: "new", label: "New" },
+    { key: "contacted", label: "Contacted" },
+    { key: "qualified", label: "Qualified" },
+    { key: "statement-requested", label: "Stmt Req" },
+    { key: "statement-received", label: "Stmt Recv" },
+    { key: "analysis-delivered", label: "Analysis" },
+    { key: "proposal-sent", label: "Proposal" },
+    { key: "negotiation", label: "Negotiation" },
+  ];
+  const funnelCounts = funnelStages.map(s => ({ ...s, count: leads.filter(l => l.status === s.key).length }));
+  const maxFunnel = Math.max(...funnelCounts.map(f => f.count), 1);
+
+  // Revenue by type this month
+  const now = new Date();
+  const thisMonthRevenue = revenueData.filter(r => {
+    const d = new Date(r.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const revenueByType = Object.entries(REVENUE_TYPES).map(([type, label]) => ({
+    type, label,
+    amount: thisMonthRevenue.filter(r => r.type === type).reduce((s, r) => s + r.amount, 0),
+    count: thisMonthRevenue.filter(r => r.type === type).length,
+  })).filter(r => r.amount > 0);
+
+  // Recent conversions (leads won, sorted by most recent)
+  const recentWins = leads
+    .filter(l => l.status === "won")
+    .sort((a, c) => new Date(c.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 5);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -870,235 +894,392 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
   })();
 
   return (
-    <div className="space-y-5">
-      {/* Greeting + Urgent Banner */}
-      <div>
-        <h2 className="text-lg font-bold">{greeting}</h2>
-        <p className="text-sm text-muted-foreground">
-          {urgentCount > 0
-            ? `You have ${urgentCount} item${urgentCount > 1 ? "s" : ""} that need attention today.`
-            : "You're all caught up. Time to prospect!"}
-        </p>
+    <div className="space-y-4">
+      {/* Header row: greeting + quick actions */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="text-lg font-bold">{greeting}</h2>
+          <p className="text-sm text-muted-foreground">
+            {urgentCount > 0
+              ? `${urgentCount} item${urgentCount > 1 ? "s" : ""} need attention`
+              : "All clear — time to grow the pipeline."}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" className="h-8 text-xs" onClick={() => setActiveTab("leads")}><Plus className="w-3.5 h-3.5 mr-1" />New Lead</Button>
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setActiveTab("revenue")}><DollarSign className="w-3.5 h-3.5 mr-1" />Log Revenue</Button>
+        </div>
       </div>
 
-      {/* Urgent Alerts */}
-      {b && (b.overdueTasks.length > 0 || b.followUpsDue.length > 0) && (
-        <Card className="border-destructive/30 overflow-visible">
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 text-destructive" /><span className="text-sm font-semibold text-destructive">Needs Attention</span></div>
-            {b.overdueTasks.map(t => (
-              <div key={t.id} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${t.priority === "high" ? "bg-red-400" : "bg-yellow-400"}`} />
-                  <span className="text-xs">{t.title}</span>
-                </div>
-                <span className="text-[10px] text-destructive">Due {t.dueDate}</span>
-              </div>
-            ))}
-            {b.followUpsDue.map(l => (
-              <div key={l.id} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0 cursor-pointer hover:bg-muted/20 rounded px-1" onClick={() => setActiveTab("leads")}>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-3 h-3 text-orange-400" />
-                  <span className="text-xs">Follow up: <span className="font-medium">{l.business || l.name}</span></span>
-                </div>
-                <span className={`text-[10px] ${l.overdue ? "text-destructive" : "text-orange-400"}`}>{l.overdue ? "Overdue" : "Due today"}</span>
-              </div>
-            ))}
+      {/* KPI Row — 5 metrics */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <Card className="overflow-visible border-border/50">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] text-muted-foreground font-medium">Pipeline</span>
+              <div className="w-7 h-7 rounded-md bg-blue-400/10 flex items-center justify-center"><UserPlus className="w-3.5 h-3.5 text-blue-400" /></div>
+            </div>
+            <div className="text-2xl font-extrabold tracking-tight">{b?.pipeline.totalActive || 0}</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{b?.pipeline.wonThisMonth || 0} won this month</p>
           </CardContent>
         </Card>
-      )}
-
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricCard icon={UserPlus} label="Active Pipeline" value={b?.pipeline.totalActive.toString() || "0"} subtext={`${b?.pipeline.wonThisMonth || 0} won this month`} color="text-blue-400" bgColor="bg-blue-400/10" />
-        <MetricCard icon={Users} label="Total Clients" value={clients.length.toString()} subtext={`${clients.filter(c => c.maintenance !== "none").length} on maintenance`} color="text-emerald-400" bgColor="bg-emerald-400/10" />
-        <MetricCard icon={TrendingUp} label="MRR" value={`$${(b?.revenue.mrr || 0).toLocaleString()}`} subtext={`${clients.filter(c => c.maintenance !== "none").length} active plans`} color="text-primary" bgColor="bg-primary/10" />
-        <MetricCard icon={DollarSign} label="Revenue This Month" value={`$${(b?.revenue.thisMonth || 0).toLocaleString()}`} subtext={revenueChange !== 0 ? `${revenueChange > 0 ? "+" : ""}${revenueChange}% vs last month` : "First month tracking"} color="text-chart-4" bgColor="bg-chart-4/10" />
+        <Card className="overflow-visible border-border/50">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] text-muted-foreground font-medium">Clients</span>
+              <div className="w-7 h-7 rounded-md bg-emerald-400/10 flex items-center justify-center"><Users className="w-3.5 h-3.5 text-emerald-400" /></div>
+            </div>
+            <div className="text-2xl font-extrabold tracking-tight">{clients.length}</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{maintenanceClients} on maintenance</p>
+          </CardContent>
+        </Card>
+        <Card className="overflow-visible border-border/50">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] text-muted-foreground font-medium">MRR</span>
+              <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center"><TrendingUp className="w-3.5 h-3.5 text-primary" /></div>
+            </div>
+            <div className="text-2xl font-extrabold tracking-tight">${(b?.revenue.mrr || 0).toLocaleString()}</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{maintenanceClients} active plan{maintenanceClients !== 1 ? "s" : ""}</p>
+          </CardContent>
+        </Card>
+        <Card className="overflow-visible border-border/50">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] text-muted-foreground font-medium">Revenue</span>
+              <div className="w-7 h-7 rounded-md bg-chart-4/10 flex items-center justify-center"><DollarSign className="w-3.5 h-3.5 text-chart-4" /></div>
+            </div>
+            <div className="text-2xl font-extrabold tracking-tight">${(b?.revenue.thisMonth || 0).toLocaleString()}</div>
+            <p className="text-[10px] mt-0.5">
+              {revenueChange !== 0 ? (
+                <span className={revenueChange > 0 ? "text-emerald-400" : "text-red-400"}>
+                  {revenueChange > 0 ? <ArrowUpRight className="w-3 h-3 inline" /> : <ArrowDownRight className="w-3 h-3 inline" />}
+                  {Math.abs(revenueChange)}% vs last month
+                </span>
+              ) : <span className="text-muted-foreground">This month</span>}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="overflow-visible border-border/50 col-span-2 sm:col-span-1">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] text-muted-foreground font-medium">Win Rate</span>
+              <div className="w-7 h-7 rounded-md bg-purple-400/10 flex items-center justify-center"><Target className="w-3.5 h-3.5 text-purple-400" /></div>
+            </div>
+            <div className="text-2xl font-extrabold tracking-tight">{winRate}%</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{wonLeads}W / {lostLeads}L of {totalLeads} total</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Today's Agenda + Stale Leads */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Today's Agenda */}
-        <Card className="overflow-visible border-border/50">
+      {/* Main content: Action Items + Pipeline Funnel */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Action Items — combined urgent list */}
+        <Card className="overflow-visible border-border/50 lg:col-span-2">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Clock className="w-4 h-4 text-blue-400" />Today's Agenda</CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("tasks")}>All Tasks <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                {urgentCount > 0 ? <Bell className="w-4 h-4 text-destructive" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
+                Action Items
+                {urgentCount > 0 && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 ml-1">{urgentCount}</Badge>}
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("tasks")}>Tasks <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
             </div>
           </CardHeader>
-          <CardContent className="pt-0 space-y-1">
-            {b && b.todaySchedule.length > 0 && b.todaySchedule.map(s => (
-              <div key={s.id} className="flex items-center gap-2 py-1.5 text-xs">
-                <span className="text-[10px] font-mono text-muted-foreground w-12">{s.time}</span>
-                <div className={`w-1.5 h-1.5 rounded-full ${s.category === "meeting" ? "bg-purple-400" : s.category === "outreach" ? "bg-blue-400" : s.category === "follow-up" ? "bg-orange-400" : "bg-gray-400"}`} />
-                <span>{s.title}</span>
-              </div>
-            ))}
-            {b && b.todayTasks.length > 0 && b.todayTasks.map(t => (
-              <div key={t.id} className="flex items-center gap-2 py-1.5 text-xs">
-                <span className="text-[10px] font-mono text-muted-foreground w-12">Task</span>
-                <div className={`w-1.5 h-1.5 rounded-full ${t.priority === "high" ? "bg-red-400" : t.priority === "medium" ? "bg-yellow-400" : "bg-green-400"}`} />
-                <span>{t.title}</span>
-              </div>
-            ))}
-            {b && b.upcomingFollowUps.length > 0 && (
-              <div className="pt-2 mt-2 border-t border-border/30">
-                <p className="text-[10px] font-semibold text-muted-foreground mb-1">Coming Up (Next 3 Days)</p>
-                {b.upcomingFollowUps.map(l => (
-                  <div key={l.id} className="flex items-center justify-between py-1 text-xs cursor-pointer hover:bg-muted/20 rounded px-1" onClick={() => setActiveTab("leads")}>
-                    <span>{l.business || l.name}</span>
-                    <span className="text-[10px] text-muted-foreground">{l.nextStep}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {(!b || (b.todaySchedule.length === 0 && b.todayTasks.length === 0 && b.upcomingFollowUps.length === 0)) && (
-              <p className="text-xs text-muted-foreground py-3 text-center">No agenda items today</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Stale Leads */}
-        <Card className="overflow-visible border-border/50">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-400" />Stale Leads</CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("leads")}>Pipeline <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {b && b.staleLeads.length > 0 ? (
-              <div className="space-y-1">
-                {b.staleLeads.slice(0, 6).map(l => (
-                  <div key={l.id} className="flex items-center justify-between py-1.5 text-xs cursor-pointer hover:bg-muted/20 rounded px-1" onClick={() => setActiveTab("leads")}>
-                    <div>
-                      <span className="font-medium">{l.business || l.name}</span>
-                      <Badge variant="outline" className={`text-[9px] ml-2 ${PIPELINE_CONFIG[l.status as PipelineStage]?.color || ""}`}>{PIPELINE_CONFIG[l.status as PipelineStage]?.short || l.status}</Badge>
-                    </div>
-                    <span className="text-[10px] text-orange-400">{l.daysSinceUpdate}d ago</span>
-                  </div>
-                ))}
+          <CardContent className="pt-0 max-h-[340px] overflow-y-auto">
+            {urgentCount === 0 && (!b || (b.todaySchedule.length === 0 && b.todayTasks.length === 0)) ? (
+              <div className="text-center py-8">
+                <CheckCircle className="w-8 h-8 text-emerald-400/40 mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">Nothing urgent. Go prospect!</p>
+                <Button variant="outline" size="sm" className="mt-3 text-xs h-7" onClick={() => setActiveTab("prospector")}><Search className="w-3 h-3 mr-1.5" />Find Prospects</Button>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground py-3 text-center">No stale leads — pipeline is active!</p>
+              <div className="space-y-0.5">
+                {/* Overdue tasks */}
+                {b?.overdueTasks.map(t => (
+                  <div key={`task-${t.id}`} className="flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 cursor-pointer border-l-2 border-red-400/60" onClick={() => setActiveTab("tasks")}>
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${t.priority === "high" ? "bg-red-400" : "bg-yellow-400"}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs truncate font-medium">{t.title}</p>
+                      <p className="text-[10px] text-destructive">Overdue — due {t.dueDate}</p>
+                    </div>
+                  </div>
+                ))}
+                {/* Follow-ups due */}
+                {b?.followUpsDue.map(l => (
+                  <div key={`fu-${l.id}`} className="flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 cursor-pointer border-l-2 border-orange-400/60" onClick={() => setActiveTab("leads")}>
+                    <Phone className="w-3 h-3 text-orange-400 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs truncate font-medium">{l.business || l.name}</p>
+                      <p className="text-[10px] text-orange-400">{l.overdue ? "Overdue follow-up" : "Follow up today"}</p>
+                    </div>
+                  </div>
+                ))}
+                {/* Stale leads */}
+                {b?.staleLeads.slice(0, 4).map(l => (
+                  <div key={`stale-${l.id}`} className="flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 cursor-pointer border-l-2 border-yellow-400/40" onClick={() => setActiveTab("leads")}>
+                    <AlertTriangle className="w-3 h-3 text-yellow-400 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs truncate font-medium">{l.business || l.name}</p>
+                      <p className="text-[10px] text-muted-foreground">No update in {l.daysSinceUpdate}d — {PIPELINE_CONFIG[l.status as PipelineStage]?.short || l.status}</p>
+                    </div>
+                  </div>
+                ))}
+                {/* Today's schedule items */}
+                {b?.todaySchedule.map(s => (
+                  <div key={`sched-${s.id}`} className="flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 cursor-pointer border-l-2 border-blue-400/40" onClick={() => setActiveTab("tasks")}>
+                    <Clock className="w-3 h-3 text-blue-400 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs truncate">{s.title}</p>
+                      <p className="text-[10px] text-muted-foreground">{s.time} — {s.category}</p>
+                    </div>
+                  </div>
+                ))}
+                {/* Today's tasks */}
+                {b?.todayTasks.map(t => (
+                  <div key={`today-${t.id}`} className="flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 cursor-pointer border-l-2 border-border/50" onClick={() => setActiveTab("tasks")}>
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${t.priority === "high" ? "bg-red-400" : t.priority === "medium" ? "bg-yellow-400" : "bg-green-400"}`} />
+                    <p className="text-xs truncate">{t.title}</p>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("leads")}><Plus className="w-3.5 h-3.5 mr-1.5" />Add New Lead</Button>
-        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("prospector")}><Search className="w-3.5 h-3.5 mr-1.5" />Find Prospects</Button>
-        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("playbooks")}><BookOpen className="w-3.5 h-3.5 mr-1.5" />Open Playbooks</Button>
-        <Button variant="outline" size="sm" className="justify-start text-xs h-9" onClick={() => setActiveTab("revenue")}><DollarSign className="w-3.5 h-3.5 mr-1.5" />Log Revenue</Button>
-      </div>
-
-      {/* Pipeline + Progress */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="overflow-visible border-border/50 lg:col-span-2">
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Sales Pipeline</CardTitle></CardHeader>
+        {/* Pipeline Funnel */}
+        <Card className="overflow-visible border-border/50 lg:col-span-3">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Pipeline Funnel</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("leads")}>View All <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            </div>
+          </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-11 gap-1.5">
-              {(Object.keys(PIPELINE_CONFIG) as PipelineStage[]).map(stage => {
-                const count = leads.filter(l => l.status === stage).length;
+            <div className="space-y-2">
+              {funnelCounts.map(stage => {
+                const pct = maxFunnel > 0 ? (stage.count / maxFunnel) * 100 : 0;
+                const cfg = PIPELINE_CONFIG[stage.key];
                 return (
-                  <div key={stage} className="text-center py-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setActiveTab("leads")}>
-                    <div className={`text-lg font-bold ${PIPELINE_CONFIG[stage].color}`}>{count}</div>
-                    <div className="text-[9px] text-muted-foreground leading-tight">{PIPELINE_CONFIG[stage].short}</div>
+                  <div key={stage.key} className="flex items-center gap-3 cursor-pointer hover:bg-muted/20 rounded-md px-1 py-1" onClick={() => setActiveTab("leads")}>
+                    <span className="text-[11px] text-muted-foreground w-20 shrink-0 text-right">{stage.label}</span>
+                    <div className="flex-1 h-6 bg-muted/20 rounded-md overflow-hidden relative">
+                      <div
+                        className={`h-full rounded-md transition-all duration-500 ${cfg.bg.split(" ")[0]}`}
+                        style={{ width: `${Math.max(pct, stage.count > 0 ? 8 : 0)}%` }}
+                      />
+                      {stage.count > 0 && (
+                        <span className={`absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-bold ${cfg.color}`}>
+                          {stage.count}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
+            {/* Outcomes row */}
+            <div className="flex items-center gap-3 mt-4 pt-3 border-t border-border/30">
+              <div className="flex-1 text-center py-2 rounded-lg bg-emerald-400/5 border border-emerald-400/20 cursor-pointer hover:bg-emerald-400/10 transition-colors" onClick={() => setActiveTab("leads")}>
+                <div className="text-lg font-bold text-emerald-400">{wonLeads}</div>
+                <div className="text-[10px] text-muted-foreground">Won</div>
+              </div>
+              <div className="flex-1 text-center py-2 rounded-lg bg-red-400/5 border border-red-400/20 cursor-pointer hover:bg-red-400/10 transition-colors" onClick={() => setActiveTab("leads")}>
+                <div className="text-lg font-bold text-red-400">{lostLeads}</div>
+                <div className="text-[10px] text-muted-foreground">Lost</div>
+              </div>
+              <div className="flex-1 text-center py-2 rounded-lg bg-violet-400/5 border border-violet-400/20 cursor-pointer hover:bg-violet-400/10 transition-colors" onClick={() => setActiveTab("leads")}>
+                <div className="text-lg font-bold text-violet-400">{leads.filter(l => l.status === "nurture").length}</div>
+                <div className="text-[10px] text-muted-foreground">Nurture</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
-        <div className="space-y-3">
-          <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("plan")}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2"><Calendar className="w-4 h-4 text-blue-400" /><span className="text-xs font-semibold">90-Day Plan</span></div>
-              <Progress value={b?.planProgress.percent || 0} className="h-2 mb-1.5" />
-              <p className="text-[10px] text-muted-foreground">{b?.planProgress.completed || 0} / {b?.planProgress.total || 0} completed ({b?.planProgress.percent || 0}%)</p>
-            </CardContent>
-          </Card>
-          <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("materials")}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2"><ClipboardList className="w-4 h-4 text-emerald-400" /><span className="text-xs font-semibold">Materials</span></div>
-              <Progress value={materialsData.length > 0 ? (materialsData.filter(m => m.status === "completed").length / materialsData.length) * 100 : 0} className="h-2 mb-1.5" />
-              <p className="text-[10px] text-muted-foreground">{materialsData.filter(m => m.status === "completed").length} / {materialsData.length} assets</p>
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
-      {/* Client Alerts + Channel Scorecard */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Client Alerts */}
-        {b && b.clientAlerts.length > 0 && (
-          <Card className="overflow-visible border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-yellow-400" />Client Alerts</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {b.clientAlerts.map(c => (
-                <div key={c.id} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0 cursor-pointer hover:bg-muted/20 rounded px-1" onClick={() => setActiveTab("clients")}>
-                  <span className="text-xs font-medium">{c.business}</span>
-                  <div className="flex gap-1">{c.issues.map(i => <Badge key={i} variant="outline" className="text-[9px] text-yellow-500 border-yellow-500/30">{i}</Badge>)}</div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Channel Scorecard */}
-        <Card className={`overflow-visible border-border/50 ${b && b.clientAlerts.length > 0 ? "" : "lg:col-span-2"}`}>
-          <CardHeader className="pb-3">
+      {/* Revenue Breakdown + Recent Wins + Client Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Revenue Breakdown */}
+        <Card className="overflow-visible border-border/50">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-primary" />Channel Performance</CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("scorecard")}>Full Scorecard <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><DollarSign className="w-4 h-4 text-chart-4" />Revenue Breakdown</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("revenue")}>Details <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {revenueByType.length === 0 ? (
+              <div className="text-center py-6">
+                <DollarSign className="w-6 h-6 text-muted-foreground/30 mx-auto mb-1.5" />
+                <p className="text-xs text-muted-foreground">No revenue logged this month</p>
+                <Button variant="outline" size="sm" className="mt-2 text-xs h-7" onClick={() => setActiveTab("revenue")}><Plus className="w-3 h-3 mr-1" />Log Revenue</Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {revenueByType.sort((a, c) => c.amount - a.amount).map(r => (
+                  <div key={r.type} className="flex items-center justify-between py-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                      <span className="text-xs">{r.label}</span>
+                      <span className="text-[10px] text-muted-foreground">({r.count})</span>
+                    </div>
+                    <span className="text-xs font-semibold">${r.amount.toLocaleString()}</span>
+                  </div>
+                ))}
+                <div className="pt-2 mt-1 border-t border-border/30 flex items-center justify-between">
+                  <span className="text-xs font-semibold">Total</span>
+                  <span className="text-sm font-extrabold">${(b?.revenue.thisMonth || 0).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Wins */}
+        <Card className="overflow-visible border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-400" />Recent Wins</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {recentWins.length === 0 ? (
+              <div className="text-center py-6">
+                <Target className="w-6 h-6 text-muted-foreground/30 mx-auto mb-1.5" />
+                <p className="text-xs text-muted-foreground">No closed deals yet</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {recentWins.map(l => (
+                  <div key={l.id} className="flex items-center justify-between py-1.5 px-1 rounded hover:bg-muted/20 cursor-pointer" onClick={() => setActiveTab("clients")}>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium truncate">{l.business || l.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{VERTICAL_CONFIG[l.vertical] || l.vertical} — {PACKAGE_CONFIG[l.package]?.label || l.package}</p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{timeAgo(l.updatedAt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Client Alerts + Channel Performance */}
+        <Card className="overflow-visible border-border/50">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-primary" />Channels</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("scorecard")}>Scorecard <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-1.5">
               {(Object.keys(SOURCE_CONFIG) as LeadSource[]).map(src => {
                 const srcLeads = leads.filter(l => l.source === src);
                 const won = srcLeads.filter(l => l.status === "won").length;
                 const rate = srcLeads.length > 0 ? Math.round((won / srcLeads.length) * 100) : 0;
                 return (
-                  <div key={src} className="text-center py-3 rounded-lg bg-muted/30">
-                    <div className={`text-xs font-semibold ${SOURCE_CONFIG[src].color} mb-1`}>{SOURCE_CONFIG[src].label}</div>
-                    <div className="text-lg font-bold">{srcLeads.length}</div>
-                    <div className="text-[10px] text-muted-foreground">{won} won ({rate}%)</div>
+                  <div key={src} className="flex items-center justify-between py-1.5 px-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-1.5 h-1.5 rounded-full ${SOURCE_CONFIG[src].color.replace("text-", "bg-")}`} />
+                      <span className="text-[11px]">{SOURCE_CONFIG[src].label}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-semibold">{srcLeads.length}</span>
+                      <span className="text-[10px] text-muted-foreground w-12 text-right">{rate}% win</span>
+                    </div>
                   </div>
                 );
               })}
             </div>
+            {/* Client alerts inline */}
+            {b && b.clientAlerts.length > 0 && (
+              <div className="pt-2.5 mt-2.5 border-t border-border/30">
+                <p className="text-[10px] font-semibold text-yellow-400 mb-1.5 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{b.clientAlerts.length} client alert{b.clientAlerts.length > 1 ? "s" : ""}</p>
+                {b.clientAlerts.slice(0, 3).map(c => (
+                  <div key={c.id} className="flex items-center justify-between py-1 cursor-pointer hover:bg-muted/20 rounded px-1" onClick={() => setActiveTab("clients")}>
+                    <span className="text-[11px] truncate">{c.business}</span>
+                    <Badge variant="outline" className="text-[9px] text-yellow-500 border-yellow-500/30 shrink-0 ml-1">{c.issues[0]}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card className="overflow-visible border-border/50">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2"><Activity className="w-4 h-4 text-chart-4" />Recent Activity</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("activity")}>All Activity <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {activityData.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">No activity yet.</p> : (
-            <div className="space-y-2">{activityData.slice(0, 6).map(a => (
-              <div key={a.id} className="flex items-center gap-3 py-1.5 border-b border-border/30 last:border-0">
-                <div className={`w-2 h-2 rounded-full shrink-0 ${ACTIVITY_COLORS[a.type] || "bg-gray-400"}`} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs truncate"><span className="font-medium">{a.action}</span> — {a.details}</p>
-                  <p className="text-[10px] text-muted-foreground">{timeAgo(a.timestamp)}</p>
-                </div>
+      {/* Bottom row: Coming Up + 90-Day Plan + Activity Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Coming Up */}
+        <Card className="overflow-visible border-border/50">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Calendar className="w-4 h-4 text-blue-400" />Coming Up</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("tasks")}>Schedule <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {b && b.upcomingFollowUps.length > 0 ? (
+              <div className="space-y-1">
+                {b.upcomingFollowUps.map(l => (
+                  <div key={l.id} className="flex items-center justify-between py-1.5 px-1 rounded hover:bg-muted/20 cursor-pointer" onClick={() => setActiveTab("leads")}>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium truncate">{l.business || l.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{PIPELINE_CONFIG[l.status as PipelineStage]?.short || l.status}</p>
+                    </div>
+                    <span className="text-[10px] text-blue-400 shrink-0 ml-2">{l.nextStep}</span>
+                  </div>
+                ))}
               </div>
-            ))}</div>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <p className="text-xs text-muted-foreground py-4 text-center">No upcoming follow-ups</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 90-Day Plan progress */}
+        <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("plan")}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2"><ClipboardList className="w-4 h-4 text-primary" />90-Day Plan</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-end gap-3 mb-3">
+              <div className="text-3xl font-extrabold tracking-tight">{b?.planProgress.percent || 0}%</div>
+              <p className="text-[10px] text-muted-foreground pb-1">{b?.planProgress.completed || 0} of {b?.planProgress.total || 0} tasks done</p>
+            </div>
+            <Progress value={b?.planProgress.percent || 0} className="h-2.5" />
+            <div className="flex items-center justify-between mt-3 text-[10px] text-muted-foreground">
+              <span>Avg volume/client: ${avgVolume.toLocaleString()}/mo</span>
+              <span className="text-primary font-medium">View Plan →</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity */}
+        <Card className="overflow-visible border-border/50">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><Activity className="w-4 h-4 text-chart-4" />Activity</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("activity")}>All <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {activityData.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">No activity yet</p>
+            ) : (
+              <div className="space-y-1">
+                {activityData.slice(0, 6).map(a => (
+                  <div key={a.id} className="flex items-center gap-2 py-1.5">
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${ACTIVITY_COLORS[a.type] || "bg-gray-400"}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] truncate"><span className="font-medium">{a.action}</span> — {a.details}</p>
+                    </div>
+                    <span className="text-[9px] text-muted-foreground shrink-0">{timeAgo(a.timestamp)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
