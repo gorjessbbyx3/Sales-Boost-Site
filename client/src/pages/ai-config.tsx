@@ -2849,6 +2849,21 @@ function ScheduleTab() {
 
 // ─── Prospector Tab ─────────────────────────────────────────────────
 
+interface TechDetection {
+  name: string;
+  category: string;
+  confidence: "high" | "medium" | "low";
+  products: string[];
+  signatures: string[];
+}
+
+interface TechScanResult {
+  url: string;
+  techStack: TechDetection[];
+  title: string;
+  error?: string;
+}
+
 interface Prospect {
   business: string;
   name: string;
@@ -2862,6 +2877,7 @@ interface Prospect {
   socialLinks?: Record<string, string>;
   notes: string;
   _sourceUrl?: string;
+  _techStack?: TechDetection[];
   _selected?: boolean;
 }
 
@@ -2881,17 +2897,33 @@ const GOOGLE_DORK_PRESETS = [
 ];
 
 function ProspectorTab() {
-  const [mode, setMode] = useState<"url" | "dork" | "batch">("dork");
+  const [mode, setMode] = useState<"url" | "dork" | "batch" | "techscan">("dork");
   const [urlInput, setUrlInput] = useState("");
+  const [techScanUrls, setTechScanUrls] = useState("");
   const [batchUrls, setBatchUrls] = useState("");
   const [dorkQuery, setDorkQuery] = useState("");
   const [dorkLocation, setDorkLocation] = useState("Honolulu, Hawaii");
   const [dorkVertical, setDorkVertical] = useState("restaurant");
   const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [techResults, setTechResults] = useState<TechScanResult[]>([]);
   const [dorkUrls, setDorkUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [importCount, setImportCount] = useState(0);
   const { toast } = useToast();
+
+  const techScanMutation = useMutation({
+    mutationFn: async (data: { url: string | string[] }) => {
+      const r = await apiRequest("POST", "/api/ai-ops/tech-scan", data);
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setTechResults(prev => [...prev, ...(data.results || [])]);
+      const total = (data.results || []).length;
+      const withTech = (data.results || []).filter((r: TechScanResult) => r.techStack.length > 0).length;
+      toast({ title: `Scanned ${total} site(s)`, description: `${withTech} had detectable tech stacks` });
+    },
+    onError: () => { toast({ title: "Tech scan failed", variant: "destructive" }); },
+  });
 
   const scrapeMutation = useMutation({
     mutationFn: async (data: { url: string | string[]; mode?: string }) => {
@@ -2974,7 +3006,7 @@ function ProspectorTab() {
   };
 
   const CONF_COLORS: Record<string, string> = { high: "text-red-400 bg-red-400/10", medium: "text-yellow-400 bg-yellow-400/10", low: "text-muted-foreground bg-muted/30" };
-  const isLoading = scrapeMutation.isPending || dorkMutation.isPending;
+  const isLoading = scrapeMutation.isPending || dorkMutation.isPending || techScanMutation.isPending;
 
   return (
     <div className="space-y-4">
@@ -2996,6 +3028,7 @@ function ProspectorTab() {
           { key: "dork", label: "Google Dorks", icon: Globe },
           { key: "url", label: "URL Scanner", icon: Search },
           { key: "batch", label: "Batch URLs", icon: FileText },
+          { key: "techscan", label: "Tech Stack", icon: Zap },
         ] as const).map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => setMode(key)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors ${mode === key ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
@@ -3102,6 +3135,31 @@ function ProspectorTab() {
             </Card>
           )}
 
+          {mode === "techscan" && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" />Tech Stack Scanner</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px]">URLs to scan (one per line, max 50)</Label>
+                  <Textarea value={techScanUrls} onChange={(e) => setTechScanUrls(e.target.value)} placeholder={"https://example-coffee.com\nhttps://mybarbershop.com\nhttps://localbakery.square.site"} className="text-xs min-h-[120px] font-mono" />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Scans HTML + response headers for 100+ technologies: payments, CMS, frameworks, analytics, marketing, chat, industry platforms, scheduling, and more. No AI needed - pure signature detection.</p>
+                <Button size="sm" className="w-full" onClick={() => {
+                  const urls = techScanUrls.split("\n").map(u => u.trim()).filter(u => u && u.startsWith("http"));
+                  if (urls.length === 0) return;
+                  techScanMutation.mutate({ url: urls });
+                }} disabled={!techScanUrls.trim() || isLoading}>
+                  {techScanMutation.isPending ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Scanning...</> : <><Zap className="w-3.5 h-3.5" />Scan Tech Stacks</>}
+                </Button>
+                {techResults.length > 0 && (
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-destructive" onClick={() => setTechResults([])}>
+                    <Trash2 className="w-3 h-3" />Clear Results
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Dork discovered URLs */}
           {dorkUrls.length > 0 && (
             <Card className="overflow-visible border-border/50">
@@ -3195,12 +3253,25 @@ function ProspectorTab() {
                             ))}
                           </div>
                         )}
+                        {p._techStack && p._techStack.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {p._techStack.slice(0, 8).map(t => (
+                              <span key={t.name} className="text-[8px] px-1.5 py-0.5 rounded bg-muted/40 text-muted-foreground">{t.name}</span>
+                            ))}
+                            {p._techStack.length > 8 && <span className="text-[8px] text-muted-foreground">+{p._techStack.length - 8} more</span>}
+                          </div>
+                        )}
                         {p.notes && <p className="text-[10px] text-muted-foreground/70">{p.notes}</p>}
                       </div>
                       <div className="flex flex-col gap-1 shrink-0">
                         {p.website && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => scrapeMutation.mutate({ url: p.website })} disabled={isLoading} title="Deep scan this website">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => scrapeMutation.mutate({ url: p.website })} disabled={isLoading} title="Deep scan with AI">
                             <Search className="w-3 h-3" />
+                          </Button>
+                        )}
+                        {p.website && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setTechScanUrls(p.website); setMode("techscan"); techScanMutation.mutate({ url: p.website }); }} disabled={isLoading} title="Tech stack scan">
+                            <Zap className="w-3 h-3" />
                           </Button>
                         )}
                       </div>
@@ -3211,23 +3282,78 @@ function ProspectorTab() {
             </CardContent>
           </Card>
 
-          {/* Processor Detection Legend */}
-          <Card className="overflow-visible border-border/50">
-            <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Processor Signatures Detected</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px]">
-                {["Square", "Clover", "Toast", "Stripe", "PayPal", "Shopify"].map(proc => {
-                  const count = prospects.filter(p => p.currentProcessor?.toLowerCase().includes(proc.toLowerCase())).length;
-                  return (
-                    <div key={proc} className="flex items-center justify-between p-2 rounded bg-muted/20">
-                      <span className="font-medium">{proc}</span>
-                      <Badge variant="outline" className="text-[9px]">{count}</Badge>
+          {/* Tech Stack Scan Results */}
+          {techResults.length > 0 && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" />Tech Stack Results ({techResults.length} sites)</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-[500px] overflow-y-auto scrollbar-none">
+                  {techResults.map((r, idx) => (
+                    <div key={idx} className="p-3 rounded-lg bg-muted/20 border border-border/30 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold truncate">{r.title || new URL(r.url).hostname}</p>
+                          <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-mono truncate block">{r.url}</a>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setUrlInput(r.url); setMode("url"); }} title="Deep scan with AI">
+                            <Search className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      {r.error ? (
+                        <p className="text-[10px] text-destructive">{r.error}</p>
+                      ) : r.techStack.length === 0 ? (
+                        <p className="text-[10px] text-muted-foreground">No technologies detected</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {(["PAYMENTS", "CMS", "FRAMEWORK", "ANALYTICS", "MARKETING", "INDUSTRY", "SCHEDULING", "CHAT", "CDN", "HOSTING", "EMAIL", "COMMUNICATIONS"] as const).map(cat => {
+                            const catTech = r.techStack.filter(t => t.category === cat);
+                            if (catTech.length === 0) return null;
+                            return (
+                              <div key={cat} className="flex flex-wrap items-center gap-1">
+                                <span className="text-[9px] font-semibold text-muted-foreground w-16 shrink-0">{cat}</span>
+                                {catTech.map(t => (
+                                  <Badge key={t.name} variant="outline" className={`text-[9px] ${CONF_COLORS[t.confidence] || ""}`}>
+                                    {t.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Processor Detection Summary */}
+          {prospects.length > 0 && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Payment Processors Found</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px]">
+                  {["Square", "Clover", "Toast", "Stripe", "PayPal", "Shopify"].map(proc => {
+                    const count = prospects.filter(p => p.currentProcessor?.toLowerCase().includes(proc.toLowerCase())).length;
+                    if (count === 0) return null;
+                    return (
+                      <div key={proc} className="flex items-center justify-between p-2 rounded bg-muted/20">
+                        <span className="font-medium">{proc}</span>
+                        <Badge variant="outline" className="text-[9px]">{count}</Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
