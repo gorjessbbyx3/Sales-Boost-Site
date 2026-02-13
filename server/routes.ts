@@ -1368,6 +1368,283 @@ You help manage daily operations, give reminders, make recommendations, and can 
     }
   });
 
+  // ─── AI Lead Prospector ─────────────────────────────────────────
+
+  // Payment processor signature detection (like Apify Square Merchant Finder)
+  const PROCESSOR_SIGNATURES: Record<string, Array<{ pattern: string; type: "script" | "url" | "text" | "meta"; product?: string }>> = {
+    Square: [
+      { pattern: "js.squareup.com", type: "script", product: "Square Payments SDK" },
+      { pattern: "cdn.squareup.com", type: "script", product: "Square CDN" },
+      { pattern: "squareup.com/v2/paymentform", type: "script", product: "Square Payment Form" },
+      { pattern: "web.squarecdn.com", type: "script", product: "Square Web SDK" },
+      { pattern: "squareup.com/appointments", type: "url", product: "Square Appointments" },
+      { pattern: "square.site", type: "url", product: "Square Online Store" },
+      { pattern: "squareup.com/gift", type: "url", product: "Square Gift Cards" },
+      { pattern: "squareup.com/pay", type: "url", product: "Square Payment Links" },
+      { pattern: "Powered by Square", type: "text", product: "Square Branding" },
+      { pattern: "Book with Square", type: "text", product: "Square Appointments" },
+      { pattern: "square-site-verification", type: "meta", product: "Square Verification" },
+    ],
+    Clover: [
+      { pattern: "clover.com", type: "url", product: "Clover POS" },
+      { pattern: "clover.com/pay", type: "url", product: "Clover Payments" },
+      { pattern: "Powered by Clover", type: "text", product: "Clover Branding" },
+      { pattern: "clover-site", type: "meta", product: "Clover Site" },
+    ],
+    Toast: [
+      { pattern: "toasttab.com", type: "url", product: "Toast POS" },
+      { pattern: "order.toasttab.com", type: "url", product: "Toast Online Ordering" },
+      { pattern: "Powered by Toast", type: "text", product: "Toast Branding" },
+    ],
+    Stripe: [
+      { pattern: "js.stripe.com", type: "script", product: "Stripe.js" },
+      { pattern: "checkout.stripe.com", type: "url", product: "Stripe Checkout" },
+    ],
+    PayPal: [
+      { pattern: "paypal.com/sdk", type: "script", product: "PayPal SDK" },
+      { pattern: "paypalobjects.com", type: "script", product: "PayPal JS" },
+      { pattern: "paypal.me", type: "url", product: "PayPal.me" },
+    ],
+    Shopify: [
+      { pattern: "cdn.shopify.com", type: "script", product: "Shopify CDN" },
+      { pattern: "myshopify.com", type: "url", product: "Shopify Store" },
+    ],
+  };
+
+  function detectProcessorSignatures(html: string): Array<{ processor: string; product: string; confidence: "high" | "medium" | "low"; signatures: string[] }> {
+    const results: Record<string, { products: Set<string>; sigs: string[]; scriptCount: number; urlCount: number; textCount: number }> = {};
+    const lowerHtml = html.toLowerCase();
+
+    for (const [processor, signatures] of Object.entries(PROCESSOR_SIGNATURES)) {
+      for (const sig of signatures) {
+        if (lowerHtml.includes(sig.pattern.toLowerCase())) {
+          if (!results[processor]) results[processor] = { products: new Set(), sigs: [], scriptCount: 0, urlCount: 0, textCount: 0 };
+          results[processor].products.add(sig.product || processor);
+          results[processor].sigs.push(sig.pattern);
+          if (sig.type === "script") results[processor].scriptCount++;
+          else if (sig.type === "url") results[processor].urlCount++;
+          else results[processor].textCount++;
+        }
+      }
+    }
+
+    return Object.entries(results).map(([processor, data]) => {
+      let confidence: "high" | "medium" | "low" = "low";
+      const total = data.sigs.length;
+      if (data.scriptCount >= 2 || (data.scriptCount >= 1 && data.urlCount >= 1)) confidence = "high";
+      else if (data.scriptCount >= 1 || data.urlCount >= 2 || total >= 3) confidence = "medium";
+      return { processor, product: Array.from(data.products).join(", "), confidence, signatures: data.sigs };
+    }).sort((a, b) => {
+      const order = { high: 0, medium: 1, low: 2 };
+      return order[a.confidence] - order[b.confidence];
+    });
+  }
+
+  // Scrape a URL for business leads + processor detection
+  app.post("/api/ai-ops/scrape-prospects", requireAdminSession, async (req, res) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured." });
+
+    const { url, mode } = req.body;  // mode: "directory" | "single" | "batch"
+    if (!url) return res.status(400).json({ error: "URL is required." });
+
+    const urls = Array.isArray(url) ? url : [url];
+    const allProspects: any[] = [];
+
+    for (const targetUrl of urls.slice(0, 20)) {
+      try {
+        const response = await fetch(targetUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!response.ok) continue;
+
+        const html = await response.text();
+
+        // Run processor signature detection on raw HTML
+        const detectedProcessors = detectProcessorSignatures(html);
+
+        // Clean HTML for AI extraction
+        const cleaned = html
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 60000);
+
+        const anthropic = new Anthropic({ apiKey });
+        const aiResponse = await anthropic.messages.create({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 4096,
+          system: `You are a lead extraction AI for a merchant services sales team (CashSwipe/TechSavvy Hawaii). Extract ALL business listings from the provided web page content.
+
+For each business found, extract whatever is available:
+- Business name, owner/contact name, address, phone, email, website URL
+- Business type/vertical
+- Current payment processor or POS system if mentioned
+- Social media links (Instagram, Facebook, etc.)
+
+${detectedProcessors.length > 0 ? `\nPROCESSOR SIGNATURES DETECTED ON THIS PAGE:\n${detectedProcessors.map(d => `- ${d.processor} (${d.confidence} confidence): ${d.product}`).join("\n")}\nInclude this processor info in your extraction.` : ""}
+
+Return a JSON array. Each item:
+{
+  "business": "string",
+  "name": "string (contact/owner name if found, or empty)",
+  "address": "string",
+  "phone": "string",
+  "email": "string",
+  "website": "string",
+  "vertical": "restaurant|retail|salon|auto|medical|cbd|vape|firearms|ecommerce|services|other",
+  "currentProcessor": "string (Square, Clover, Toast, etc. or empty)",
+  "processorConfidence": "high|medium|low|none",
+  "socialLinks": { "instagram": "", "facebook": "", "twitter": "" },
+  "notes": "string (any useful context)"
+}
+
+If the page is a single business, return an array with one item. If it's a directory, extract ALL listings you can find. Return ONLY valid JSON array. If no businesses found, return [].`,
+          messages: [{ role: "user", content: `Extract business leads from this page (${targetUrl}):\n\n${cleaned}` }],
+        });
+
+        const text = aiResponse.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        const prospects = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+
+        // Enrich with signature detection data
+        for (const p of prospects) {
+          p._sourceUrl = targetUrl;
+          p._detectedProcessors = detectedProcessors;
+          if (!p.currentProcessor && detectedProcessors.length > 0) {
+            p.currentProcessor = detectedProcessors[0].processor;
+            p.processorConfidence = detectedProcessors[0].confidence;
+          }
+        }
+
+        allProspects.push(...prospects);
+
+        // Rate limit between URLs
+        if (urls.length > 1) await new Promise(r => setTimeout(r, 1500));
+      } catch (err: any) {
+        console.error(`Scrape error for ${targetUrl}:`, err.message);
+      }
+    }
+
+    res.json({ prospects: allProspects, source: urls.length === 1 ? urls[0] : `${urls.length} URLs`, scrapedAt: new Date().toISOString() });
+  });
+
+  // Google dork execution
+  app.post("/api/ai-ops/google-dork", requireAdminSession, async (req, res) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured." });
+
+    const { query, location } = req.body;
+    if (!query) return res.status(400).json({ error: "Query is required." });
+
+    try {
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=20`;
+      const response = await fetch(searchUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        signal: AbortSignal.timeout(15000),
+      });
+
+      const html = await response.text();
+      const cleaned = html
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 60000);
+
+      const anthropic = new Anthropic({ apiKey });
+      const aiResponse = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: `You are a lead extraction AI for a merchant services sales team targeting businesses${location ? ` in ${location}` : ""}. Extract business information from Google search results.
+
+For each result that appears to be a business, extract: business name, contact info, address, business type, payment processor mentions, and the result URL.
+
+Return a JSON object:
+{
+  "results": [
+    {
+      "business": "string",
+      "name": "string (contact name if found)",
+      "address": "string",
+      "phone": "string",
+      "email": "string",
+      "website": "string (the URL from search results)",
+      "vertical": "restaurant|retail|salon|auto|medical|cbd|vape|firearms|ecommerce|services|other",
+      "currentProcessor": "string",
+      "notes": "string"
+    }
+  ],
+  "urls": ["string (all URLs from search results that could be scraped for more data)"]
+}
+
+Return ONLY valid JSON, no other text.`,
+        messages: [{ role: "user", content: `Google dork query: "${query}"\n\nSearch results page content:\n\n${cleaned}` }],
+      });
+
+      const text = aiResponse.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { results: [], urls: [] };
+      res.json({ ...parsed, query, searchedAt: new Date().toISOString() });
+    } catch (err: any) {
+      console.error("Google dork error:", err.message);
+      res.json({ results: [], urls: [], query, blocked: true, message: "Google blocked automated access. Use the dork query manually in your browser, then paste interesting URLs into the URL Scanner." });
+    }
+  });
+
+  // Import prospects into leads pipeline
+  app.post("/api/ai-ops/import-prospects", requireAdminSession, async (req, res) => {
+    const { prospects, sourceLabel } = req.body;
+    if (!Array.isArray(prospects) || prospects.length === 0) return res.status(400).json({ error: "No prospects to import." });
+
+    const now = new Date().toISOString();
+    const created: any[] = [];
+
+    for (const p of prospects) {
+      const id = `lead-${randomUUID().slice(0, 8)}`;
+      const socialStr = p.socialLinks ? Object.entries(p.socialLinks).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join("\n") : "";
+      const [lead] = await db.insert(schema.leads).values({
+        id,
+        name: p.name || "",
+        business: p.business || "",
+        address: p.address || "",
+        phone: p.phone || "",
+        email: p.email || "",
+        decisionMakerName: p.name || "",
+        decisionMakerRole: "",
+        bestContactMethod: p.phone ? "phone" : p.email ? "email" : "phone",
+        package: "terminal",
+        status: "new",
+        source: "direct",
+        vertical: p.vertical || "other",
+        currentProcessor: p.currentProcessor || "",
+        currentEquipment: "",
+        monthlyVolume: "",
+        painPoints: p.currentProcessor ? `Currently using ${p.currentProcessor}${p.processorConfidence ? ` (${p.processorConfidence} confidence)` : ""} - potential switch target` : "",
+        nextStep: "Initial outreach",
+        nextStepDate: now.split("T")[0],
+        attachments: "[]",
+        notes: `[AI Prospector] ${sourceLabel || "Web scrape"}${p.website ? `\nWebsite: ${p.website}` : ""}${socialStr ? `\nSocial:\n${socialStr}` : ""}${p.notes ? `\n${p.notes}` : ""}`.trim(),
+        createdAt: now,
+        updatedAt: now,
+      }).returning();
+      created.push(lead);
+    }
+
+    res.json({ imported: created.length, leads: created });
+  });
+
   // ─── Pinned Pitches ─────────────────────────────────────────────
 
   app.get("/api/pinned-pitches", requireAdminSession, async (_req, res) => {

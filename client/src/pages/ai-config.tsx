@@ -601,6 +601,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { value: "resources", icon: Library, label: "Resources" },
     { value: "team", icon: UserCog, label: "Team" },
     { value: "schedule", icon: Clock, label: "Schedule" },
+    { value: "prospector", icon: Search, label: "Prospector" },
     { value: "ai-ops", icon: Sparkles, label: "AI Ops" },
     { value: "activity", icon: Activity, label: "Activity" },
     { value: "ai", icon: Bot, label: "AI Chat" },
@@ -706,6 +707,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsContent value="resources"><ResourcesManagerTab /></TabsContent>
               <TabsContent value="team"><TeamTab /></TabsContent>
               <TabsContent value="schedule"><ScheduleTab /></TabsContent>
+              <TabsContent value="prospector"><ProspectorTab /></TabsContent>
               <TabsContent value="ai-ops"><AiOpsTab /></TabsContent>
               <TabsContent value="activity"><ActivityTab /></TabsContent>
               <TabsContent value="ai"><AiSettingsTab /></TabsContent>
@@ -2841,6 +2843,393 @@ function ScheduleTab() {
           <DialogFooter><Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button><Button onClick={() => createMutation.mutate(form)} disabled={!form.title}><Plus className="w-3.5 h-3.5" />Add</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ─── Prospector Tab ─────────────────────────────────────────────────
+
+interface Prospect {
+  business: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  vertical: string;
+  currentProcessor: string;
+  processorConfidence?: string;
+  socialLinks?: Record<string, string>;
+  notes: string;
+  _sourceUrl?: string;
+  _selected?: boolean;
+}
+
+const GOOGLE_DORK_PRESETS = [
+  { label: "Square merchants", category: "Processor Hunt", dork: 'site:square.site "{vertical}" "{location}"', desc: "Find businesses hosted on Square Online" },
+  { label: "Powered by Square", category: "Processor Hunt", dork: '"Powered by Square" "{vertical}" "{location}"', desc: "Sites with Square branding" },
+  { label: "Square Appointments", category: "Processor Hunt", dork: 'inurl:squareup.com/appointments "{vertical}" "{location}"', desc: "Businesses using Square booking" },
+  { label: "Clover merchants", category: "Processor Hunt", dork: '"Powered by Clover" OR "clover.com" "{vertical}" "{location}"', desc: "Find Clover POS users" },
+  { label: "Toast restaurants", category: "Processor Hunt", dork: 'site:toasttab.com "{location}"', desc: "Restaurants on Toast online ordering" },
+  { label: "Yelp directory", category: "Directory Scrape", dork: 'site:yelp.com "{vertical}" "{location}"', desc: "Yelp business listings" },
+  { label: "Google Maps listings", category: "Directory Scrape", dork: 'site:google.com/maps "{vertical}" "{location}"', desc: "Google Maps business results" },
+  { label: "Local directory", category: "Directory Scrape", dork: '"{vertical}" "{location}" "contact us" "phone" -site:facebook.com -site:yelp.com', desc: "Direct business websites with contact info" },
+  { label: "BBB listings", category: "Directory Scrape", dork: 'site:bbb.org "{vertical}" "{location}"', desc: "Better Business Bureau listings" },
+  { label: "Hawaii businesses", category: "Hawaii Local", dork: '"{vertical}" hawaii "phone" "email" -site:facebook.com -site:yelp.com', desc: "Hawaii businesses with contact info" },
+  { label: "Honolulu merchants", category: "Hawaii Local", dork: '"{vertical}" honolulu "accepts" OR "payment" OR "credit card"', desc: "Honolulu businesses mentioning payments" },
+  { label: "Maui businesses", category: "Hawaii Local", dork: '"{vertical}" maui hawaii "phone" OR "call" -site:tripadvisor.com', desc: "Maui business websites" },
+];
+
+function ProspectorTab() {
+  const [mode, setMode] = useState<"url" | "dork" | "batch">("dork");
+  const [urlInput, setUrlInput] = useState("");
+  const [batchUrls, setBatchUrls] = useState("");
+  const [dorkQuery, setDorkQuery] = useState("");
+  const [dorkLocation, setDorkLocation] = useState("Honolulu, Hawaii");
+  const [dorkVertical, setDorkVertical] = useState("restaurant");
+  const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [dorkUrls, setDorkUrls] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [importCount, setImportCount] = useState(0);
+  const { toast } = useToast();
+
+  const scrapeMutation = useMutation({
+    mutationFn: async (data: { url: string | string[]; mode?: string }) => {
+      const r = await apiRequest("POST", "/api/ai-ops/scrape-prospects", data);
+      return r.json();
+    },
+    onSuccess: (data) => {
+      const newProspects = (data.prospects || []).map((p: Prospect) => ({ ...p, _selected: true }));
+      setProspects(prev => [...prev, ...newProspects]);
+      toast({ title: `Found ${newProspects.length} prospect(s)`, description: `From ${data.source}` });
+    },
+    onError: (err: any) => { toast({ title: "Scrape failed", description: err.message, variant: "destructive" }); },
+  });
+
+  const dorkMutation = useMutation({
+    mutationFn: async (data: { query: string; location: string }) => {
+      const r = await apiRequest("POST", "/api/ai-ops/google-dork", data);
+      return r.json();
+    },
+    onSuccess: (data) => {
+      if (data.blocked) {
+        toast({ title: "Google blocked automated search", description: "Copy the dork query and search manually, then paste URLs into URL Scanner" });
+      }
+      const newProspects = (data.results || []).map((p: Prospect) => ({ ...p, _selected: true }));
+      setProspects(prev => [...prev, ...newProspects]);
+      setDorkUrls(data.urls || []);
+      if (newProspects.length > 0) toast({ title: `Found ${newProspects.length} result(s) from Google` });
+    },
+    onError: () => { toast({ title: "Dork search failed", variant: "destructive" }); },
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async (data: { prospects: Prospect[]; sourceLabel: string }) => {
+      const r = await apiRequest("POST", "/api/ai-ops/import-prospects", data);
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setImportCount(prev => prev + data.imported);
+      toast({ title: `Imported ${data.imported} leads into pipeline` });
+      setProspects(prev => prev.filter(p => !p._selected));
+    },
+  });
+
+  const handleScrapeUrl = () => {
+    if (!urlInput.trim()) return;
+    scrapeMutation.mutate({ url: urlInput.trim() });
+  };
+
+  const handleBatchScrape = () => {
+    const urls = batchUrls.split("\n").map(u => u.trim()).filter(u => u && u.startsWith("http"));
+    if (urls.length === 0) return;
+    scrapeMutation.mutate({ url: urls, mode: "batch" });
+  };
+
+  const handleDorkSearch = () => {
+    const q = dorkQuery
+      .replace(/\{location\}/g, dorkLocation)
+      .replace(/\{vertical\}/g, dorkVertical);
+    if (!q.trim()) return;
+    dorkMutation.mutate({ query: q, location: dorkLocation });
+  };
+
+  const handleApplyPreset = (dork: string) => {
+    setDorkQuery(dork);
+  };
+
+  const handleImportSelected = () => {
+    const selected = prospects.filter(p => p._selected);
+    if (selected.length === 0) return;
+    importMutation.mutate({ prospects: selected, sourceLabel: `AI Prospector - ${mode === "dork" ? "Google Dork" : "URL Scrape"}` });
+  };
+
+  const toggleSelect = (idx: number) => {
+    setProspects(prev => prev.map((p, i) => i === idx ? { ...p, _selected: !p._selected } : p));
+  };
+
+  const toggleSelectAll = () => {
+    const allSelected = prospects.every(p => p._selected);
+    setProspects(prev => prev.map(p => ({ ...p, _selected: !allSelected })));
+  };
+
+  const CONF_COLORS: Record<string, string> = { high: "text-red-400 bg-red-400/10", medium: "text-yellow-400 bg-yellow-400/10", low: "text-muted-foreground bg-muted/30" };
+  const isLoading = scrapeMutation.isPending || dorkMutation.isPending;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-bold flex items-center gap-2"><Search className="w-5 h-5 text-primary" />AI Lead Prospector</h2>
+        <p className="text-xs text-muted-foreground mt-1">Find businesses using competitor payment processors. Scrape directories, run Google dorks, detect Square/Clover/Toast signatures, and import leads directly into your pipeline.</p>
+      </div>
+
+      {importCount > 0 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-emerald-400/10 border border-emerald-400/20">
+          <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <span className="text-xs text-emerald-400 font-medium">{importCount} leads imported this session</span>
+        </div>
+      )}
+
+      {/* Mode Tabs */}
+      <div className="flex gap-1 p-1 rounded-lg bg-muted/30 border border-border/30 w-fit">
+        {([
+          { key: "dork", label: "Google Dorks", icon: Globe },
+          { key: "url", label: "URL Scanner", icon: Search },
+          { key: "batch", label: "Batch URLs", icon: FileText },
+        ] as const).map(({ key, label, icon: Icon }) => (
+          <button key={key} onClick={() => setMode(key)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors ${mode === key ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+            <Icon className="w-3.5 h-3.5" />{label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left: Input Panel */}
+        <div className="lg:col-span-1 space-y-4">
+          {mode === "dork" && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4 text-blue-400" />Google Dork Builder</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px]">Location</Label>
+                    <Input value={dorkLocation} onChange={(e) => setDorkLocation(e.target.value)} placeholder="Honolulu, Hawaii" className="text-xs h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px]">Vertical</Label>
+                    <Select value={dorkVertical} onValueChange={setDorkVertical}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(VERTICAL_CONFIG).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Dork Query</Label>
+                  <Textarea value={dorkQuery} onChange={(e) => setDorkQuery(e.target.value)} placeholder='site:square.site "restaurant" "honolulu"' className="text-xs min-h-[60px] font-mono" />
+                </div>
+
+                <Button size="sm" className="w-full" onClick={handleDorkSearch} disabled={!dorkQuery.trim() || isLoading}>
+                  {dorkMutation.isPending ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Searching...</> : <><Search className="w-3.5 h-3.5" />Run Dork Search</>}
+                </Button>
+
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>If Google blocks, copy query and search manually</span>
+                </div>
+
+                <Button variant="outline" size="sm" className="w-full text-[10px] h-7" onClick={() => {
+                  const q = dorkQuery.replace(/\{location\}/g, dorkLocation).replace(/\{vertical\}/g, dorkVertical);
+                  window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank");
+                }}>
+                  <ExternalLink className="w-3 h-3" />Open in Google
+                </Button>
+
+                {/* Presets */}
+                <div className="space-y-2 pt-2 border-t border-border/30">
+                  <p className="text-[10px] font-semibold text-muted-foreground">Preset Dorks</p>
+                  {["Processor Hunt", "Directory Scrape", "Hawaii Local"].map(cat => (
+                    <div key={cat}>
+                      <p className="text-[9px] font-semibold text-muted-foreground/70 mb-1">{cat}</p>
+                      <div className="space-y-1">
+                        {GOOGLE_DORK_PRESETS.filter(p => p.category === cat).map(preset => (
+                          <button key={preset.label} onClick={() => handleApplyPreset(preset.dork)}
+                            className="w-full text-left p-2 rounded-md bg-muted/20 hover:bg-muted/40 transition-colors border border-border/20">
+                            <p className="text-[10px] font-medium">{preset.label}</p>
+                            <p className="text-[9px] text-muted-foreground font-mono truncate">{preset.dork}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {mode === "url" && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Search className="w-4 h-4 text-primary" />URL Scanner</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Website URL</Label>
+                  <Input value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="https://giveandgetlocal.com" className="text-xs" />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Scans the page for business listings, contact info, and payment processor signatures (Square, Clover, Toast, Stripe, PayPal, Shopify).</p>
+                <Button size="sm" className="w-full" onClick={handleScrapeUrl} disabled={!urlInput.trim() || isLoading}>
+                  {scrapeMutation.isPending ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Scanning...</> : <><Search className="w-3.5 h-3.5" />Scan URL</>}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {mode === "batch" && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-orange-400" />Batch URL Scanner</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px]">URLs (one per line, max 20)</Label>
+                  <Textarea value={batchUrls} onChange={(e) => setBatchUrls(e.target.value)} placeholder={"https://example-coffee.com\nhttps://mybarbershop.com\nhttps://localbakery.square.site"} className="text-xs min-h-[120px] font-mono" />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Each URL is scanned for processor signatures and business data. Uses AI to extract contacts.</p>
+                <Button size="sm" className="w-full" onClick={handleBatchScrape} disabled={!batchUrls.trim() || isLoading}>
+                  {scrapeMutation.isPending ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Scanning {batchUrls.split("\n").filter(u => u.trim()).length} URLs...</> : <><Zap className="w-3.5 h-3.5" />Scan All URLs</>}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Dork discovered URLs */}
+          {dorkUrls.length > 0 && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4" />Discovered URLs ({dorkUrls.length})</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-[10px] text-muted-foreground">URLs found in Google results. Deep-scan them for more data.</p>
+                <div className="max-h-[200px] overflow-y-auto space-y-1 scrollbar-none">
+                  {dorkUrls.map((u, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[10px] p-1.5 rounded bg-muted/20">
+                      <span className="truncate flex-1 font-mono">{u}</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => scrapeMutation.mutate({ url: u })} disabled={isLoading}>
+                        <Search className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => {
+                  setBatchUrls(dorkUrls.join("\n"));
+                  setMode("batch");
+                }}>
+                  <Zap className="w-3.5 h-3.5" />Send All to Batch Scanner
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Right: Results */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card className="overflow-visible border-border/50">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" />
+                  Prospects ({prospects.length})
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {prospects.length > 0 && (
+                    <>
+                      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={toggleSelectAll}>
+                        {prospects.every(p => p._selected) ? "Deselect All" : "Select All"}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-xs h-7 text-destructive" onClick={() => setProspects([])}>
+                        <Trash2 className="w-3 h-3" />Clear
+                      </Button>
+                      <Button size="sm" className="text-xs h-7" onClick={handleImportSelected}
+                        disabled={importMutation.isPending || prospects.filter(p => p._selected).length === 0}>
+                        <UserPlus className="w-3.5 h-3.5" />
+                        Import {prospects.filter(p => p._selected).length} to Pipeline
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {prospects.length === 0 ? (
+                <div className="text-center py-12">
+                  <Search className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">No prospects yet</p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-1">Use Google Dorks or URL Scanner to find businesses</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[600px] overflow-y-auto scrollbar-none">
+                  {prospects.map((p, idx) => (
+                    <div key={idx} className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${p._selected ? "bg-primary/5 border-primary/20" : "bg-muted/20 border-border/30"}`}>
+                      <Checkbox checked={p._selected} onCheckedChange={() => toggleSelect(idx)} className="mt-1" />
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold">{p.business || "Unknown Business"}</p>
+                          {p.currentProcessor && (
+                            <Badge variant="outline" className={`text-[9px] ${CONF_COLORS[p.processorConfidence || "low"] || CONF_COLORS.low}`}>
+                              {p.currentProcessor} {p.processorConfidence && `(${p.processorConfidence})`}
+                            </Badge>
+                          )}
+                          {p.vertical && p.vertical !== "other" && (
+                            <Badge variant="outline" className="text-[9px]">{VERTICAL_CONFIG[p.vertical as Vertical] || p.vertical}</Badge>
+                          )}
+                        </div>
+                        {p.name && <p className="text-[10px] text-muted-foreground">Contact: {p.name}</p>}
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-muted-foreground">
+                          {p.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{p.phone}</span>}
+                          {p.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{p.email}</span>}
+                          {p.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.address}</span>}
+                          {p.website && <a href={p.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline"><Globe className="w-3 h-3" />{new URL(p.website).hostname}</a>}
+                        </div>
+                        {p.socialLinks && Object.entries(p.socialLinks).some(([, v]) => v) && (
+                          <div className="flex gap-2 text-[10px]">
+                            {Object.entries(p.socialLinks).filter(([, v]) => v).map(([k, v]) => (
+                              <a key={k} href={v as string} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{k}</a>
+                            ))}
+                          </div>
+                        )}
+                        {p.notes && <p className="text-[10px] text-muted-foreground/70">{p.notes}</p>}
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        {p.website && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => scrapeMutation.mutate({ url: p.website })} disabled={isLoading} title="Deep scan this website">
+                            <Search className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Processor Detection Legend */}
+          <Card className="overflow-visible border-border/50">
+            <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Processor Signatures Detected</CardTitle></CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px]">
+                {["Square", "Clover", "Toast", "Stripe", "PayPal", "Shopify"].map(proc => {
+                  const count = prospects.filter(p => p.currentProcessor?.toLowerCase().includes(proc.toLowerCase())).length;
+                  return (
+                    <div key={proc} className="flex items-center justify-between p-2 rounded bg-muted/20">
+                      <span className="font-medium">{proc}</span>
+                      <Badge variant="outline" className="text-[9px]">{count}</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
