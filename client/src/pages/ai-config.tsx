@@ -997,14 +997,17 @@ function LeadsTab() {
   const createMutation = useMutation({
     mutationFn: async (data: Partial<Lead>) => { const res = await apiRequest("POST", "/api/leads", data); return res.json(); },
     onSuccess: () => { refetch(); toast({ title: "Lead added" }); setShowForm(false); setEditingLead(null); },
+    onError: () => { toast({ title: "Failed to add lead", variant: "destructive" }); },
   });
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...data }: Partial<Lead> & { id: string }) => { const res = await apiRequest("PATCH", `/api/leads/${id}`, data); return res.json(); },
     onSuccess: () => { refetch(); toast({ title: "Lead updated" }); setShowForm(false); setEditingLead(null); },
+    onError: () => { toast({ title: "Failed to update lead", variant: "destructive" }); },
   });
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/leads/${id}`); },
     onSuccess: () => { refetch(); toast({ title: "Lead deleted" }); },
+    onError: () => { toast({ title: "Failed to delete lead", variant: "destructive" }); },
   });
   const convertMutation = useMutation({
     mutationFn: async (lead: Lead) => {
@@ -1012,6 +1015,7 @@ function LeadsTab() {
       await apiRequest("PATCH", `/api/leads/${lead.id}`, { status: "won" });
     },
     onSuccess: () => { refetch(); queryClient.invalidateQueries({ queryKey: ["/api/clients"] }); toast({ title: "Lead converted to client" }); },
+    onError: () => { toast({ title: "Failed to convert lead", variant: "destructive" }); },
   });
 
   const filteredLeads = useMemo(() => leads
@@ -1185,7 +1189,7 @@ function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClos
           </div>
           <div className="space-y-1.5"><Label className="text-xs">Notes</Label><Textarea value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} rows={3} className="resize-none text-sm" placeholder="Details, observations..." /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => onSave(form)} disabled={!form.name && !form.business}><Save className="w-3.5 h-3.5" />{lead ? "Update" : "Add Lead"}</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => onSave(form)} disabled={!form.name || !form.business}><Save className="w-3.5 h-3.5" />{lead ? "Update" : "Add Lead"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -1737,7 +1741,8 @@ function MaterialsTab() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...data }: { id: string } & Partial<MaterialItem>) => { const r = await apiRequest("PATCH", `/api/materials/${id}`, data); return r.json(); },
-    onSuccess: () => { refetch(); },
+    onSuccess: () => { refetch(); toast({ title: "Material updated" }); },
+    onError: () => { toast({ title: "Failed to update material", variant: "destructive" }); },
   });
 
   const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -1779,7 +1784,7 @@ function MaterialsTab() {
               <div className="space-y-2">
                 {catItems.map((item) => (
                   <div key={item.id} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
-                    <Select value={item.status} onValueChange={(v) => { updateMutation.mutate({ id: item.id, status: v }); toast({ title: `Status: ${statusConfig[v]?.label}` }); }}>
+                    <Select value={item.status} onValueChange={(v) => { updateMutation.mutate({ id: item.id, status: v }); }}>
                       <SelectTrigger className={`h-7 w-28 text-[10px] shrink-0 ${statusConfig[item.status]?.bg} ${statusConfig[item.status]?.color}`}><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="not-started">Not Started</SelectItem>
@@ -1902,7 +1907,7 @@ function ClientFormDialog({ open, onClose, onSave, client }: { open: boolean; on
           </div>
           <div className="space-y-1.5"><Label className="text-xs">Notes</Label><Textarea value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} rows={3} className="resize-none text-sm" /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => onSave(form)} disabled={!form.name && !form.business}><Save className="w-3.5 h-3.5" />{client ? "Update" : "Add Client"}</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => onSave(form)} disabled={!form.name || !form.business}><Save className="w-3.5 h-3.5" />{client ? "Update" : "Add Client"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -1917,9 +1922,9 @@ function RevenueTab() {
   const [editingEntry, setEditingEntry] = useState<RevenueEntry | null>(null);
   const { toast } = useToast();
 
-  const createMutation = useMutation({ mutationFn: async (d: Partial<RevenueEntry>) => { const r = await apiRequest("POST", "/api/revenue", d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "Revenue recorded" }); setShowForm(false); setEditingEntry(null); } });
-  const updateMutation = useMutation({ mutationFn: async ({ id, ...d }: Partial<RevenueEntry> & { id: string }) => { const r = await apiRequest("PATCH", `/api/revenue/${id}`, d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "Updated" }); setShowForm(false); setEditingEntry(null); } });
-  const deleteMutation = useMutation({ mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/revenue/${id}`); }, onSuccess: () => { refetch(); toast({ title: "Deleted" }); } });
+  const createMutation = useMutation({ mutationFn: async (d: Partial<RevenueEntry>) => { const r = await apiRequest("POST", "/api/revenue", d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "Revenue recorded" }); setShowForm(false); setEditingEntry(null); }, onError: () => { toast({ title: "Failed to record revenue", variant: "destructive" }); } });
+  const updateMutation = useMutation({ mutationFn: async ({ id, ...d }: Partial<RevenueEntry> & { id: string }) => { const r = await apiRequest("PATCH", `/api/revenue/${id}`, d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "Updated" }); setShowForm(false); setEditingEntry(null); }, onError: () => { toast({ title: "Failed to update", variant: "destructive" }); } });
+  const deleteMutation = useMutation({ mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/revenue/${id}`); }, onSuccess: () => { refetch(); toast({ title: "Deleted" }); }, onError: () => { toast({ title: "Failed to delete", variant: "destructive" }); } });
   const handleSave = (form: Partial<RevenueEntry>) => { if (editingEntry) updateMutation.mutate({ ...form, id: editingEntry.id } as RevenueEntry & { id: string }); else createMutation.mutate(form); };
 
   const now = new Date();
@@ -1983,10 +1988,10 @@ function TasksTab() {
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("pending");
   const { toast } = useToast();
 
-  const createMutation = useMutation({ mutationFn: async (d: Partial<Task>) => { const r = await apiRequest("POST", "/api/tasks", d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "Task added" }); setShowForm(false); setEditingTask(null); } });
-  const updateMutation = useMutation({ mutationFn: async ({ id, ...d }: Partial<Task> & { id: string }) => { const r = await apiRequest("PATCH", `/api/tasks/${id}`, d); return r.json(); }, onSuccess: () => { refetch(); } });
-  const deleteMutation = useMutation({ mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/tasks/${id}`); }, onSuccess: () => { refetch(); } });
-  const handleSave = (form: Partial<Task>) => { if (editingTask) { updateMutation.mutate({ ...form, id: editingTask.id } as Task & { id: string }); setShowForm(false); setEditingTask(null); toast({ title: "Updated" }); } else createMutation.mutate(form); };
+  const createMutation = useMutation({ mutationFn: async (d: Partial<Task>) => { const r = await apiRequest("POST", "/api/tasks", d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "Task added" }); setShowForm(false); setEditingTask(null); }, onError: () => { toast({ title: "Failed to add task", variant: "destructive" }); } });
+  const updateMutation = useMutation({ mutationFn: async ({ id, ...d }: Partial<Task> & { id: string }) => { const r = await apiRequest("PATCH", `/api/tasks/${id}`, d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "Task updated" }); }, onError: () => { toast({ title: "Failed to update task", variant: "destructive" }); } });
+  const deleteMutation = useMutation({ mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/tasks/${id}`); }, onSuccess: () => { refetch(); toast({ title: "Task deleted" }); }, onError: () => { toast({ title: "Failed to delete task", variant: "destructive" }); } });
+  const handleSave = (form: Partial<Task>) => { if (editingTask) { updateMutation.mutate({ ...form, id: editingTask.id } as Task & { id: string }); setShowForm(false); setEditingTask(null); } else createMutation.mutate(form); };
 
   const filtered = useMemo(() => tasks.filter((t) => filter === "all" || (filter === "pending" ? !t.completed : t.completed)).sort((a, b) => {
     if (a.completed !== b.completed) return a.completed ? 1 : -1;
@@ -2051,8 +2056,8 @@ function FilesTab() {
   const [filterCat, setFilterCat] = useState("all");
   const { toast } = useToast();
 
-  const createMutation = useMutation({ mutationFn: async (d: Partial<AdminFile>) => { const r = await apiRequest("POST", "/api/files", d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "File added" }); setShowForm(false); } });
-  const deleteMutation = useMutation({ mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/files/${id}`); }, onSuccess: () => { refetch(); toast({ title: "File deleted" }); } });
+  const createMutation = useMutation({ mutationFn: async (d: Partial<AdminFile>) => { const r = await apiRequest("POST", "/api/files", d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "File added" }); setShowForm(false); }, onError: () => { toast({ title: "Failed to add file", variant: "destructive" }); } });
+  const deleteMutation = useMutation({ mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/files/${id}`); }, onSuccess: () => { refetch(); toast({ title: "File deleted" }); }, onError: () => { toast({ title: "Failed to delete file", variant: "destructive" }); } });
 
   const categories = ["all", "contracts", "invoices", "marketing", "client-assets", "lead-magnets", "scripts", "general"];
   const typeIcons: Record<string, React.ElementType> = { document: FileText, image: File, video: Video, spreadsheet: FileText, other: File };
@@ -2240,11 +2245,13 @@ function ResourcesManagerTab() {
   const updateMut = useMutation({
     mutationFn: ({ id, ...data }: Partial<AdminResource> & { id: string }) => apiRequest("PATCH", `/api/resources/${id}`, data),
     onSuccess: () => { refetch(); setShowDialog(false); setEditingResource(null); toast({ title: "Resource updated" }); },
+    onError: () => { toast({ title: "Failed to update resource", variant: "destructive" }); },
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/resources/${id}`),
     onSuccess: () => { refetch(); toast({ title: "Resource deleted" }); },
+    onError: () => { toast({ title: "Failed to delete resource", variant: "destructive" }); },
   });
 
   const reseedMut = useMutation({
@@ -2478,14 +2485,17 @@ function TeamTab() {
   const createMemberMutation = useMutation({
     mutationFn: async (data: any) => { const r = await apiRequest("POST", "/api/team-members", data); return r.json(); },
     onSuccess: () => { refetchTeam(); toast({ title: "Team member added" }); setShowMemberForm(false); setMemberForm({ name: "", role: "", email: "", phone: "", dailyInvolvement: "full" }); },
+    onError: () => { toast({ title: "Failed to add team member", variant: "destructive" }); },
   });
   const updateMemberMutation = useMutation({
     mutationFn: async ({ id, ...data }: any) => { const r = await apiRequest("PATCH", `/api/team-members/${id}`, data); return r.json(); },
-    onSuccess: () => { refetchTeam(); setEditingMember(null); toast({ title: "Updated" }); },
+    onSuccess: () => { refetchTeam(); setEditingMember(null); toast({ title: "Team member updated" }); },
+    onError: () => { toast({ title: "Failed to update team member", variant: "destructive" }); },
   });
   const deleteMemberMutation = useMutation({
     mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/team-members/${id}`); },
-    onSuccess: () => { refetchTeam(); },
+    onSuccess: () => { refetchTeam(); toast({ title: "Team member removed" }); },
+    onError: () => { toast({ title: "Failed to remove team member", variant: "destructive" }); },
   });
   const saveBizMutation = useMutation({
     mutationFn: async (data: Partial<BusinessInfoData>) => { const r = await apiRequest("PATCH", "/api/business-info", data); return r.json(); },
@@ -2581,10 +2591,13 @@ function TeamTab() {
                     <p className="text-[10px] text-muted-foreground">{c.package} — {c.maintenance !== "none" ? c.maintenance : "no maintenance"}{assignedMember ? ` • ${assignedMember.name}` : ""}</p>
                   </div>
                   <Select value={assignedId || "unassigned"} onValueChange={async (v) => {
-                    const cleanNotes = (c.notes || "").replace(/\[ASSIGNED:[^\]]+\]\s*/g, "");
-                    const newNotes = v !== "unassigned" ? `[ASSIGNED:${v}] ${cleanNotes}` : cleanNotes;
-                    await apiRequest("PATCH", `/api/clients/${c.id}`, { notes: newNotes });
-                    queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+                    try {
+                      const cleanNotes = (c.notes || "").replace(/\[ASSIGNED:[^\]]+\]\s*/g, "");
+                      const newNotes = v !== "unassigned" ? `[ASSIGNED:${v}] ${cleanNotes}` : cleanNotes;
+                      await apiRequest("PATCH", `/api/clients/${c.id}`, { notes: newNotes });
+                      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+                      toast({ title: "Assignment updated" });
+                    } catch { toast({ title: "Failed to assign", variant: "destructive" }); }
                   }}>
                     <SelectTrigger className="w-[140px] h-7 text-xs"><SelectValue placeholder="Assign..." /></SelectTrigger>
                     <SelectContent>
@@ -2666,16 +2679,19 @@ function ScheduleTab() {
   const createMutation = useMutation({
     mutationFn: async (data: any) => { const r = await apiRequest("POST", "/api/schedule", data); return r.json(); },
     onSuccess: () => { refetchSchedule(); toast({ title: "Scheduled" }); setShowForm(false); setForm({ title: "", description: "", date: today(), time: "09:00", duration: 30, assigneeId: "", priority: "medium", category: "general" }); },
+    onError: () => { toast({ title: "Failed to create schedule item", variant: "destructive" }); },
   });
 
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => { const r = await apiRequest("PATCH", `/api/schedule/${id}`, { status }); return r.json(); },
     onSuccess: () => refetchSchedule(),
+    onError: () => { toast({ title: "Failed to update status", variant: "destructive" }); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/schedule/${id}`); },
-    onSuccess: () => refetchSchedule(),
+    onSuccess: () => { refetchSchedule(); toast({ title: "Schedule item deleted" }); },
+    onError: () => { toast({ title: "Failed to delete", variant: "destructive" }); },
   });
 
   const [aiLoading, setAiLoading] = useState(false);
@@ -3501,7 +3517,7 @@ function AiOpsTab() {
                     const member = team.find(m => m.id === item.assigneeId);
                     return (
                       <div key={item.id} className={`flex items-center gap-2 p-1.5 rounded text-xs ${item.status === "completed" ? "opacity-50 line-through" : ""}`}>
-                        <Checkbox checked={item.status === "completed"} onCheckedChange={async (v) => { await apiRequest("PATCH", `/api/schedule/${item.id}`, { status: v ? "completed" : "pending" }); refetchSchedule(); }} />
+                        <Checkbox checked={item.status === "completed"} onCheckedChange={async (v) => { try { await apiRequest("PATCH", `/api/schedule/${item.id}`, { status: v ? "completed" : "pending" }); refetchSchedule(); } catch { /* silent */ } }} />
                         <span className="flex-1">{item.title}</span>
                         {member && <span className="text-[10px] text-muted-foreground">{member.name}</span>}
                       </div>
