@@ -3159,14 +3159,26 @@ function ProspectorTab() {
       return r.json();
     },
     onSuccess: (data) => {
+      // Handle various response states
+      if (data.noApiKey) {
+        toast({ title: "No API key configured", description: "Use 'Open in Google' to search manually, then paste URLs into URL Scanner.", variant: "destructive" });
+        return;
+      }
+      if (data.aiFailed) {
+        toast({ title: "Search unavailable", description: data.message || "Use 'Open in Google' to search manually.", variant: "destructive" });
+        return;
+      }
+      if (data.error && data.message) {
+        toast({ title: "Search issue", description: data.message, variant: "destructive" });
+      }
       if (data.aiGenerated) {
-        toast({ title: "Google blocked — AI generated leads instead", description: "Results are AI-suggested prospects based on your search criteria" });
+        toast({ title: "AI-generated prospects", description: "Google was blocked. Results are AI-suggested based on your search criteria." });
       }
       const newProspects = (data.results || []).map((p: Prospect) => ({ ...p, _selected: true }));
       setProspects(prev => [...prev, ...newProspects]);
       setDorkUrls(data.urls || []);
       if (newProspects.length > 0) toast({ title: `Found ${newProspects.length} prospect(s)` });
-      else if (!data.aiGenerated) toast({ title: "No results found", description: "Try a different dork query or location" });
+      else if (!data.aiGenerated && !data.error) toast({ title: "No results found", description: "Try a different dork query or location" });
     },
     onError: (err: Error) => { toast({ title: "Search failed", description: err.message.replace(/^\d+:\s*/, ""), variant: "destructive" }); },
   });
