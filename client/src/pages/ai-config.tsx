@@ -32,6 +32,7 @@ import { useState, useEffect, useMemo } from "react";
 import DealsTab from "./admin/DealsTab";
 import ForecastTab from "./admin/ForecastTab";
 import UsersTab from "./admin/UsersTab";
+import AutopilotTab from "./admin/AutopilotTab";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -609,6 +610,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       { value: "revenue", icon: DollarSign, label: "Revenue" },
     ]},
     { label: "AI & TOOLS", tabs: [
+      { value: "autopilot", icon: Zap, label: "Autopilot" },
       { value: "ai-ops", icon: Sparkles, label: "AI Ops" },
       { value: "ai", icon: Bot, label: "AI Chat" },
     ]},
@@ -733,6 +735,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsContent value="user-mgmt"><UsersTab /></TabsContent>
               <TabsContent value="schedule"><ScheduleTab /></TabsContent>
               <TabsContent value="prospector"><ProspectorTab /></TabsContent>
+              <TabsContent value="autopilot"><AutopilotTab /></TabsContent>
               <TabsContent value="ai-ops"><AiOpsTab /></TabsContent>
               <TabsContent value="activity"><ActivityTab /></TabsContent>
               <TabsContent value="ai"><AiSettingsTab /></TabsContent>

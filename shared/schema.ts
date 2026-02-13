@@ -417,6 +417,50 @@ export const leadActivities = pgTable("lead_activities", {
   createdAt: text("created_at").notNull(),
 });
 
+// ─── AI Autopilot Config (singleton) ─────────────────────────────────
+
+export const autopilotConfig = pgTable("autopilot_config", {
+  id: text("id").primaryKey().default("default"),
+  enabled: boolean("enabled").notNull().default(false),
+  // Prospecting
+  autoProspectEnabled: boolean("auto_prospect_enabled").notNull().default(false),
+  prospectLocations: text("prospect_locations").notNull().default("Honolulu, Hawaii"),
+  prospectVerticals: text("prospect_verticals").notNull().default("restaurant,retail,salon"), // comma-separated
+  maxProspectsPerRun: integer("max_prospects_per_run").notNull().default(10),
+  // Outreach
+  autoOutreachEnabled: boolean("auto_outreach_enabled").notNull().default(false),
+  outreachDelay: integer("outreach_delay_hours").notNull().default(2), // hours after lead created
+  maxOutreachPerDay: integer("max_outreach_per_day").notNull().default(15),
+  // Follow-up
+  autoFollowUpEnabled: boolean("auto_follow_up_enabled").notNull().default(false),
+  followUpAfterDays: integer("follow_up_after_days").notNull().default(3),
+  maxFollowUpsPerLead: integer("max_follow_ups_per_lead").notNull().default(3),
+  // Enrichment
+  autoEnrichEnabled: boolean("auto_enrich_enabled").notNull().default(true),
+  // Stats
+  lastRunAt: text("last_run_at").notNull().default(""),
+  totalProspected: integer("total_prospected").notNull().default(0),
+  totalEmailed: integer("total_emailed").notNull().default(0),
+  totalFollowUps: integer("total_follow_ups").notNull().default(0),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// ─── Outreach Queue (pending AI-generated emails) ────────────────────
+
+export const outreachQueue = pgTable("outreach_queue", {
+  id: text("id").primaryKey(),
+  leadId: text("lead_id").notNull(),
+  type: text("type").notNull().default("initial"), // initial, follow-up-1, follow-up-2, follow-up-3
+  status: text("status").notNull().default("pending"), // pending, generating, ready, sent, failed, skipped
+  subject: text("subject").notNull().default(""),
+  body: text("body").notNull().default(""),
+  htmlBody: text("html_body").notNull().default(""),
+  scheduledFor: text("scheduled_for").notNull(),
+  sentAt: text("sent_at").notNull().default(""),
+  error: text("error").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+});
+
 // ─── Zod Schemas & Types ─────────────────────────────────────────────
 
 export const insertContactLeadSchema = createInsertSchema(contactLeads).omit({
