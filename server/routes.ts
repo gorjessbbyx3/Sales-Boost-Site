@@ -9,6 +9,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import rateLimit from "express-rate-limit";
 import { sendEmail, sendContactFormConfirmation, sendOutreachEmail, generateOutreachEmail, generateCallScript, handleInboundEmail } from "./email";
+import { startAutopilot, stopAutopilot, runAutopilot, generateAIEmail, autoEnrichLead } from "./autopilot";
 
 /*
  * Anthropic integration - blueprint:javascript_anthropic
@@ -2922,6 +2923,199 @@ Return ONLY valid JSON, no other text.`,
     if (deleted) logActivity("User Deleted", deleted.displayName, "auth");
     res.json({ success: true });
   });
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ─── AUTOPILOT: Config, Queue, Controls ─────────────────────────────
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  // Get autopilot config
+  app.get("/api/autopilot/config", requireAdminSession, async (_req, res) => {
+    const [cfg] = await db.select().from(schema.autopilotConfig).where(eq(schema.autopilotConfig.id, "default"));
+    if (!cfg) {
+      // Create default config
+      const now = new Date().toISOString();
+      const [created] = await db.insert(schema.autopilotConfig).values({
+        id: "default",
+        enabled: false,
+        autoProspectEnabled: false,
+        prospectLocations: "Honolulu, Hawaii",
+        prospectVerticals: "restaurant,retail,salon",
+        maxProspectsPerRun: 10,
+        autoOutreachEnabled: false,
+        outreachDelay: 2,
+        maxOutreachPerDay: 15,
+        autoFollowUpEnabled: false,
+        followUpAfterDays: 3,
+        maxFollowUpsPerLead: 3,
+        autoEnrichEnabled: true,
+        lastRunAt: "",
+        totalProspected: 0,
+        totalEmailed: 0,
+        totalFollowUps: 0,
+        updatedAt: now,
+      }).returning();
+      return res.json(created);
+    }
+    res.json(cfg);
+  });
+
+  // Update autopilot config
+  app.patch("/api/autopilot/config", requireAdminSession, async (req, res) => {
+    const body = { ...req.body, updatedAt: new Date().toISOString() };
+    const updateData = pickColumns(schema.autopilotConfig, body);
+    const [existing] = await db.select().from(schema.autopilotConfig).where(eq(schema.autopilotConfig.id, "default"));
+    if (!existing) {
+      // Create with provided values
+      const now = new Date().toISOString();
+      const [created] = await db.insert(schema.autopilotConfig).values({
+        id: "default",
+        ...body,
+        updatedAt: now,
+      }).returning();
+      return res.json(created);
+    }
+    const [updated] = await db.update(schema.autopilotConfig).set(updateData).where(eq(schema.autopilotConfig.id, "default")).returning();
+
+    // Start/stop autopilot based on enabled state
+    if (updated.enabled) startAutopilot();
+    else stopAutopilot();
+
+    logActivity("Autopilot Updated", `Enabled: ${updated.enabled}`, "integration");
+    res.json(updated);
+  });
+
+  // Toggle autopilot on/off
+  app.post("/api/autopilot/toggle", requireAdminSession, async (_req, res) => {
+    const [cfg] = await db.select().from(schema.autopilotConfig).where(eq(schema.autopilotConfig.id, "default"));
+    const newEnabled = !cfg?.enabled;
+    const [updated] = await db.update(schema.autopilotConfig)
+      .set({ enabled: newEnabled, updatedAt: new Date().toISOString() })
+      .where(eq(schema.autopilotConfig.id, "default")).returning();
+    if (newEnabled) startAutopilot();
+    else stopAutopilot();
+    logActivity("Autopilot Toggled", newEnabled ? "ON" : "OFF", "integration");
+    res.json(updated);
+  });
+
+  // Force run autopilot now
+  app.post("/api/autopilot/run", requireAdminSession, async (_req, res) => {
+    await runAutopilot();
+    const [cfg] = await db.select().from(schema.autopilotConfig).where(eq(schema.autopilotConfig.id, "default"));
+    res.json({ success: true, config: cfg });
+  });
+
+  // Get outreach queue
+  app.get("/api/autopilot/queue", requireAdminSession, async (_req, res) => {
+    const queue = await db.select().from(schema.outreachQueue).orderBy(desc(schema.outreachQueue.createdAt)).limit(100);
+    // Enrich with lead names
+    const leadIds = Array.from(new Set(queue.map(q => q.leadId)));
+    const leads = leadIds.length > 0
+      ? await db.select({ id: schema.leads.id, name: schema.leads.name, business: schema.leads.business, email: schema.leads.email })
+          .from(schema.leads)
+      : [];
+    const leadMap = Object.fromEntries(leads.map(l => [l.id, l]));
+    const enriched = queue.map(q => ({
+      ...q,
+      leadName: leadMap[q.leadId]?.name || "",
+      leadBusiness: leadMap[q.leadId]?.business || "",
+      leadEmail: leadMap[q.leadId]?.email || "",
+    }));
+    res.json(enriched);
+  });
+
+  // Preview / regenerate a queue item's email
+  app.post("/api/autopilot/queue/:id/regenerate", requireAdminSession, async (req, res) => {
+    const [item] = await db.select().from(schema.outreachQueue).where(eq(schema.outreachQueue.id, req.params.id as string));
+    if (!item) return res.status(404).json({ error: "Not found" });
+    if (item.status === "sent") return res.status(400).json({ error: "Already sent" });
+
+    const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, item.leadId));
+    if (!lead) return res.status(404).json({ error: "Lead not found" });
+
+    const email = await generateAIEmail({
+      name: lead.name, business: lead.business, email: lead.email,
+      vertical: lead.vertical, currentProcessor: lead.currentProcessor,
+      monthlyVolume: lead.monthlyVolume, painPoints: lead.painPoints, notes: lead.notes,
+    }, item.type as "initial" | "follow-up-1" | "follow-up-2" | "follow-up-3");
+
+    const [updated] = await db.update(schema.outreachQueue)
+      .set({ status: "ready", subject: email.subject, body: email.body, htmlBody: email.html })
+      .where(eq(schema.outreachQueue.id, item.id)).returning();
+    res.json(updated);
+  });
+
+  // Approve and send a queue item immediately
+  app.post("/api/autopilot/queue/:id/send", requireAdminSession, async (req, res) => {
+    const [item] = await db.select().from(schema.outreachQueue).where(eq(schema.outreachQueue.id, req.params.id as string));
+    if (!item) return res.status(404).json({ error: "Not found" });
+    if (item.status === "sent") return res.status(400).json({ error: "Already sent" });
+    if (!item.subject || !item.body) return res.status(400).json({ error: "Email not generated yet" });
+
+    const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, item.leadId));
+    if (!lead?.email) return res.status(400).json({ error: "No email on lead" });
+
+    const result = await sendEmail({
+      to: lead.email, subject: item.subject, html: item.htmlBody || item.body,
+      text: item.body, leadId: lead.id, source: "outreach", contactName: lead.name,
+    });
+
+    if (result.success) {
+      await db.update(schema.outreachQueue)
+        .set({ status: "sent", sentAt: new Date().toISOString() })
+        .where(eq(schema.outreachQueue.id, item.id));
+      if (lead.status === "new") {
+        await db.update(schema.leads).set({ status: "contacted", updatedAt: new Date().toISOString() }).where(eq(schema.leads.id, lead.id));
+      }
+      logActivity("Email Sent (Autopilot)", `${item.type} → ${lead.email}`, "lead");
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ error: result.error || "Send failed" });
+    }
+  });
+
+  // Skip/cancel a queue item
+  app.post("/api/autopilot/queue/:id/skip", requireAdminSession, async (req, res) => {
+    await db.update(schema.outreachQueue)
+      .set({ status: "skipped" })
+      .where(eq(schema.outreachQueue.id, req.params.id as string));
+    res.json({ success: true });
+  });
+
+  // Delete queue items
+  app.delete("/api/autopilot/queue/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.outreachQueue).where(eq(schema.outreachQueue.id, req.params.id as string));
+    res.json({ success: true });
+  });
+
+  // Auto-enrich a specific lead
+  app.post("/api/leads/:id/enrich", requireAdminSession, async (req, res) => {
+    await autoEnrichLead(req.params.id as string);
+    const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, req.params.id as string));
+    res.json(lead);
+  });
+
+  // Generate AI email for a lead (one-off, not queued)
+  app.post("/api/leads/:id/generate-email", requireAdminSession, async (req, res) => {
+    const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, req.params.id as string));
+    if (!lead) return res.status(404).json({ error: "Lead not found" });
+    const type = req.body.type || "initial";
+    const email = await generateAIEmail({
+      name: lead.name, business: lead.business, email: lead.email,
+      vertical: lead.vertical, currentProcessor: lead.currentProcessor,
+      monthlyVolume: lead.monthlyVolume, painPoints: lead.painPoints, notes: lead.notes,
+    }, type);
+    res.json(email);
+  });
+
+  // Start autopilot if enabled on server boot
+  (async () => {
+    try {
+      const [cfg] = await db.select().from(schema.autopilotConfig).where(eq(schema.autopilotConfig.id, "default"));
+      if (cfg?.enabled) startAutopilot();
+    } catch {
+      // Table might not exist yet
+    }
+  })();
 
   return httpServer;
 }
