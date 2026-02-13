@@ -75,6 +75,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serve uploaded files (resources, etc.)
+app.use("/uploads", express.static(path.resolve(process.cwd(), "public", "uploads")));
+
 (async () => {
   await registerRoutes(httpServer, app);
 

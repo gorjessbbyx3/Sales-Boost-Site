@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { useTheme } from "@/hooks/use-theme";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import DealsTab from "./admin/DealsTab";
 import ForecastTab from "./admin/ForecastTab";
 import UsersTab from "./admin/UsersTab";
@@ -2446,12 +2446,42 @@ function ResourcesManagerTab() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingResource, setEditingResource] = useState<AdminResource | null>(null);
   const [filterCat, setFilterCat] = useState("all");
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState("classroom");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ title: "", description: "", category: "classroom", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: 1 });
 
-  const createMut = useMutation({
-    mutationFn: (data: typeof form) => apiRequest("POST", "/api/resources", data),
-    onSuccess: () => { refetch(); setShowDialog(false); toast({ title: "Resource added" }); },
-  });
+  const uploadFiles = async (files: FileList | File[]) => {
+    setUploading(true);
+    let uploaded = 0;
+    for (const file of Array.from(files)) {
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("category", uploadCategory);
+        fd.append("published", "true");
+        const resp = await fetch("/api/resources/upload", { method: "POST", body: fd, credentials: "include" });
+        if (!resp.ok) { const e = await resp.json().catch(() => ({ error: "Upload failed" })); throw new Error(e.error); }
+        uploaded++;
+      } catch (err: any) {
+        toast({ title: `Failed to upload ${file.name}`, description: err.message, variant: "destructive" });
+      }
+    }
+    setUploading(false);
+    if (uploaded > 0) {
+      refetch();
+      toast({ title: `${uploaded} file${uploaded > 1 ? "s" : ""} uploaded` });
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation(); setIsDragging(false);
+    if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
+  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
 
   const updateMut = useMutation({
     mutationFn: ({ id, ...data }: Partial<AdminResource> & { id: string }) => apiRequest("PATCH", `/api/resources/${id}`, data),
@@ -2465,17 +2495,6 @@ function ResourcesManagerTab() {
     onError: () => { toast({ title: "Failed to delete resource", variant: "destructive" }); },
   });
 
-  const reseedMut = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/resources/reseed"),
-    onSuccess: () => { refetch(); toast({ title: "Resources re-seeded with latest Drive files" }); },
-  });
-
-  const openCreate = () => {
-    setEditingResource(null);
-    setForm({ title: "", description: "", category: "classroom", type: "doc", url: "", thumbnailUrl: "", featured: false, published: true, order: resources.length + 1 });
-    setShowDialog(true);
-  };
-
   const openEdit = (r: AdminResource) => {
     setEditingResource(r);
     setForm({ title: r.title, description: r.description, category: r.category, type: r.type, url: r.url, thumbnailUrl: r.thumbnailUrl, featured: r.featured, published: r.published, order: r.order });
@@ -2485,8 +2504,6 @@ function ResourcesManagerTab() {
   const handleSave = () => {
     if (editingResource) {
       updateMut.mutate({ id: editingResource.id, ...form });
-    } else {
-      createMut.mutate(form);
     }
   };
 
@@ -2502,7 +2519,7 @@ function ResourcesManagerTab() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-lg font-bold flex items-center gap-2"><Library className="w-5 h-5 text-primary" />Resources Manager</h2>
-          <p className="text-xs text-muted-foreground mt-1">Manage the public resources page — {resources.length} total, {resources.filter((r) => r.published).length} published</p>
+          <p className="text-xs text-muted-foreground mt-1">Upload files directly — {resources.length} total, {resources.filter((r) => r.published).length} published</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={filterCat} onValueChange={setFilterCat}>
@@ -2512,13 +2529,51 @@ function ResourcesManagerTab() {
               {Object.entries(RESOURCE_CATEGORIES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" onClick={() => { if (confirm("This will reset all resources to defaults with the latest Drive files. Continue?")) reseedMut.mutate(); }} disabled={reseedMut.isPending}>
-            <RefreshCw className={`w-3.5 h-3.5 ${reseedMut.isPending ? "animate-spin" : ""}`} />{reseedMut.isPending ? "Re-seeding..." : "Re-seed"}
-          </Button>
-          <Button size="sm" onClick={openCreate}><Plus className="w-3.5 h-3.5" />Add Resource</Button>
         </div>
       </div>
 
+      {/* Drag-and-drop upload zone */}
+      <Card
+        className={`border-2 border-dashed transition-all cursor-pointer ${isDragging ? "border-primary bg-primary/5" : "border-border/50 hover:border-primary/30"}`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <CardContent className="py-8 text-center">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.mp4,.webm,.zip"
+            onChange={(e) => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ""; }}
+          />
+          {uploading ? (
+            <>
+              <RefreshCw className="w-10 h-10 text-primary mx-auto mb-3 animate-spin" />
+              <p className="text-sm font-medium">Uploading files...</p>
+            </>
+          ) : (
+            <>
+              <Upload className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+              <p className="text-sm font-medium">{isDragging ? "Drop files here" : "Drag & drop files or click to browse"}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">PDF, DOC, XLS, PPT, images, videos, ZIP — up to 50MB each</p>
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <Label className="text-[10px] text-muted-foreground">Upload to:</Label>
+                <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                  <SelectTrigger className="w-[180px] h-7 text-[10px]" onClick={(e) => e.stopPropagation()}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(RESOURCE_CATEGORIES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Resource list by category */}
       {grouped.map((group) => (
         <Card key={group.id} className="overflow-visible">
           <CardHeader className="py-3 px-4">
@@ -2544,7 +2599,7 @@ function ResourcesManagerTab() {
                       <div>
                         <p className="text-sm font-medium truncate max-w-xs">{r.title}</p>
                         <p className="text-[10px] text-muted-foreground truncate max-w-xs">{r.description}</p>
-                        {r.url && <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-0.5 mt-0.5"><ExternalLink className="w-2.5 h-2.5" />Link</a>}
+                        {r.url && <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-0.5 mt-0.5"><ExternalLink className="w-2.5 h-2.5" />{r.url.startsWith("/uploads") ? "View file" : "Link"}</a>}
                       </div>
                     </TableCell>
                     <TableCell><Badge variant="outline" className="text-[10px]">{RESOURCE_TYPES[r.type] || r.type}</Badge></TableCell>
@@ -2555,7 +2610,11 @@ function ResourcesManagerTab() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {r.featured && <Badge variant="outline" className="text-[10px] text-amber-400 bg-amber-400/10 border-amber-400/20"><Star className="w-2.5 h-2.5" /></Badge>}
+                      {r.featured ? (
+                        <Badge variant="outline" className="text-[10px] text-amber-400 bg-amber-400/10 border-amber-400/20 cursor-pointer" onClick={() => updateMut.mutate({ id: r.id, featured: false })}><Star className="w-2.5 h-2.5" /></Badge>
+                      ) : (
+                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-30 hover:opacity-100" onClick={() => updateMut.mutate({ id: r.id, featured: true })}><Star className="w-2.5 h-2.5" /></Button>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center gap-1 justify-end">
@@ -2574,16 +2633,16 @@ function ResourcesManagerTab() {
       {filtered.length === 0 && (
         <Card className="border-dashed"><CardContent className="p-8 text-center">
           <Library className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No resources in this category yet.</p>
-          <Button size="sm" variant="outline" className="mt-3" onClick={openCreate}><Plus className="w-3.5 h-3.5" />Add Resource</Button>
+          <p className="text-sm text-muted-foreground">No resources yet. Upload some files above to get started.</p>
         </CardContent></Card>
       )}
 
+      {/* Edit Resource Dialog */}
       <Dialog open={showDialog} onOpenChange={(o) => { setShowDialog(o); if (!o) setEditingResource(null); }}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingResource ? "Edit Resource" : "Add Resource"}</DialogTitle>
-            <DialogDescription>Fill in the resource details below.</DialogDescription>
+            <DialogTitle>Edit Resource</DialogTitle>
+            <DialogDescription>Update the resource details below.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -2611,14 +2670,6 @@ function ResourcesManagerTab() {
               </div>
             </div>
             <div>
-              <Label className="text-xs">Resource URL</Label>
-              <Input value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://..." />
-            </div>
-            <div>
-              <Label className="text-xs">Thumbnail URL (optional)</Label>
-              <Input value={form.thumbnailUrl} onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })} placeholder="https://..." />
-            </div>
-            <div>
               <Label className="text-xs">Display Order</Label>
               <Input type="number" value={form.order} onChange={(e) => setForm({ ...form, order: parseInt(e.target.value) || 1 })} min={1} />
             </div>
@@ -2635,7 +2686,7 @@ function ResourcesManagerTab() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!form.title}>{editingResource ? "Update" : "Add"} Resource</Button>
+            <Button onClick={handleSave} disabled={!form.title}>Update Resource</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
