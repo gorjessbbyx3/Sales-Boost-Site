@@ -292,6 +292,74 @@ export const pinnedPitches = pgTable("pinned_pitches", {
   pinnedAt: text("pinned_at").notNull(),
 });
 
+// ─── Email Threads ──────────────────────────────────────────────────
+
+export const emailThreads = pgTable("email_threads", {
+  id: text("id").primaryKey(),
+  subject: text("subject").notNull().default(""),
+  leadId: text("lead_id").notNull().default(""),
+  contactEmail: text("contact_email").notNull().default(""),
+  contactName: text("contact_name").notNull().default(""),
+  source: text("source").notNull().default("direct"), // direct | contact-form | outreach | outreach-reply
+  status: text("status").notNull().default("open"), // open | replied | closed
+  unread: boolean("unread").notNull().default(true),
+  lastMessageAt: text("last_message_at").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+// ─── Email Messages ─────────────────────────────────────────────────
+
+export const emailMessages = pgTable("email_messages", {
+  id: text("id").primaryKey(),
+  threadId: text("thread_id").notNull(),
+  direction: text("direction").notNull().default("inbound"), // inbound | outbound
+  fromEmail: text("from_email").notNull().default(""),
+  fromName: text("from_name").notNull().default(""),
+  toEmail: text("to_email").notNull().default(""),
+  subject: text("subject").notNull().default(""),
+  body: text("body").notNull().default(""),
+  htmlBody: text("html_body").notNull().default(""),
+  resendId: text("resend_id").notNull().default(""), // Resend message ID for tracking
+  status: text("status").notNull().default("sent"), // sent | delivered | opened | bounced | failed
+  sentAt: text("sent_at").notNull(),
+});
+
+// ─── Outreach Templates ─────────────────────────────────────────────
+
+export const outreachTemplates = pgTable("outreach_templates", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().default(""),
+  subject: text("subject").notNull().default(""),
+  body: text("body").notNull().default(""),
+  category: text("category").notNull().default("cold"), // cold | follow-up | confirmation
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// ─── Call Scripts ────────────────────────────────────────────────────
+
+export const callScripts = pgTable("call_scripts", {
+  id: text("id").primaryKey(),
+  leadId: text("lead_id").notNull(),
+  script: text("script").notNull().default(""),
+  talkingPoints: text("talking_points").notNull().default("[]"), // JSON array
+  objections: text("objections").notNull().default("[]"), // JSON array
+  generatedAt: text("generated_at").notNull(),
+});
+
+// ─── Resend Config (singleton) ──────────────────────────────────────
+
+export const resendConfig = pgTable("resend_config", {
+  id: text("id").primaryKey().default("default"),
+  enabled: boolean("enabled").notNull().default(false),
+  fromEmail: text("from_email").notNull().default("contact@techsavvyhawaii.com"),
+  fromName: text("from_name").notNull().default("TechSavvy Hawaii"),
+  autoConfirmEnabled: boolean("auto_confirm_enabled").notNull().default(true),
+  forwardCopyTo: text("forward_copy_to").notNull().default(""), // forward to personal email
+  updatedAt: text("updated_at").notNull(),
+});
+
 // ─── Zod Schemas & Types ─────────────────────────────────────────────
 
 export const insertContactLeadSchema = createInsertSchema(contactLeads).omit({
@@ -317,3 +385,8 @@ export type InsertAiConfig = z.infer<typeof insertAiConfigSchema>;
 export type UpdateAiConfig = z.infer<typeof updateAiConfigSchema>;
 export type ContactLead = typeof contactLeads.$inferSelect;
 export type InsertContactLead = z.infer<typeof insertContactLeadSchema>;
+export type EmailThread = typeof emailThreads.$inferSelect;
+export type EmailMessage = typeof emailMessages.$inferSelect;
+export type OutreachTemplate = typeof outreachTemplates.$inferSelect;
+export type CallScript = typeof callScripts.$inferSelect;
+export type ResendConfig = typeof resendConfig.$inferSelect;

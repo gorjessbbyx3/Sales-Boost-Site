@@ -8,6 +8,7 @@ import { eq, desc, asc, getTableColumns } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
 import rateLimit from "express-rate-limit";
+import { sendEmail, sendContactFormConfirmation, sendOutreachEmail, generateOutreachEmail, generateCallScript, handleInboundEmail } from "./email";
 
 /*
  * Anthropic integration - blueprint:javascript_anthropic
@@ -376,6 +377,8 @@ export async function registerRoutes(
     const lead = await storage.createContactLead(parsed.data);
     logActivity("New Website Lead", `${parsed.data.businessName} submitted contact form`, "lead");
     sendSlackNotification(`New lead from website: ${parsed.data.businessName} (${parsed.data.contactName}) - ${parsed.data.email}`, "newLead");
+    // Send auto-confirmation email
+    sendContactFormConfirmation(parsed.data.contactName, parsed.data.email, parsed.data.businessName).catch(err => console.error("Auto-confirm failed:", err));
     res.status(201).json(lead);
   });
 
@@ -1297,6 +1300,269 @@ You help manage daily operations, give reminders, make recommendations, and can 
     const [updated] = await db.update(schema.clients).set({ notes: `[ASSIGNED:${assigneeId}] ` }).where(eq(schema.clients.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Client not found" });
     res.json(updated);
+  });
+
+  // ─── Resend Email Config ──────────────────────────────────────────
+
+  app.get("/api/email/config", requireAdminSession, async (_req, res) => {
+    const [row] = await db.select().from(schema.resendConfig).where(eq(schema.resendConfig.id, "default"));
+    if (!row) {
+      return res.json({
+        enabled: false,
+        fromEmail: "contact@techsavvyhawaii.com",
+        fromName: "TechSavvy Hawaii",
+        autoConfirmEnabled: true,
+        forwardCopyTo: "",
+      });
+    }
+    const { id, ...config } = row;
+    res.json(config);
+  });
+
+  app.patch("/api/email/config", requireAdminSession, async (req, res) => {
+    const updateData = { ...pickColumns(schema.resendConfig, req.body), updatedAt: new Date().toISOString() };
+    const [existing] = await db.select().from(schema.resendConfig).where(eq(schema.resendConfig.id, "default"));
+    let row;
+    if (existing) {
+      [row] = await db.update(schema.resendConfig).set(updateData).where(eq(schema.resendConfig.id, "default")).returning();
+    } else {
+      [row] = await db.insert(schema.resendConfig).values({ id: "default", ...updateData } as any).returning();
+    }
+    const { id, ...config } = row;
+    logActivity("Email Config Updated", `Enabled: ${config.enabled}`, "integration");
+    res.json(config);
+  });
+
+  // ─── Email Threads (Inbox) ────────────────────────────────────────
+
+  app.get("/api/email/threads", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.emailThreads).orderBy(desc(schema.emailThreads.lastMessageAt));
+    res.json(rows);
+  });
+
+  app.get("/api/email/threads/:id", requireAdminSession, async (req, res) => {
+    const [thread] = await db.select().from(schema.emailThreads).where(eq(schema.emailThreads.id, req.params.id as string));
+    if (!thread) return res.status(404).json({ error: "Thread not found" });
+
+    const messages = await db.select().from(schema.emailMessages)
+      .where(eq(schema.emailMessages.threadId, thread.id))
+      .orderBy(asc(schema.emailMessages.sentAt));
+
+    // Mark as read
+    if (thread.unread) {
+      await db.update(schema.emailThreads).set({ unread: false }).where(eq(schema.emailThreads.id, thread.id));
+    }
+
+    res.json({ ...thread, messages });
+  });
+
+  app.patch("/api/email/threads/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.emailThreads, req.body);
+    const [updated] = await db.update(schema.emailThreads).set(updateData).where(eq(schema.emailThreads.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Thread not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/email/threads/:id", requireAdminSession, async (req, res) => {
+    const threadId = req.params.id as string;
+    await db.delete(schema.emailMessages).where(eq(schema.emailMessages.threadId, threadId));
+    await db.delete(schema.emailThreads).where(eq(schema.emailThreads.id, threadId));
+    res.json({ success: true });
+  });
+
+  // ─── Send Email (Reply from Inbox) ────────────────────────────────
+
+  app.post("/api/email/send", requireAdminSession, async (req, res) => {
+    const { to, subject, html, text, threadId, leadId, contactName } = req.body;
+    if (!to || !subject || !html) {
+      return res.status(400).json({ error: "to, subject, and html are required" });
+    }
+    const result = await sendEmail({ to, subject, html, text, threadId, leadId, contactName });
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+    logActivity("Email Sent", `To: ${to} — ${subject}`, "email");
+    res.json(result);
+  });
+
+  // ─── Outreach: Generate & Send ────────────────────────────────────
+
+  app.post("/api/email/outreach/generate", requireAdminSession, async (req, res) => {
+    const { leadId } = req.body;
+    if (!leadId) return res.status(400).json({ error: "leadId required" });
+
+    const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, leadId));
+    if (!lead) return res.status(404).json({ error: "Lead not found" });
+
+    const emailContent = generateOutreachEmail({
+      name: lead.name,
+      business: lead.business,
+      currentProcessor: lead.currentProcessor,
+      monthlyVolume: lead.monthlyVolume,
+      vertical: lead.vertical,
+    });
+
+    res.json(emailContent);
+  });
+
+  app.post("/api/email/outreach/send", requireAdminSession, async (req, res) => {
+    const { leadId, subject, html, text } = req.body;
+    if (!leadId) return res.status(400).json({ error: "leadId required" });
+
+    const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, leadId));
+    if (!lead) return res.status(404).json({ error: "Lead not found" });
+    if (!lead.email) return res.status(400).json({ error: "Lead has no email address" });
+
+    // Use provided content or generate default
+    const content = subject && html
+      ? { subject, html, text }
+      : generateOutreachEmail({
+          name: lead.name,
+          business: lead.business,
+          currentProcessor: lead.currentProcessor,
+          monthlyVolume: lead.monthlyVolume,
+          vertical: lead.vertical,
+        });
+
+    const result = await sendOutreachEmail({
+      lead: {
+        id: lead.id,
+        name: lead.name,
+        email: lead.email,
+        business: lead.business,
+        currentProcessor: lead.currentProcessor,
+        monthlyVolume: lead.monthlyVolume,
+        vertical: lead.vertical,
+      },
+      subject: content.subject,
+      html: content.html,
+      text: content.text,
+    });
+
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+
+    // Update lead status to contacted
+    await db.update(schema.leads).set({
+      status: lead.status === "new" ? "contacted" : lead.status,
+      updatedAt: new Date().toISOString(),
+    }).where(eq(schema.leads.id, leadId));
+
+    logActivity("Outreach Sent", `${lead.business} (${lead.email})`, "email");
+    sendSlackNotification(`Outreach email sent to ${lead.business} (${lead.email})`, "newLead");
+
+    res.json(result);
+  });
+
+  // ─── Call Script Generation ───────────────────────────────────────
+
+  app.post("/api/email/call-script/generate", requireAdminSession, async (req, res) => {
+    const { leadId } = req.body;
+    if (!leadId) return res.status(400).json({ error: "leadId required" });
+
+    const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, leadId));
+    if (!lead) return res.status(404).json({ error: "Lead not found" });
+
+    const result = await generateCallScript({
+      id: lead.id,
+      name: lead.name,
+      business: lead.business,
+      currentProcessor: lead.currentProcessor,
+      monthlyVolume: lead.monthlyVolume,
+      vertical: lead.vertical,
+      painPoints: lead.painPoints,
+    });
+
+    // Fetch the created script
+    const [script] = await db.select().from(schema.callScripts).where(eq(schema.callScripts.id, result.scriptId));
+    res.json({
+      ...script,
+      talkingPoints: JSON.parse(script.talkingPoints || "[]"),
+      objections: JSON.parse(script.objections || "[]"),
+    });
+  });
+
+  app.get("/api/email/call-scripts/:leadId", requireAdminSession, async (req, res) => {
+    const scripts = await db.select().from(schema.callScripts)
+      .where(eq(schema.callScripts.leadId, req.params.leadId as string))
+      .orderBy(desc(schema.callScripts.generatedAt));
+
+    res.json(scripts.map(s => ({
+      ...s,
+      talkingPoints: JSON.parse(s.talkingPoints || "[]"),
+      objections: JSON.parse(s.objections || "[]"),
+    })));
+  });
+
+  // ─── Outreach Templates CRUD ──────────────────────────────────────
+
+  app.get("/api/email/templates", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.outreachTemplates);
+    res.json(rows);
+  });
+
+  app.post("/api/email/templates", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const [template] = await db.insert(schema.outreachTemplates).values({
+      id,
+      name: req.body.name || "",
+      subject: req.body.subject || "",
+      body: req.body.body || "",
+      category: req.body.category || "cold",
+      isDefault: req.body.isDefault || false,
+      createdAt: now,
+      updatedAt: now,
+    }).returning();
+    res.status(201).json(template);
+  });
+
+  app.patch("/api/email/templates/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body, updatedAt: new Date().toISOString() };
+    const updateData = pickColumns(schema.outreachTemplates, body);
+    const [updated] = await db.update(schema.outreachTemplates).set(updateData).where(eq(schema.outreachTemplates.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Template not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/email/templates/:id", requireAdminSession, async (req, res) => {
+    await db.delete(schema.outreachTemplates).where(eq(schema.outreachTemplates.id, req.params.id as string));
+    res.json({ success: true });
+  });
+
+  // ─── Inbound Email Webhook (Resend) ───────────────────────────────
+
+  app.post("/api/email/inbound", async (req: Request, res: Response) => {
+    // Resend sends inbound emails as JSON webhook
+    try {
+      const { from, to, subject, text, html } = req.body;
+      if (!from) {
+        return res.status(400).json({ error: "Invalid webhook payload" });
+      }
+
+      const result = await handleInboundEmail({ from, to: to || "contact@techsavvyhawaii.com", subject: subject || "(no subject)", text: text || "", html: html || "" });
+      logActivity("Email Received", `From: ${from} — ${subject || "(no subject)"}`, "email");
+
+      res.json({ success: true, threadId: result.threadId });
+    } catch (err: any) {
+      console.error("Inbound email webhook error:", err.message);
+      res.status(500).json({ error: "Failed to process inbound email" });
+    }
+  });
+
+  // ─── Email Stats for Dashboard ────────────────────────────────────
+
+  app.get("/api/email/stats", requireAdminSession, async (_req, res) => {
+    const threads = await db.select().from(schema.emailThreads);
+    const unread = threads.filter(t => t.unread).length;
+    const total = threads.length;
+    const outreach = threads.filter(t => t.source === "outreach").length;
+    const replies = threads.filter(t => t.source === "outreach-reply").length;
+    const directInbound = threads.filter(t => t.source === "direct").length;
+    const contactForm = threads.filter(t => t.source === "contact-form").length;
+
+    res.json({ total, unread, outreach, replies, directInbound, contactForm });
   });
 
   return httpServer;
