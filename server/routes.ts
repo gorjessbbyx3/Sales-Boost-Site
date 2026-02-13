@@ -1368,6 +1368,755 @@ You help manage daily operations, give reminders, make recommendations, and can 
     }
   });
 
+  // ─── AI Lead Prospector ─────────────────────────────────────────
+
+  // ── Full Tech Stack Detection Engine ────────────────────────────
+  // Modeled after BuiltWith / Wappalyzer / Apify Tech Stack Detector Pro
+
+  type SigType = "script" | "url" | "text" | "meta" | "header";
+  type TechCategory = "PAYMENTS" | "CMS" | "FRAMEWORK" | "ANALYTICS" | "MARKETING" | "HOSTING" | "CDN" | "CHAT" | "EMAIL" | "INDUSTRY" | "SCHEDULING" | "COMMUNICATIONS";
+
+  interface TechSignature { pattern: string; type: SigType; product?: string }
+  interface TechEntry { name: string; category: TechCategory; signatures: TechSignature[] }
+
+  const TECH_STACK_SIGNATURES: TechEntry[] = [
+    // ── PAYMENTS ─────────────────────────────────────────────────
+    { name: "Square", category: "PAYMENTS", signatures: [
+      { pattern: "js.squareup.com", type: "script", product: "Square Payments SDK" },
+      { pattern: "cdn.squareup.com", type: "script", product: "Square CDN" },
+      { pattern: "squareup.com/v2/paymentform", type: "script", product: "Square Payment Form" },
+      { pattern: "web.squarecdn.com", type: "script", product: "Square Web SDK" },
+      { pattern: "squareup.com/appointments", type: "url", product: "Square Appointments" },
+      { pattern: "square.site", type: "url", product: "Square Online Store" },
+      { pattern: "squareup.com/gift", type: "url", product: "Square Gift Cards" },
+      { pattern: "squareup.com/pay", type: "url", product: "Square Payment Links" },
+      { pattern: "powered by square", type: "text", product: "Square Branding" },
+      { pattern: "book with square", type: "text", product: "Square Appointments" },
+      { pattern: "square-site-verification", type: "meta", product: "Square Verification" },
+    ]},
+    { name: "Clover", category: "PAYMENTS", signatures: [
+      { pattern: "clover.com", type: "url" }, { pattern: "clover.com/pay", type: "url" },
+      { pattern: "powered by clover", type: "text" }, { pattern: "clover-site", type: "meta" },
+    ]},
+    { name: "Toast", category: "PAYMENTS", signatures: [
+      { pattern: "toasttab.com", type: "url" }, { pattern: "order.toasttab.com", type: "url" },
+      { pattern: "powered by toast", type: "text" }, { pattern: "toasttab.com/restaurant", type: "url" },
+    ]},
+    { name: "Stripe", category: "PAYMENTS", signatures: [
+      { pattern: "js.stripe.com", type: "script" }, { pattern: "checkout.stripe.com", type: "url" },
+      { pattern: "stripe.com/v3", type: "script" },
+    ]},
+    { name: "PayPal", category: "PAYMENTS", signatures: [
+      { pattern: "paypal.com/sdk", type: "script" }, { pattern: "paypalobjects.com", type: "script" },
+      { pattern: "paypal.me", type: "url" },
+    ]},
+    { name: "Braintree", category: "PAYMENTS", signatures: [
+      { pattern: "braintreegateway.com", type: "script" }, { pattern: "braintree-api.com", type: "script" },
+    ]},
+    { name: "Adyen", category: "PAYMENTS", signatures: [
+      { pattern: "adyen.com", type: "script" }, { pattern: "checkoutshopper-live.adyen.com", type: "script" },
+    ]},
+    { name: "Klarna", category: "PAYMENTS", signatures: [
+      { pattern: "klarna.com", type: "script" }, { pattern: "x.klarnacdn.net", type: "script" },
+    ]},
+    { name: "Afterpay", category: "PAYMENTS", signatures: [
+      { pattern: "afterpay.com", type: "script" }, { pattern: "static.afterpay.com", type: "script" },
+    ]},
+    { name: "Affirm", category: "PAYMENTS", signatures: [
+      { pattern: "affirm.com", type: "script" }, { pattern: "cdn1.affirm.com", type: "script" },
+    ]},
+
+    // ── CMS & Website Builders ───────────────────────────────────
+    { name: "WordPress", category: "CMS", signatures: [
+      { pattern: "wp-content", type: "url" }, { pattern: "wp-includes", type: "url" },
+      { pattern: "wp-json", type: "url" }, { pattern: "wordpress", type: "meta" },
+    ]},
+    { name: "Shopify", category: "CMS", signatures: [
+      { pattern: "cdn.shopify.com", type: "script" }, { pattern: "myshopify.com", type: "url" },
+      { pattern: "shopify.com", type: "meta" },
+    ]},
+    { name: "Webflow", category: "CMS", signatures: [
+      { pattern: "assets.website-files.com", type: "script" }, { pattern: "webflow.com", type: "url" },
+      { pattern: "wf-", type: "meta" },
+    ]},
+    { name: "Squarespace", category: "CMS", signatures: [
+      { pattern: "squarespace.com", type: "script" }, { pattern: "sqsp.com", type: "url" },
+      { pattern: "squarespace-cdn.com", type: "script" },
+    ]},
+    { name: "Wix", category: "CMS", signatures: [
+      { pattern: "wix.com", type: "script" }, { pattern: "parastorage.com", type: "script" },
+      { pattern: "wixstatic.com", type: "url" },
+    ]},
+    { name: "GoDaddy", category: "CMS", signatures: [
+      { pattern: "godaddy.com", type: "script" }, { pattern: "secureserver.net", type: "url" },
+    ]},
+    { name: "Duda", category: "CMS", signatures: [
+      { pattern: "dudaone.com", type: "url" }, { pattern: "duda.co", type: "script" },
+    ]},
+    { name: "HubSpot CMS", category: "CMS", signatures: [
+      { pattern: "hubspot.com", type: "script" }, { pattern: "hs-scripts.com", type: "script" },
+      { pattern: "hubspot.net", type: "url" },
+    ]},
+    { name: "BigCommerce", category: "CMS", signatures: [
+      { pattern: "bigcommerce.com", type: "script" }, { pattern: "mybigcommerce.com", type: "url" },
+    ]},
+    { name: "Magento", category: "CMS", signatures: [
+      { pattern: "mage/", type: "script" }, { pattern: "magento", type: "meta" },
+    ]},
+    { name: "WooCommerce", category: "CMS", signatures: [
+      { pattern: "woocommerce", type: "url" }, { pattern: "wc-", type: "script" },
+    ]},
+    { name: "Drupal", category: "CMS", signatures: [
+      { pattern: "drupal.js", type: "script" }, { pattern: "drupal", type: "meta" },
+    ]},
+    { name: "Joomla", category: "CMS", signatures: [
+      { pattern: "joomla", type: "meta" }, { pattern: "/media/jui/", type: "url" },
+    ]},
+    { name: "Weebly", category: "CMS", signatures: [
+      { pattern: "weebly.com", type: "script" }, { pattern: "editmysite.com", type: "url" },
+    ]},
+    { name: "Ghost", category: "CMS", signatures: [
+      { pattern: "ghost.io", type: "url" }, { pattern: "ghost-", type: "meta" },
+    ]},
+    { name: "PrestaShop", category: "CMS", signatures: [
+      { pattern: "prestashop", type: "meta" }, { pattern: "presta", type: "script" },
+    ]},
+
+    // ── JavaScript Frameworks ────────────────────────────────────
+    { name: "React", category: "FRAMEWORK", signatures: [
+      { pattern: "__react", type: "script" }, { pattern: "react.production.min", type: "script" },
+      { pattern: "_reactroot", type: "text" }, { pattern: "data-reactroot", type: "text" },
+    ]},
+    { name: "Next.js", category: "FRAMEWORK", signatures: [
+      { pattern: "_next/static", type: "url" }, { pattern: "__next", type: "text" },
+      { pattern: "_next/data", type: "url" },
+    ]},
+    { name: "Vue.js", category: "FRAMEWORK", signatures: [
+      { pattern: "vue.min.js", type: "script" }, { pattern: "vue.runtime", type: "script" },
+      { pattern: "data-v-", type: "text" },
+    ]},
+    { name: "Nuxt.js", category: "FRAMEWORK", signatures: [
+      { pattern: "_nuxt/", type: "url" }, { pattern: "__nuxt", type: "text" },
+    ]},
+    { name: "Angular", category: "FRAMEWORK", signatures: [
+      { pattern: "ng-version", type: "text" }, { pattern: "angular.min.js", type: "script" },
+      { pattern: "ng-app", type: "text" },
+    ]},
+    { name: "Svelte", category: "FRAMEWORK", signatures: [
+      { pattern: "svelte", type: "script" }, { pattern: "__svelte", type: "text" },
+    ]},
+    { name: "Gatsby", category: "FRAMEWORK", signatures: [
+      { pattern: "gatsby", type: "script" }, { pattern: "gatsby-", type: "meta" },
+    ]},
+    { name: "jQuery", category: "FRAMEWORK", signatures: [
+      { pattern: "jquery.min.js", type: "script" }, { pattern: "jquery-", type: "script" },
+      { pattern: "code.jquery.com", type: "script" },
+    ]},
+    { name: "Remix", category: "FRAMEWORK", signatures: [
+      { pattern: "__remix", type: "text" }, { pattern: "remix.run", type: "script" },
+    ]},
+    { name: "Astro", category: "FRAMEWORK", signatures: [
+      { pattern: "astro", type: "meta" }, { pattern: "_astro/", type: "url" },
+    ]},
+
+    // ── Analytics & Tracking ─────────────────────────────────────
+    { name: "Google Analytics", category: "ANALYTICS", signatures: [
+      { pattern: "google-analytics.com", type: "script" }, { pattern: "googletagmanager.com", type: "script" },
+      { pattern: "gtag(", type: "script" }, { pattern: "ga('send'", type: "script" },
+    ]},
+    { name: "Google Tag Manager", category: "ANALYTICS", signatures: [
+      { pattern: "googletagmanager.com/gtm.js", type: "script" }, { pattern: "gtm.start", type: "script" },
+    ]},
+    { name: "Facebook Pixel", category: "ANALYTICS", signatures: [
+      { pattern: "connect.facebook.net", type: "script" }, { pattern: "fbevents.js", type: "script" },
+      { pattern: "fbq(", type: "script" },
+    ]},
+    { name: "Hotjar", category: "ANALYTICS", signatures: [
+      { pattern: "hotjar.com", type: "script" }, { pattern: "static.hotjar.com", type: "script" },
+    ]},
+    { name: "Segment", category: "ANALYTICS", signatures: [
+      { pattern: "cdn.segment.com", type: "script" }, { pattern: "segment.io", type: "script" },
+    ]},
+    { name: "Mixpanel", category: "ANALYTICS", signatures: [
+      { pattern: "mixpanel.com", type: "script" }, { pattern: "cdn.mxpnl.com", type: "script" },
+    ]},
+    { name: "Amplitude", category: "ANALYTICS", signatures: [
+      { pattern: "amplitude.com", type: "script" }, { pattern: "cdn.amplitude.com", type: "script" },
+    ]},
+    { name: "Heap", category: "ANALYTICS", signatures: [
+      { pattern: "heap-analytics.com", type: "script" }, { pattern: "heapanalytics.com", type: "script" },
+    ]},
+    { name: "FullStory", category: "ANALYTICS", signatures: [
+      { pattern: "fullstory.com", type: "script" }, { pattern: "edge.fullstory.com", type: "script" },
+    ]},
+    { name: "PostHog", category: "ANALYTICS", signatures: [
+      { pattern: "posthog.com", type: "script" }, { pattern: "app.posthog.com", type: "script" },
+    ]},
+    { name: "Microsoft Clarity", category: "ANALYTICS", signatures: [
+      { pattern: "clarity.ms", type: "script" },
+    ]},
+    { name: "Plausible", category: "ANALYTICS", signatures: [
+      { pattern: "plausible.io", type: "script" },
+    ]},
+    { name: "Lucky Orange", category: "ANALYTICS", signatures: [
+      { pattern: "luckyorange.com", type: "script" },
+    ]},
+    { name: "Crazy Egg", category: "ANALYTICS", signatures: [
+      { pattern: "crazyegg.com", type: "script" },
+    ]},
+    { name: "LinkedIn Insight", category: "ANALYTICS", signatures: [
+      { pattern: "snap.licdn.com", type: "script" },
+    ]},
+    { name: "TikTok Pixel", category: "ANALYTICS", signatures: [
+      { pattern: "analytics.tiktok.com", type: "script" },
+    ]},
+    { name: "Pinterest Tag", category: "ANALYTICS", signatures: [
+      { pattern: "pintrk(", type: "script" }, { pattern: "s.pinimg.com", type: "script" },
+    ]},
+
+    // ── Marketing & CRM ──────────────────────────────────────────
+    { name: "HubSpot", category: "MARKETING", signatures: [
+      { pattern: "js.hs-scripts.com", type: "script" }, { pattern: "hbspt.forms.create", type: "script" },
+      { pattern: "hs-banner.com", type: "script" },
+    ]},
+    { name: "Salesforce", category: "MARKETING", signatures: [
+      { pattern: "force.com", type: "url" }, { pattern: "salesforce.com", type: "script" },
+      { pattern: "pardot.com", type: "script" },
+    ]},
+    { name: "Mailchimp", category: "MARKETING", signatures: [
+      { pattern: "mailchimp.com", type: "script" }, { pattern: "chimpstatic.com", type: "script" },
+      { pattern: "list-manage.com", type: "url" },
+    ]},
+    { name: "Klaviyo", category: "MARKETING", signatures: [
+      { pattern: "klaviyo.com", type: "script" }, { pattern: "static.klaviyo.com", type: "script" },
+    ]},
+    { name: "ActiveCampaign", category: "MARKETING", signatures: [
+      { pattern: "activecampaign.com", type: "script" }, { pattern: "trackcmp.net", type: "script" },
+    ]},
+    { name: "ConvertKit", category: "MARKETING", signatures: [
+      { pattern: "convertkit.com", type: "script" },
+    ]},
+    { name: "Marketo", category: "MARKETING", signatures: [
+      { pattern: "marketo.com", type: "script" }, { pattern: "mktoweb.com", type: "script" },
+    ]},
+    { name: "Drip", category: "MARKETING", signatures: [
+      { pattern: "getdrip.com", type: "script" },
+    ]},
+    { name: "Constant Contact", category: "MARKETING", signatures: [
+      { pattern: "constantcontact.com", type: "script" },
+    ]},
+
+    // ── CDN ──────────────────────────────────────────────────────
+    { name: "Cloudflare", category: "CDN", signatures: [
+      { pattern: "cloudflare", type: "header" }, { pattern: "cdnjs.cloudflare.com", type: "script" },
+      { pattern: "cf-ray", type: "header" },
+    ]},
+    { name: "Fastly", category: "CDN", signatures: [
+      { pattern: "fastly", type: "header" },
+    ]},
+    { name: "Akamai", category: "CDN", signatures: [
+      { pattern: "akamai", type: "header" }, { pattern: "akamaihd.net", type: "script" },
+    ]},
+
+    // ── Hosting ──────────────────────────────────────────────────
+    { name: "Vercel", category: "HOSTING", signatures: [
+      { pattern: "vercel", type: "header" }, { pattern: "x-vercel-id", type: "header" },
+    ]},
+    { name: "Netlify", category: "HOSTING", signatures: [
+      { pattern: "netlify", type: "header" }, { pattern: "x-nf-request-id", type: "header" },
+    ]},
+    { name: "AWS", category: "HOSTING", signatures: [
+      { pattern: "amazonaws.com", type: "url" }, { pattern: "x-amz-", type: "header" },
+    ]},
+    { name: "Heroku", category: "HOSTING", signatures: [
+      { pattern: "herokuapp.com", type: "url" },
+    ]},
+    { name: "Nginx", category: "HOSTING", signatures: [
+      { pattern: "nginx", type: "header" },
+    ]},
+    { name: "Apache", category: "HOSTING", signatures: [
+      { pattern: "apache", type: "header" },
+    ]},
+
+    // ── Chat & Support ───────────────────────────────────────────
+    { name: "Intercom", category: "CHAT", signatures: [
+      { pattern: "intercom.io", type: "script" }, { pattern: "widget.intercom.io", type: "script" },
+    ]},
+    { name: "Drift", category: "CHAT", signatures: [
+      { pattern: "drift.com", type: "script" }, { pattern: "js.driftt.com", type: "script" },
+    ]},
+    { name: "Zendesk", category: "CHAT", signatures: [
+      { pattern: "zendesk.com", type: "script" }, { pattern: "zopim.com", type: "script" },
+      { pattern: "static.zdassets.com", type: "script" },
+    ]},
+    { name: "Crisp", category: "CHAT", signatures: [
+      { pattern: "crisp.chat", type: "script" }, { pattern: "client.crisp.chat", type: "script" },
+    ]},
+    { name: "Tidio", category: "CHAT", signatures: [
+      { pattern: "tidio.co", type: "script" }, { pattern: "code.tidio.co", type: "script" },
+    ]},
+    { name: "LiveChat", category: "CHAT", signatures: [
+      { pattern: "livechatinc.com", type: "script" },
+    ]},
+    { name: "Tawk.to", category: "CHAT", signatures: [
+      { pattern: "tawk.to", type: "script" }, { pattern: "embed.tawk.to", type: "script" },
+    ]},
+    { name: "Freshchat", category: "CHAT", signatures: [
+      { pattern: "freshchat.com", type: "script" }, { pattern: "wchat.freshchat.com", type: "script" },
+    ]},
+    { name: "Help Scout", category: "CHAT", signatures: [
+      { pattern: "helpscout.net", type: "script" }, { pattern: "beacon-v2.helpscout.net", type: "script" },
+    ]},
+    { name: "Olark", category: "CHAT", signatures: [
+      { pattern: "olark.com", type: "script" },
+    ]},
+
+    // ── Email Providers ──────────────────────────────────────────
+    { name: "SendGrid", category: "EMAIL", signatures: [
+      { pattern: "sendgrid.net", type: "url" }, { pattern: "sendgrid.com", type: "script" },
+    ]},
+    { name: "Mailgun", category: "EMAIL", signatures: [
+      { pattern: "mailgun.org", type: "url" },
+    ]},
+    { name: "Resend", category: "EMAIL", signatures: [
+      { pattern: "resend.com", type: "script" },
+    ]},
+
+    // ── INDUSTRY: Home Services ──────────────────────────────────
+    { name: "ServiceTitan", category: "INDUSTRY", signatures: [
+      { pattern: "servicetitan.com", type: "script" }, { pattern: "servicetitan", type: "url" },
+    ]},
+    { name: "Housecall Pro", category: "INDUSTRY", signatures: [
+      { pattern: "housecallpro.com", type: "script" }, { pattern: "housecallpro", type: "url" },
+    ]},
+    { name: "Jobber", category: "INDUSTRY", signatures: [
+      { pattern: "getjobber.com", type: "script" }, { pattern: "getjobber", type: "url" },
+    ]},
+    { name: "Service Fusion", category: "INDUSTRY", signatures: [
+      { pattern: "servicefusion.com", type: "url" },
+    ]},
+
+    // ── INDUSTRY: Fitness & Wellness ─────────────────────────────
+    { name: "Mindbody", category: "INDUSTRY", signatures: [
+      { pattern: "mindbodyonline.com", type: "script" }, { pattern: "mindbody.io", type: "script" },
+      { pattern: "branded_web.mindbodyonline.com", type: "url" },
+    ]},
+    { name: "Vagaro", category: "INDUSTRY", signatures: [
+      { pattern: "vagaro.com", type: "script" }, { pattern: "vagaro.com", type: "url" },
+    ]},
+    { name: "Zenoti", category: "INDUSTRY", signatures: [
+      { pattern: "zenoti.com", type: "script" },
+    ]},
+    { name: "Glofox", category: "INDUSTRY", signatures: [
+      { pattern: "glofox.com", type: "script" },
+    ]},
+    { name: "Wellness Living", category: "INDUSTRY", signatures: [
+      { pattern: "wellnessliving.com", type: "script" },
+    ]},
+
+    // ── INDUSTRY: Restaurants ────────────────────────────────────
+    { name: "ChowNow", category: "INDUSTRY", signatures: [
+      { pattern: "chownow.com", type: "script" }, { pattern: "direct.chownow.com", type: "url" },
+    ]},
+    { name: "Olo", category: "INDUSTRY", signatures: [
+      { pattern: "olo.com", type: "script" },
+    ]},
+    { name: "OpenTable", category: "INDUSTRY", signatures: [
+      { pattern: "opentable.com", type: "script" }, { pattern: "opentable.com/widget", type: "url" },
+    ]},
+    { name: "Resy", category: "INDUSTRY", signatures: [
+      { pattern: "resy.com", type: "script" }, { pattern: "resy.com", type: "url" },
+    ]},
+    { name: "Yelp Reservations", category: "INDUSTRY", signatures: [
+      { pattern: "yelp.com/reservations", type: "url" },
+    ]},
+    { name: "TouchBistro", category: "INDUSTRY", signatures: [
+      { pattern: "touchbistro.com", type: "url" },
+    ]},
+    { name: "Lightspeed Restaurant", category: "INDUSTRY", signatures: [
+      { pattern: "lightspeedhq.com", type: "script" }, { pattern: "lightspeed", type: "url" },
+    ]},
+
+    // ── INDUSTRY: Healthcare ─────────────────────────────────────
+    { name: "Jane App", category: "INDUSTRY", signatures: [
+      { pattern: "jane.app", type: "url" }, { pattern: "janeapp.com", type: "url" },
+    ]},
+    { name: "SimplePractice", category: "INDUSTRY", signatures: [
+      { pattern: "simplepractice.com", type: "url" },
+    ]},
+    { name: "Zocdoc", category: "INDUSTRY", signatures: [
+      { pattern: "zocdoc.com", type: "script" }, { pattern: "zocdoc.com", type: "url" },
+    ]},
+    { name: "NexHealth", category: "INDUSTRY", signatures: [
+      { pattern: "nexhealth.com", type: "script" },
+    ]},
+
+    // ── INDUSTRY: Scheduling ─────────────────────────────────────
+    { name: "Calendly", category: "SCHEDULING", signatures: [
+      { pattern: "calendly.com", type: "script" }, { pattern: "assets.calendly.com", type: "script" },
+    ]},
+    { name: "Acuity Scheduling", category: "SCHEDULING", signatures: [
+      { pattern: "acuityscheduling.com", type: "script" }, { pattern: "app.acuityscheduling.com", type: "url" },
+    ]},
+    { name: "Setmore", category: "SCHEDULING", signatures: [
+      { pattern: "setmore.com", type: "script" },
+    ]},
+    { name: "SimplyBook.me", category: "SCHEDULING", signatures: [
+      { pattern: "simplybook.me", type: "script" },
+    ]},
+    { name: "Cal.com", category: "SCHEDULING", signatures: [
+      { pattern: "cal.com", type: "script" }, { pattern: "app.cal.com", type: "url" },
+    ]},
+
+    // ── INDUSTRY: Communications ─────────────────────────────────
+    { name: "CallRail", category: "COMMUNICATIONS", signatures: [
+      { pattern: "callrail.com", type: "script" }, { pattern: "cdn.callrail.com", type: "script" },
+    ]},
+    { name: "Twilio", category: "COMMUNICATIONS", signatures: [
+      { pattern: "twilio.com", type: "script" },
+    ]},
+    { name: "RingCentral", category: "COMMUNICATIONS", signatures: [
+      { pattern: "ringcentral.com", type: "script" },
+    ]},
+    { name: "Nextiva", category: "COMMUNICATIONS", signatures: [
+      { pattern: "nextiva.com", type: "script" },
+    ]},
+
+    // ── INDUSTRY: Real Estate ────────────────────────────────────
+    { name: "IDX Broker", category: "INDUSTRY", signatures: [
+      { pattern: "idxbroker.com", type: "script" },
+    ]},
+    { name: "kvCORE", category: "INDUSTRY", signatures: [
+      { pattern: "kvcore.com", type: "script" },
+    ]},
+    { name: "Follow Up Boss", category: "INDUSTRY", signatures: [
+      { pattern: "followupboss.com", type: "script" },
+    ]},
+
+    // ── INDUSTRY: Legal ──────────────────────────────────────────
+    { name: "Clio", category: "INDUSTRY", signatures: [
+      { pattern: "clio.com", type: "script" },
+    ]},
+    { name: "LawPay", category: "INDUSTRY", signatures: [
+      { pattern: "lawpay.com", type: "script" }, { pattern: "lawpay.com", type: "url" },
+    ]},
+
+    // ── INDUSTRY: Automotive ─────────────────────────────────────
+    { name: "DealerSocket", category: "INDUSTRY", signatures: [
+      { pattern: "dealersocket.com", type: "script" },
+    ]},
+    { name: "CDK Global", category: "INDUSTRY", signatures: [
+      { pattern: "cdkglobal.com", type: "script" },
+    ]},
+  ];
+
+  interface TechDetection {
+    name: string;
+    category: TechCategory;
+    confidence: "high" | "medium" | "low";
+    products: string[];
+    signatures: string[];
+  }
+
+  function detectTechStack(html: string, headers?: Record<string, string>): TechDetection[] {
+    const results: TechDetection[] = [];
+    const lowerHtml = html.toLowerCase();
+    const lowerHeaders = headers ? JSON.stringify(headers).toLowerCase() : "";
+
+    for (const tech of TECH_STACK_SIGNATURES) {
+      const matched: string[] = [];
+      const products = new Set<string>();
+      let scriptCount = 0, urlCount = 0, otherCount = 0;
+
+      for (const sig of tech.signatures) {
+        const source = sig.type === "header" ? lowerHeaders : lowerHtml;
+        if (source.includes(sig.pattern.toLowerCase())) {
+          matched.push(sig.pattern);
+          if (sig.product) products.add(sig.product);
+          if (sig.type === "script") scriptCount++;
+          else if (sig.type === "url") urlCount++;
+          else otherCount++;
+        }
+      }
+
+      if (matched.length > 0) {
+        let confidence: "high" | "medium" | "low" = "low";
+        if (scriptCount >= 2 || (scriptCount >= 1 && urlCount >= 1)) confidence = "high";
+        else if (scriptCount >= 1 || urlCount >= 2 || matched.length >= 3) confidence = "medium";
+        results.push({ name: tech.name, category: tech.category, confidence, products: Array.from(products), signatures: matched });
+      }
+    }
+
+    return results.sort((a, b) => {
+      const order = { high: 0, medium: 1, low: 2 };
+      return order[a.confidence] - order[b.confidence];
+    });
+  }
+
+  // Helper: extract processor from full tech stack
+  function getPaymentProcessors(techStack: TechDetection[]) {
+    return techStack.filter(t => t.category === "PAYMENTS");
+  }
+
+  // Scrape a URL for business leads + full tech stack detection
+  app.post("/api/ai-ops/scrape-prospects", requireAdminSession, async (req, res) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured." });
+
+    const { url, mode } = req.body;  // mode: "directory" | "single" | "batch"
+    if (!url) return res.status(400).json({ error: "URL is required." });
+
+    const urls = Array.isArray(url) ? url : [url];
+    const allProspects: any[] = [];
+    const allTechStacks: Record<string, TechDetection[]> = {};
+
+    for (const targetUrl of urls.slice(0, 20)) {
+      try {
+        const response = await fetch(targetUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!response.ok) continue;
+
+        const html = await response.text();
+
+        // Capture response headers for CDN/hosting detection
+        const respHeaders: Record<string, string> = {};
+        response.headers.forEach((v, k) => { respHeaders[k] = v; });
+
+        // Run full tech stack detection on raw HTML + headers
+        const techStack = detectTechStack(html, respHeaders);
+        allTechStacks[targetUrl] = techStack;
+        const paymentProcessors = getPaymentProcessors(techStack);
+
+        // Clean HTML for AI extraction
+        const cleaned = html
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 60000);
+
+        // Build tech context for AI
+        const techContext = techStack.length > 0 ? `
+TECH STACK DETECTED ON THIS PAGE:
+${techStack.map(t => `- [${t.category}] ${t.name} (${t.confidence} confidence)${t.products.length ? `: ${t.products.join(", ")}` : ""}`).join("\n")}
+${paymentProcessors.length > 0 ? `\nPAYMENT PROCESSORS: ${paymentProcessors.map(p => `${p.name} (${p.confidence})`).join(", ")}` : ""}
+Include this tech info in your extraction.` : "";
+
+        const anthropic = new Anthropic({ apiKey });
+        const aiResponse = await anthropic.messages.create({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 4096,
+          system: `You are a lead extraction AI for a merchant services sales team (CashSwipe/TechSavvy Hawaii). Extract ALL business listings from the provided web page content.
+
+For each business found, extract whatever is available:
+- Business name, owner/contact name, address, phone, email, website URL
+- Business type/vertical
+- Current payment processor or POS system if mentioned
+- Social media links (Instagram, Facebook, etc.)
+${techContext}
+
+Return a JSON array. Each item:
+{
+  "business": "string",
+  "name": "string (contact/owner name if found, or empty)",
+  "address": "string",
+  "phone": "string",
+  "email": "string",
+  "website": "string",
+  "vertical": "restaurant|retail|salon|auto|medical|cbd|vape|firearms|ecommerce|services|other",
+  "currentProcessor": "string (Square, Clover, Toast, etc. or empty)",
+  "processorConfidence": "high|medium|low|none",
+  "socialLinks": { "instagram": "", "facebook": "", "twitter": "" },
+  "notes": "string (any useful context)"
+}
+
+If the page is a single business, return an array with one item. If it's a directory, extract ALL listings you can find. Return ONLY valid JSON array. If no businesses found, return [].`,
+          messages: [{ role: "user", content: `Extract business leads from this page (${targetUrl}):\n\n${cleaned}` }],
+        });
+
+        const text = aiResponse.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        const prospects = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+
+        // Enrich with tech stack data
+        for (const p of prospects) {
+          p._sourceUrl = targetUrl;
+          p._techStack = techStack;
+          if (!p.currentProcessor && paymentProcessors.length > 0) {
+            p.currentProcessor = paymentProcessors[0].name;
+            p.processorConfidence = paymentProcessors[0].confidence;
+          }
+        }
+
+        allProspects.push(...prospects);
+
+        // Rate limit between URLs
+        if (urls.length > 1) await new Promise(r => setTimeout(r, 1500));
+      } catch (err: any) {
+        console.error(`Scrape error for ${targetUrl}:`, err.message);
+      }
+    }
+
+    res.json({
+      prospects: allProspects,
+      techStacks: allTechStacks,
+      source: urls.length === 1 ? urls[0] : `${urls.length} URLs`,
+      scrapedAt: new Date().toISOString(),
+    });
+  });
+
+  // Standalone tech stack scan (no AI extraction, just signature detection)
+  app.post("/api/ai-ops/tech-scan", requireAdminSession, async (req, res) => {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: "URL is required." });
+
+    const urls = Array.isArray(url) ? url : [url];
+    const results: Array<{ url: string; techStack: TechDetection[]; title: string; error?: string }> = [];
+
+    for (const targetUrl of urls.slice(0, 50)) {
+      try {
+        const response = await fetch(targetUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+          signal: AbortSignal.timeout(12000),
+        });
+        if (!response.ok) { results.push({ url: targetUrl, techStack: [], title: "", error: `HTTP ${response.status}` }); continue; }
+
+        const html = await response.text();
+        const respHeaders: Record<string, string> = {};
+        response.headers.forEach((v, k) => { respHeaders[k] = v; });
+
+        const techStack = detectTechStack(html, respHeaders);
+        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        results.push({ url: targetUrl, techStack, title: titleMatch?.[1]?.trim() || "" });
+
+        if (urls.length > 1) await new Promise(r => setTimeout(r, 800));
+      } catch (err: any) {
+        results.push({ url: targetUrl, techStack: [], title: "", error: err.message });
+      }
+    }
+
+    res.json({ results, scannedAt: new Date().toISOString() });
+  });
+
+  // Google dork execution
+  app.post("/api/ai-ops/google-dork", requireAdminSession, async (req, res) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured." });
+
+    const { query, location } = req.body;
+    if (!query) return res.status(400).json({ error: "Query is required." });
+
+    try {
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=20`;
+      const response = await fetch(searchUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        signal: AbortSignal.timeout(15000),
+      });
+
+      const html = await response.text();
+      const cleaned = html
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 60000);
+
+      const anthropic = new Anthropic({ apiKey });
+      const aiResponse = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: `You are a lead extraction AI for a merchant services sales team targeting businesses${location ? ` in ${location}` : ""}. Extract business information from Google search results.
+
+For each result that appears to be a business, extract: business name, contact info, address, business type, payment processor mentions, and the result URL.
+
+Return a JSON object:
+{
+  "results": [
+    {
+      "business": "string",
+      "name": "string (contact name if found)",
+      "address": "string",
+      "phone": "string",
+      "email": "string",
+      "website": "string (the URL from search results)",
+      "vertical": "restaurant|retail|salon|auto|medical|cbd|vape|firearms|ecommerce|services|other",
+      "currentProcessor": "string",
+      "notes": "string"
+    }
+  ],
+  "urls": ["string (all URLs from search results that could be scraped for more data)"]
+}
+
+Return ONLY valid JSON, no other text.`,
+        messages: [{ role: "user", content: `Google dork query: "${query}"\n\nSearch results page content:\n\n${cleaned}` }],
+      });
+
+      const text = aiResponse.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { results: [], urls: [] };
+      res.json({ ...parsed, query, searchedAt: new Date().toISOString() });
+    } catch (err: any) {
+      console.error("Google dork error:", err.message);
+      res.json({ results: [], urls: [], query, blocked: true, message: "Google blocked automated access. Use the dork query manually in your browser, then paste interesting URLs into the URL Scanner." });
+    }
+  });
+
+  // Import prospects into leads pipeline
+  app.post("/api/ai-ops/import-prospects", requireAdminSession, async (req, res) => {
+    const { prospects, sourceLabel } = req.body;
+    if (!Array.isArray(prospects) || prospects.length === 0) return res.status(400).json({ error: "No prospects to import." });
+
+    const now = new Date().toISOString();
+    const created: any[] = [];
+
+    for (const p of prospects) {
+      const id = `lead-${randomUUID().slice(0, 8)}`;
+      const socialStr = p.socialLinks ? Object.entries(p.socialLinks).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join("\n") : "";
+      const [lead] = await db.insert(schema.leads).values({
+        id,
+        name: p.name || "",
+        business: p.business || "",
+        address: p.address || "",
+        phone: p.phone || "",
+        email: p.email || "",
+        decisionMakerName: p.name || "",
+        decisionMakerRole: "",
+        bestContactMethod: p.phone ? "phone" : p.email ? "email" : "phone",
+        package: "terminal",
+        status: "new",
+        source: "direct",
+        vertical: p.vertical || "other",
+        currentProcessor: p.currentProcessor || "",
+        currentEquipment: "",
+        monthlyVolume: "",
+        painPoints: p.currentProcessor ? `Currently using ${p.currentProcessor}${p.processorConfidence ? ` (${p.processorConfidence} confidence)` : ""} - potential switch target` : "",
+        nextStep: "Initial outreach",
+        nextStepDate: now.split("T")[0],
+        attachments: "[]",
+        notes: `[AI Prospector] ${sourceLabel || "Web scrape"}${p.website ? `\nWebsite: ${p.website}` : ""}${socialStr ? `\nSocial:\n${socialStr}` : ""}${p.notes ? `\n${p.notes}` : ""}`.trim(),
+        createdAt: now,
+        updatedAt: now,
+      }).returning();
+      created.push(lead);
+    }
+
+    res.json({ imported: created.length, leads: created });
+  });
+
   // ─── Pinned Pitches ─────────────────────────────────────────────
 
   app.get("/api/pinned-pitches", requireAdminSession, async (_req, res) => {

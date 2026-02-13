@@ -24,6 +24,7 @@ import {
   BarChart3, ArrowUpRight, ArrowDownRight,
   Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
   Pin, PinOff, Sparkles, Clock, UserCog, Briefcase, Sun, Moon,
+  ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { useTheme } from "@/hooks/use-theme";
@@ -579,6 +580,8 @@ export default function AiConfigPage() {
 
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const mainDomain = window.location.hostname.startsWith("admin.") ? `https://${window.location.hostname.replace("admin.", "")}` : "/";
 
@@ -598,18 +601,28 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { value: "resources", icon: Library, label: "Resources" },
     { value: "team", icon: UserCog, label: "Team" },
     { value: "schedule", icon: Clock, label: "Schedule" },
+    { value: "prospector", icon: Search, label: "Prospector" },
     { value: "ai-ops", icon: Sparkles, label: "AI Ops" },
     { value: "activity", icon: Activity, label: "Activity" },
     { value: "ai", icon: Bot, label: "AI Chat" },
     { value: "security", icon: Lock, label: "Security" },
   ];
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSidebarOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Top bar */}
+      <div className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                <Menu className="w-4 h-4" />
+              </Button>
               <a href={mainDomain} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="w-4 h-4" /></a>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded bg-primary/15 flex items-center justify-center"><LayoutDashboard className="w-4 h-4 text-primary" /></div>
@@ -626,44 +639,82 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      <div className="border-b border-border/50 bg-card/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-transparent h-auto p-0 gap-0 rounded-none w-full justify-start overflow-x-auto scrollbar-none">
-              {tabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-2.5 sm:px-4 py-3 text-[11px] sm:text-sm gap-1 sm:gap-1.5 shrink-0"
-                  title={tab.label}>
-                  <tab.icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" /><span className="hidden sm:inline">{tab.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-      </div>
+      <div className="flex">
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsContent value="overview"><OverviewTab setActiveTab={setActiveTab} /></TabsContent>
-          <TabsContent value="leads"><LeadsTab /></TabsContent>
-          <TabsContent value="inbox"><InboxTab /></TabsContent>
-          <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>
-          <TabsContent value="scorecard"><ScorecardTab /></TabsContent>
-          <TabsContent value="plan"><PlanTab /></TabsContent>
-          <TabsContent value="materials"><MaterialsTab /></TabsContent>
-          <TabsContent value="clients"><ClientsTab /></TabsContent>
-          <TabsContent value="revenue"><RevenueTab /></TabsContent>
-          <TabsContent value="tasks"><TasksTab /></TabsContent>
-          <TabsContent value="files"><FilesTab /></TabsContent>
-          <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
-          <TabsContent value="resources"><ResourcesManagerTab /></TabsContent>
-          <TabsContent value="team"><TeamTab /></TabsContent>
-          <TabsContent value="schedule"><ScheduleTab /></TabsContent>
-          <TabsContent value="ai-ops"><AiOpsTab /></TabsContent>
-          <TabsContent value="activity"><ActivityTab /></TabsContent>
-          <TabsContent value="ai"><AiSettingsTab /></TabsContent>
-          <TabsContent value="security"><SecurityTab /></TabsContent>
-        </Tabs>
+        {/* Sidebar */}
+        <aside className={`
+          fixed lg:sticky top-14 z-40 h-[calc(100vh-3.5rem)] bg-card/80 backdrop-blur-xl border-r border-border/50 overflow-y-auto scrollbar-none
+          transition-all duration-300 ease-in-out
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          ${sidebarCollapsed ? "lg:w-16" : "lg:w-56"}
+          w-64
+        `}>
+          <div className="flex flex-col h-full">
+            {/* Mobile close + Desktop collapse */}
+            <div className="flex items-center justify-between p-2 border-b border-border/30">
+              <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="hidden lg:flex h-8 w-8 ml-auto" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+                {sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+              </Button>
+            </div>
+
+            {/* Nav items */}
+            <nav className="flex-1 p-2 space-y-0.5">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.value}
+                  onClick={() => handleTabChange(tab.value)}
+                  title={tab.label}
+                  className={`
+                    w-full flex items-center gap-2.5 rounded-md transition-colors text-left
+                    ${sidebarCollapsed ? "justify-center px-2 py-2.5" : "px-3 py-2"}
+                    ${activeTab === tab.value
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    }
+                  `}
+                >
+                  <tab.icon className="w-4 h-4 shrink-0" />
+                  {!sidebarCollapsed && <span className="text-xs truncate">{tab.label}</span>}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <main className={`flex-1 min-w-0 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-0" : "lg:ml-0"}`}>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsContent value="overview"><OverviewTab setActiveTab={handleTabChange} /></TabsContent>
+              <TabsContent value="leads"><LeadsTab /></TabsContent>
+              <TabsContent value="inbox"><InboxTab /></TabsContent>
+              <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>
+              <TabsContent value="scorecard"><ScorecardTab /></TabsContent>
+              <TabsContent value="plan"><PlanTab /></TabsContent>
+              <TabsContent value="materials"><MaterialsTab /></TabsContent>
+              <TabsContent value="clients"><ClientsTab /></TabsContent>
+              <TabsContent value="revenue"><RevenueTab /></TabsContent>
+              <TabsContent value="tasks"><TasksTab /></TabsContent>
+              <TabsContent value="files"><FilesTab /></TabsContent>
+              <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
+              <TabsContent value="resources"><ResourcesManagerTab /></TabsContent>
+              <TabsContent value="team"><TeamTab /></TabsContent>
+              <TabsContent value="schedule"><ScheduleTab /></TabsContent>
+              <TabsContent value="prospector"><ProspectorTab /></TabsContent>
+              <TabsContent value="ai-ops"><AiOpsTab /></TabsContent>
+              <TabsContent value="activity"><ActivityTab /></TabsContent>
+              <TabsContent value="ai"><AiSettingsTab /></TabsContent>
+              <TabsContent value="security"><SecurityTab /></TabsContent>
+            </Tabs>
+          </div>
+        </main>
       </div>
     </div>
   );
@@ -2123,25 +2174,34 @@ function IntegrationsTab() {
         </CardContent>
       </Card>
 
-      {/* Integration Ideas */}
+      {/* Skool Integration */}
       <Card className="overflow-visible border-border/50">
-        <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4 text-blue-400" />Available Integrations</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { name: "Google Sheets", desc: "Sync leads & revenue to a spreadsheet", status: "coming-soon" },
-              { name: "Zapier", desc: "Connect 5000+ apps with webhooks", status: "coming-soon" },
-              { name: "Email (SMTP)", desc: "Auto-send follow-up emails to leads", status: "coming-soon" },
-              { name: "Google Calendar", desc: "Sync task due dates to your calendar", status: "coming-soon" },
-              { name: "Twilio SMS", desc: "Auto-text leads within 24hrs of download", status: "coming-soon" },
-              { name: "QuickBooks", desc: "Sync revenue entries to accounting", status: "coming-soon" },
-            ].map((i) => (
-              <div key={i.name} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">
-                <div className="w-8 h-8 rounded-md bg-muted/50 flex items-center justify-center"><Plug className="w-4 h-4 text-muted-foreground" /></div>
-                <div className="min-w-0 flex-1"><p className="text-sm font-medium">{i.name}</p><p className="text-[10px] text-muted-foreground">{i.desc}</p></div>
-                <Badge variant="outline" className="text-[9px] shrink-0">Soon</Badge>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-md bg-emerald-500/15 flex items-center justify-center"><GraduationCap className="w-5 h-5 text-emerald-500" /></div>
+            <div><CardTitle className="text-sm">Skool Community</CardTitle><p className="text-xs text-muted-foreground">CashSwipe Clients community hub for training, updates & support</p></div>
+            <div className="ml-auto">
+              <Badge variant="default" className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30">Active</Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg bg-muted/30 border border-border/30 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 space-y-2">
+                <p className="text-xs text-muted-foreground">Your clients and team can access the CashSwipe Clients community on Skool for onboarding resources, sales training, and group support.</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Globe className="w-3 h-3" />
+                  <span className="truncate">skool.com/cashswipe-clients</span>
+                </div>
               </div>
-            ))}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" asChild>
+              <a href="https://www.skool.com/cashswipe-clients/about?ref=ddf5a5a74b274ecfa88bad706ad88a82" target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3.5 h-3.5" />Open Community</a>
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText("https://www.skool.com/cashswipe-clients/about?ref=ddf5a5a74b274ecfa88bad706ad88a82"); }}><Copy className="w-3.5 h-3.5" />Copy Invite Link</Button>
           </div>
         </CardContent>
       </Card>
@@ -2783,6 +2843,519 @@ function ScheduleTab() {
           <DialogFooter><Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button><Button onClick={() => createMutation.mutate(form)} disabled={!form.title}><Plus className="w-3.5 h-3.5" />Add</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ─── Prospector Tab ─────────────────────────────────────────────────
+
+interface TechDetection {
+  name: string;
+  category: string;
+  confidence: "high" | "medium" | "low";
+  products: string[];
+  signatures: string[];
+}
+
+interface TechScanResult {
+  url: string;
+  techStack: TechDetection[];
+  title: string;
+  error?: string;
+}
+
+interface Prospect {
+  business: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  vertical: string;
+  currentProcessor: string;
+  processorConfidence?: string;
+  socialLinks?: Record<string, string>;
+  notes: string;
+  _sourceUrl?: string;
+  _techStack?: TechDetection[];
+  _selected?: boolean;
+}
+
+const GOOGLE_DORK_PRESETS = [
+  { label: "Square merchants", category: "Processor Hunt", dork: 'site:square.site "{vertical}" "{location}"', desc: "Find businesses hosted on Square Online" },
+  { label: "Powered by Square", category: "Processor Hunt", dork: '"Powered by Square" "{vertical}" "{location}"', desc: "Sites with Square branding" },
+  { label: "Square Appointments", category: "Processor Hunt", dork: 'inurl:squareup.com/appointments "{vertical}" "{location}"', desc: "Businesses using Square booking" },
+  { label: "Clover merchants", category: "Processor Hunt", dork: '"Powered by Clover" OR "clover.com" "{vertical}" "{location}"', desc: "Find Clover POS users" },
+  { label: "Toast restaurants", category: "Processor Hunt", dork: 'site:toasttab.com "{location}"', desc: "Restaurants on Toast online ordering" },
+  { label: "Yelp directory", category: "Directory Scrape", dork: 'site:yelp.com "{vertical}" "{location}"', desc: "Yelp business listings" },
+  { label: "Google Maps listings", category: "Directory Scrape", dork: 'site:google.com/maps "{vertical}" "{location}"', desc: "Google Maps business results" },
+  { label: "Local directory", category: "Directory Scrape", dork: '"{vertical}" "{location}" "contact us" "phone" -site:facebook.com -site:yelp.com', desc: "Direct business websites with contact info" },
+  { label: "BBB listings", category: "Directory Scrape", dork: 'site:bbb.org "{vertical}" "{location}"', desc: "Better Business Bureau listings" },
+  { label: "Hawaii businesses", category: "Hawaii Local", dork: '"{vertical}" hawaii "phone" "email" -site:facebook.com -site:yelp.com', desc: "Hawaii businesses with contact info" },
+  { label: "Honolulu merchants", category: "Hawaii Local", dork: '"{vertical}" honolulu "accepts" OR "payment" OR "credit card"', desc: "Honolulu businesses mentioning payments" },
+  { label: "Maui businesses", category: "Hawaii Local", dork: '"{vertical}" maui hawaii "phone" OR "call" -site:tripadvisor.com', desc: "Maui business websites" },
+];
+
+function ProspectorTab() {
+  const [mode, setMode] = useState<"url" | "dork" | "batch" | "techscan">("dork");
+  const [urlInput, setUrlInput] = useState("");
+  const [techScanUrls, setTechScanUrls] = useState("");
+  const [batchUrls, setBatchUrls] = useState("");
+  const [dorkQuery, setDorkQuery] = useState("");
+  const [dorkLocation, setDorkLocation] = useState("Honolulu, Hawaii");
+  const [dorkVertical, setDorkVertical] = useState("restaurant");
+  const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [techResults, setTechResults] = useState<TechScanResult[]>([]);
+  const [dorkUrls, setDorkUrls] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [importCount, setImportCount] = useState(0);
+  const { toast } = useToast();
+
+  const techScanMutation = useMutation({
+    mutationFn: async (data: { url: string | string[] }) => {
+      const r = await apiRequest("POST", "/api/ai-ops/tech-scan", data);
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setTechResults(prev => [...prev, ...(data.results || [])]);
+      const total = (data.results || []).length;
+      const withTech = (data.results || []).filter((r: TechScanResult) => r.techStack.length > 0).length;
+      toast({ title: `Scanned ${total} site(s)`, description: `${withTech} had detectable tech stacks` });
+    },
+    onError: () => { toast({ title: "Tech scan failed", variant: "destructive" }); },
+  });
+
+  const scrapeMutation = useMutation({
+    mutationFn: async (data: { url: string | string[]; mode?: string }) => {
+      const r = await apiRequest("POST", "/api/ai-ops/scrape-prospects", data);
+      return r.json();
+    },
+    onSuccess: (data) => {
+      const newProspects = (data.prospects || []).map((p: Prospect) => ({ ...p, _selected: true }));
+      setProspects(prev => [...prev, ...newProspects]);
+      toast({ title: `Found ${newProspects.length} prospect(s)`, description: `From ${data.source}` });
+    },
+    onError: (err: any) => { toast({ title: "Scrape failed", description: err.message, variant: "destructive" }); },
+  });
+
+  const dorkMutation = useMutation({
+    mutationFn: async (data: { query: string; location: string }) => {
+      const r = await apiRequest("POST", "/api/ai-ops/google-dork", data);
+      return r.json();
+    },
+    onSuccess: (data) => {
+      if (data.blocked) {
+        toast({ title: "Google blocked automated search", description: "Copy the dork query and search manually, then paste URLs into URL Scanner" });
+      }
+      const newProspects = (data.results || []).map((p: Prospect) => ({ ...p, _selected: true }));
+      setProspects(prev => [...prev, ...newProspects]);
+      setDorkUrls(data.urls || []);
+      if (newProspects.length > 0) toast({ title: `Found ${newProspects.length} result(s) from Google` });
+    },
+    onError: () => { toast({ title: "Dork search failed", variant: "destructive" }); },
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async (data: { prospects: Prospect[]; sourceLabel: string }) => {
+      const r = await apiRequest("POST", "/api/ai-ops/import-prospects", data);
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setImportCount(prev => prev + data.imported);
+      toast({ title: `Imported ${data.imported} leads into pipeline` });
+      setProspects(prev => prev.filter(p => !p._selected));
+    },
+  });
+
+  const handleScrapeUrl = () => {
+    if (!urlInput.trim()) return;
+    scrapeMutation.mutate({ url: urlInput.trim() });
+  };
+
+  const handleBatchScrape = () => {
+    const urls = batchUrls.split("\n").map(u => u.trim()).filter(u => u && u.startsWith("http"));
+    if (urls.length === 0) return;
+    scrapeMutation.mutate({ url: urls, mode: "batch" });
+  };
+
+  const handleDorkSearch = () => {
+    const q = dorkQuery
+      .replace(/\{location\}/g, dorkLocation)
+      .replace(/\{vertical\}/g, dorkVertical);
+    if (!q.trim()) return;
+    dorkMutation.mutate({ query: q, location: dorkLocation });
+  };
+
+  const handleApplyPreset = (dork: string) => {
+    setDorkQuery(dork);
+  };
+
+  const handleImportSelected = () => {
+    const selected = prospects.filter(p => p._selected);
+    if (selected.length === 0) return;
+    importMutation.mutate({ prospects: selected, sourceLabel: `AI Prospector - ${mode === "dork" ? "Google Dork" : "URL Scrape"}` });
+  };
+
+  const toggleSelect = (idx: number) => {
+    setProspects(prev => prev.map((p, i) => i === idx ? { ...p, _selected: !p._selected } : p));
+  };
+
+  const toggleSelectAll = () => {
+    const allSelected = prospects.every(p => p._selected);
+    setProspects(prev => prev.map(p => ({ ...p, _selected: !allSelected })));
+  };
+
+  const CONF_COLORS: Record<string, string> = { high: "text-red-400 bg-red-400/10", medium: "text-yellow-400 bg-yellow-400/10", low: "text-muted-foreground bg-muted/30" };
+  const isLoading = scrapeMutation.isPending || dorkMutation.isPending || techScanMutation.isPending;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-bold flex items-center gap-2"><Search className="w-5 h-5 text-primary" />AI Lead Prospector</h2>
+        <p className="text-xs text-muted-foreground mt-1">Find businesses using competitor payment processors. Scrape directories, run Google dorks, detect Square/Clover/Toast signatures, and import leads directly into your pipeline.</p>
+      </div>
+
+      {importCount > 0 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-emerald-400/10 border border-emerald-400/20">
+          <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <span className="text-xs text-emerald-400 font-medium">{importCount} leads imported this session</span>
+        </div>
+      )}
+
+      {/* Mode Tabs */}
+      <div className="flex gap-1 p-1 rounded-lg bg-muted/30 border border-border/30 w-fit">
+        {([
+          { key: "dork", label: "Google Dorks", icon: Globe },
+          { key: "url", label: "URL Scanner", icon: Search },
+          { key: "batch", label: "Batch URLs", icon: FileText },
+          { key: "techscan", label: "Tech Stack", icon: Zap },
+        ] as const).map(({ key, label, icon: Icon }) => (
+          <button key={key} onClick={() => setMode(key)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors ${mode === key ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+            <Icon className="w-3.5 h-3.5" />{label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left: Input Panel */}
+        <div className="lg:col-span-1 space-y-4">
+          {mode === "dork" && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4 text-blue-400" />Google Dork Builder</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px]">Location</Label>
+                    <Input value={dorkLocation} onChange={(e) => setDorkLocation(e.target.value)} placeholder="Honolulu, Hawaii" className="text-xs h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px]">Vertical</Label>
+                    <Select value={dorkVertical} onValueChange={setDorkVertical}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(VERTICAL_CONFIG).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Dork Query</Label>
+                  <Textarea value={dorkQuery} onChange={(e) => setDorkQuery(e.target.value)} placeholder='site:square.site "restaurant" "honolulu"' className="text-xs min-h-[60px] font-mono" />
+                </div>
+
+                <Button size="sm" className="w-full" onClick={handleDorkSearch} disabled={!dorkQuery.trim() || isLoading}>
+                  {dorkMutation.isPending ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Searching...</> : <><Search className="w-3.5 h-3.5" />Run Dork Search</>}
+                </Button>
+
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>If Google blocks, copy query and search manually</span>
+                </div>
+
+                <Button variant="outline" size="sm" className="w-full text-[10px] h-7" onClick={() => {
+                  const q = dorkQuery.replace(/\{location\}/g, dorkLocation).replace(/\{vertical\}/g, dorkVertical);
+                  window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank");
+                }}>
+                  <ExternalLink className="w-3 h-3" />Open in Google
+                </Button>
+
+                {/* Presets */}
+                <div className="space-y-2 pt-2 border-t border-border/30">
+                  <p className="text-[10px] font-semibold text-muted-foreground">Preset Dorks</p>
+                  {["Processor Hunt", "Directory Scrape", "Hawaii Local"].map(cat => (
+                    <div key={cat}>
+                      <p className="text-[9px] font-semibold text-muted-foreground/70 mb-1">{cat}</p>
+                      <div className="space-y-1">
+                        {GOOGLE_DORK_PRESETS.filter(p => p.category === cat).map(preset => (
+                          <button key={preset.label} onClick={() => handleApplyPreset(preset.dork)}
+                            className="w-full text-left p-2 rounded-md bg-muted/20 hover:bg-muted/40 transition-colors border border-border/20">
+                            <p className="text-[10px] font-medium">{preset.label}</p>
+                            <p className="text-[9px] text-muted-foreground font-mono truncate">{preset.dork}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {mode === "url" && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Search className="w-4 h-4 text-primary" />URL Scanner</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Website URL</Label>
+                  <Input value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="https://giveandgetlocal.com" className="text-xs" />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Scans the page for business listings, contact info, and payment processor signatures (Square, Clover, Toast, Stripe, PayPal, Shopify).</p>
+                <Button size="sm" className="w-full" onClick={handleScrapeUrl} disabled={!urlInput.trim() || isLoading}>
+                  {scrapeMutation.isPending ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Scanning...</> : <><Search className="w-3.5 h-3.5" />Scan URL</>}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {mode === "batch" && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-orange-400" />Batch URL Scanner</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px]">URLs (one per line, max 20)</Label>
+                  <Textarea value={batchUrls} onChange={(e) => setBatchUrls(e.target.value)} placeholder={"https://example-coffee.com\nhttps://mybarbershop.com\nhttps://localbakery.square.site"} className="text-xs min-h-[120px] font-mono" />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Each URL is scanned for processor signatures and business data. Uses AI to extract contacts.</p>
+                <Button size="sm" className="w-full" onClick={handleBatchScrape} disabled={!batchUrls.trim() || isLoading}>
+                  {scrapeMutation.isPending ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Scanning {batchUrls.split("\n").filter(u => u.trim()).length} URLs...</> : <><Zap className="w-3.5 h-3.5" />Scan All URLs</>}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {mode === "techscan" && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" />Tech Stack Scanner</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px]">URLs to scan (one per line, max 50)</Label>
+                  <Textarea value={techScanUrls} onChange={(e) => setTechScanUrls(e.target.value)} placeholder={"https://example-coffee.com\nhttps://mybarbershop.com\nhttps://localbakery.square.site"} className="text-xs min-h-[120px] font-mono" />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Scans HTML + response headers for 100+ technologies: payments, CMS, frameworks, analytics, marketing, chat, industry platforms, scheduling, and more. No AI needed - pure signature detection.</p>
+                <Button size="sm" className="w-full" onClick={() => {
+                  const urls = techScanUrls.split("\n").map(u => u.trim()).filter(u => u && u.startsWith("http"));
+                  if (urls.length === 0) return;
+                  techScanMutation.mutate({ url: urls });
+                }} disabled={!techScanUrls.trim() || isLoading}>
+                  {techScanMutation.isPending ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Scanning...</> : <><Zap className="w-3.5 h-3.5" />Scan Tech Stacks</>}
+                </Button>
+                {techResults.length > 0 && (
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-destructive" onClick={() => setTechResults([])}>
+                    <Trash2 className="w-3 h-3" />Clear Results
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Dork discovered URLs */}
+          {dorkUrls.length > 0 && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4" />Discovered URLs ({dorkUrls.length})</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-[10px] text-muted-foreground">URLs found in Google results. Deep-scan them for more data.</p>
+                <div className="max-h-[200px] overflow-y-auto space-y-1 scrollbar-none">
+                  {dorkUrls.map((u, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[10px] p-1.5 rounded bg-muted/20">
+                      <span className="truncate flex-1 font-mono">{u}</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => scrapeMutation.mutate({ url: u })} disabled={isLoading}>
+                        <Search className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => {
+                  setBatchUrls(dorkUrls.join("\n"));
+                  setMode("batch");
+                }}>
+                  <Zap className="w-3.5 h-3.5" />Send All to Batch Scanner
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Right: Results */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card className="overflow-visible border-border/50">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" />
+                  Prospects ({prospects.length})
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {prospects.length > 0 && (
+                    <>
+                      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={toggleSelectAll}>
+                        {prospects.every(p => p._selected) ? "Deselect All" : "Select All"}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-xs h-7 text-destructive" onClick={() => setProspects([])}>
+                        <Trash2 className="w-3 h-3" />Clear
+                      </Button>
+                      <Button size="sm" className="text-xs h-7" onClick={handleImportSelected}
+                        disabled={importMutation.isPending || prospects.filter(p => p._selected).length === 0}>
+                        <UserPlus className="w-3.5 h-3.5" />
+                        Import {prospects.filter(p => p._selected).length} to Pipeline
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {prospects.length === 0 ? (
+                <div className="text-center py-12">
+                  <Search className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">No prospects yet</p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-1">Use Google Dorks or URL Scanner to find businesses</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[600px] overflow-y-auto scrollbar-none">
+                  {prospects.map((p, idx) => (
+                    <div key={idx} className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${p._selected ? "bg-primary/5 border-primary/20" : "bg-muted/20 border-border/30"}`}>
+                      <Checkbox checked={p._selected} onCheckedChange={() => toggleSelect(idx)} className="mt-1" />
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold">{p.business || "Unknown Business"}</p>
+                          {p.currentProcessor && (
+                            <Badge variant="outline" className={`text-[9px] ${CONF_COLORS[p.processorConfidence || "low"] || CONF_COLORS.low}`}>
+                              {p.currentProcessor} {p.processorConfidence && `(${p.processorConfidence})`}
+                            </Badge>
+                          )}
+                          {p.vertical && p.vertical !== "other" && (
+                            <Badge variant="outline" className="text-[9px]">{VERTICAL_CONFIG[p.vertical as Vertical] || p.vertical}</Badge>
+                          )}
+                        </div>
+                        {p.name && <p className="text-[10px] text-muted-foreground">Contact: {p.name}</p>}
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-muted-foreground">
+                          {p.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{p.phone}</span>}
+                          {p.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{p.email}</span>}
+                          {p.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.address}</span>}
+                          {p.website && <a href={p.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline"><Globe className="w-3 h-3" />{new URL(p.website).hostname}</a>}
+                        </div>
+                        {p.socialLinks && Object.entries(p.socialLinks).some(([, v]) => v) && (
+                          <div className="flex gap-2 text-[10px]">
+                            {Object.entries(p.socialLinks).filter(([, v]) => v).map(([k, v]) => (
+                              <a key={k} href={v as string} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{k}</a>
+                            ))}
+                          </div>
+                        )}
+                        {p._techStack && p._techStack.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {p._techStack.slice(0, 8).map(t => (
+                              <span key={t.name} className="text-[8px] px-1.5 py-0.5 rounded bg-muted/40 text-muted-foreground">{t.name}</span>
+                            ))}
+                            {p._techStack.length > 8 && <span className="text-[8px] text-muted-foreground">+{p._techStack.length - 8} more</span>}
+                          </div>
+                        )}
+                        {p.notes && <p className="text-[10px] text-muted-foreground/70">{p.notes}</p>}
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        {p.website && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => scrapeMutation.mutate({ url: p.website })} disabled={isLoading} title="Deep scan with AI">
+                            <Search className="w-3 h-3" />
+                          </Button>
+                        )}
+                        {p.website && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setTechScanUrls(p.website); setMode("techscan"); techScanMutation.mutate({ url: p.website }); }} disabled={isLoading} title="Tech stack scan">
+                            <Zap className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tech Stack Scan Results */}
+          {techResults.length > 0 && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" />Tech Stack Results ({techResults.length} sites)</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-[500px] overflow-y-auto scrollbar-none">
+                  {techResults.map((r, idx) => (
+                    <div key={idx} className="p-3 rounded-lg bg-muted/20 border border-border/30 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold truncate">{r.title || new URL(r.url).hostname}</p>
+                          <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-mono truncate block">{r.url}</a>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setUrlInput(r.url); setMode("url"); }} title="Deep scan with AI">
+                            <Search className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      {r.error ? (
+                        <p className="text-[10px] text-destructive">{r.error}</p>
+                      ) : r.techStack.length === 0 ? (
+                        <p className="text-[10px] text-muted-foreground">No technologies detected</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {(["PAYMENTS", "CMS", "FRAMEWORK", "ANALYTICS", "MARKETING", "INDUSTRY", "SCHEDULING", "CHAT", "CDN", "HOSTING", "EMAIL", "COMMUNICATIONS"] as const).map(cat => {
+                            const catTech = r.techStack.filter(t => t.category === cat);
+                            if (catTech.length === 0) return null;
+                            return (
+                              <div key={cat} className="flex flex-wrap items-center gap-1">
+                                <span className="text-[9px] font-semibold text-muted-foreground w-16 shrink-0">{cat}</span>
+                                {catTech.map(t => (
+                                  <Badge key={t.name} variant="outline" className={`text-[9px] ${CONF_COLORS[t.confidence] || ""}`}>
+                                    {t.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Processor Detection Summary */}
+          {prospects.length > 0 && (
+            <Card className="overflow-visible border-border/50">
+              <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Payment Processors Found</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px]">
+                  {["Square", "Clover", "Toast", "Stripe", "PayPal", "Shopify"].map(proc => {
+                    const count = prospects.filter(p => p.currentProcessor?.toLowerCase().includes(proc.toLowerCase())).length;
+                    if (count === 0) return null;
+                    return (
+                      <div key={proc} className="flex items-center justify-between p-2 rounded bg-muted/20">
+                        <span className="font-medium">{proc}</span>
+                        <Badge variant="outline" className="text-[9px]">{count}</Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
