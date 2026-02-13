@@ -2634,5 +2634,294 @@ Return ONLY valid JSON, no other text.`,
     res.json({ total, unread, outreach, replies, directInbound, contactForm });
   });
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ─── ENTERPRISE CRM: Opportunities / Deals ──────────────────────────
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  app.get("/api/opportunities", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.opportunities).orderBy(desc(schema.opportunities.updatedAt));
+    // Enrich with lead/assignee names
+    const leads = await db.select({ id: schema.leads.id, name: schema.leads.name, business: schema.leads.business }).from(schema.leads);
+    const team = await db.select({ id: schema.teamMembers.id, name: schema.teamMembers.name }).from(schema.teamMembers);
+    const leadMap = Object.fromEntries(leads.map(l => [l.id, l]));
+    const teamMap = Object.fromEntries(team.map(t => [t.id, t]));
+
+    const enriched = rows.map(o => ({
+      ...o,
+      weightedValue: o.value * (o.probability / 100),
+      leadName: leadMap[o.leadId]?.name || "",
+      leadBusiness: leadMap[o.leadId]?.business || "",
+      assigneeName: teamMap[o.assigneeId]?.name || "",
+    }));
+    res.json(enriched);
+  });
+
+  app.post("/api/opportunities", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const stageProbMap: Record<string, number> = {
+      prospecting: 10, qualification: 25, proposal: 50, negotiation: 75,
+      "closed-won": 100, "closed-lost": 0,
+    };
+    const stage = req.body.stage || "prospecting";
+    const probability = req.body.probability ?? stageProbMap[stage] ?? 10;
+
+    const [opp] = await db.insert(schema.opportunities).values({
+      id,
+      title: req.body.title || "",
+      leadId: req.body.leadId || "",
+      clientId: req.body.clientId || "",
+      stage,
+      value: req.body.value || 0,
+      probability,
+      expectedCloseDate: req.body.expectedCloseDate || "",
+      actualCloseDate: "",
+      lossReason: "",
+      notes: req.body.notes || "",
+      assigneeId: req.body.assigneeId || "",
+      stageChangedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    }).returning();
+
+    // Log activity
+    await db.insert(schema.leadActivities).values({
+      id: randomUUID(),
+      leadId: req.body.leadId || "",
+      opportunityId: id,
+      userId: "",
+      type: "deal-created",
+      title: `Deal created: ${req.body.title}`,
+      description: `Value: $${req.body.value || 0} | Stage: ${stage}`,
+      metadata: "{}",
+      createdAt: now,
+    });
+
+    logActivity("Deal Created", `${req.body.title} — $${req.body.value || 0}`, "deal");
+    res.status(201).json(opp);
+  });
+
+  app.patch("/api/opportunities/:id", requireAdminSession, async (req, res) => {
+    const now = new Date().toISOString();
+    const existing = await db.select().from(schema.opportunities).where(eq(schema.opportunities.id, req.params.id as string)).limit(1);
+    if (!existing.length) return res.status(404).json({ error: "Deal not found" });
+
+    const old = existing[0];
+    const body = { ...req.body, updatedAt: now };
+
+    // Track stage changes
+    if (body.stage && body.stage !== old.stage) {
+      body.stageChangedAt = now;
+      // Auto-set probability based on stage
+      const stageProbMap: Record<string, number> = {
+        prospecting: 10, qualification: 25, proposal: 50, negotiation: 75,
+        "closed-won": 100, "closed-lost": 0,
+      };
+      if (body.probability === undefined && stageProbMap[body.stage] !== undefined) {
+        body.probability = stageProbMap[body.stage];
+      }
+      if (body.stage === "closed-won" || body.stage === "closed-lost") {
+        body.actualCloseDate = now;
+      }
+
+      // Log stage change activity
+      await db.insert(schema.leadActivities).values({
+        id: randomUUID(),
+        leadId: old.leadId,
+        opportunityId: old.id,
+        userId: "",
+        type: "stage-change",
+        title: `Deal moved: ${old.stage} → ${body.stage}`,
+        description: old.title,
+        metadata: JSON.stringify({ from: old.stage, to: body.stage }),
+        createdAt: now,
+      });
+    }
+
+    const updateData = pickColumns(schema.opportunities, body);
+    const [updated] = await db.update(schema.opportunities).set(updateData).where(eq(schema.opportunities.id, req.params.id as string)).returning();
+    if (updated) logActivity("Deal Updated", `${updated.title} → ${updated.stage}`, "deal");
+    res.json(updated);
+  });
+
+  app.delete("/api/opportunities/:id", requireAdminSession, async (req, res) => {
+    const [deleted] = await db.delete(schema.opportunities).where(eq(schema.opportunities.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Deal Deleted", deleted.title, "deal");
+    res.json({ success: true });
+  });
+
+  // ─── Forecasting ────────────────────────────────────────────────────
+
+  app.get("/api/forecast", requireAdminSession, async (_req, res) => {
+    const opps = await db.select().from(schema.opportunities);
+    const now = new Date();
+
+    // Active deals (not closed)
+    const active = opps.filter(o => o.stage !== "closed-won" && o.stage !== "closed-lost");
+    const closedWon = opps.filter(o => o.stage === "closed-won");
+    const closedLost = opps.filter(o => o.stage === "closed-lost");
+
+    const totalPipeline = active.reduce((s, o) => s + o.value, 0);
+    const weightedPipeline = active.reduce((s, o) => s + o.value * (o.probability / 100), 0);
+    const closedWonTotal = closedWon.reduce((s, o) => s + o.value, 0);
+    const closedLostTotal = closedLost.reduce((s, o) => s + o.value, 0);
+    const avgDealSize = closedWon.length > 0 ? closedWonTotal / closedWon.length : 0;
+
+    // Average days to close
+    const daysToClose = closedWon.map(o => {
+      const created = new Date(o.createdAt).getTime();
+      const closed = new Date(o.actualCloseDate || o.updatedAt).getTime();
+      return Math.max(1, Math.floor((closed - created) / 86400000));
+    });
+    const avgDaysToClose = daysToClose.length > 0 ? Math.round(daysToClose.reduce((s, d) => s + d, 0) / daysToClose.length) : 0;
+
+    // Win rate
+    const totalClosed = closedWon.length + closedLost.length;
+    const winRate = totalClosed > 0 ? Math.round((closedWon.length / totalClosed) * 100) : 0;
+
+    // Stage breakdown
+    const stages = ["prospecting", "qualification", "proposal", "negotiation", "closed-won", "closed-lost"];
+    const stageBreakdown = stages.map(stage => {
+      const inStage = opps.filter(o => o.stage === stage);
+      const totalValue = inStage.reduce((s, o) => s + o.value, 0);
+      const avgAge = inStage.length > 0
+        ? Math.round(inStage.reduce((s, o) => s + Math.max(1, Math.floor((now.getTime() - new Date(o.stageChangedAt).getTime()) / 86400000)), 0) / inStage.length)
+        : 0;
+      return {
+        stage,
+        count: inStage.length,
+        totalValue,
+        weightedValue: inStage.reduce((s, o) => s + o.value * (o.probability / 100), 0),
+        avgAge,
+      };
+    });
+
+    // Monthly forecast (next 6 months based on expected close dates)
+    const monthlyForecast = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const monthKey = d.toISOString().slice(0, 7); // YYYY-MM
+      const monthLabel = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+      const inMonth = active.filter(o => o.expectedCloseDate.startsWith(monthKey));
+      const closedInMonth = closedWon.filter(o => (o.actualCloseDate || o.updatedAt).startsWith(monthKey));
+      monthlyForecast.push({
+        month: monthLabel,
+        projected: inMonth.reduce((s, o) => s + o.value * (o.probability / 100), 0),
+        closed: closedInMonth.reduce((s, o) => s + o.value, 0),
+      });
+    }
+
+    // Top deals by weighted value
+    const topDeals = [...active]
+      .sort((a, b) => (b.value * b.probability / 100) - (a.value * a.probability / 100))
+      .slice(0, 5)
+      .map(o => ({ ...o, weightedValue: o.value * (o.probability / 100) }));
+
+    res.json({
+      totalPipeline,
+      weightedPipeline,
+      closedWon: closedWonTotal,
+      closedLost: closedLostTotal,
+      avgDealSize,
+      avgDaysToClose,
+      winRate,
+      stageBreakdown,
+      monthlyForecast,
+      topDeals,
+    });
+  });
+
+  // ─── Lead Activities / Timeline ─────────────────────────────────────
+
+  app.get("/api/activities/:leadId", requireAdminSession, async (req, res) => {
+    const rows = await db.select().from(schema.leadActivities)
+      .where(eq(schema.leadActivities.leadId, req.params.leadId as string))
+      .orderBy(desc(schema.leadActivities.createdAt));
+    res.json(rows);
+  });
+
+  app.post("/api/activities", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const [activity] = await db.insert(schema.leadActivities).values({
+      id,
+      leadId: req.body.leadId || "",
+      opportunityId: req.body.opportunityId || "",
+      userId: req.body.userId || "",
+      type: req.body.type || "note",
+      title: req.body.title || "",
+      description: req.body.description || "",
+      metadata: req.body.metadata || "{}",
+      createdAt: now,
+    }).returning();
+    res.status(201).json(activity);
+  });
+
+  // ─── User Accounts (Enterprise RBAC) ───────────────────────────────
+
+  app.get("/api/user-accounts", requireAdminSession, async (_req, res) => {
+    const rows = await db.select({
+      id: schema.userAccounts.id,
+      email: schema.userAccounts.email,
+      displayName: schema.userAccounts.displayName,
+      role: schema.userAccounts.role,
+      teamId: schema.userAccounts.teamId,
+      avatarUrl: schema.userAccounts.avatarUrl,
+      isActive: schema.userAccounts.isActive,
+      lastLoginAt: schema.userAccounts.lastLoginAt,
+      createdAt: schema.userAccounts.createdAt,
+    }).from(schema.userAccounts).orderBy(asc(schema.userAccounts.displayName));
+    res.json(rows);
+  });
+
+  app.post("/api/user-accounts", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    // Hash password
+    const salt = randomBytes(16).toString("hex");
+    const hash = scryptSync(req.body.password || "changeme", salt, 64).toString("hex");
+    const passwordHash = `${salt}:${hash}`;
+
+    const [user] = await db.insert(schema.userAccounts).values({
+      id,
+      email: req.body.email || "",
+      passwordHash,
+      displayName: req.body.displayName || "",
+      role: req.body.role || "sales-rep",
+      teamId: req.body.teamId || "",
+      avatarUrl: "",
+      isActive: true,
+      lastLoginAt: "",
+      createdAt: now,
+    }).returning();
+    logActivity("User Created", `${user.displayName} (${user.role})`, "auth");
+    // Don't return password hash
+    const { passwordHash: _, ...safe } = user;
+    res.status(201).json(safe);
+  });
+
+  app.patch("/api/user-accounts/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body };
+    // If changing password, hash it
+    if (body.password) {
+      const salt = randomBytes(16).toString("hex");
+      const hash = scryptSync(body.password, salt, 64).toString("hex");
+      body.passwordHash = `${salt}:${hash}`;
+      delete body.password;
+    }
+    const updateData = pickColumns(schema.userAccounts, body);
+    const [updated] = await db.update(schema.userAccounts).set(updateData).where(eq(schema.userAccounts.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "User not found" });
+    logActivity("User Updated", `${updated.displayName} (${updated.role})`, "auth");
+    const { passwordHash: _, ...safe } = updated;
+    res.json(safe);
+  });
+
+  app.delete("/api/user-accounts/:id", requireAdminSession, async (req, res) => {
+    const [deleted] = await db.delete(schema.userAccounts).where(eq(schema.userAccounts.id, req.params.id as string)).returning();
+    if (deleted) logActivity("User Deleted", deleted.displayName, "auth");
+    res.json({ success: true });
+  });
+
   return httpServer;
 }
