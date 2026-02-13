@@ -5,51 +5,105 @@ import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import {
   BookOpen,
-  Video,
   FileText,
-  Link2,
-  FileSpreadsheet,
   Search,
   Star,
   ArrowRight,
   ExternalLink,
-  Play,
   Target,
   Megaphone,
+  GraduationCap,
+  FolderOpen,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 
-interface Resource {
-  id: string;
+// ── Hardcoded CashSwipe Classroom Drive files ─────────────────────
+// These always show regardless of DB state
+
+interface DriveFile {
   title: string;
   description: string;
-  category: string;
-  type: string;
+  category: "sales-materials" | "pos-systems" | "classroom";
+  type: "pdf" | "doc";
   url: string;
-  thumbnailUrl: string;
-  order: number;
-  featured: boolean;
-  published: boolean;
+  featured?: boolean;
 }
+
+const DRIVE_FILES: DriveFile[] = [
+  // ── Client Sales Resources ──────────────────────────────────────
+  { title: "Cash Discount Program — Part 1", description: "Comprehensive guide to the Cash Discount Program covering compliance, implementation, and customer communication.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1yiqqPiOkcTUizcncUYE7v0fs5ezPDMFu/view", featured: true },
+  { title: "Cash Discount Program — Part 2", description: "Visual companion to the Cash Discount Program guide. Print-ready infographic with program details and signage requirements.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1FYLYcqF9Wm0vi4da2WQI4aaIyCw193qs/view" },
+  { title: "3x4 Sticker Design", description: "Print-ready 3x4 sticker design for terminal branding and point-of-sale signage.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/11Gi1iVlaQAxKA0FxkzQ_JxJBocs0N012/view" },
+  { title: "Sales Flyer 1", description: "Professional sales flyer for merchant outreach — highlights zero-fee processing benefits and terminal offer.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1U2JEMh6qh-c_YoYODsQePykFUXcstXti/view", featured: true },
+  { title: "Sales Flyer 2", description: "Alternative flyer design for different merchant verticals. Print-ready format.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/18Q68EIHNAmyYD6Sc57NA9r05cP4tgCbx/view" },
+  { title: "Sales Flyer 3", description: "Detailed sales flyer with pricing breakdown and feature comparison.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1Pn9QfiffkruzyuK2YAiOPlipNuexmqWc/view" },
+  { title: "Sales Flyer 4", description: "Walk-in leave-behind flyer designed for high-impact first impressions.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1X2zv7bIA9QxYPhbfUg9IEL74tpkElvxK/view" },
+  { title: "Savings Calculator — Page 1", description: "Visual savings calculator showing merchants exactly how much they save with zero-fee processing.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1_DSpS5jGL1AIe9mlzr2S19Nz-_-gIv6f/view", featured: true },
+  { title: "Savings Calculator — Page 2", description: "Extended savings breakdown with annual projections and comparison charts.", category: "sales-materials", type: "pdf", url: "https://drive.google.com/file/d/1Pxc9mgUKGCExnT5PEbBCJoY06EheVQYh/view" },
+
+  // ── POS Systems & Battlecards ───────────────────────────────────
+  { title: "Battlecard — Aloha POS", description: "Competitive battlecard: RPOWER vs. Aloha POS. Key differentiators, objection handlers, and win strategies.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1q1-eylUdUoeVKoUgntf1cGLmZ8_Pg_Yi/view", featured: true },
+  { title: "Battlecard — Clover", description: "Competitive battlecard: RPOWER vs. Clover. Feature comparison, pricing advantages, and sales talking points.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1Ha067oNONsNA4ZRI3NAchQq41yTrM5vT/view", featured: true },
+  { title: "Battlecard — SkyTab", description: "Competitive battlecard: RPOWER vs. SkyTab. Side-by-side comparison for restaurant merchants.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/12lf3AEDrdpn8eU1du81bKHUIWb2pknR3/view" },
+  { title: "Battlecard — Toast", description: "Competitive battlecard: RPOWER vs. Toast. Counter-arguments for the most common POS competitor.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/11VtrwKmJGV0HdWK8ZwgZNH5RyeQfXWxC/view", featured: true },
+  { title: "RPOWER Reseller Presentation", description: "Complete reseller overview presentation covering RPOWER POS capabilities, pricing, and partnership model.", category: "pos-systems", type: "doc", url: "https://drive.google.com/file/d/1etbM1RikvCfRP-Xj7fQWcGZOUtxdcYFO/view", featured: true },
+  { title: "RPOWER Buyer's Guide", description: "Comprehensive buyer's guide — features, pricing tiers, hardware options, and ROI calculator.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1I7WYWDtQNr30BQyPZ4ypIYFoAFiWZBZi/view" },
+  { title: "RPOWER Reference Information", description: "Quick reference sheet with RPOWER technical specs, support contacts, and implementation timeline.", category: "pos-systems", type: "doc", url: "https://drive.google.com/file/d/1RM-7N44B8mxUkB2trR2NGlLjpbOYoZBt/view" },
+  { title: "RPOWER mPay — Contactless Payments", description: "mPay contactless payment solution — tap-to-pay, mobile wallets, NFC capabilities.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1dlQJheSIL2YlfPUTcGe_XlKksrBn-NYK/view" },
+  { title: "RPOWER — Accounting Integration", description: "How RPOWER integrates with accounting platforms for seamless financial reporting.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1FjsBCRO1ytBTklXfdDUEXzKv8kaSFd7L/view" },
+  { title: "RPOWER — Bar & Nightclub", description: "POS solutions for bars and nightclubs — tab management, speed ordering, ID verification.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/12qfP2eAU3quFOcygDCd6eTW6XUnm6e2k/view" },
+  { title: "RPOWER — Full POS Brochure", description: "Complete RPOWER POS system brochure covering all features, hardware, and service plans.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/105yY_FGwTcoCcpGAfkHkWseIw8p6h0md/view" },
+  { title: "RPOWER — Counter Service", description: "POS solutions for counter-service restaurants — quick ordering, kitchen display, and screens.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/191MbqX_JPkCVxMsKfFWvGNbQvS9sROlp/view" },
+  { title: "RPOWER — Delivery & Pickup", description: "Online ordering, delivery dispatch, and curbside pickup capabilities.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1tmCe3OJNu298zDdKJ1V4qptlqJGj8iIr/view" },
+  { title: "RPOWER — Fine Dining", description: "Premium POS features — coursing, split checks, wine list management, tableside ordering.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1DQ2gehnSQqn6Cgh5S6OeiyPw4Adeituf/view" },
+  { title: "RPOWER — Gift & Loyalty", description: "Built-in gift card and loyalty program features to drive repeat business.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1Y-QuyMP04A83tS7ONAgOCOioIPVf9_xC/view" },
+  { title: "RPOWER — Mobile POS", description: "Handheld and tablet POS solutions for tableside ordering, food trucks, and events.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1hz3ID7cvAyuStE5NTqvNJJnf-T2b5eP2/view" },
+  { title: "RPOWER — rPortal Reporting", description: "Cloud-based reporting portal — real-time sales data, labor costs, inventory tracking.", category: "pos-systems", type: "pdf", url: "https://drive.google.com/file/d/1PieDCMCkzMXOJtTCudtEHiwYZwd2uwTh/view" },
+
+  // ── CashSwipe Classroom ─────────────────────────────────────────
+  { title: "5 Powerful Icebreakers to Start Conversations with Merchants", description: "Proven icebreaker techniques for engaging merchants in sales conversations. Essential training for new reps.", category: "classroom", type: "doc", url: "https://drive.google.com/file/d/1RauUWaVTQf_7HqYKOMhv6zkDrlqPPlrg/view", featured: true },
+  { title: "Understanding Your Merchant Statement", description: "Guide to reading and analyzing merchant processing statements. Key skill for identifying savings opportunities.", category: "classroom", type: "doc", url: "https://drive.google.com/file/d/1w7XMTJYzFiyDYksrzA7jamk_8GlpiYcE/view", featured: true },
+  ...[
+    "1Us7dWmw7CYhfMP1U2q27n0scmj0Av9Pm", "1BXTK7aTZCW9_fhOJu8KlaeVtR1IDvmUq",
+    "1l3t7yW1_5oeit0aIZIjCskql3C94Yfa1", "1TOCLzJh0dg7c181kvo1qUU_okOu1ZfbZ",
+    "1cGqO1QvA_vuATHvsCtJc6r_1fouwh7No", "12-PUec5esxoFjXPsL8oypOe3OuwRWO6D",
+    "1Rzj3ZETBB6MHCHFaFQ0AjcIHURosoyhS", "1fogX8lg-UuLfFrQzUR9QEouQVif6R5mQ",
+    "12A1fXMG8v9HQpI2r98rCHOmebrXbZRqa", "1DCNp6oxvbms0PE5PDoEHWLcHzw-IwkyF",
+    "1q8QZC5LQ_3AieouFfvGmvqtFTk6_knGt", "1uVFKc4ClEk5tLwx74Xx0QIiqb-pgt-xj",
+    "1rEiOFLa2HtRlqa8ndbBmPPBthhdmLs_w", "1ODZ93kA7ieOWRVX3GfQqM334lrx4olgX",
+    "14vTjgJb9sJnQbiMM4Tlk6WF4lj0Lc8sF", "1KcfNeHvEqFGX0pGW1aT9ZLCuHtCNGjN4",
+    "1sxkGBGDxc7wMjHgMG4vF0H8eDalngZcX", "1RXWIWZQpVIUNfgu4clvn3M9T9XVkq1-r",
+    "1UFZ9ApuUcSJbNpq33jbNSSDwsmygWH_k", "1cYvt5iNHSRFpRa3AWurxHCD8WIsZ3-Av",
+    "1JIKQLLnCPO2s6PYB3HpCaoCzjRqI9ty-", "131x-bp7IkvAmn6-hxqz7W9ykNAIGajxa",
+    "1gxUzlw3WdBRgh9x5rOS_bsJHXTVabbza", "1RPI5e7V-OLV4Sh8lGPDT0fGXUS-zXzdc",
+    "1TMRzlQ8XQYTEkeSTGTsX0JCG1pmlyukv", "1q81ISq3PVU6O1CG1NiJvdSRGLL_bjnES",
+    "1IfCuI7DdA57VXyJhQCRYZZuWyM9wyYXo", "1Y9ynOphu3AqU1oP2A_ET8uQ3ptqWjyAG",
+    "1uJVDvzBno4PMfuDiHRLxhi37k1pc3Vob", "1rz3r6kW_qUMmliR0YVJeDSV5Mtv6i2cI",
+    "1i_Z2X6cDgr4WB9lxVzMHYXjNguxGj0PH", "1BXgkwLkdL0_hCBUWLaF4OFRKoBQJIUT7",
+    "1qcBAyga_1BD7JfgGuHY-TojajCbU61X_", "1fS3MOxhZ61agT64OQUgCHe6bV7IPtm3Y",
+  ].map((id, i) => ({
+    title: `CashSwipe Training — Module ${i + 1}`,
+    description: "Training PDF from the CashSwipe Clients classroom. Open in Google Drive to view or download.",
+    category: "classroom" as const,
+    type: "pdf" as const,
+    url: `https://drive.google.com/file/d/${id}/view`,
+  })),
+];
 
 const CATEGORIES = [
   { id: "all", label: "All Resources", icon: BookOpen },
   { id: "sales-materials", label: "Sales Materials", icon: Target },
   { id: "pos-systems", label: "POS Systems", icon: Megaphone },
-  { id: "classroom", label: "Classroom", icon: FileText },
+  { id: "classroom", label: "CashSwipe Classroom", icon: GraduationCap },
 ];
 
-const TYPE_CONFIG: Record<string, { icon: typeof Video; label: string; color: string }> = {
-  video: { icon: Video, label: "Video", color: "text-red-400 bg-red-400/10 border-red-400/20" },
-  pdf: { icon: FileText, label: "PDF", color: "text-orange-400 bg-orange-400/10 border-orange-400/20" },
-  doc: { icon: BookOpen, label: "Guide", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
-  template: { icon: FileSpreadsheet, label: "Template", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
-  link: { icon: Link2, label: "Link", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
+const TYPE_COLORS: Record<string, string> = {
+  pdf: "text-orange-400 bg-orange-400/10 border-orange-400/20",
+  doc: "text-blue-400 bg-blue-400/10 border-blue-400/20",
 };
 
 function HeroSection() {
@@ -69,8 +123,8 @@ function HeroSection() {
         >
           <motion.div className="flex flex-wrap items-center justify-center gap-2" variants={fadeUp}>
             <Badge variant="outline" className="mb-3 text-primary border-primary/30 bg-primary/5">
-              <BookOpen className="w-3 h-3 mr-1" />
-              Resource Library
+              <GraduationCap className="w-3 h-3 mr-1" />
+              CashSwipe Classroom
             </Badge>
           </motion.div>
 
@@ -78,9 +132,9 @@ function HeroSection() {
             className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-4 sm:mb-6"
             variants={fadeUp}
           >
-            Everything You Need to{" "}
+            CashSwipe Clients{" "}
             <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-              Close More Deals
+              Resource Library
             </span>
           </motion.h1>
 
@@ -88,88 +142,70 @@ function HeroSection() {
             className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto"
             variants={fadeUp}
           >
-            Access sales scripts, training videos, marketing materials, and tools
-            from the CashSwipe Clients classroom. Everything you need to build and
-            scale your merchant services business.
+            Sales materials, POS battlecards, and all 34 training modules from
+            the CashSwipe Clients classroom — hosted on Google Drive.
           </motion.p>
+
+          <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              <FolderOpen className="w-3 h-3 mr-1" />
+              {DRIVE_FILES.length} files on Google Drive
+            </Badge>
+          </motion.div>
         </motion.div>
       </div>
     </section>
   );
 }
 
-function ResourceCard({ resource }: { resource: Resource }) {
-  const typeConf = TYPE_CONFIG[resource.type] || TYPE_CONFIG.doc;
-  const TypeIcon = typeConf.icon;
-  const hasUrl = !!resource.url;
+function FileCard({ file }: { file: DriveFile }) {
+  const color = TYPE_COLORS[file.type] || TYPE_COLORS.doc;
+  const Icon = file.type === "pdf" ? FileText : BookOpen;
 
   return (
     <motion.div variants={scaleIn}>
-      <Card className="group h-full bg-card/50 border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 overflow-hidden">
-        {resource.thumbnailUrl && (
-          <div className="relative aspect-video overflow-hidden bg-muted/30">
-            <img
-              src={resource.thumbnailUrl}
-              alt={resource.title}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-            {resource.type === "video" && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center">
-                  <Play className="w-5 h-5 text-white ml-0.5" />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        <CardContent className="p-5">
-          <div className="flex items-start gap-3 mb-3">
-            <Badge variant="outline" className={`shrink-0 text-xs ${typeConf.color}`}>
-              <TypeIcon className="w-3 h-3 mr-1" />
-              {typeConf.label}
-            </Badge>
-            {resource.featured && (
-              <Badge variant="outline" className="shrink-0 text-xs text-amber-400 bg-amber-400/10 border-amber-400/20">
-                <Star className="w-3 h-3 mr-1" />
-                Featured
+      <a
+        href={file.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block group"
+      >
+        <Card className="h-full bg-card/50 border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-3 mb-3">
+              <Badge variant="outline" className={`shrink-0 text-xs ${color}`}>
+                <Icon className="w-3 h-3 mr-1" />
+                {file.type === "pdf" ? "PDF" : "Guide"}
               </Badge>
-            )}
-          </div>
+              {file.featured && (
+                <Badge variant="outline" className="shrink-0 text-xs text-amber-400 bg-amber-400/10 border-amber-400/20">
+                  <Star className="w-3 h-3 mr-1" />
+                  Featured
+                </Badge>
+              )}
+            </div>
 
-          <h3 className="font-semibold text-foreground mb-2 leading-snug group-hover:text-primary transition-colors">
-            {resource.title}
-          </h3>
+            <h3 className="font-semibold text-foreground mb-2 leading-snug group-hover:text-primary transition-colors">
+              {file.title}
+            </h3>
 
-          <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-2">
-            {resource.description}
-          </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-2">
+              {file.description}
+            </p>
 
-          {hasUrl ? (
-            <a
-              href={resource.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              {resource.type === "video" ? "Watch Now" : resource.type === "pdf" ? "Download PDF" : "View Resource"}
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary group-hover:text-primary/80 transition-colors">
+              Open in Google Drive
               <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground/60">
-              Coming Soon
             </span>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </a>
     </motion.div>
   );
 }
 
-function FeaturedResources({ resources }: { resources: Resource[] }) {
-  const featured = resources.filter((r) => r.featured);
-  if (featured.length === 0) return null;
+function FeaturedResources() {
+  const featured = DRIVE_FILES.filter((f) => f.featured);
 
   return (
     <section className="py-10 sm:py-16">
@@ -186,8 +222,8 @@ function FeaturedResources({ resources }: { resources: Resource[] }) {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {featured.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} />
+            {featured.map((file, i) => (
+              <FileCard key={i} file={file} />
             ))}
           </div>
         </motion.div>
@@ -196,20 +232,20 @@ function FeaturedResources({ resources }: { resources: Resource[] }) {
   );
 }
 
-function CategoryResources({ resources, searchQuery }: { resources: Resource[]; searchQuery: string }) {
+function AllResources({ searchQuery }: { searchQuery: string }) {
   const [activeCategory, setActiveCategory] = useState("all");
 
   const filtered = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return resources.filter((r) => {
-      const matchesCategory = activeCategory === "all" || r.category === activeCategory;
+    return DRIVE_FILES.filter((f) => {
+      const matchesCat = activeCategory === "all" || f.category === activeCategory;
       const matchesSearch =
         !query ||
-        r.title.toLowerCase().includes(query) ||
-        r.description.toLowerCase().includes(query);
-      return matchesCategory && matchesSearch;
+        f.title.toLowerCase().includes(query) ||
+        f.description.toLowerCase().includes(query);
+      return matchesCat && matchesSearch;
     });
-  }, [resources, activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery]);
 
   return (
     <section className="py-10 sm:py-16">
@@ -218,8 +254,8 @@ function CategoryResources({ resources, searchQuery }: { resources: Resource[]; 
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             const count = cat.id === "all"
-              ? resources.length
-              : resources.filter((r) => r.category === cat.id).length;
+              ? DRIVE_FILES.length
+              : DRIVE_FILES.filter((f) => f.category === cat.id).length;
             return (
               <Button
                 key={cat.id}
@@ -254,8 +290,8 @@ function CategoryResources({ resources, searchQuery }: { resources: Resource[]; 
             viewport={{ once: true, margin: "-50px" }}
             key={activeCategory + searchQuery}
           >
-            {filtered.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} />
+            {filtered.map((file, i) => (
+              <FileCard key={`${file.title}-${i}`} file={file} />
             ))}
           </motion.div>
         ) : (
@@ -324,19 +360,9 @@ export default function ResourcesPage() {
   }, []);
 
   useSEO({
-    title: "Resources — CashSwipe Clients | TechSavvy Hawaii",
-    description: "Access sales scripts, training videos, marketing materials, and tools from the CashSwipe Clients classroom. Everything to build your merchant services business.",
+    title: "CashSwipe Classroom — Resources | TechSavvy Hawaii",
+    description: "Access sales materials, POS battlecards, and all 34 CashSwipe training modules. Everything you need to build your merchant services business.",
     canonical: "https://techsavvyhawaii.com/resources",
-  });
-
-  const { data: resources = [], isLoading } = useQuery<Resource[]>({
-    queryKey: ["/api/resources"],
-    queryFn: async () => {
-      const res = await fetch("/api/resources");
-      if (!res.ok) throw new Error("Failed to fetch resources");
-      return res.json();
-    },
-    staleTime: 5 * 60 * 1000,
   });
 
   return (
@@ -356,17 +382,8 @@ export default function ResourcesPage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      ) : (
-        <>
-          {!searchQuery && <FeaturedResources resources={resources} />}
-          <CategoryResources resources={resources} searchQuery={searchQuery} />
-        </>
-      )}
-
+      {!searchQuery && <FeaturedResources />}
+      <AllResources searchQuery={searchQuery} />
       <CTASection />
     </Layout>
   );
