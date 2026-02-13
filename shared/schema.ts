@@ -368,6 +368,55 @@ export const resendConfig = pgTable("resend_config", {
   updatedAt: text("updated_at").notNull(),
 });
 
+// ─── Opportunities / Deals ──────────────────────────────────────────
+
+export const opportunities = pgTable("opportunities", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull().default(""),
+  leadId: text("lead_id").notNull().default(""),
+  clientId: text("client_id").notNull().default(""),
+  stage: text("stage").notNull().default("prospecting"), // prospecting, qualification, proposal, negotiation, closed-won, closed-lost
+  value: real("value").notNull().default(0),
+  probability: integer("probability").notNull().default(10), // 0-100
+  expectedCloseDate: text("expected_close_date").notNull().default(""),
+  actualCloseDate: text("actual_close_date").notNull().default(""),
+  lossReason: text("loss_reason").notNull().default(""),
+  notes: text("notes").notNull().default(""),
+  assigneeId: text("assignee_id").notNull().default(""),
+  stageChangedAt: text("stage_changed_at").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// ─── User Accounts (Enterprise RBAC) ───────────────────────────────
+
+export const userAccounts = pgTable("user_accounts", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull().default(""),
+  passwordHash: text("password_hash").notNull().default(""),
+  displayName: text("display_name").notNull().default(""),
+  role: text("role").notNull().default("sales-rep"), // admin, manager, sales-rep, viewer
+  teamId: text("team_id").notNull().default(""),
+  avatarUrl: text("avatar_url").notNull().default(""),
+  isActive: boolean("is_active").notNull().default(true),
+  lastLoginAt: text("last_login_at").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+});
+
+// ─── Lead / Deal Activities ────────────────────────────────────────
+
+export const leadActivities = pgTable("lead_activities", {
+  id: text("id").primaryKey(),
+  leadId: text("lead_id").notNull().default(""),
+  opportunityId: text("opportunity_id").notNull().default(""),
+  userId: text("user_id").notNull().default(""),
+  type: text("type").notNull().default("note"), // call, email, meeting, note, stage-change, task, deal-created, deal-closed
+  title: text("title").notNull().default(""),
+  description: text("description").notNull().default(""),
+  metadata: text("metadata").notNull().default("{}"), // JSON
+  createdAt: text("created_at").notNull(),
+});
+
 // ─── Zod Schemas & Types ─────────────────────────────────────────────
 
 export const insertContactLeadSchema = createInsertSchema(contactLeads).omit({
@@ -398,3 +447,6 @@ export type EmailMessage = typeof emailMessages.$inferSelect;
 export type OutreachTemplate = typeof outreachTemplates.$inferSelect;
 export type CallScript = typeof callScripts.$inferSelect;
 export type ResendConfig = typeof resendConfig.$inferSelect;
+export type Opportunity = typeof opportunities.$inferSelect;
+export type UserAccount = typeof userAccounts.$inferSelect;
+export type LeadActivityRecord = typeof leadActivities.$inferSelect;

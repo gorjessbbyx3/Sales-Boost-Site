@@ -29,6 +29,9 @@ import {
 import type { AiConfig } from "@shared/schema";
 import { useTheme } from "@/hooks/use-theme";
 import { useState, useEffect, useMemo } from "react";
+import DealsTab from "./admin/DealsTab";
+import ForecastTab from "./admin/ForecastTab";
+import UsersTab from "./admin/UsersTab";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -593,6 +596,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     ]},
     { label: "SALES", tabs: [
       { value: "leads", icon: UserPlus, label: "Pipeline" },
+      { value: "deals", icon: DollarSign, label: "Deals" },
       { value: "clients", icon: Users, label: "Clients" },
       { value: "prospector", icon: Search, label: "Prospector" },
       { value: "inbox", icon: Mail, label: "Inbox" },
@@ -600,6 +604,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { label: "STRATEGY", tabs: [
       { value: "playbooks", icon: BookOpen, label: "Playbooks" },
       { value: "scorecard", icon: Target, label: "Scorecard" },
+      { value: "forecast", icon: TrendingUp, label: "Forecast" },
       { value: "plan", icon: Calendar, label: "90-Day Plan" },
       { value: "revenue", icon: DollarSign, label: "Revenue" },
     ]},
@@ -609,6 +614,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     ]},
     { label: "SETTINGS", tabs: [
       { value: "team", icon: UserCog, label: "Team" },
+      { value: "user-mgmt", icon: Users, label: "Users & Roles" },
       { value: "materials", icon: ClipboardList, label: "Materials" },
       { value: "files", icon: FolderOpen, label: "Files" },
       { value: "resources", icon: Library, label: "Resources" },
@@ -710,9 +716,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsContent value="overview"><OverviewTab setActiveTab={handleTabChange} /></TabsContent>
               <TabsContent value="leads"><LeadsTab /></TabsContent>
+              <TabsContent value="deals"><DealsTab /></TabsContent>
               <TabsContent value="inbox"><InboxTab /></TabsContent>
               <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>
               <TabsContent value="scorecard"><ScorecardTab /></TabsContent>
+              <TabsContent value="forecast"><ForecastTab /></TabsContent>
               <TabsContent value="plan"><PlanTab /></TabsContent>
               <TabsContent value="materials"><MaterialsTab /></TabsContent>
               <TabsContent value="clients"><ClientsTab /></TabsContent>
@@ -722,6 +730,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
               <TabsContent value="resources"><ResourcesManagerTab /></TabsContent>
               <TabsContent value="team"><TeamTab /></TabsContent>
+              <TabsContent value="user-mgmt"><UsersTab /></TabsContent>
               <TabsContent value="schedule"><ScheduleTab /></TabsContent>
               <TabsContent value="prospector"><ProspectorTab /></TabsContent>
               <TabsContent value="ai-ops"><AiOpsTab /></TabsContent>
