@@ -473,6 +473,23 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
+// ─── Invoices ────────────────────────────────────────────────────────
+
+export const invoices = pgTable("invoices", {
+  id: text("id").primaryKey(),
+  invoiceNumber: text("invoice_number").notNull().default(""),
+  clientName: text("client_name").notNull().default(""),
+  amount: integer("amount").notNull().default(0), // cents
+  status: text("status").notNull().default("pending"), // pending, paid, overdue, void
+  dueDate: text("due_date").notNull().default(""),
+  paidDate: text("paid_date"),
+  notes: text("notes").notNull().default(""),
+  fileUrl: text("file_url").notNull().default(""),
+  fileName: text("file_name").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 export const insertAiConfigSchema = createInsertSchema(aiConfig).omit({
   id: true,
 });
@@ -494,3 +511,4 @@ export type ResendConfig = typeof resendConfig.$inferSelect;
 export type Opportunity = typeof opportunities.$inferSelect;
 export type UserAccount = typeof userAccounts.$inferSelect;
 export type LeadActivityRecord = typeof leadActivities.$inferSelect;
+export type Invoice = typeof invoices.$inferSelect;

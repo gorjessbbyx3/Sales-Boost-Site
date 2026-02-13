@@ -1069,6 +1069,99 @@ export async function registerRoutes(
     }
   });
 
+  // ─── Invoices (Admin CRUD + Upload) ─────────────────────────────
+
+  const INVOICES_DIR = path.resolve(process.cwd(), "public", "uploads", "invoices");
+  if (!fs.existsSync(INVOICES_DIR)) fs.mkdirSync(INVOICES_DIR, { recursive: true });
+
+  const invoiceUpload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, INVOICES_DIR),
+      filename: (_req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+        cb(null, `${Date.now()}-${base}${ext}`);
+      },
+    }),
+    limits: { fileSize: 25 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const allowed = [".pdf", ".png", ".jpg", ".jpeg", ".doc", ".docx", ".xls", ".xlsx"];
+      cb(null, allowed.includes(path.extname(file.originalname).toLowerCase()));
+    },
+  });
+
+  app.get("/api/invoices", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.invoices).orderBy(desc(schema.invoices.createdAt));
+    res.json(rows);
+  });
+
+  app.post("/api/invoices", requireAdminSession, invoiceUpload.single("file"), async (req: any, res) => {
+    try {
+      const id = randomUUID();
+      const now = new Date().toISOString();
+      const file = req.file as Express.Multer.File | undefined;
+      const fileUrl = file ? `/uploads/invoices/${file.filename}` : "";
+      const fileName = file ? file.originalname : "";
+      const [invoice] = await db.insert(schema.invoices).values({
+        id,
+        invoiceNumber: req.body.invoiceNumber || "",
+        clientName: req.body.clientName || "",
+        amount: parseInt(req.body.amount) || 0,
+        status: req.body.status || "pending",
+        dueDate: req.body.dueDate || "",
+        notes: req.body.notes || "",
+        fileUrl,
+        fileName,
+        createdAt: now,
+        updatedAt: now,
+      }).returning();
+      logActivity("Invoice Added", `#${invoice.invoiceNumber} — ${invoice.clientName}`, "file");
+      res.status(201).json(invoice);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to create invoice" });
+    }
+  });
+
+  app.patch("/api/invoices/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body, updatedAt: new Date().toISOString() };
+    const updateData = pickColumns(schema.invoices, body);
+    const [updated] = await db.update(schema.invoices).set(updateData).where(eq(schema.invoices.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Invoice not found" });
+    logActivity("Invoice Updated", `#${updated.invoiceNumber}`, "file");
+    res.json(updated);
+  });
+
+  app.delete("/api/invoices/:id", requireAdminSession, async (req, res) => {
+    const [deleted] = await db.delete(schema.invoices).where(eq(schema.invoices.id, req.params.id as string)).returning();
+    if (deleted) {
+      // Remove the file from disk if it was uploaded
+      if (deleted.fileUrl && deleted.fileUrl.startsWith("/uploads/invoices/")) {
+        const filePath = path.resolve(process.cwd(), "public", deleted.fileUrl);
+        fs.unlink(filePath, () => {});
+      }
+      logActivity("Invoice Deleted", `#${deleted.invoiceNumber}`, "file");
+    }
+    res.json({ success: true });
+  });
+
+  // Upload/replace invoice file for existing invoice
+  app.post("/api/invoices/:id/upload", requireAdminSession, invoiceUpload.single("file"), async (req: any, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+      const file = req.file as Express.Multer.File;
+      const fileUrl = `/uploads/invoices/${file.filename}`;
+      const [updated] = await db.update(schema.invoices).set({
+        fileUrl,
+        fileName: file.originalname,
+        updatedAt: new Date().toISOString(),
+      }).where(eq(schema.invoices.id, req.params.id as string)).returning();
+      if (!updated) return res.status(404).json({ error: "Invoice not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Upload failed" });
+    }
+  });
+
   // ─── Dashboard Stats ───────────────────────────────────────────
 
   app.get("/api/dashboard/stats", requireAdminSession, async (_req, res) => {
