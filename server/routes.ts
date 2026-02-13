@@ -2145,10 +2145,18 @@ If the page is a single business, return an array with one item. If it's a direc
   // Google dork execution
   app.post("/api/ai-ops/google-dork", requireAdminSession, async (req, res) => {
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: "Anthropic API key not configured. Add ANTHROPIC_API_KEY to your environment variables." });
-
     const { query, location } = req.body;
     if (!query) return res.status(400).json({ error: "Query is required." });
+
+    // If no API key, return a helpful response instead of an error
+    if (!apiKey) {
+      return res.json({
+        results: [], urls: [], query,
+        searchedAt: new Date().toISOString(),
+        noApiKey: true,
+        message: "No Anthropic API key configured. Use 'Open in Google' to search manually, then paste URLs into URL Scanner.",
+      });
+    }
 
     try {
       // Try fetching Google search results
@@ -2165,7 +2173,6 @@ If the page is a single business, return an array with one item. If it's a direc
           signal: AbortSignal.timeout(15000),
         });
         html = await response.text();
-        // Detect if Google returned a CAPTCHA or block page
         if (html.includes("unusual traffic") || html.includes("captcha") || html.includes("sorry/index") || response.status === 429) {
           googleBlocked = true;
         }
@@ -2174,12 +2181,13 @@ If the page is a single business, return an array with one item. If it's a direc
       }
 
       if (googleBlocked || !html || html.length < 500) {
-        // Google blocked us — use Claude's own knowledge to generate leads for the query
-        const anthropic = new Anthropic({ apiKey });
-        const aiResponse = await anthropic.messages.create({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 4096,
-          system: `You are a lead generation AI for a merchant services sales team${location ? ` in ${location}` : ""}. The user wants to find businesses matching a Google search query, but direct Google access is unavailable.
+        // Google blocked — try AI fallback
+        try {
+          const anthropic = new Anthropic({ apiKey });
+          const aiResponse = await anthropic.messages.create({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 4096,
+            system: `You are a lead generation AI for a merchant services sales team${location ? ` in ${location}` : ""}. The user wants to find businesses matching a Google search query, but direct Google access is unavailable.
 
 Based on your knowledge, generate realistic business leads that would match this search query. Focus on real business types, realistic contact patterns, and accurate locations for the area.
 
@@ -2204,14 +2212,23 @@ Return a JSON object:
 }
 
 Return ONLY valid JSON, no other text. Generate 5-10 realistic results.`,
-          messages: [{ role: "user", content: `Search query: "${query}"\nLocation focus: ${location || "general"}` }],
-        });
+            messages: [{ role: "user", content: `Search query: "${query}"\nLocation focus: ${location || "general"}` }],
+          });
 
-        const text = aiResponse.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { results: [], urls: [] };
-        res.json({ ...parsed, query, searchedAt: new Date().toISOString(), googleBlocked: true, aiGenerated: true });
-        return;
+          const text = aiResponse.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("");
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { results: [], urls: [] };
+          return res.json({ ...parsed, query, searchedAt: new Date().toISOString(), googleBlocked: true, aiGenerated: true });
+        } catch (aiErr: any) {
+          // AI fallback also failed — return graceful response, not 500
+          console.error("AI fallback error:", aiErr.message);
+          return res.json({
+            results: [], urls: [], query,
+            searchedAt: new Date().toISOString(),
+            googleBlocked: true, aiFailed: true,
+            message: `Google blocked and AI fallback failed: ${aiErr.message}. Use 'Open in Google' to search manually.`,
+          });
+        }
       }
 
       // Google returned results — parse them with AI
@@ -2259,14 +2276,16 @@ Return ONLY valid JSON, no other text.`,
       res.json({ ...parsed, query, searchedAt: new Date().toISOString() });
     } catch (err: any) {
       console.error("Google dork error:", err.message);
-      // Return actual error info instead of always claiming "blocked"
-      const isApiKeyError = err.message?.includes("api_key") || err.message?.includes("authentication");
-      const isRateLimit = err.message?.includes("rate") || err.message?.includes("429");
-      res.status(500).json({
-        error: isApiKeyError ? "Anthropic API key is invalid or expired." :
-               isRateLimit ? "Rate limited — wait a moment and try again." :
-               "Search failed. Try using 'Open in Google' to search manually, then paste URLs into URL Scanner.",
-        details: err.message,
+      // Return graceful response instead of 500
+      res.json({
+        results: [], urls: [], query,
+        searchedAt: new Date().toISOString(),
+        error: true,
+        message: err.message?.includes("api_key") || err.message?.includes("authentication")
+          ? "Anthropic API key is invalid or expired."
+          : err.message?.includes("rate") || err.message?.includes("429")
+          ? "Rate limited — wait a moment and try again."
+          : "Search failed. Use 'Open in Google' to search manually, then paste URLs into URL Scanner.",
       });
     }
   });
