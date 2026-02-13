@@ -546,7 +546,10 @@ export default function AiConfigPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const { data: authStatus, isError } = useQuery<{ authenticated: boolean }>({ queryKey: ["/api/admin/check"] });
-  const { data: setupStatus } = useQuery<{ needsSetup: boolean }>({ queryKey: ["/api/admin/setup-status"] });
+  const { data: setupStatus, isError: setupError } = useQuery<{ needsSetup: boolean }>({ queryKey: ["/api/admin/setup-status"] });
+
+  const setupReady = setupStatus !== undefined || setupError;
+  const needsSetup = setupStatus?.needsSetup ?? setupError;
 
   useEffect(() => {
     if (authStatus !== undefined) { setIsAuthenticated(authStatus.authenticated); setAuthChecked(true); }
@@ -558,9 +561,9 @@ export default function AiConfigPage() {
     onSuccess: () => { setIsAuthenticated(false); queryClient.invalidateQueries({ queryKey: ["/api/admin/check"] }); },
   });
 
-  if (!authChecked || setupStatus === undefined) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>;
+  if (!authChecked || !setupReady) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>;
 
-  if (setupStatus.needsSetup && !isAuthenticated) {
+  if (needsSetup && !isAuthenticated) {
     return <AdminSetup onComplete={() => {
       setIsAuthenticated(true);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/check"] });
