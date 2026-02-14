@@ -168,8 +168,66 @@ export async function autoEnrichLead(leadId: string): Promise<void> {
         createdAt: new Date().toISOString(),
       });
     }
+
+    // Auto-score the lead after enrichment
+    try {
+      const [freshLead] = await db.select().from(schema.leads).where(eq(schema.leads.id, leadId));
+      if (freshLead) {
+        const scoreResp = await fetch(`${enrichWorkerUrl}/score`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            business: freshLead.business,
+            vertical: freshLead.vertical,
+            currentProcessor: freshLead.currentProcessor,
+            monthlyVolume: freshLead.monthlyVolume,
+            painPoints: freshLead.painPoints,
+            hasEmail: !!freshLead.email,
+            hasPhone: !!freshLead.phone,
+            hasWebsite: !!urlMatch[0],
+            source: freshLead.source,
+          }),
+        });
+        if (scoreResp.ok) {
+          const scoreData = await scoreResp.json() as { score: number; grade: string; recommendation: string };
+          await db.insert(schema.leadActivities).values({
+            id: randomUUID(),
+            leadId,
+            opportunityId: "",
+            userId: "autopilot",
+            type: "note",
+            title: `Lead Score: ${scoreData.score}/100 (${scoreData.grade})`,
+            description: scoreData.recommendation,
+            metadata: JSON.stringify(scoreData),
+            createdAt: new Date().toISOString(),
+          });
+          log(`Scored lead: ${freshLead.business} — ${scoreData.score}/100 (${scoreData.grade})`);
+        }
+      }
+    } catch {
+      // Scoring is non-critical
+    }
   } catch (err) {
     // Silently fail enrichment — not critical
+  }
+}
+
+// ─── Classify Inbound Emails ──────────────────────────────────────────
+
+export async function classifyInboundEmail(subject: string, body: string): Promise<{
+  intent: string; priority: string; suggestedAction: string;
+} | null> {
+  const workerUrl = process.env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+  try {
+    const resp = await fetch(`${workerUrl}/classify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: `Subject: ${subject}\n\n${body}`.slice(0, 2000) }),
+    });
+    if (!resp.ok) return null;
+    return await resp.json() as { intent: string; priority: string; suggestedAction: string };
+  } catch {
+    return null;
   }
 }
 
