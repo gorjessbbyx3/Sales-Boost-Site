@@ -9,7 +9,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import rateLimit from "express-rate-limit";
 import { sendEmail, sendContactFormConfirmation, sendOutreachEmail, generateOutreachEmail, generateCallScript, handleInboundEmail } from "./email";
-import { startAutopilot, stopAutopilot, runAutopilot, generateAIEmail, autoEnrichLead } from "./autopilot";
+import { startAutopilot, stopAutopilot, runAutopilot, generateAIEmail, autoEnrichLead, classifyInboundEmail } from "./autopilot";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -2810,9 +2810,31 @@ Return ONLY valid JSON, no other text.`,
       }
 
       const result = await handleInboundEmail({ from, to: to || "contact@techsavvyhawaii.com", subject: subject || "(no subject)", text: text || "", html: html || "" });
-      logActivity("Email Received", `From: ${from} — ${subject || "(no subject)"}`, "email");
 
-      res.json({ success: true, threadId: result.threadId });
+      // Classify inbound email intent + priority via Workers AI
+      const classification = await classifyInboundEmail(subject || "", text || "");
+      const priorityLabel = classification ? ` [${classification.priority}]` : "";
+      logActivity("Email Received", `From: ${from}${priorityLabel} — ${subject || "(no subject)"}`, "email");
+
+      // If high priority, log as activity on matching lead
+      if (classification?.priority === "high" && result.threadId) {
+        const [thread] = await db.select().from(schema.emailThreads).where(eq(schema.emailThreads.id, result.threadId));
+        if (thread?.leadId) {
+          await db.insert(schema.leadActivities).values({
+            id: randomUUID(),
+            leadId: thread.leadId,
+            opportunityId: "",
+            userId: "autopilot",
+            type: "note",
+            title: `High-priority inbound: ${classification.intent}`,
+            description: classification.suggestedAction,
+            metadata: JSON.stringify(classification),
+            createdAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      res.json({ success: true, threadId: result.threadId, classification });
     } catch (err: any) {
       console.error("Inbound email webhook error:", err.message);
       res.status(500).json({ error: "Failed to process inbound email" });
@@ -3303,6 +3325,125 @@ Return ONLY valid JSON, no other text.`,
       monthlyVolume: lead.monthlyVolume, painPoints: lead.painPoints, notes: lead.notes,
     }, type);
     res.json(email);
+  });
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ─── Workers AI Toolkit (proxy to Cloudflare Worker) ────────────────
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  const WORKER_BASE = process.env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+
+  // Generic proxy for Worker AI endpoints
+  const workerProxy = (endpoint: string) => async (req: Request, res: Response) => {
+    try {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 20000);
+      const resp = await fetch(`${WORKER_BASE}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timeout);
+      const data = await resp.json();
+      res.status(resp.status).json(data);
+    } catch (err: any) {
+      res.status(502).json({ error: `Worker unreachable: ${err.message}` });
+    }
+  };
+
+  // Lead & Sales
+  app.post("/api/ai/enrich", requireAdminSession, workerProxy("/enrich"));
+  app.post("/api/ai/pitch", requireAdminSession, workerProxy("/pitch"));
+  app.post("/api/ai/objection", requireAdminSession, workerProxy("/objection"));
+  app.post("/api/ai/score", requireAdminSession, workerProxy("/score"));
+
+  // Content & Outreach
+  app.post("/api/ai/email", requireAdminSession, workerProxy("/email"));
+  app.post("/api/ai/sms", requireAdminSession, workerProxy("/sms"));
+  app.post("/api/ai/summarize", requireAdminSession, workerProxy("/summarize"));
+
+  // Classroom & Training
+  app.post("/api/ai/quiz", requireAdminSession, workerProxy("/quiz"));
+  app.post("/api/ai/roleplay", requireAdminSession, workerProxy("/roleplay"));
+
+  // Operations
+  app.post("/api/ai/classify", requireAdminSession, workerProxy("/classify"));
+  app.post("/api/ai/extract-statement", requireAdminSession, workerProxy("/extract-statement"));
+
+  // Score a lead by ID (convenience route)
+  app.post("/api/leads/:id/score", requireAdminSession, async (req, res) => {
+    const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, req.params.id as string));
+    if (!lead) return res.status(404).json({ error: "Lead not found" });
+
+    try {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 15000);
+      const resp = await fetch(`${WORKER_BASE}/score`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          business: lead.business,
+          vertical: lead.vertical,
+          currentProcessor: lead.currentProcessor,
+          monthlyVolume: lead.monthlyVolume,
+          painPoints: lead.painPoints,
+          hasEmail: !!lead.email,
+          hasPhone: !!lead.phone,
+          hasWebsite: lead.notes.includes("http"),
+          source: lead.source,
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timeout);
+      if (!resp.ok) return res.status(resp.status).json({ error: "Scoring failed" });
+      const scoreData = await resp.json() as { score: number; grade: string; recommendation: string };
+
+      // Log as activity
+      await db.insert(schema.leadActivities).values({
+        id: randomUUID(),
+        leadId: lead.id,
+        opportunityId: "",
+        userId: (req as any).session?.userId || "admin",
+        type: "note",
+        title: `Lead Score: ${scoreData.score}/100 (${scoreData.grade})`,
+        description: scoreData.recommendation,
+        metadata: JSON.stringify(scoreData),
+        createdAt: new Date().toISOString(),
+      });
+
+      res.json(scoreData);
+    } catch (err: any) {
+      res.status(502).json({ error: `Worker unreachable: ${err.message}` });
+    }
+  });
+
+  // Generate pitch for a lead by ID
+  app.post("/api/leads/:id/pitch", requireAdminSession, async (req, res) => {
+    const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, req.params.id as string));
+    if (!lead) return res.status(404).json({ error: "Lead not found" });
+
+    try {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 15000);
+      const resp = await fetch(`${WORKER_BASE}/pitch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          business: lead.business,
+          vertical: lead.vertical,
+          currentProcessor: lead.currentProcessor,
+          monthlyVolume: lead.monthlyVolume,
+          painPoints: lead.painPoints,
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timeout);
+      if (!resp.ok) return res.status(resp.status).json({ error: "Pitch generation failed" });
+      res.json(await resp.json());
+    } catch (err: any) {
+      res.status(502).json({ error: `Worker unreachable: ${err.message}` });
+    }
   });
 
   // Start autopilot if enabled on server boot
