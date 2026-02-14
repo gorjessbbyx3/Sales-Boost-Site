@@ -602,13 +602,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { label: "COMMAND CENTER", tabs: [
       { value: "overview", icon: BarChart3, label: "Today" },
       { value: "tasks", icon: ClipboardList, label: "Tasks & Schedule" },
-      { value: "activity", icon: Activity, label: "Activity" },
     ]},
     { label: "SALES", tabs: [
       { value: "leads", icon: UserPlus, label: "Pipeline" },
       { value: "deals", icon: DollarSign, label: "Deals" },
       { value: "clients", icon: Users, label: "Clients" },
-      { value: "prospector", icon: Search, label: "Prospector" },
       { value: "inbox", icon: Mail, label: "Inbox" },
     ]},
     { label: "STRATEGY", tabs: [
@@ -632,6 +630,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       { value: "resources", icon: Library, label: "Resources" },
       { value: "integrations", icon: Plug, label: "Integrations" },
       { value: "security", icon: Lock, label: "Security" },
+      { value: "activity", icon: Activity, label: "Activity Log" },
     ]},
   ];
   const tabs = tabGroups.flatMap(g => g.tabs);
