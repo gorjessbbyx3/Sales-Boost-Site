@@ -364,6 +364,94 @@ export async function registerRoutes(
     res.json(config);
   });
 
+  // ─── Seed Content (lead magnets, materials, AI knowledge) ──────
+
+  app.post("/api/admin/seed-content", requireAdminSession, async (_req, res) => {
+    const now = new Date().toISOString();
+    let resourcesAdded = 0;
+    let materialsAdded = 0;
+
+    // 1. Seed lead magnet resources
+    const leadMagnetResources = [
+      { title: "Top 10 Things to Check on Your Merchant Statement", description: "A quick guide to spotting hidden fees, inflated rates, and junk charges. Includes effective rate calculator, fee benchmarks, and a quick-reference audit checklist.", category: "classroom", type: "pdf", url: "/free/statement-checklist", featured: true, published: true, order: 1 },
+      { title: "Cash Discount Programs Explained", description: "Complete guide to cash discount programs — legal status in all 50 states, implementation checklist, signage requirements, receipt formatting, and customer FAQ scripts.", category: "classroom", type: "pdf", url: "/free/cash-discount-guide", featured: true, published: true, order: 2 },
+      { title: "Payment Security Checklist for Small Businesses", description: "PCI compliance walkthrough, terminal security hardening, fraud prevention tactics for card-present and online transactions, plus an incident response plan template.", category: "classroom", type: "pdf", url: "/free/security-checklist", featured: true, published: true, order: 3 },
+      { title: "Industry-Specific Rate Comparison Guide", description: "Rate benchmarks for restaurants, retail, salons, auto repair, medical, convenience stores, professional services, and e-commerce. Know if you're overpaying.", category: "classroom", type: "pdf", url: "/free/rate-comparison", featured: true, published: true, order: 4 },
+    ];
+
+    for (const r of leadMagnetResources) {
+      const existing = await db.select({ id: schema.resources.id }).from(schema.resources).where(eq(schema.resources.title, r.title)).limit(1);
+      if (existing.length === 0) {
+        await db.insert(schema.resources).values({ id: randomUUID(), ...r, thumbnailUrl: "", createdAt: now, updatedAt: now });
+        resourcesAdded++;
+      }
+    }
+
+    // 2. Seed sales materials
+    const salesMaterials = [
+      { category: "sales", name: "One-Pager Value Proposition", description: "Print double-sided. Includes: free statement review offer, problem/solution table (hidden fees, outdated equipment, slow funding), how-it-works steps, QR code placeholder, and testimonial section. Use for walk-ins and networking events.", status: "completed" },
+      { category: "sales", name: "Leave-Behind Card", description: "Business card (3.5x2) or mini flyer (4x6). Front: FREE STATEMENT REVIEW headline, qualifying question, contact info. Back: 4 benefit bullets (hidden fee analysis, rate comparison, equipment evaluation, next-day funding), QR code to landing page.", status: "completed" },
+      { category: "partner", name: "Referral Partner Agreement", description: "One-page partnership template. Covers: referral process (email/form/intro), compensation models (flat fee per funded account, ongoing residual %, or tiered hybrid), mutual obligations, monthly reporting, 30-day exit clause.", status: "completed" },
+    ];
+
+    for (const m of salesMaterials) {
+      const existing = await db.select({ id: schema.materials.id }).from(schema.materials).where(eq(schema.materials.name, m.name)).limit(1);
+      if (existing.length === 0) {
+        await db.insert(schema.materials).values({ id: randomUUID(), ...m, fileUrl: "", updatedAt: now });
+        materialsAdded++;
+      }
+    }
+
+    // 3. Update AI system prompt with rate benchmarks + objection knowledge
+    const updatedPrompt = `You are a helpful assistant for TechSavvy Hawaii (doing business as CashSwipe). You help businesses save money on payment processing.
+
+WHAT WE OFFER:
+- Zero-fee processing: Merchants keep 100% of every sale. A small surcharge is passed to the customer at checkout (legal in all 50 states as a cash discount program).
+- One-time $399 terminal cost (chip, swipe, contactless/NFC, online gateway). No monthly fees, no contracts.
+- Free custom website for every processing customer.
+- Premium website packages ($50-$399/mo maintenance plans) with advanced features.
+- High-risk merchant accounts (CBD, vape, firearms, adult, nutraceuticals).
+
+RATE BENCHMARKS BY INDUSTRY (effective rate = total fees / total volume):
+- Restaurants: Good 2.1-2.4%, Average 2.4-2.8%, Overpaying 2.8%+
+- Retail: Good 2.0-2.3%, Average 2.3-2.7%, Overpaying 2.7%+
+- Salons/Spas: Good 2.2-2.5%, Average 2.5-2.9%, Overpaying 2.9%+
+- Auto Repair: Good 2.3-2.6%, Average 2.6-3.0%, Overpaying 3.0%+
+- Medical/Dental: Good 2.3-2.7%, Average 2.7-3.1%, Overpaying 3.1%+
+- Convenience Stores: Good 2.0-2.3%, Average 2.3-2.6%, Overpaying 2.6%+
+- Professional Services: Good 2.5-2.9%, Average 2.9-3.3%, Overpaying 3.3%+
+- E-Commerce: Good 2.5-2.9%, Average 2.9-3.3%, Overpaying 3.3%+
+
+COMMON OBJECTIONS & RESPONSES:
+- "We're happy with our processor" -> Rates change constantly. A free statement review costs nothing and takes 10 minutes.
+- "We're locked in a contract" -> Most have 30-60 day exit clauses. ETF is typically $200-500. If savings are $300+/month, it pays for itself in under 2 months.
+- "What are your rates?" -> Don't quote blind rates. Ask for their statement for an apples-to-apples comparison.
+- "We don't process enough" -> Even $5K-10K/month businesses lose $100-300/month to inflated fees. That's $1,200-3,600/year.
+- "We just switched" -> Intro rates often creep up after 3-6 months. Offer a future review.
+
+FREE RESOURCES (direct prospects to these):
+- Statement Checklist: /free/statement-checklist
+- Cash Discount Guide: /free/cash-discount-guide
+- Security Checklist: /free/security-checklist
+- Rate Comparison Guide: /free/rate-comparison
+
+CONTACT: (808) 767-5460 | contact@techsavvyhawaii.com | techsavvyhawaii.com
+Hours: Mon-Sat 8AM-6PM HST
+
+RULES:
+- Be friendly, professional, and concise
+- Always offer a free statement review as the primary CTA
+- When discussing rates, reference the benchmarks above for their industry
+- When prospects object, use the responses above as a guide (adapt naturally)
+- Direct interested prospects to /contact or call (808) 767-5460
+- If they want educational resources, link to the free guides above`;
+
+    await db.update(schema.aiConfig).set({ systemPrompt: updatedPrompt }).where(eq(schema.aiConfig.id, "default"));
+
+    logActivity("Content Seeded", `Resources: ${resourcesAdded}, Materials: ${materialsAdded}, AI prompt updated`, "integration");
+    res.json({ resources: resourcesAdded, materials: materialsAdded, aiUpdated: true });
+  });
+
   // ─── Chat ───────────────────────────────────────────────────────
 
   app.post("/api/chat", chatLimiter, async (req, res) => {
