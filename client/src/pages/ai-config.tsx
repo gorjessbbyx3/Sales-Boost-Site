@@ -2745,7 +2745,7 @@ function InvoicesTab() {
       if (file) fd.append("file", file);
       fd.append("invoiceNumber", form.invoiceNumber);
       fd.append("clientName", form.clientName);
-      fd.append("amount", String(Math.round(parseFloat(form.amount || "0") * 100)));
+      fd.append("amount", String(parseFloat(form.amount || "0")));
       fd.append("status", form.status);
       fd.append("dueDate", form.dueDate);
       fd.append("notes", form.notes);
@@ -2806,13 +2806,13 @@ function InvoicesTab() {
   const openEdit = (inv: InvoiceRecord) => {
     setEditing(inv);
     setSelectedFile(null);
-    setForm({ invoiceNumber: inv.invoiceNumber, clientName: inv.clientName, amount: (inv.amount / 100).toFixed(2), status: inv.status, dueDate: inv.dueDate, notes: inv.notes });
+    setForm({ invoiceNumber: inv.invoiceNumber, clientName: inv.clientName, amount: String(inv.amount), status: inv.status, dueDate: inv.dueDate, notes: inv.notes });
     setShowDialog(true);
   };
 
   const handleSave = () => {
     if (editing) {
-      updateMut.mutate({ id: editing.id, invoiceNumber: form.invoiceNumber, clientName: form.clientName, amount: Math.round(parseFloat(form.amount || "0") * 100), status: form.status, dueDate: form.dueDate, notes: form.notes });
+      updateMut.mutate({ id: editing.id, invoiceNumber: form.invoiceNumber, clientName: form.clientName, amount: parseFloat(form.amount || "0"), status: form.status, dueDate: form.dueDate, notes: form.notes });
     } else {
       createInvoice(selectedFile || undefined);
     }
@@ -2846,15 +2846,15 @@ function InvoicesTab() {
       <div className="grid grid-cols-3 gap-3">
         <Card><CardContent className="p-4 text-center">
           <p className="text-[10px] text-muted-foreground uppercase">Pending</p>
-          <p className="text-lg font-bold text-yellow-400">${(totalPending / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          <p className="text-lg font-bold text-yellow-400">${totalPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
         <Card><CardContent className="p-4 text-center">
           <p className="text-[10px] text-muted-foreground uppercase">Paid</p>
-          <p className="text-lg font-bold text-emerald-400">${(totalPaid / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          <p className="text-lg font-bold text-emerald-400">${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
         <Card><CardContent className="p-4 text-center">
           <p className="text-[10px] text-muted-foreground uppercase">Overdue</p>
-          <p className="text-lg font-bold text-red-400">${(totalOverdue / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          <p className="text-lg font-bold text-red-400">${totalOverdue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
       </div>
 
@@ -2902,7 +2902,7 @@ function InvoicesTab() {
                   <TableRow key={inv.id}>
                     <TableCell className="text-sm font-medium">{inv.invoiceNumber || "—"}</TableCell>
                     <TableCell className="text-sm">{inv.clientName || <span className="text-muted-foreground italic">No client</span>}</TableCell>
-                    <TableCell className="text-sm font-medium">${(inv.amount / 100).toFixed(2)}</TableCell>
+                    <TableCell className="text-sm font-medium">${inv.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`text-[10px] ${st.color}`}>{st.label}</Badge>
                     </TableCell>
