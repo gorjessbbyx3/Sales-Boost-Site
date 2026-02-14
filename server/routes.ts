@@ -610,6 +610,7 @@ export async function registerRoutes(
       priority: req.body.priority || "medium",
       completed: req.body.completed || false,
       linkedTo: req.body.linkedTo || "",
+      assignee: req.body.assignee || "",
       createdAt: new Date().toISOString(),
     }).returning();
     logActivity("Task Created", task.title, "task");
