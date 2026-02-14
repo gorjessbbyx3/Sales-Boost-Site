@@ -101,6 +101,7 @@ export const tasks = pgTable("tasks", {
   completed: boolean("completed").notNull().default(false),
   linkedTo: text("linked_to").notNull().default(""),
   assignee: text("assignee").notNull().default(""),
+  planItemId: text("plan_item_id").notNull().default(""),
   createdAt: text("created_at").notNull(),
 });
 

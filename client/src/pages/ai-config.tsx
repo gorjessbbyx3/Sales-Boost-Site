@@ -194,6 +194,7 @@ interface Task {
   completed: boolean;
   linkedTo: string;
   assignee: string;
+  planItemId: string;
   createdAt: string;
 }
 
@@ -2320,6 +2321,8 @@ function TasksTab() {
   const { data: tasks = [], refetch } = useQuery<Task[]>({ queryKey: ["/api/tasks"] });
   const { data: schedule = [], refetch: refetchSchedule } = useQuery<ScheduleItem[]>({ queryKey: ["/api/schedule"] });
   const { data: team = [] } = useQuery<TeamMember[]>({ queryKey: ["/api/team-members"] });
+  const { data: planItems = [] } = useQuery<PlanItem[]>({ queryKey: ["/api/plan-items"] });
+  const planItemMap = useMemo(() => new Map(planItems.map(p => [p.id, p])), [planItems]);
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "completed" | "overdue">("pending");
@@ -2421,10 +2424,11 @@ function TasksTab() {
                 {assigneeInfo && <div className={`w-1 h-8 rounded-full shrink-0 ${assigneeInfo.color}`} />}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2"><span className={`text-sm ${task.completed ? "line-through text-muted-foreground" : ""}`}>{task.title}</span><div className={`w-1.5 h-1.5 rounded-full ${task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"}`} /></div>
-                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
                     {assigneeInfo && <span className={`font-medium ${assigneeInfo.color.replace("bg-", "text-")}`}>{assigneeInfo.label}</span>}
                     {task.dueDate && <span className={!task.completed && task.dueDate < todayStr ? "text-destructive font-medium" : ""}>Due {task.dueDate}</span>}
                     {task.linkedTo && <span>{task.linkedTo}</span>}
+                    {task.planItemId && planItemMap.get(task.planItemId) && <span className="inline-flex items-center gap-1 text-primary/80"><Target className="w-2.5 h-2.5" />{planItemMap.get(task.planItemId)!.title}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingTask(task); setShowForm(true); }}><Edit3 className="w-3 h-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(task.id)}><Trash2 className="w-3 h-3" /></Button></div>
@@ -2481,7 +2485,9 @@ function TasksTab() {
 
 function TaskFormDialog({ open, onClose, onSave, task }: { open: boolean; onClose: () => void; onSave: (f: Partial<Task>) => void; task: Task | null; }) {
   const [form, setForm] = useState<Partial<Task>>({});
-  useEffect(() => { if (open) setForm(task || { title: "", dueDate: "", priority: "medium", completed: false, linkedTo: "", assignee: "" }); }, [open, task]);
+  const { data: planItems = [] } = useQuery<PlanItem[]>({ queryKey: ["/api/plan-items"] });
+  useEffect(() => { if (open) setForm(task || { title: "", dueDate: "", priority: "medium", completed: false, linkedTo: "", assignee: "", planItemId: "" }); }, [open, task]);
+  const PHASE_LABELS: Record<number, { label: string; color: string }> = { 1: { label: "P1", color: "text-blue-400" }, 2: { label: "P2", color: "text-amber-400" }, 3: { label: "P3", color: "text-emerald-400" } };
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -2495,6 +2501,28 @@ function TaskFormDialog({ open, onClose, onSave, task }: { open: boolean; onClos
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">Assign To</Label><Select value={form.assignee || "unassigned"} onValueChange={(v) => setForm((p) => ({ ...p, assignee: v === "unassigned" ? "" : v }))}><SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger><SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{TEAM_MEMBERS_LIST.map(m => <SelectItem key={m.value} value={m.value}><span className="flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${m.color}`} />{m.label}</span></SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1.5"><Label className="text-xs">Linked To</Label><Input value={form.linkedTo || ""} onChange={(e) => setForm((p) => ({ ...p, linkedTo: e.target.value }))} placeholder="Business name" /></div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs flex items-center gap-1.5"><Target className="w-3 h-3 text-primary" />90-Day Plan Goal</Label>
+            <Select value={form.planItemId || "none"} onValueChange={(v) => setForm((p) => ({ ...p, planItemId: v === "none" ? "" : v }))}>
+              <SelectTrigger className="text-xs"><SelectValue placeholder="No linked goal" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No linked goal</SelectItem>
+                {[1, 2, 3].map(phase => {
+                  const phaseItems = planItems.filter(p => p.phase === phase);
+                  if (phaseItems.length === 0) return null;
+                  return phaseItems.map(item => (
+                    <SelectItem key={item.id} value={item.id}>
+                      <span className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-bold ${PHASE_LABELS[phase]?.color || ""}`}>{PHASE_LABELS[phase]?.label}</span>
+                        <span className="truncate">{item.title}</span>
+                        {item.completed && <Check className="w-3 h-3 text-emerald-400 shrink-0" />}
+                      </span>
+                    </SelectItem>
+                  ));
+                })}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => onSave(form)} disabled={!form.title}><Save className="w-3.5 h-3.5" />{task ? "Update" : "Add"}</Button></DialogFooter>

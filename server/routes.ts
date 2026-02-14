@@ -611,6 +611,7 @@ export async function registerRoutes(
       completed: req.body.completed || false,
       linkedTo: req.body.linkedTo || "",
       assignee: req.body.assignee || "",
+      planItemId: req.body.planItemId || "",
       createdAt: new Date().toISOString(),
     }).returning();
     logActivity("Task Created", task.title, "task");
