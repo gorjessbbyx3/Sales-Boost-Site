@@ -346,6 +346,18 @@ export async function registerRoutes(
 
   app.get("/api/ai-config", async (_req, res) => {
     const config = await storage.getAiConfig();
+    // Only expose what the public chat widget needs — never leak systemPrompt
+    res.json({
+      enabled: config.enabled,
+      model: config.model,
+      welcomeMessage: config.welcomeMessage,
+      maxTokens: config.maxTokens,
+    });
+  });
+
+  // Full config (including systemPrompt) — admin only
+  app.get("/api/ai-config/full", requireAdminSession, async (_req, res) => {
+    const config = await storage.getAiConfig();
     res.json(config);
   });
 
@@ -510,7 +522,7 @@ RULES:
 
   // ─── Contact Leads (from website form) ──────────────────────────
 
-  app.post("/api/contact-leads", async (req: Request, res: Response) => {
+  app.post("/api/contact-leads", publicLeadLimiter, async (req: Request, res: Response) => {
     const parsed = insertContactLeadSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.message });
@@ -2801,11 +2813,28 @@ Return ONLY valid JSON, no other text.`,
 
   // ─── Inbound Email Webhook (Resend) ───────────────────────────────
 
-  app.post("/api/email/inbound", async (req: Request, res: Response) => {
+  const inboundEmailLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,               // 30 inbound emails per minute — generous for legitimate use
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests" },
+  });
+
+  app.post("/api/email/inbound", inboundEmailLimiter, async (req: Request, res: Response) => {
     // Resend sends inbound emails as JSON webhook
+    // Verify webhook signing secret if configured (recommended: set RESEND_WEBHOOK_SECRET env var)
+    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const signature = req.headers["resend-signature"] || req.headers["webhook-signature"];
+      if (!signature) {
+        return res.status(401).json({ error: "Missing webhook signature" });
+      }
+    }
+
     try {
       const { from, to, subject, text, html } = req.body;
-      if (!from) {
+      if (!from || typeof from !== "string") {
         return res.status(400).json({ error: "Invalid webhook payload" });
       }
 

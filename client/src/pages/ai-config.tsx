@@ -4843,7 +4843,7 @@ function InboxTab() {
 
 function AiSettingsTab() {
   const { toast } = useToast();
-  const { data: config, isLoading } = useQuery<AiConfig>({ queryKey: ["/api/ai-config"] });
+  const { data: config, isLoading } = useQuery<AiConfig>({ queryKey: ["/api/ai-config/full"] });
   const [enabled, setEnabled] = useState(false);
   const [model, setModel] = useState("claude-sonnet-4-20250514");
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -4854,12 +4854,12 @@ function AiSettingsTab() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: Partial<AiConfig>) => { const res = await apiRequest("PATCH", "/api/ai-config", data); return res.json(); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/ai-config"] }); toast({ title: "Settings saved" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/ai-config/full"] }); toast({ title: "Settings saved" }); },
     onError: (err: Error) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
   });
   const toggleMutation = useMutation({
     mutationFn: async (v: boolean) => { const res = await apiRequest("PATCH", "/api/ai-config", { enabled: v }); return res.json(); },
-    onSuccess: (data: AiConfig) => { setEnabled(data.enabled); queryClient.invalidateQueries({ queryKey: ["/api/ai-config"] }); toast({ title: data.enabled ? "AI Enabled" : "AI Disabled" }); },
+    onSuccess: (data: AiConfig) => { setEnabled(data.enabled); queryClient.invalidateQueries({ queryKey: ["/api/ai-config/full"] }); toast({ title: data.enabled ? "AI Enabled" : "AI Disabled" }); },
   });
 
   if (isLoading) return <div className="py-12 text-center text-muted-foreground">Loading...</div>;
