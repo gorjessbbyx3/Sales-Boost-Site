@@ -650,13 +650,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(!sidebarOpen)}>
                 <Menu className="w-4 h-4" />
               </Button>
-              <a href={mainDomain} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="w-4 h-4" /></a>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded bg-primary/15 flex items-center justify-center"><LayoutDashboard className="w-4 h-4 text-primary" /></div>
                 <h1 className="text-sm font-bold">TechSavvy Admin</h1>
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <a href={mainDomain} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors" title="Go to website"><ExternalLink className="w-4 h-4" /></a>
               <Button variant="ghost" size="sm" onClick={toggleTheme} className="text-muted-foreground" title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
                 {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
