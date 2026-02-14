@@ -1,0 +1,6 @@
+name = "mojo-luna-955c"
+main = "enrich.js"
+compatibility_date = "2024-12-01"
+
+[ai]
+binding = "AI"

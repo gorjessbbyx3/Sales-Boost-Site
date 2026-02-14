@@ -95,8 +95,7 @@ export async function autoEnrichLead(leadId: string): Promise<void> {
   const urlMatch = lead.notes.match(/https?:\/\/[^\s,)]+/);
   if (!urlMatch) return;
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return;
+  const enrichWorkerUrl = process.env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
 
   try {
     // Fetch the website
@@ -130,21 +129,21 @@ export async function autoEnrichLead(leadId: string): Promise<void> {
       updates.currentProcessor = processors.join(", ");
     }
 
-    // Use AI to extract more info from the page
-    const anthropic = new Anthropic({ apiKey });
+    // Use Cloudflare Workers AI (Llama 3) for structured data extraction — free tier
     const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 3000);
 
-    const aiResp = await anthropic.messages.create({
-      model: "claude-3-5-haiku-20241022", // Fast model for enrichment
-      max_tokens: 512,
-      system: "Extract business info from this webpage text. Return JSON: { \"phone\": \"\", \"email\": \"\", \"address\": \"\", \"vertical\": \"\", \"ownerName\": \"\", \"notes\": \"\" }. Only include fields you're confident about. Return ONLY valid JSON.",
-      messages: [{ role: "user", content: cleaned }],
+    const enrichCtrl = new AbortController();
+    const enrichTimeout = setTimeout(() => enrichCtrl.abort(), 15000);
+    const aiResp = await fetch(enrichWorkerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: cleaned }),
+      signal: enrichCtrl.signal,
     });
+    clearTimeout(enrichTimeout);
 
-    const aiText = aiResp.content[0].type === "text" ? aiResp.content[0].text : "";
-    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const info = JSON.parse(jsonMatch[0]);
+    if (aiResp.ok) {
+      const info = await aiResp.json() as Record<string, string>;
       if (info.phone && !lead.phone) updates.phone = info.phone;
       if (info.email && !lead.email) updates.email = info.email;
       if (info.address && !lead.address) updates.address = info.address;
