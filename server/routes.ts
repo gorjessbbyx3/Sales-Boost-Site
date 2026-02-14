@@ -13,22 +13,26 @@ import { startAutopilot, stopAutopilot, runAutopilot, generateAIEmail, autoEnric
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { uploadToR2, deleteFromR2, r2Enabled } from "./r2";
 
 // ─── File Upload Config ──────────────────────────────────────────
+// Local fallback dirs (used when R2 is not configured)
 const UPLOADS_DIR = path.resolve(process.cwd(), "public", "uploads", "resources");
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname);
-      const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
-      cb(null, `${Date.now()}-${base}${ext}`);
-    },
-  }),
+  storage: r2Enabled
+    ? multer.memoryStorage()
+    : multer.diskStorage({
+        destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+        filename: (_req, file, cb) => {
+          const ext = path.extname(file.originalname);
+          const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+          cb(null, `${Date.now()}-${base}${ext}`);
+        },
+      }),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
   fileFilter: (_req, file, cb) => {
     const allowed = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".png", ".jpg", ".jpeg", ".gif", ".mp4", ".webm", ".zip"];
@@ -1059,7 +1063,12 @@ export async function registerRoutes(
     try {
       if (!req.file) return res.status(400).json({ error: "No file uploaded" });
       const file = req.file as Express.Multer.File;
-      const fileUrl = `/uploads/resources/${file.filename}`;
+      let fileUrl: string;
+      if (r2Enabled) {
+        fileUrl = await uploadToR2(file.buffer, file.originalname, "resources");
+      } else {
+        fileUrl = `/uploads/resources/${file.filename}`;
+      }
       const ext = path.extname(file.originalname).toLowerCase().replace(".", "");
       const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "template", xlsx: "template", ppt: "doc", pptx: "doc", png: "link", jpg: "link", jpeg: "link", gif: "link", mp4: "video", webm: "video", zip: "template" };
       const id = randomUUID();
@@ -1092,14 +1101,16 @@ export async function registerRoutes(
   if (!fs.existsSync(INVOICES_DIR)) fs.mkdirSync(INVOICES_DIR, { recursive: true });
 
   const invoiceUpload = multer({
-    storage: multer.diskStorage({
-      destination: (_req, _file, cb) => cb(null, INVOICES_DIR),
-      filename: (_req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
-        cb(null, `${Date.now()}-${base}${ext}`);
-      },
-    }),
+    storage: r2Enabled
+      ? multer.memoryStorage()
+      : multer.diskStorage({
+          destination: (_req, _file, cb) => cb(null, INVOICES_DIR),
+          filename: (_req, file, cb) => {
+            const ext = path.extname(file.originalname);
+            const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+            cb(null, `${Date.now()}-${base}${ext}`);
+          },
+        }),
     limits: { fileSize: 25 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
       const allowed = [".pdf", ".png", ".jpg", ".jpeg", ".doc", ".docx", ".xls", ".xlsx"];
@@ -1117,8 +1128,14 @@ export async function registerRoutes(
       const id = randomUUID();
       const now = new Date().toISOString();
       const file = req.file as Express.Multer.File | undefined;
-      const fileUrl = file ? `/uploads/invoices/${file.filename}` : "";
-      const fileName = file ? file.originalname : "";
+      let fileUrl = "";
+      let fileName = "";
+      if (file) {
+        fileName = file.originalname;
+        fileUrl = r2Enabled
+          ? await uploadToR2(file.buffer, file.originalname, "invoices")
+          : `/uploads/invoices/${file.filename}`;
+      }
       const [invoice] = await db.insert(schema.invoices).values({
         id,
         invoiceNumber: req.body.invoiceNumber || "",
@@ -1151,10 +1168,14 @@ export async function registerRoutes(
   app.delete("/api/invoices/:id", requireAdminSession, async (req, res) => {
     const [deleted] = await db.delete(schema.invoices).where(eq(schema.invoices.id, req.params.id as string)).returning();
     if (deleted) {
-      // Remove the file from disk if it was uploaded
-      if (deleted.fileUrl && deleted.fileUrl.startsWith("/uploads/invoices/")) {
-        const filePath = path.resolve(process.cwd(), "public", deleted.fileUrl);
-        fs.unlink(filePath, () => {});
+      // Remove the file from R2 or local disk
+      if (deleted.fileUrl) {
+        if (r2Enabled && !deleted.fileUrl.startsWith("/uploads")) {
+          deleteFromR2(deleted.fileUrl).catch(() => {});
+        } else if (deleted.fileUrl.startsWith("/uploads/invoices/")) {
+          const filePath = path.resolve(process.cwd(), "public", deleted.fileUrl);
+          fs.unlink(filePath, () => {});
+        }
       }
       logActivity("Invoice Deleted", `#${deleted.invoiceNumber}`, "file");
     }
@@ -1166,7 +1187,9 @@ export async function registerRoutes(
     try {
       if (!req.file) return res.status(400).json({ error: "No file uploaded" });
       const file = req.file as Express.Multer.File;
-      const fileUrl = `/uploads/invoices/${file.filename}`;
+      const fileUrl = r2Enabled
+        ? await uploadToR2(file.buffer, file.originalname, "invoices")
+        : `/uploads/invoices/${file.filename}`;
       const [updated] = await db.update(schema.invoices).set({
         fileUrl,
         fileName: file.originalname,
