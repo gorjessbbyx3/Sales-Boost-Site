@@ -29,18 +29,23 @@ export async function generateAIEmail(lead: {
   name: string; business: string; email: string; vertical: string;
   currentProcessor: string; monthlyVolume: string; painPoints: string;
   notes: string;
-}, type: "initial" | "follow-up-1" | "follow-up-2" | "follow-up-3"): Promise<{ subject: string; body: string; html: string }> {
+}, type: "initial" | "follow-up-1" | "follow-up-2" | "follow-up-3" | "lead-magnet-followup"): Promise<{ subject: string; body: string; html: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
 
   const anthropic = new Anthropic({ apiKey });
   const firstName = lead.name.split(" ")[0] || "there";
 
+  // Extract lead magnet name from notes if present
+  const leadMagnetMatch = lead.notes.match(/Lead Magnet:\s*([^|]+)/);
+  const leadMagnetName = leadMagnetMatch ? leadMagnetMatch[1].trim() : "our free guide";
+
   const typeInstructions: Record<string, string> = {
     initial: `Write a personalized cold outreach email. This is the FIRST contact. Be conversational, not salesy. Reference their specific business, processor, and vertical. Offer a free statement analysis. Keep it under 150 words.`,
     "follow-up-1": `Write a gentle first follow-up (3 days after initial). Reference that you reached out before. Add a specific value stat or case study relevant to their vertical. Ask one simple question. Under 100 words.`,
     "follow-up-2": `Write a second follow-up (7 days after initial). Different angle — maybe share a quick insight about their industry or a competitor comparison. Very brief, casual. Under 80 words.`,
     "follow-up-3": `Write a final breakup email (14 days after initial). Let them know this is the last follow-up. Leave the door open. Friendly and no-pressure. Under 60 words.`,
+    "lead-magnet-followup": `This person downloaded "${leadMagnetName}". Write a warm, personalized follow-up email (sent ~24 hours after download). Reference the specific guide they downloaded and connect it to their business type. Offer to do a free statement review that applies the concepts from the guide to THEIR actual numbers. Be helpful, not pushy — they already showed interest by downloading. Keep it under 120 words.`,
   };
 
   const response = await anthropic.messages.create({
@@ -289,6 +294,60 @@ async function queueFollowUps(): Promise<number> {
   return queued;
 }
 
+// ─── Queue Lead Magnet Follow-ups (24hr fast-track) ──────────────────
+
+async function queueLeadMagnetFollowUps(): Promise<number> {
+  const cfg = await getConfig();
+  if (!cfg?.autoFollowUpEnabled) return 0;
+
+  const now = new Date();
+  const LEAD_MAGNET_DELAY_MS = 24 * 3600000; // 24 hours after download
+
+  // Find lead-magnet source leads that haven't been followed up yet
+  const magnetLeads = await db.select().from(schema.leads)
+    .where(and(
+      eq(schema.leads.source, "lead-magnet"),
+      not(inArray(schema.leads.status, ["won", "lost"])),
+    ))
+    .orderBy(asc(schema.leads.createdAt));
+
+  const allQueue = await db.select().from(schema.outreachQueue);
+  let queued = 0;
+
+  for (const lead of magnetLeads) {
+    if (!lead.email) continue;
+    if (!lead.notes.includes("Lead Magnet:")) continue;
+
+    const leadQueue = allQueue.filter(q => q.leadId === lead.id);
+    // Skip if already has any outreach queued (pending or sent)
+    if (leadQueue.length > 0) continue;
+
+    // Check if 24 hours have passed since lead was created
+    const createdAt = new Date(lead.createdAt).getTime();
+    const scheduledTime = new Date(createdAt + LEAD_MAGNET_DELAY_MS);
+    if (scheduledTime > now) continue; // not ready yet
+
+    await db.insert(schema.outreachQueue).values({
+      id: randomUUID(),
+      leadId: lead.id,
+      type: "lead-magnet-followup",
+      status: "pending",
+      subject: "",
+      body: "",
+      htmlBody: "",
+      scheduledFor: scheduledTime.toISOString(),
+      sentAt: "",
+      error: "",
+      createdAt: now.toISOString(),
+    });
+
+    queued++;
+    log(`Queued lead magnet follow-up for: ${lead.business} (${lead.notes.match(/Lead Magnet:\s*([^|]+)/)?.[1]?.trim() || "unknown guide"})`);
+  }
+
+  return queued;
+}
+
 // ─── Process Outreach Queue (generate + send) ────────────────────────
 
 async function processQueue(): Promise<{ generated: number; sent: number }> {
@@ -321,7 +380,7 @@ async function processQueue(): Promise<{ generated: number; sent: number }> {
         vertical: lead.vertical, currentProcessor: lead.currentProcessor,
         monthlyVolume: lead.monthlyVolume, painPoints: lead.painPoints,
         notes: lead.notes,
-      }, item.type as "initial" | "follow-up-1" | "follow-up-2" | "follow-up-3");
+      }, item.type as "initial" | "follow-up-1" | "follow-up-2" | "follow-up-3" | "lead-magnet-followup");
 
       await db.update(schema.outreachQueue)
         .set({ status: "ready", subject: email.subject, body: email.body, htmlBody: email.html })
@@ -416,22 +475,25 @@ async function runAutopilot(): Promise<void> {
     // 1. Queue outreach for new leads
     const newQueued = await queueInitialOutreach();
 
-    // 2. Queue follow-ups
+    // 2. Queue follow-ups for stale leads
     const followUpsQueued = await queueFollowUps();
 
-    // 3. Process the queue (generate + send)
+    // 3. Queue lead magnet 24-hour follow-ups (fast-track)
+    const magnetFollowUps = await queueLeadMagnetFollowUps();
+
+    // 4. Process the queue (generate + send)
     const { generated, sent } = await processQueue();
 
     // Update stats
-    if (newQueued > 0 || followUpsQueued > 0 || sent > 0) {
+    if (newQueued > 0 || followUpsQueued > 0 || magnetFollowUps > 0 || sent > 0) {
       const updates: Record<string, any> = { lastRunAt: new Date().toISOString() };
       if (sent > 0) updates.totalEmailed = (cfg.totalEmailed || 0) + sent;
-      if (followUpsQueued > 0) updates.totalFollowUps = (cfg.totalFollowUps || 0) + followUpsQueued;
+      if (followUpsQueued + magnetFollowUps > 0) updates.totalFollowUps = (cfg.totalFollowUps || 0) + followUpsQueued + magnetFollowUps;
       await db.update(schema.autopilotConfig).set(updates).where(eq(schema.autopilotConfig.id, "default"));
     }
 
-    if (newQueued + followUpsQueued + generated + sent > 0) {
-      log(`Tick complete: queued=${newQueued} follow-ups=${followUpsQueued} generated=${generated} sent=${sent}`);
+    if (newQueued + followUpsQueued + magnetFollowUps + generated + sent > 0) {
+      log(`Tick complete: queued=${newQueued} follow-ups=${followUpsQueued} magnet=${magnetFollowUps} generated=${generated} sent=${sent}`);
     }
   } catch (err) {
     log(`Error: ${err}`);

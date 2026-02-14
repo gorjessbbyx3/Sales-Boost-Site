@@ -81,6 +81,11 @@ export const PLAYBOOK_SCRIPTS = {
   },
   social: {
     dm: `Appreciate you checking that post. If you want, I can do a quick statement check and tell you where the extra fees usually hide. It's a simple yes/no: either it's already solid, or there's money on the table.`,
+    linkedinAfterEngage: `Hey {Name} — appreciate you checking out that post.\n\nIf you want, I can do a quick statement check and tell you where the extra fees usually hide. It's a simple yes/no: either it's already solid, or there's money on the table.\n\nInterested?`,
+    linkedinAfterConnect: `Hey {Name} — thanks for connecting.\n\nI saw you're running {Business}. I help local businesses cut processing costs — usually 15-30% once we find the hidden fees.\n\nIf you ever want a free statement review, let me know. No pitch, just a markup of what you're actually paying.`,
+    instagramAfterEngage: `Hey! Thanks for the love on that post.\n\nIf you're a business owner and want me to check your processing statement, I'm happy to do it free. Most people find 3-5 fees they didn't know they were paying.\n\nJust send me a pic of a recent statement and I'll mark it up for you.`,
+    instagramAfterFollow: `Hey {Name} — thanks for the follow!\n\nI post a lot about payment processing and hidden fees. If you ever want a free statement review for your business, just DM me. I'll tell you straight up if there's savings or not.`,
+    facebookGroupEngage: `Hey {Name} — saw your comment in {Group}.\n\nI help local businesses with processing fees — if you ever want a free statement check, I'm happy to look. Most owners are surprised by what's actually being charged once we break it down.\n\nNo pressure, just let me know if you're curious.`,
   },
   direct: {
     coldCall: `Hi — I'm local and I help businesses reduce processing costs and fix the usual problems like hidden fees or outdated terminals. I'm not calling to sell you on the spot — I'm offering a no-obligation statement review. If you've got last month's statement, I'll show you exactly what you're paying and what can be improved.`,
@@ -95,6 +100,59 @@ Best contact for a 10-minute review?`,
   },
   leadMagnet: {
     followUp24hr: `Hey {Name} — saw you grabbed the {Lead Magnet}. If you want, send a recent statement and I'll point out exactly where fees tend to stack up for {their vertical}. No pressure — you'll just know what's real.`,
+  },
+};
+
+export const OBJECTION_HANDLERS: Record<string, { objection: string; response: string; tip: string }> = {
+  satisfied: {
+    objection: "We're happy with our current processor",
+    response: "I hear that a lot — and that's great if the numbers back it up. Most businesses haven't looked at their statement in months though, and processors change rates constantly. Would you be open to a quick check? If everything looks good, I'll tell you that too.",
+    tip: "Don't argue. Reframe it as a free audit, not a switch.",
+  },
+  locked: {
+    objection: "We're locked into a contract",
+    response: "That's common. Most contracts have a 30-60 day exit clause, and the early termination fee is usually $200-500. Worth knowing what you'd save — if the savings are $300+/month, the math pays for itself in under 2 months.",
+    tip: "Ask when the contract ends. Offer to do the analysis now so they're ready.",
+  },
+  busy: {
+    objection: "Not a good time / too busy right now",
+    response: "Totally understand — I'll be quick. Can I leave my card? When would be a better time to reach the owner?",
+    tip: "Respect their time. Get a callback time and log it.",
+  },
+  rates: {
+    objection: "What are your rates?",
+    response: "I don't like quoting blind rates because they're meaningless without seeing your statement. Your rate depends on your volume, ticket size, and card mix. Show me a statement and I'll give you an exact comparison — apples to apples.",
+    tip: "Never quote a rate without seeing their statement. It sets wrong expectations.",
+  },
+  trust: {
+    objection: "I've been burned before / don't trust processors",
+    response: "I get it — this industry has a reputation for a reason. That's exactly why I lead with a transparent statement review. You'll see the exact markup, line by line, before any commitment. No hidden fees, no surprises.",
+    tip: "Lead with empathy. Show your markup math, not just a pitch.",
+  },
+  small: {
+    objection: "We don't process enough to matter",
+    response: "You'd be surprised. Even businesses doing $5K-10K/month are often losing $100-300 to inflated fees. That's $1,200-3,600/year — real money for a small business.",
+    tip: "Do the annual math for them. Small monthly leaks look big over 12 months.",
+  },
+  switched: {
+    objection: "We just switched processors",
+    response: "Got it. How long ago? Here's the thing — a lot of businesses get a good intro rate, then fees creep up after 3-6 months. I'd be happy to do a review down the road to make sure they're keeping their word.",
+    tip: "Plant the seed for a future review. Leave your card.",
+  },
+  nofees: {
+    objection: "I don't pay any fees / my processor doesn't charge me",
+    response: "That would be unusual — Visa and Mastercard set a base rate called interchange that every processor pays. If you're not seeing it as a line item, it's likely baked into your pricing elsewhere. Want me to take a quick look?",
+    tip: "They might have a cash discount program or the fees are hidden in bundled pricing.",
+  },
+  cash: {
+    objection: "We only take cash",
+    response: "That's becoming rare — studies show 80%+ of consumers prefer card or tap. You might be losing walk-in revenue. A terminal with a cash discount program means you'd pay zero fees and still capture card customers.",
+    tip: "Frame it as revenue they're leaving on the table, not a cost.",
+  },
+  family: {
+    objection: "My family member / friend handles our processing",
+    response: "Totally respect that. A second opinion never hurts though — I've found that even well-meaning setups can have rate creep or unnecessary fees. I'm happy to do a confidential review if they'd like a benchmark.",
+    tip: "Don't compete with the relationship. Position it as a helpful benchmark.",
   },
 };
 

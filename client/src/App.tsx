@@ -13,6 +13,7 @@ import OnlineProcessingPage from "@/pages/online-processing";
 import HighRiskPage from "@/pages/high-risk";
 import ContactPage from "@/pages/contact";
 import ConnectPage from "@/pages/connect";
+import LeadMagnetPage from "@/pages/lead-magnet";
 import AiConfigPage from "@/pages/ai-config";
 import NotFound from "@/pages/not-found";
 import { ChatWidget } from "@/components/chat-widget";
@@ -42,6 +43,7 @@ function MainRouter() {
         <Route path="/high-risk" component={HighRiskPage} />
         <Route path="/contact" component={ContactPage} />
         <Route path="/connect" component={ConnectPage} />
+        <Route path="/free/:slug" component={LeadMagnetPage} />
         <Route component={NotFound} />
       </Switch>
     </>
