@@ -13,22 +13,26 @@ import { startAutopilot, stopAutopilot, runAutopilot, generateAIEmail, autoEnric
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { uploadToR2, deleteFromR2, r2Enabled } from "./r2";
 
 // ─── File Upload Config ──────────────────────────────────────────
+// Local fallback dirs (used when R2 is not configured)
 const UPLOADS_DIR = path.resolve(process.cwd(), "public", "uploads", "resources");
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname);
-      const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
-      cb(null, `${Date.now()}-${base}${ext}`);
-    },
-  }),
+  storage: r2Enabled
+    ? multer.memoryStorage()
+    : multer.diskStorage({
+        destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+        filename: (_req, file, cb) => {
+          const ext = path.extname(file.originalname);
+          const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+          cb(null, `${Date.now()}-${base}${ext}`);
+        },
+      }),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
   fileFilter: (_req, file, cb) => {
     const allowed = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".png", ".jpg", ".jpeg", ".gif", ".mp4", ".webm", ".zip"];
@@ -586,11 +590,13 @@ export async function registerRoutes(
     const updateData = pickColumns(schema.revenueEntries, req.body);
     const [updated] = await db.update(schema.revenueEntries).set(updateData).where(eq(schema.revenueEntries.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Entry not found" });
+    logActivity("Revenue Updated", `$${updated.amount} - ${updated.type}`, "revenue");
     res.json(updated);
   });
 
   app.delete("/api/revenue/:id", requireAdminSession, async (req, res) => {
-    await db.delete(schema.revenueEntries).where(eq(schema.revenueEntries.id, req.params.id as string));
+    const [deleted] = await db.delete(schema.revenueEntries).where(eq(schema.revenueEntries.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Revenue Deleted", `$${deleted.amount} - ${deleted.type}`, "revenue");
     res.json({ success: true });
   });
 
@@ -611,6 +617,7 @@ export async function registerRoutes(
       completed: req.body.completed || false,
       linkedTo: req.body.linkedTo || "",
       assignee: req.body.assignee || "",
+      planItemId: req.body.planItemId || "",
       createdAt: new Date().toISOString(),
     }).returning();
     logActivity("Task Created", task.title, "task");
@@ -621,11 +628,13 @@ export async function registerRoutes(
     const updateData = pickColumns(schema.tasks, req.body);
     const [updated] = await db.update(schema.tasks).set(updateData).where(eq(schema.tasks.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Task not found" });
+    logActivity("Task Updated", updated.title, "task");
     res.json(updated);
   });
 
   app.delete("/api/tasks/:id", requireAdminSession, async (req, res) => {
-    await db.delete(schema.tasks).where(eq(schema.tasks.id, req.params.id as string));
+    const [deleted] = await db.delete(schema.tasks).where(eq(schema.tasks.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Task Deleted", deleted.title, "task");
     res.json({ success: true });
   });
 
@@ -735,11 +744,13 @@ export async function registerRoutes(
     const updateData = pickColumns(schema.integrations, body);
     const [updated] = await db.update(schema.integrations).set(updateData).where(eq(schema.integrations.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Integration not found" });
+    logActivity("Integration Updated", updated.name, "integration");
     res.json(deserializeIntegration(updated));
   });
 
   app.delete("/api/integrations/:id", requireAdminSession, async (req, res) => {
-    await db.delete(schema.integrations).where(eq(schema.integrations.id, req.params.id as string));
+    const [deleted] = await db.delete(schema.integrations).where(eq(schema.integrations.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Integration Deleted", deleted.name, "integration");
     res.json({ success: true });
   });
 
@@ -779,11 +790,13 @@ export async function registerRoutes(
     const updateData = pickColumns(schema.referralPartners, req.body);
     const [updated] = await db.update(schema.referralPartners).set(updateData).where(eq(schema.referralPartners.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Partner not found" });
+    logActivity("Partner Updated", updated.name, "lead");
     res.json(updated);
   });
 
   app.delete("/api/referral-partners/:id", requireAdminSession, async (req, res) => {
-    await db.delete(schema.referralPartners).where(eq(schema.referralPartners.id, req.params.id as string));
+    const [deleted] = await db.delete(schema.referralPartners).where(eq(schema.referralPartners.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Partner Deleted", deleted.name, "lead");
     res.json({ success: true });
   });
 
@@ -849,11 +862,13 @@ export async function registerRoutes(
     const updateData = pickColumns(schema.weeklyKpis, req.body);
     const [updated] = await db.update(schema.weeklyKpis).set(updateData).where(eq(schema.weeklyKpis.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Not found" });
+    logActivity("KPI Updated", `Week of ${updated.weekStart}`, "task");
     res.json(updated);
   });
 
   app.delete("/api/kpis/:id", requireAdminSession, async (req, res) => {
-    await db.delete(schema.weeklyKpis).where(eq(schema.weeklyKpis.id, req.params.id as string));
+    const [deleted] = await db.delete(schema.weeklyKpis).where(eq(schema.weeklyKpis.id, req.params.id as string)).returning();
+    if (deleted) logActivity("KPI Deleted", `Week of ${deleted.weekStart}`, "task");
     res.json({ success: true });
   });
 
@@ -878,6 +893,7 @@ export async function registerRoutes(
       completedAt: "",
       order: req.body.order || allItems.length + 1,
     }).returning();
+    logActivity("Plan Item Added", item.title, "task");
     res.status(201).json(item);
   });
 
@@ -888,11 +904,13 @@ export async function registerRoutes(
     const updateData = pickColumns(schema.planItems, body);
     const [updated] = await db.update(schema.planItems).set(updateData).where(eq(schema.planItems.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Not found" });
+    logActivity("Plan Item Updated", updated.title, "task");
     res.json(updated);
   });
 
   app.delete("/api/plan-items/:id", requireAdminSession, async (req, res) => {
-    await db.delete(schema.planItems).where(eq(schema.planItems.id, req.params.id as string));
+    const [deleted] = await db.delete(schema.planItems).where(eq(schema.planItems.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Plan Item Deleted", deleted.title, "task");
     res.json({ success: true });
   });
 
@@ -915,6 +933,7 @@ export async function registerRoutes(
       fileUrl: req.body.fileUrl || "",
       updatedAt: new Date().toISOString(),
     }).returning();
+    logActivity("Material Added", item.name, "file");
     res.status(201).json(item);
   });
 
@@ -923,6 +942,7 @@ export async function registerRoutes(
     const updateData = pickColumns(schema.materials, body);
     const [updated] = await db.update(schema.materials).set(updateData).where(eq(schema.materials.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Not found" });
+    logActivity("Material Updated", updated.name, "file");
     res.json(updated);
   });
 
@@ -1043,7 +1063,12 @@ export async function registerRoutes(
     try {
       if (!req.file) return res.status(400).json({ error: "No file uploaded" });
       const file = req.file as Express.Multer.File;
-      const fileUrl = `/uploads/resources/${file.filename}`;
+      let fileUrl: string;
+      if (r2Enabled) {
+        fileUrl = await uploadToR2(file.buffer, file.originalname, "resources");
+      } else {
+        fileUrl = `/uploads/resources/${file.filename}`;
+      }
       const ext = path.extname(file.originalname).toLowerCase().replace(".", "");
       const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "template", xlsx: "template", ppt: "doc", pptx: "doc", png: "link", jpg: "link", jpeg: "link", gif: "link", mp4: "video", webm: "video", zip: "template" };
       const id = randomUUID();
@@ -1076,14 +1101,16 @@ export async function registerRoutes(
   if (!fs.existsSync(INVOICES_DIR)) fs.mkdirSync(INVOICES_DIR, { recursive: true });
 
   const invoiceUpload = multer({
-    storage: multer.diskStorage({
-      destination: (_req, _file, cb) => cb(null, INVOICES_DIR),
-      filename: (_req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
-        cb(null, `${Date.now()}-${base}${ext}`);
-      },
-    }),
+    storage: r2Enabled
+      ? multer.memoryStorage()
+      : multer.diskStorage({
+          destination: (_req, _file, cb) => cb(null, INVOICES_DIR),
+          filename: (_req, file, cb) => {
+            const ext = path.extname(file.originalname);
+            const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+            cb(null, `${Date.now()}-${base}${ext}`);
+          },
+        }),
     limits: { fileSize: 25 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
       const allowed = [".pdf", ".png", ".jpg", ".jpeg", ".doc", ".docx", ".xls", ".xlsx"];
@@ -1101,13 +1128,19 @@ export async function registerRoutes(
       const id = randomUUID();
       const now = new Date().toISOString();
       const file = req.file as Express.Multer.File | undefined;
-      const fileUrl = file ? `/uploads/invoices/${file.filename}` : "";
-      const fileName = file ? file.originalname : "";
+      let fileUrl = "";
+      let fileName = "";
+      if (file) {
+        fileName = file.originalname;
+        fileUrl = r2Enabled
+          ? await uploadToR2(file.buffer, file.originalname, "invoices")
+          : `/uploads/invoices/${file.filename}`;
+      }
       const [invoice] = await db.insert(schema.invoices).values({
         id,
         invoiceNumber: req.body.invoiceNumber || "",
         clientName: req.body.clientName || "",
-        amount: parseInt(req.body.amount) || 0,
+        amount: parseFloat(req.body.amount) || 0,
         status: req.body.status || "pending",
         dueDate: req.body.dueDate || "",
         notes: req.body.notes || "",
@@ -1135,10 +1168,14 @@ export async function registerRoutes(
   app.delete("/api/invoices/:id", requireAdminSession, async (req, res) => {
     const [deleted] = await db.delete(schema.invoices).where(eq(schema.invoices.id, req.params.id as string)).returning();
     if (deleted) {
-      // Remove the file from disk if it was uploaded
-      if (deleted.fileUrl && deleted.fileUrl.startsWith("/uploads/invoices/")) {
-        const filePath = path.resolve(process.cwd(), "public", deleted.fileUrl);
-        fs.unlink(filePath, () => {});
+      // Remove the file from R2 or local disk
+      if (deleted.fileUrl) {
+        if (r2Enabled && !deleted.fileUrl.startsWith("/uploads")) {
+          deleteFromR2(deleted.fileUrl).catch(() => {});
+        } else if (deleted.fileUrl.startsWith("/uploads/invoices/")) {
+          const filePath = path.resolve(process.cwd(), "public", deleted.fileUrl);
+          fs.unlink(filePath, () => {});
+        }
       }
       logActivity("Invoice Deleted", `#${deleted.invoiceNumber}`, "file");
     }
@@ -1150,13 +1187,16 @@ export async function registerRoutes(
     try {
       if (!req.file) return res.status(400).json({ error: "No file uploaded" });
       const file = req.file as Express.Multer.File;
-      const fileUrl = `/uploads/invoices/${file.filename}`;
+      const fileUrl = r2Enabled
+        ? await uploadToR2(file.buffer, file.originalname, "invoices")
+        : `/uploads/invoices/${file.filename}`;
       const [updated] = await db.update(schema.invoices).set({
         fileUrl,
         fileName: file.originalname,
         updatedAt: new Date().toISOString(),
       }).where(eq(schema.invoices.id, req.params.id as string)).returning();
       if (!updated) return res.status(404).json({ error: "Invoice not found" });
+      logActivity("Invoice File Uploaded", `#${updated.invoiceNumber} — ${file.originalname}`, "file");
       res.json(updated);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Upload failed" });
@@ -1382,11 +1422,13 @@ export async function registerRoutes(
     const updateData = pickColumns(schema.teamMembers, req.body);
     const [updated] = await db.update(schema.teamMembers).set(updateData).where(eq(schema.teamMembers.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Not found" });
+    logActivity("Team Member Updated", updated.name, "client");
     res.json(updated);
   });
 
   app.delete("/api/team-members/:id", requireAdminSession, async (req, res) => {
-    await db.delete(schema.teamMembers).where(eq(schema.teamMembers.id, req.params.id as string));
+    const [deleted] = await db.delete(schema.teamMembers).where(eq(schema.teamMembers.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Team Member Removed", deleted.name, "client");
     res.json({ success: true });
   });
 
@@ -1451,11 +1493,13 @@ export async function registerRoutes(
     const updateData = pickColumns(schema.scheduleItems, req.body);
     const [updated] = await db.update(schema.scheduleItems).set(updateData).where(eq(schema.scheduleItems.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Not found" });
+    logActivity("Schedule Updated", updated.title, "task");
     res.json(updated);
   });
 
   app.delete("/api/schedule/:id", requireAdminSession, async (req, res) => {
-    await db.delete(schema.scheduleItems).where(eq(schema.scheduleItems.id, req.params.id as string));
+    const [deleted] = await db.delete(schema.scheduleItems).where(eq(schema.scheduleItems.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Schedule Item Deleted", deleted.title, "task");
     res.json({ success: true });
   });
 
@@ -2407,6 +2451,7 @@ Return ONLY valid JSON, no other text.`,
       customContent: req.body.customContent || "",
       pinnedAt: new Date().toISOString(),
     }).returning();
+    logActivity("Pitch Pinned", pitch.scriptKey, "task");
     res.status(201).json(pitch);
   });
 
@@ -2414,11 +2459,13 @@ Return ONLY valid JSON, no other text.`,
     const updateData = pickColumns(schema.pinnedPitches, req.body);
     const [updated] = await db.update(schema.pinnedPitches).set(updateData).where(eq(schema.pinnedPitches.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Not found" });
+    logActivity("Pitch Updated", updated.scriptKey, "task");
     res.json(updated);
   });
 
   app.delete("/api/pinned-pitches/:id", requireAdminSession, async (req, res) => {
-    await db.delete(schema.pinnedPitches).where(eq(schema.pinnedPitches.id, req.params.id as string));
+    const [deleted] = await db.delete(schema.pinnedPitches).where(eq(schema.pinnedPitches.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Pitch Unpinned", deleted.scriptKey, "task");
     res.json({ success: true });
   });
 
@@ -2428,6 +2475,7 @@ Return ONLY valid JSON, no other text.`,
     const { assigneeId } = req.body;
     const [updated] = await db.update(schema.clients).set({ notes: `[ASSIGNED:${assigneeId}] ` }).where(eq(schema.clients.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Client not found" });
+    logActivity("Client Assigned", `${updated.businessName} → ${assigneeId}`, "client");
     res.json(updated);
   });
 
@@ -2644,6 +2692,7 @@ Return ONLY valid JSON, no other text.`,
       createdAt: now,
       updatedAt: now,
     }).returning();
+    logActivity("Email Template Created", template.name, "email");
     res.status(201).json(template);
   });
 
@@ -2652,11 +2701,13 @@ Return ONLY valid JSON, no other text.`,
     const updateData = pickColumns(schema.outreachTemplates, body);
     const [updated] = await db.update(schema.outreachTemplates).set(updateData).where(eq(schema.outreachTemplates.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Template not found" });
+    logActivity("Email Template Updated", updated.name, "email");
     res.json(updated);
   });
 
   app.delete("/api/email/templates/:id", requireAdminSession, async (req, res) => {
-    await db.delete(schema.outreachTemplates).where(eq(schema.outreachTemplates.id, req.params.id as string));
+    const [deleted] = await db.delete(schema.outreachTemplates).where(eq(schema.outreachTemplates.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Email Template Deleted", deleted.name, "email");
     res.json({ success: true });
   });
 

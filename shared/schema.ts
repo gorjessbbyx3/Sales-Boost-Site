@@ -101,6 +101,7 @@ export const tasks = pgTable("tasks", {
   completed: boolean("completed").notNull().default(false),
   linkedTo: text("linked_to").notNull().default(""),
   assignee: text("assignee").notNull().default(""),
+  planItemId: text("plan_item_id").notNull().default(""),
   createdAt: text("created_at").notNull(),
 });
 
@@ -480,7 +481,7 @@ export const invoices = pgTable("invoices", {
   id: text("id").primaryKey(),
   invoiceNumber: text("invoice_number").notNull().default(""),
   clientName: text("client_name").notNull().default(""),
-  amount: integer("amount").notNull().default(0), // cents
+  amount: real("amount").notNull().default(0), // cents
   status: text("status").notNull().default("pending"), // pending, paid, overdue, void
   dueDate: text("due_date").notNull().default(""),
   paidDate: text("paid_date"),

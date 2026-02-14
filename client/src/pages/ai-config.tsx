@@ -194,6 +194,7 @@ interface Task {
   completed: boolean;
   linkedTo: string;
   assignee: string;
+  planItemId: string;
   createdAt: string;
 }
 
@@ -602,13 +603,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { label: "COMMAND CENTER", tabs: [
       { value: "overview", icon: BarChart3, label: "Today" },
       { value: "tasks", icon: ClipboardList, label: "Tasks & Schedule" },
-      { value: "activity", icon: Activity, label: "Activity" },
     ]},
     { label: "SALES", tabs: [
       { value: "leads", icon: UserPlus, label: "Pipeline" },
       { value: "deals", icon: DollarSign, label: "Deals" },
       { value: "clients", icon: Users, label: "Clients" },
-      { value: "prospector", icon: Search, label: "Prospector" },
       { value: "inbox", icon: Mail, label: "Inbox" },
     ]},
     { label: "STRATEGY", tabs: [
@@ -632,6 +631,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       { value: "resources", icon: Library, label: "Resources" },
       { value: "integrations", icon: Plug, label: "Integrations" },
       { value: "security", icon: Lock, label: "Security" },
+      { value: "activity", icon: Activity, label: "Activity Log" },
     ]},
   ];
   const tabs = tabGroups.flatMap(g => g.tabs);
@@ -651,13 +651,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(!sidebarOpen)}>
                 <Menu className="w-4 h-4" />
               </Button>
-              <a href={mainDomain} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="w-4 h-4" /></a>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded bg-primary/15 flex items-center justify-center"><LayoutDashboard className="w-4 h-4 text-primary" /></div>
                 <h1 className="text-sm font-bold">TechSavvy Admin</h1>
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <a href={mainDomain} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors" title="Go to website"><ExternalLink className="w-4 h-4" /></a>
               <Button variant="ghost" size="sm" onClick={toggleTheme} className="text-muted-foreground" title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
                 {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
@@ -2321,6 +2321,8 @@ function TasksTab() {
   const { data: tasks = [], refetch } = useQuery<Task[]>({ queryKey: ["/api/tasks"] });
   const { data: schedule = [], refetch: refetchSchedule } = useQuery<ScheduleItem[]>({ queryKey: ["/api/schedule"] });
   const { data: team = [] } = useQuery<TeamMember[]>({ queryKey: ["/api/team-members"] });
+  const { data: planItems = [] } = useQuery<PlanItem[]>({ queryKey: ["/api/plan-items"] });
+  const planItemMap = useMemo(() => new Map(planItems.map(p => [p.id, p])), [planItems]);
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "completed" | "overdue">("pending");
@@ -2422,10 +2424,11 @@ function TasksTab() {
                 {assigneeInfo && <div className={`w-1 h-8 rounded-full shrink-0 ${assigneeInfo.color}`} />}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2"><span className={`text-sm ${task.completed ? "line-through text-muted-foreground" : ""}`}>{task.title}</span><div className={`w-1.5 h-1.5 rounded-full ${task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"}`} /></div>
-                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
                     {assigneeInfo && <span className={`font-medium ${assigneeInfo.color.replace("bg-", "text-")}`}>{assigneeInfo.label}</span>}
                     {task.dueDate && <span className={!task.completed && task.dueDate < todayStr ? "text-destructive font-medium" : ""}>Due {task.dueDate}</span>}
                     {task.linkedTo && <span>{task.linkedTo}</span>}
+                    {task.planItemId && planItemMap.get(task.planItemId) && <span className="inline-flex items-center gap-1 text-primary/80"><Target className="w-2.5 h-2.5" />{planItemMap.get(task.planItemId)!.title}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingTask(task); setShowForm(true); }}><Edit3 className="w-3 h-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(task.id)}><Trash2 className="w-3 h-3" /></Button></div>
@@ -2482,7 +2485,9 @@ function TasksTab() {
 
 function TaskFormDialog({ open, onClose, onSave, task }: { open: boolean; onClose: () => void; onSave: (f: Partial<Task>) => void; task: Task | null; }) {
   const [form, setForm] = useState<Partial<Task>>({});
-  useEffect(() => { if (open) setForm(task || { title: "", dueDate: "", priority: "medium", completed: false, linkedTo: "", assignee: "" }); }, [open, task]);
+  const { data: planItems = [] } = useQuery<PlanItem[]>({ queryKey: ["/api/plan-items"] });
+  useEffect(() => { if (open) setForm(task || { title: "", dueDate: "", priority: "medium", completed: false, linkedTo: "", assignee: "", planItemId: "" }); }, [open, task]);
+  const PHASE_LABELS: Record<number, { label: string; color: string }> = { 1: { label: "P1", color: "text-blue-400" }, 2: { label: "P2", color: "text-amber-400" }, 3: { label: "P3", color: "text-emerald-400" } };
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -2494,8 +2499,30 @@ function TaskFormDialog({ open, onClose, onSave, task }: { open: boolean; onClos
             <div className="space-y-1.5"><Label className="text-xs">Priority</Label><Select value={form.priority || "medium"} onValueChange={(v) => setForm((p) => ({ ...p, priority: v as Task["priority"] }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="high">High</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent></Select></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label className="text-xs">Assign To</Label><Select value={form.assignee || ""} onValueChange={(v) => setForm((p) => ({ ...p, assignee: v }))}><SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger><SelectContent><SelectItem value="">Unassigned</SelectItem>{TEAM_MEMBERS_LIST.map(m => <SelectItem key={m.value} value={m.value}><span className="flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${m.color}`} />{m.label}</span></SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label className="text-xs">Assign To</Label><Select value={form.assignee || "unassigned"} onValueChange={(v) => setForm((p) => ({ ...p, assignee: v === "unassigned" ? "" : v }))}><SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger><SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{TEAM_MEMBERS_LIST.map(m => <SelectItem key={m.value} value={m.value}><span className="flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${m.color}`} />{m.label}</span></SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1.5"><Label className="text-xs">Linked To</Label><Input value={form.linkedTo || ""} onChange={(e) => setForm((p) => ({ ...p, linkedTo: e.target.value }))} placeholder="Business name" /></div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs flex items-center gap-1.5"><Target className="w-3 h-3 text-primary" />90-Day Plan Goal</Label>
+            <Select value={form.planItemId || "none"} onValueChange={(v) => setForm((p) => ({ ...p, planItemId: v === "none" ? "" : v }))}>
+              <SelectTrigger className="text-xs"><SelectValue placeholder="No linked goal" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No linked goal</SelectItem>
+                {[1, 2, 3].map(phase => {
+                  const phaseItems = planItems.filter(p => p.phase === phase);
+                  if (phaseItems.length === 0) return null;
+                  return phaseItems.map(item => (
+                    <SelectItem key={item.id} value={item.id}>
+                      <span className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-bold ${PHASE_LABELS[phase]?.color || ""}`}>{PHASE_LABELS[phase]?.label}</span>
+                        <span className="truncate">{item.title}</span>
+                        {item.completed && <Check className="w-3 h-3 text-emerald-400 shrink-0" />}
+                      </span>
+                    </SelectItem>
+                  ));
+                })}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => onSave(form)} disabled={!form.title}><Save className="w-3.5 h-3.5" />{task ? "Update" : "Add"}</Button></DialogFooter>
@@ -2718,7 +2745,7 @@ function InvoicesTab() {
       if (file) fd.append("file", file);
       fd.append("invoiceNumber", form.invoiceNumber);
       fd.append("clientName", form.clientName);
-      fd.append("amount", String(Math.round(parseFloat(form.amount || "0") * 100)));
+      fd.append("amount", String(parseFloat(form.amount || "0")));
       fd.append("status", form.status);
       fd.append("dueDate", form.dueDate);
       fd.append("notes", form.notes);
@@ -2779,13 +2806,13 @@ function InvoicesTab() {
   const openEdit = (inv: InvoiceRecord) => {
     setEditing(inv);
     setSelectedFile(null);
-    setForm({ invoiceNumber: inv.invoiceNumber, clientName: inv.clientName, amount: (inv.amount / 100).toFixed(2), status: inv.status, dueDate: inv.dueDate, notes: inv.notes });
+    setForm({ invoiceNumber: inv.invoiceNumber, clientName: inv.clientName, amount: String(inv.amount), status: inv.status, dueDate: inv.dueDate, notes: inv.notes });
     setShowDialog(true);
   };
 
   const handleSave = () => {
     if (editing) {
-      updateMut.mutate({ id: editing.id, invoiceNumber: form.invoiceNumber, clientName: form.clientName, amount: Math.round(parseFloat(form.amount || "0") * 100), status: form.status, dueDate: form.dueDate, notes: form.notes });
+      updateMut.mutate({ id: editing.id, invoiceNumber: form.invoiceNumber, clientName: form.clientName, amount: parseFloat(form.amount || "0"), status: form.status, dueDate: form.dueDate, notes: form.notes });
     } else {
       createInvoice(selectedFile || undefined);
     }
@@ -2819,15 +2846,15 @@ function InvoicesTab() {
       <div className="grid grid-cols-3 gap-3">
         <Card><CardContent className="p-4 text-center">
           <p className="text-[10px] text-muted-foreground uppercase">Pending</p>
-          <p className="text-lg font-bold text-yellow-400">${(totalPending / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          <p className="text-lg font-bold text-yellow-400">${totalPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
         <Card><CardContent className="p-4 text-center">
           <p className="text-[10px] text-muted-foreground uppercase">Paid</p>
-          <p className="text-lg font-bold text-emerald-400">${(totalPaid / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          <p className="text-lg font-bold text-emerald-400">${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
         <Card><CardContent className="p-4 text-center">
           <p className="text-[10px] text-muted-foreground uppercase">Overdue</p>
-          <p className="text-lg font-bold text-red-400">${(totalOverdue / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          <p className="text-lg font-bold text-red-400">${totalOverdue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
       </div>
 
@@ -2875,7 +2902,7 @@ function InvoicesTab() {
                   <TableRow key={inv.id}>
                     <TableCell className="text-sm font-medium">{inv.invoiceNumber || "—"}</TableCell>
                     <TableCell className="text-sm">{inv.clientName || <span className="text-muted-foreground italic">No client</span>}</TableCell>
-                    <TableCell className="text-sm font-medium">${(inv.amount / 100).toFixed(2)}</TableCell>
+                    <TableCell className="text-sm font-medium">${inv.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`text-[10px] ${st.color}`}>{st.label}</Badge>
                     </TableCell>
