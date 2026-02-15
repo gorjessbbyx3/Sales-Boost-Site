@@ -874,19 +874,17 @@ function ContactSection() {
 
 export default function ContactPage() {
   useSEO({
-    title: "Contact TechSavvy Hawaii | FAQ | AI Payment Processing & Web Design",
-    description: "Contact TechSavvy Hawaii for AI-powered payment processing and web design. Get answers to FAQs about zero-fee processing, AI terminals, free websites, and high-risk merchant accounts. Serving all Hawaiian Islands.",
-    keywords: "contact TechSavvy Hawaii, payment processing FAQ, AI merchant services contact, Honolulu payment processor phone, zero-fee processing questions, high-risk merchant account Hawaii contact",
+    title: "Contact TechSavvy Hawaii | Free Quote & Website Mockup",
+    description: "Contact TechSavvy Hawaii for a free website mockup and savings analysis on your payment processing. Zero-fee terminals, free websites for merchants, and high-risk accounts. Serving all Hawaiian Islands.",
+    keywords: "contact TechSavvy Hawaii, free payment processing quote, free website mockup, merchant services Hawaii, Honolulu payment processor",
     canonical: "https://techsavvyhawaii.com/contact",
   });
 
   return (
     <Layout>
-      <FAQHero />
-      <FAQSection />
+      <ContactSection />
       <SurchargeAcceptanceSection />
       <TestimonialsSection />
-      <ContactSection />
     </Layout>
   );
 }
