@@ -5,3 +5,8 @@ account_id = "f21951bf022d439bbd297f510c086480"
 
 [ai]
 binding = "AI"
+
+# Optional: uncomment to add rate limiting or custom domain
+# [routes]
+# pattern = "enrich.techsavvyhawaii.com/*"
+# zone_name = "techsavvyhawaii.com"
