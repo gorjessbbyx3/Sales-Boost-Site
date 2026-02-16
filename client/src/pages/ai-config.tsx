@@ -612,26 +612,17 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     ]},
     { label: "STRATEGY", tabs: [
       { value: "playbooks", icon: BookOpen, label: "Playbooks" },
-      { value: "scorecard", icon: Target, label: "Scorecard" },
-      { value: "forecast", icon: TrendingUp, label: "Forecast" },
+      { value: "analytics", icon: Target, label: "Analytics" },
       { value: "plan", icon: Calendar, label: "90-Day Plan" },
-      { value: "revenue", icon: DollarSign, label: "Revenue" },
-      { value: "invoices", icon: FileText, label: "Invoices" },
+      { value: "finances", icon: DollarSign, label: "Finances" },
     ]},
     { label: "AI & TOOLS", tabs: [
       { value: "autopilot", icon: Zap, label: "Autopilot" },
-      { value: "ai-ops", icon: Sparkles, label: "AI Ops" },
-      { value: "ai", icon: Bot, label: "AI Chat" },
+      { value: "ai-tools", icon: Sparkles, label: "AI Tools" },
+      { value: "classroom", icon: GraduationCap, label: "Classroom" },
     ]},
-    { label: "SETTINGS", tabs: [
-      { value: "team", icon: UserCog, label: "Team" },
-      { value: "user-mgmt", icon: Users, label: "Users & Roles" },
-      { value: "materials", icon: ClipboardList, label: "Materials" },
-      { value: "files", icon: FolderOpen, label: "Files" },
-      { value: "resources", icon: GraduationCap, label: "Classroom Tools" },
-      { value: "integrations", icon: Plug, label: "Integrations" },
-      { value: "security", icon: Lock, label: "Security" },
-      { value: "activity", icon: Activity, label: "Activity Log" },
+    { label: "", tabs: [
+      { value: "settings", icon: Settings, label: "Settings" },
     ]},
   ];
   const tabs = tabGroups.flatMap(g => g.tabs);
@@ -695,8 +686,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             {/* Nav items */}
             <nav className="flex-1 p-2 space-y-1">
               {tabGroups.map((group) => (
-                <div key={group.label}>
-                  {!sidebarCollapsed && <p className="text-[9px] font-bold text-muted-foreground/50 tracking-wider px-3 pt-3 pb-1">{group.label}</p>}
+                <div key={group.label || "settings-group"}>
+                  {!sidebarCollapsed && group.label && <p className="text-[9px] font-bold text-muted-foreground/50 tracking-wider px-3 pt-3 pb-1">{group.label}</p>}
+                  {!group.label && <div className="border-t border-border/30 mx-3 mt-3 mb-1" />}
                   {sidebarCollapsed && <div className="border-t border-border/20 my-1.5" />}
                   {group.tabs.map((tab) => (
                     <button
@@ -731,30 +723,102 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsContent value="deals"><DealsTab /></TabsContent>
               <TabsContent value="inbox"><InboxTab /></TabsContent>
               <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>
-              <TabsContent value="scorecard"><ScorecardTab /></TabsContent>
-              <TabsContent value="forecast"><ForecastTab /></TabsContent>
+              <TabsContent value="analytics"><AnalyticsTab /></TabsContent>
               <TabsContent value="plan"><PlanTab /></TabsContent>
-              <TabsContent value="materials"><MaterialsTab /></TabsContent>
               <TabsContent value="clients"><ClientsTab /></TabsContent>
-              <TabsContent value="revenue"><RevenueTab /></TabsContent>
-              <TabsContent value="invoices"><InvoicesTab /></TabsContent>
+              <TabsContent value="finances"><FinancesTab /></TabsContent>
               <TabsContent value="tasks"><TasksTab /></TabsContent>
-              <TabsContent value="files"><FilesTab /></TabsContent>
-              <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
-              <TabsContent value="resources"><ResourcesManagerTab /></TabsContent>
-              <TabsContent value="team"><TeamTab /></TabsContent>
-              <TabsContent value="user-mgmt"><UsersTab /></TabsContent>
-              <TabsContent value="schedule"><ScheduleTab /></TabsContent>
-              <TabsContent value="prospector"><ProspectorTab /></TabsContent>
               <TabsContent value="autopilot"><AutopilotTab /></TabsContent>
-              <TabsContent value="ai-ops"><AiOpsTab /></TabsContent>
-              <TabsContent value="activity"><ActivityTab /></TabsContent>
-              <TabsContent value="ai"><AiSettingsTab /></TabsContent>
-              <TabsContent value="security"><SecurityTab /></TabsContent>
+              <TabsContent value="ai-tools"><AiToolsTab /></TabsContent>
+              <TabsContent value="classroom"><ResourcesManagerTab /></TabsContent>
+              <TabsContent value="settings"><SettingsTab /></TabsContent>
             </Tabs>
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+// ─── Analytics Tab (Scorecard + Forecast merged) ────────────────────
+
+function AnalyticsTab() {
+  const [view, setView] = useState<"scorecard" | "forecast">("scorecard");
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
+          <Button variant={view === "scorecard" ? "default" : "ghost"} size="sm" className="h-7 text-xs" onClick={() => setView("scorecard")}><Target className="w-3 h-3 mr-1" />Scorecard</Button>
+          <Button variant={view === "forecast" ? "default" : "ghost"} size="sm" className="h-7 text-xs" onClick={() => setView("forecast")}><TrendingUp className="w-3 h-3 mr-1" />Forecast</Button>
+        </div>
+      </div>
+      {view === "scorecard" ? <ScorecardTab /> : <ForecastTab />}
+    </div>
+  );
+}
+
+// ─── Finances Tab (Revenue + Invoices merged) ───────────────────────
+
+function FinancesTab() {
+  const [view, setView] = useState<"revenue" | "invoices">("revenue");
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
+          <Button variant={view === "revenue" ? "default" : "ghost"} size="sm" className="h-7 text-xs" onClick={() => setView("revenue")}><DollarSign className="w-3 h-3 mr-1" />Revenue</Button>
+          <Button variant={view === "invoices" ? "default" : "ghost"} size="sm" className="h-7 text-xs" onClick={() => setView("invoices")}><FileText className="w-3 h-3 mr-1" />Invoices</Button>
+        </div>
+      </div>
+      {view === "revenue" ? <RevenueTab /> : <InvoicesTab />}
+    </div>
+  );
+}
+
+// ─── AI Tools Tab (AI Ops + Prospector + AI Settings merged) ────────
+
+function AiToolsTab() {
+  const [view, setView] = useState<"ops" | "prospector" | "config">("ops");
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
+          <Button variant={view === "ops" ? "default" : "ghost"} size="sm" className="h-7 text-xs" onClick={() => setView("ops")}><MessageSquare className="w-3 h-3 mr-1" />AI Ops</Button>
+          <Button variant={view === "prospector" ? "default" : "ghost"} size="sm" className="h-7 text-xs" onClick={() => setView("prospector")}><Globe className="w-3 h-3 mr-1" />Prospector</Button>
+          <Button variant={view === "config" ? "default" : "ghost"} size="sm" className="h-7 text-xs" onClick={() => setView("config")}><Bot className="w-3 h-3 mr-1" />Chat Config</Button>
+        </div>
+      </div>
+      {view === "ops" ? <AiOpsTab /> : view === "prospector" ? <ProspectorTab /> : <AiSettingsTab />}
+    </div>
+  );
+}
+
+// ─── Settings Tab (Team + Users + Security + Integrations + Files + Activity) ─
+
+function SettingsTab() {
+  const [section, setSection] = useState<"team" | "users" | "security" | "integrations" | "files" | "activity">("team");
+  const sections = [
+    { value: "team" as const, label: "Team & Business", icon: UserCog },
+    { value: "users" as const, label: "Users & Roles", icon: Users },
+    { value: "security" as const, label: "Security", icon: Lock },
+    { value: "integrations" as const, label: "Integrations", icon: Plug },
+    { value: "files" as const, label: "Files", icon: FolderOpen },
+    { value: "activity" as const, label: "Activity Log", icon: Activity },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-1 flex-wrap bg-muted/50 rounded-lg p-0.5">
+        {sections.map(s => (
+          <Button key={s.value} variant={section === s.value ? "default" : "ghost"} size="sm" className="h-7 text-xs" onClick={() => setSection(s.value)}>
+            <s.icon className="w-3 h-3 mr-1" />{s.label}
+          </Button>
+        ))}
+      </div>
+      {section === "team" && <TeamTab />}
+      {section === "users" && <UsersTab />}
+      {section === "security" && <SecurityTab />}
+      {section === "integrations" && <IntegrationsTab />}
+      {section === "files" && <FilesTab />}
+      {section === "activity" && <ActivityTab />}
     </div>
   );
 }
@@ -934,7 +998,7 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" className="h-8 text-xs" onClick={() => setActiveTab("leads")}><Plus className="w-3.5 h-3.5 mr-1" />New Lead</Button>
-          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setActiveTab("revenue")}><DollarSign className="w-3.5 h-3.5 mr-1" />Log Revenue</Button>
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setActiveTab("finances")}><DollarSign className="w-3.5 h-3.5 mr-1" />Log Revenue</Button>
         </div>
       </div>
 
@@ -1241,7 +1305,7 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2"><DollarSign className="w-4 h-4 text-chart-4" />Revenue</CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("revenue")}>Details <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("finances")}>Details <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
@@ -1289,7 +1353,7 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2"><Activity className="w-4 h-4 text-chart-4" />Activity</CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("activity")}>All <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setActiveTab("settings")}>All <ArrowUpRight className="w-3 h-3 ml-1" /></Button>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
@@ -2052,6 +2116,11 @@ function PlanTab() {
           </Card>
         );
       })}
+
+      {/* Materials Checklist */}
+      <div className="border-t border-border/30 pt-6 mt-2">
+        <MaterialsTab />
+      </div>
 
       <Dialog open={showAddForm} onOpenChange={(o) => !o && setShowAddForm(false)}>
         <DialogContent className="sm:max-w-sm">

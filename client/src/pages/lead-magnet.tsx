@@ -124,10 +124,10 @@ function ThankYouPage() {
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/resources">
+            <Link href="/how-it-works">
               <Button size="lg" variant="outline" className="gap-2">
                 <BookOpen className="w-4 h-4" />
-                Browse More Resources
+                See How It Works
               </Button>
             </Link>
           </div>
