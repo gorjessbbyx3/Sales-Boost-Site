@@ -25,6 +25,7 @@ function Navbar() {
 
   const links = [
     { label: "How It Works", href: "/how-it-works" },
+    { label: "Statement Review", href: "/statement-review" },
     { label: "Pricing", href: "/pricing" },
     { label: "Online Processing", href: "/online-processing" },
     { label: "High-Risk", href: "/high-risk" },

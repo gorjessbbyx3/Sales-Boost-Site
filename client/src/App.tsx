@@ -16,6 +16,7 @@ import ConnectPage from "@/pages/connect";
 import FaqPage from "@/pages/services-faq";
 import LeadMagnetPage from "@/pages/lead-magnet";
 import AiConfigPage from "@/pages/ai-config";
+import StatementReviewPage from "@/pages/statement-review";
 import NotFound from "@/pages/not-found";
 import { ChatWidget } from "@/components/chat-widget";
 
@@ -46,6 +47,7 @@ function MainRouter() {
         <Route path="/faq" component={FaqPage} />
         <Route path="/connect" component={ConnectPage} />
         <Route path="/free/:slug" component={LeadMagnetPage} />
+        <Route path="/statement-review" component={StatementReviewPage} />
         <Route component={NotFound} />
       </Switch>
     </>

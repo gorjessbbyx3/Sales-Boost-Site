@@ -535,6 +535,296 @@ RULES:
     }
   });
 
+  // ─── Statement Review (AI-powered analysis) ────────────────────
+
+  const statementUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 20 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, [".pdf", ".jpg", ".jpeg", ".png", ".webp", ".heic"].includes(ext));
+    },
+  });
+
+  const statementLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: "Too many requests. Please wait a few minutes." },
+  });
+
+  app.post("/api/statement-review/analyze", statementLimiter, statementUpload.single("statement"), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded. Please attach your merchant statement." });
+      }
+
+      // Get AI config for API key
+      const configs = await db.select().from(schema.aiConfig).limit(1);
+      const apiKey = configs[0]?.apiKey || process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "AI service not configured. Please contact us for a manual review." });
+      }
+
+      const fileBuffer = req.file.buffer;
+      const mimeType = req.file.mimetype || "application/pdf";
+      const base64Data = fileBuffer.toString("base64");
+
+      const anthropic = new Anthropic({ apiKey });
+
+      // Determine media type for API
+      let mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp" | "application/pdf" = "application/pdf";
+      if (mimeType.includes("jpeg") || mimeType.includes("jpg")) mediaType = "image/jpeg";
+      else if (mimeType.includes("png")) mediaType = "image/png";
+      else if (mimeType.includes("webp")) mediaType = "image/webp";
+      else if (mimeType.includes("gif")) mediaType = "image/gif";
+
+      const isPdf = mediaType === "application/pdf";
+
+      const content: any[] = [];
+      if (isPdf) {
+        content.push({
+          type: "document",
+          source: { type: "base64", media_type: "application/pdf", data: base64Data },
+        });
+      } else {
+        content.push({
+          type: "image",
+          source: { type: "base64", media_type: mediaType, data: base64Data },
+        });
+      }
+      content.push({
+        type: "text",
+        text: `You are an expert merchant services consultant analyzing a merchant processing statement. Carefully examine every line item, fee, and charge on this statement.
+
+Your task:
+1. Identify ALL hidden fees, junk fees, inflated rates, and unnecessary charges
+2. Calculate or estimate the merchant's effective rate (total fees ÷ total volume)
+3. Compare to the industry average effective rate (typically 2.2-2.8% for most retail/restaurant)
+4. Estimate how much they are overpaying per month
+5. Provide specific, actionable recommendations
+
+IMPORTANT: Respond ONLY with valid JSON in this exact format (no markdown, no backticks, no commentary):
+{
+  "summary": "One sentence summary of findings",
+  "effectiveRate": "X.XX%",
+  "industryAverage": "X.XX%",
+  "estimatedOverpay": "$XXX",
+  "monthlyVolume": "$XX,XXX",
+  "hiddenFees": [
+    {
+      "name": "Fee name",
+      "amount": "$XX.XX",
+      "severity": "high|medium|low",
+      "explanation": "Why this fee is problematic and what it should be"
+    }
+  ],
+  "recommendations": [
+    "Specific actionable recommendation"
+  ],
+  "overallGrade": "A|B|C|D|F"
+}
+
+Grade scale: A = excellent rates, B = slightly above average, C = moderately overcharged, D = significantly overcharged, F = severely overcharged.
+
+If you cannot read the statement clearly, still provide your best analysis based on what you can see. Always find at least a few areas of concern — processors almost always include unnecessary fees.`
+      });
+
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-5-20250514",
+        max_tokens: 4000,
+        messages: [{ role: "user", content }],
+      });
+
+      const text = response.content
+        .filter((block): block is Anthropic.TextBlock => block.type === "text")
+        .map((block) => block.text)
+        .join("");
+
+      // Parse JSON response - handle potential markdown wrapping
+      let cleaned = text.trim();
+      if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+      }
+
+      const analysis = JSON.parse(cleaned);
+
+      // Log as a lead activity
+      logActivity("Statement Review", `AI analysis completed — Grade: ${analysis.overallGrade}, Overpay: ${analysis.estimatedOverpay}`, "lead");
+
+      res.json(analysis);
+    } catch (err: any) {
+      console.error("Statement analysis error:", err.message || err);
+      if (err instanceof SyntaxError) {
+        return res.status(500).json({ error: "AI returned an unexpected format. Please try again or contact us for a manual review." });
+      }
+      const msg = err.message || "";
+      const safeError = msg.includes("rate_limit") ? "AI service is busy. Please try again in a moment."
+        : msg.includes("invalid_api_key") ? "AI service configuration error. Please contact us."
+        : "Analysis failed. Please try again or call us at (808) 767-5460 for a free manual review.";
+      res.status(500).json({ error: safeError });
+    }
+  });
+
+  app.post("/api/statement-review/email", statementLimiter, async (req: Request, res: Response) => {
+    try {
+      const { email, name, business, type, analysis } = req.body;
+
+      if (!email || !name) {
+        return res.status(400).json({ error: "Name and email are required." });
+      }
+
+      if (type === "report" && analysis) {
+        // Send the analysis report via email
+        const feesHtml = analysis.hiddenFees?.map((f: any) =>
+          `<tr>
+            <td style="padding:8px 12px;border-bottom:1px solid #2a2a2a;color:#e0e0e0;font-size:14px;">${f.name}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #2a2a2a;color:#ff6b6b;font-weight:bold;font-size:14px;">${f.amount}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #2a2a2a;color:#aaa;font-size:13px;">${f.explanation}</td>
+          </tr>`
+        ).join("") || "";
+
+        const recsHtml = analysis.recommendations?.map((r: string) =>
+          `<li style="margin-bottom:8px;color:#e0e0e0;font-size:14px;">✅ ${r}</li>`
+        ).join("") || "";
+
+        await sendEmail({
+          to: email,
+          subject: `Your Statement Analysis Report — Grade: ${analysis.overallGrade} | TechSavvy Hawaii`,
+          html: `
+            <div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;max-width:640px;margin:0 auto;background:#0a0a0a;color:#e0e0e0;">
+              <div style="padding:32px;background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid #4aeaff;">
+                <h1 style="margin:0;font-size:24px;color:#4aeaff;">λechSavvy</h1>
+                <p style="margin:8px 0 0;color:#94a3b8;font-size:14px;">AI Statement Analysis Report</p>
+              </div>
+              <div style="padding:32px;">
+                <p style="font-size:16px;margin-bottom:24px;">Hi ${name},</p>
+                <p style="font-size:14px;color:#aaa;margin-bottom:24px;">${analysis.summary}</p>
+
+                <div style="display:flex;gap:16px;margin-bottom:32px;">
+                  <div style="flex:1;background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;border:1px solid #2a2a4a;">
+                    <p style="color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Grade</p>
+                    <p style="font-size:36px;font-weight:900;margin:0;color:${analysis.overallGrade === 'A' ? '#4ade80' : analysis.overallGrade === 'B' ? '#4aeaff' : analysis.overallGrade === 'C' ? '#fbbf24' : '#ff6b6b'};">${analysis.overallGrade}</p>
+                  </div>
+                  <div style="flex:1;background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;border:1px solid #2a2a4a;">
+                    <p style="color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Your Rate</p>
+                    <p style="font-size:28px;font-weight:700;margin:0;color:#ff6b6b;">${analysis.effectiveRate}</p>
+                    <p style="color:#666;font-size:11px;margin:4px 0 0;">Avg: ${analysis.industryAverage}</p>
+                  </div>
+                  <div style="flex:1;background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;border:1px solid #2a2a4a;">
+                    <p style="color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Monthly Overpay</p>
+                    <p style="font-size:28px;font-weight:700;margin:0;color:#fb923c;">${analysis.estimatedOverpay}</p>
+                  </div>
+                </div>
+
+                ${feesHtml ? `
+                <h2 style="font-size:18px;color:#fbbf24;margin-bottom:12px;">⚠️ Hidden Fees Found</h2>
+                <table style="width:100%;border-collapse:collapse;margin-bottom:32px;background:#111;">
+                  <thead>
+                    <tr style="background:#1a1a2e;">
+                      <th style="padding:10px 12px;text-align:left;color:#4aeaff;font-size:12px;text-transform:uppercase;">Fee</th>
+                      <th style="padding:10px 12px;text-align:left;color:#4aeaff;font-size:12px;text-transform:uppercase;">Amount</th>
+                      <th style="padding:10px 12px;text-align:left;color:#4aeaff;font-size:12px;text-transform:uppercase;">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>${feesHtml}</tbody>
+                </table>` : ""}
+
+                ${recsHtml ? `
+                <h2 style="font-size:18px;color:#4ade80;margin-bottom:12px;">💡 Recommendations</h2>
+                <ul style="padding-left:0;list-style:none;margin-bottom:32px;">${recsHtml}</ul>` : ""}
+
+                <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid #4aeaff33;border-radius:12px;padding:24px;text-align:center;margin-top:32px;">
+                  <h3 style="color:#4aeaff;margin:0 0 8px;font-size:18px;">Ready to stop overpaying?</h3>
+                  <p style="color:#aaa;font-size:14px;margin:0 0 16px;">Let's get you better rates — no commitment, no pressure.</p>
+                  <a href="tel:+18087675460" style="display:inline-block;background:#4aeaff;color:#000;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">📞 Call (808) 767-5460</a>
+                </div>
+
+                <p style="color:#666;font-size:12px;margin-top:32px;text-align:center;">
+                  TechSavvy Hawaii • techsavvyhawaii.com • contact@techsavvyhawaii.com
+                </p>
+              </div>
+            </div>
+          `,
+        });
+      } else {
+        // Send booklet guides email
+        await sendEmail({
+          to: email,
+          subject: "Your Free Merchant Statement Review Guides | TechSavvy Hawaii",
+          html: `
+            <div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;max-width:640px;margin:0 auto;background:#0a0a0a;color:#e0e0e0;">
+              <div style="padding:32px;background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid #4aeaff;">
+                <h1 style="margin:0;font-size:24px;color:#4aeaff;">λechSavvy</h1>
+                <p style="margin:8px 0 0;color:#94a3b8;font-size:14px;">Your Free Statement Review Guides</p>
+              </div>
+              <div style="padding:32px;">
+                <p style="font-size:16px;margin-bottom:8px;">Hi ${name},</p>
+                <p style="font-size:14px;color:#aaa;margin-bottom:24px;">Thanks for your interest! Here are your free guides to help you review your merchant processing statement.</p>
+
+                <div style="margin-bottom:24px;">
+                  <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
+                    <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">📋 Top 10 Statement Checklist</h3>
+                    <p style="color:#aaa;font-size:13px;margin:0 0 12px;">Spot hidden fees, inflated rates, and junk charges in under 10 minutes.</p>
+                    <a href="https://techsavvyhawaii.com/free/statement-checklist" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+                  </div>
+                  <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
+                    <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">📊 Rate Comparison Guide</h3>
+                    <p style="color:#aaa;font-size:13px;margin:0 0 12px;">Industry benchmarks for restaurants, retail, salons, medical & more.</p>
+                    <a href="https://techsavvyhawaii.com/free/rate-comparison" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+                  </div>
+                  <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
+                    <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">🔒 Security Checklist</h3>
+                    <p style="color:#aaa;font-size:13px;margin:0 0 12px;">PCI compliance, fraud prevention, and breach response checklist.</p>
+                    <a href="https://techsavvyhawaii.com/free/security-checklist" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+                  </div>
+                  <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
+                    <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">💰 Cash Discount Guide</h3>
+                    <p style="color:#aaa;font-size:13px;margin:0 0 12px;">How to eliminate processing fees entirely — legal in all 50 states.</p>
+                    <a href="https://techsavvyhawaii.com/free/cash-discount-guide" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+                  </div>
+                </div>
+
+                <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid #4aeaff33;border-radius:12px;padding:24px;text-align:center;">
+                  <h3 style="color:#4aeaff;margin:0 0 8px;font-size:18px;">Want us to review it for you?</h3>
+                  <p style="color:#aaa;font-size:14px;margin:0 0 16px;">Upload your statement for a free AI-powered analysis, or call us for a personal review.</p>
+                  <a href="https://techsavvyhawaii.com/statement-review" style="display:inline-block;background:#4aeaff;color:#000;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-right:8px;">AI Analysis</a>
+                  <a href="tel:+18087675460" style="display:inline-block;background:transparent;color:#4aeaff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;border:1px solid #4aeaff;">📞 (808) 767-5460</a>
+                </div>
+
+                <p style="color:#666;font-size:12px;margin-top:32px;text-align:center;">
+                  TechSavvy Hawaii • techsavvyhawaii.com • contact@techsavvyhawaii.com
+                </p>
+              </div>
+            </div>
+          `,
+        });
+      }
+
+      // Save as a lead
+      try {
+        await db.insert(schema.leads).values({
+          id: randomUUID(),
+          name,
+          email,
+          business: business || "",
+          source: "statement-review",
+          status: "new",
+          notes: type === "report" ? "AI statement report emailed" : "Requested self-review guides",
+        });
+      } catch (leadErr) {
+        console.error("Failed to save statement review lead:", leadErr);
+      }
+
+      logActivity("Statement Review Email", `${type === "report" ? "AI report" : "Guide booklets"} sent to ${email}`, "lead");
+      sendSlackNotification(`📊 Statement Review: ${name} (${email}) — ${type === "report" ? "AI report sent" : "Guides requested"}`, "newLead");
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("Statement email error:", err);
+      res.status(500).json({ error: "Failed to send email. Please try again." });
+    }
+  });
+
   // ─── Contact Leads (from website form) ──────────────────────────
 
   app.post("/api/contact-leads", publicLeadLimiter, async (req: Request, res: Response) => {
