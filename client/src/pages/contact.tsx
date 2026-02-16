@@ -546,8 +546,12 @@ function ContactSection() {
     try {
       const pkgMap: Record<string, string> = {
         "bundle-terminal": "terminal",
-        "trial": "trial",
+        "bundle-trial": "trial",
         "online-only": "online",
+        "high-risk": "high-risk",
+        "website-only": "website",
+        "premium-web": "premium-web",
+        "questions": "questions",
       };
       await apiRequest("POST", "/api/leads/public", {
         name: formData.name,

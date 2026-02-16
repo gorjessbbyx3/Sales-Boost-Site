@@ -504,7 +504,7 @@ export const publicLeadSchema = z.object({
   business: z.string().max(200).transform(v => v.replace(/<[^>]*>/g, "").trim()).default(""),
   phone: z.string().max(30).transform(v => v.replace(/[^0-9+() -]/g, "").trim()).default(""),
   email: z.string().max(254).email().optional().or(z.literal("")),
-  package: z.enum(["terminal", "gateway", "both", "website", "custom"]).default("terminal"),
+  package: z.enum(["terminal", "gateway", "both", "website", "custom", "trial", "online", "high-risk", "premium-web", "questions"]).default("terminal"),
   notes: z.string().max(2000).transform(v => v.replace(/<[^>]*>/g, "").trim()).default(""),
 });
 
