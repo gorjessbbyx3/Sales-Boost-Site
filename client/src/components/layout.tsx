@@ -28,7 +28,7 @@ function Navbar() {
     { label: "Pricing", href: "/pricing" },
     { label: "Online Processing", href: "/online-processing" },
     { label: "High-Risk", href: "/high-risk" },
-    { label: "FAQ", href: "/contact" },
+    { label: "FAQ", href: "/faq" },
   ];
 
   return (
@@ -204,7 +204,7 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="transition-colors hover:text-white" data-testid="link-footer-faq">
+                <Link href="/faq" className="transition-colors hover:text-white" data-testid="link-footer-faq">
                   FAQ
                 </Link>
               </li>
