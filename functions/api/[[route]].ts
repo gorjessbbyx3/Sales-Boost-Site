@@ -1900,6 +1900,168 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json({ id, leadId: body.leadId || "", opportunityId: body.opportunityId || "", userId: body.userId || "", type: body.type || "note", title: body.title || "", description: body.description || "", metadata: body.metadata || "{}", createdAt: ts }, 201);
     }
 
+    // ─── MISSING ROUTES ─────────────────────────────────────────────
+
+    // GET /api/ai-config/full (admin settings page)
+    if (path === "/api/ai-config/full" && method === "GET") {
+      if (!session) return err("Unauthorized", 401);
+      const config = await env.DB.prepare("SELECT * FROM ai_config WHERE id = 'default'").first();
+      if (!config) return json({ id: "default", enabled: false, model: "claude-sonnet-4-20250514", systemPrompt: "", welcomeMessage: "", maxTokens: 1024 });
+      return json({
+        id: config.id, enabled: !!config.enabled, model: config.model,
+        systemPrompt: config.system_prompt, welcomeMessage: config.welcome_message,
+        maxTokens: config.max_tokens,
+      });
+    }
+
+    // GET /api/health
+    if (path === "/api/health" && method === "GET") {
+      return json({ status: "ok", timestamp: new Date().toISOString(), env: "cloudflare-pages" });
+    }
+
+    // POST /api/ai-ops/import-prospects
+    if (path === "/api/ai-ops/import-prospects" && method === "POST") {
+      if (!session) return err("Unauthorized", 401);
+      const body = await ctx.request.json() as Record<string, unknown>;
+      const prospects = body.prospects as any[];
+      const sourceLabel = (body.sourceLabel as string) || "Web scrape";
+      if (!Array.isArray(prospects) || prospects.length === 0) return err("No prospects to import.");
+
+      const now = new Date().toISOString();
+      const created: any[] = [];
+
+      for (const p of prospects) {
+        const id = `lead-${crypto.randomUUID().slice(0, 8)}`;
+        const socialStr = p.socialLinks ? Object.entries(p.socialLinks).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join("\n") : "";
+        await env.DB.prepare(`INSERT INTO leads (id, name, business, address, phone, email, decision_maker_name, decision_maker_role, best_contact_method, package, status, source, vertical, current_processor, current_equipment, monthly_volume, pain_points, next_step, next_step_date, attachments, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, 'terminal', 'new', 'direct', ?, ?, '', '', ?, 'Initial outreach', ?, '[]', ?, ?, ?)`)
+          .bind(id, p.name || "", p.business || "", p.address || "", p.phone || "", p.email || "", p.name || "", p.phone ? "phone" : p.email ? "email" : "phone", p.vertical || "other", p.currentProcessor || "", p.currentProcessor ? `Currently using ${p.currentProcessor}` : "", now.split("T")[0], `[AI Prospector] ${sourceLabel}${p.website ? `\nWebsite: ${p.website}` : ""}${socialStr ? `\nSocial:\n${socialStr}` : ""}${p.notes ? `\n${p.notes}` : ""}`.trim(), now, now)
+          .run();
+        created.push({ id, name: p.name || "", business: p.business || "" });
+      }
+      return json({ imported: created.length, leads: created });
+    }
+
+    // POST /api/ai-ops/tech-scan (simplified tech detection)
+    if (path === "/api/ai-ops/tech-scan" && method === "POST") {
+      if (!session) return err("Unauthorized", 401);
+      const body = await ctx.request.json() as Record<string, unknown>;
+      const rawUrl = body.url;
+      if (!rawUrl) return err("URL is required.");
+
+      const urls = Array.isArray(rawUrl) ? rawUrl as string[] : [rawUrl as string];
+      const results: any[] = [];
+
+      for (const targetUrl of urls.slice(0, 20)) {
+        try {
+          const resp = await fetch(targetUrl, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+            signal: AbortSignal.timeout(12000),
+          });
+          if (!resp.ok) { results.push({ url: targetUrl, techStack: [], title: "", error: `HTTP ${resp.status}` }); continue; }
+          const html = await resp.text();
+          const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+          const techStack = detectTechStackSimple(html);
+          results.push({ url: targetUrl, techStack, title: titleMatch?.[1]?.trim() || "" });
+        } catch (e: any) {
+          results.push({ url: targetUrl, techStack: [], title: "", error: e.message });
+        }
+      }
+      return json({ results, scannedAt: new Date().toISOString() });
+    }
+
+    // POST /api/ai-ops/scrape-prospects
+    if (path === "/api/ai-ops/scrape-prospects" && method === "POST") {
+      if (!session) return err("Unauthorized", 401);
+      const apiKey = env.ANTHROPIC_API_KEY;
+      if (!apiKey) return err("Anthropic API key not configured.", 500);
+
+      const body = await ctx.request.json() as Record<string, unknown>;
+      const rawUrl = body.url;
+      if (!rawUrl) return err("URL is required.");
+
+      const urls = Array.isArray(rawUrl) ? rawUrl as string[] : [rawUrl as string];
+      const allProspects: any[] = [];
+      const allTechStacks: Record<string, any[]> = {};
+
+      for (const targetUrl of urls.slice(0, 20)) {
+        try {
+          const resp = await fetch(targetUrl, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+            signal: AbortSignal.timeout(15000),
+          });
+          if (!resp.ok) continue;
+          const html = await resp.text();
+          const techStack = detectTechStackSimple(html);
+          allTechStacks[targetUrl] = techStack;
+
+          const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 50000);
+          const techContext = techStack.length > 0 ? `\nTECH DETECTED: ${techStack.map((t: any) => `${t.name} (${t.category})`).join(", ")}` : "";
+
+          const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514", max_tokens: 4096,
+              system: `Extract ALL business listings from the page. Return ONLY a JSON array. Each item: { "business": "", "name": "", "address": "", "phone": "", "email": "", "website": "", "vertical": "restaurant|retail|salon|auto|medical|services|other", "currentProcessor": "", "notes": "" }. Return [] if none found.${techContext}`,
+              messages: [{ role: "user", content: `Extract from ${targetUrl}:\n\n${cleaned}` }],
+            }),
+          });
+          const aiData = await aiResp.json() as any;
+          const text = (aiData.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+          const jsonMatch = text.match(/\[[\s\S]*\]/);
+          const prospects = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+          for (const p of prospects) { p._sourceUrl = targetUrl; p._techStack = techStack; }
+          allProspects.push(...prospects);
+          if (urls.length > 1) await new Promise(r => setTimeout(r, 1500));
+        } catch (e: any) { console.error(`Scrape error ${targetUrl}:`, e.message); }
+      }
+      return json({ prospects: allProspects, techStacks: allTechStacks, source: urls.length === 1 ? urls[0] : `${urls.length} URLs`, scrapedAt: new Date().toISOString() });
+    }
+
+    // POST /api/ai-ops/google-dork
+    if (path === "/api/ai-ops/google-dork" && method === "POST") {
+      if (!session) return err("Unauthorized", 401);
+      const apiKey = env.ANTHROPIC_API_KEY;
+      const body = await ctx.request.json() as Record<string, unknown>;
+      const query = body.query as string;
+      const location = body.location as string;
+      if (!query) return err("Query is required.");
+
+      if (!apiKey) {
+        return json({ results: [], urls: [], query, searchedAt: new Date().toISOString(), noApiKey: true, message: "No Anthropic API key. Use 'Open in Google' then paste URLs into URL Scanner." });
+      }
+
+      try {
+        const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514", max_tokens: 2048,
+            system: `Generate Google search queries (dorks) to find local businesses for merchant services prospecting. Return JSON: { "dorks": [{ "query": "search string", "purpose": "why" }], "urls": ["direct URLs to try"] }`,
+            messages: [{ role: "user", content: `Generate dorks for: "${query}"${location ? ` in ${location}` : ""}. Focus on finding businesses without modern payment processing.` }],
+          }),
+        });
+        const aiData = await aiResp.json() as any;
+        const text = (aiData.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { dorks: [], urls: [] };
+        return json({ results: parsed.dorks || [], urls: parsed.urls || [], query, searchedAt: new Date().toISOString() });
+      } catch (e: any) {
+        return json({ results: [], urls: [], query, searchedAt: new Date().toISOString(), error: e.message });
+      }
+    }
+
+    // POST /api/resources/upload
+    if (path === "/api/resources/upload" && method === "POST") {
+      if (!session) return err("Unauthorized", 401);
+      const body = await ctx.request.json() as Record<string, unknown>;
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      await env.DB.prepare(`INSERT INTO admin_resources (id, title, description, category, type, url, thumbnail_url, sort_order, featured, published, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?, ?)`)
+        .bind(id, body.title || "", body.description || "", body.category || "guide", body.type || "link", body.url || "", body.thumbnailUrl || "", now, now).run();
+      return json({ id, title: body.title, url: body.url, createdAt: now }, 201);
+    }
+
     // ─── CATCH-ALL ──────────────────────────────────────────────────────
 
     return err("Not found", 404);
