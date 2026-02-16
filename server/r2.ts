@@ -40,13 +40,13 @@ const MIME_MAP: Record<string, string> = {
  * Upload a file buffer to R2.
  * @param buffer File contents
  * @param originalName Original filename (for extension + sanitization)
- * @param folder R2 folder prefix — "resources", "invoices", or "images"
+ * @param folder R2 folder prefix (e.g. "resources", "invoices", "statements", "partner-agreements")
  * @returns Public URL to the uploaded file
  */
 export async function uploadToR2(
   buffer: Buffer,
   originalName: string,
-  folder: "resources" | "invoices" | "images",
+  folder: string,
 ): Promise<string> {
   const ext = path.extname(originalName).toLowerCase();
   const base = path

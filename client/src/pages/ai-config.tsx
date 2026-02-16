@@ -212,6 +212,7 @@ interface AdminFile {
   size: number;
   type: string;
   category: string;
+  folder: string;
   uploadedAt: string;
   url: string;
 }
@@ -619,7 +620,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { label: "AI & TOOLS", tabs: [
       { value: "autopilot", icon: Zap, label: "Autopilot" },
       { value: "ai-tools", icon: Sparkles, label: "AI Tools" },
-      { value: "classroom", icon: GraduationCap, label: "Classroom" },
+      { value: "files", icon: FolderOpen, label: "Files" },
     ]},
     { label: "", tabs: [
       { value: "settings", icon: Settings, label: "Settings" },
@@ -730,7 +731,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsContent value="tasks"><TasksTab /></TabsContent>
               <TabsContent value="autopilot"><AutopilotTab /></TabsContent>
               <TabsContent value="ai-tools"><AiToolsTab /></TabsContent>
-              <TabsContent value="classroom"><ResourcesManagerTab /></TabsContent>
+              <TabsContent value="files"><FilesManagerTab /></TabsContent>
               <TabsContent value="settings"><SettingsTab /></TabsContent>
             </Tabs>
           </div>
@@ -795,13 +796,12 @@ function AiToolsTab() {
 // ─── Settings Tab (Team + Users + Security + Integrations + Files + Activity) ─
 
 function SettingsTab() {
-  const [section, setSection] = useState<"team" | "users" | "security" | "integrations" | "files" | "activity">("team");
+  const [section, setSection] = useState<"team" | "users" | "security" | "integrations" | "activity">("team");
   const sections = [
     { value: "team" as const, label: "Team & Business", icon: UserCog },
     { value: "users" as const, label: "Users & Roles", icon: Users },
     { value: "security" as const, label: "Security", icon: Lock },
     { value: "integrations" as const, label: "Integrations", icon: Plug },
-    { value: "files" as const, label: "Files", icon: FolderOpen },
     { value: "activity" as const, label: "Activity Log", icon: Activity },
   ];
   return (
@@ -817,7 +817,6 @@ function SettingsTab() {
       {section === "users" && <UsersTab />}
       {section === "security" && <SecurityTab />}
       {section === "integrations" && <IntegrationsTab />}
-      {section === "files" && <FilesTab />}
       {section === "activity" && <ActivityTab />}
     </div>
   );
@@ -2600,41 +2599,243 @@ function TaskFormDialog({ open, onClose, onSave, task }: { open: boolean; onClos
   );
 }
 
-// ─── Files Tab ───────────────────────────────────────────────────────
+// ─── Unified Files Manager Tab (replaces old Files + Classroom) ──────
 
-function FilesTab() {
+const DEFAULT_FOLDERS = [
+  "Classroom",
+  "Uploaded Statements",
+  "Partner Agreements",
+  "Client Resources",
+  "Client Resources/Checklist",
+  "Website Resources",
+];
+
+function FilesManagerTab() {
   const { data: files = [], refetch } = useQuery<AdminFile[]>({ queryKey: ["/api/files"] });
-  const [showForm, setShowForm] = useState(false);
+  const { data: resources = [], refetch: refetchResources } = useQuery<AdminResource[]>({
+    queryKey: ["/api/resources/all"],
+    queryFn: async () => { const r = await fetch("/api/resources/all", { credentials: "include" }); if (!r.ok) throw new Error("Failed"); return r.json(); },
+  });
+  const [currentFolder, setCurrentFolder] = useState<string>("");
   const [search, setSearch] = useState("");
-  const [filterCat, setFilterCat] = useState("all");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const createMutation = useMutation({ mutationFn: async (d: Partial<AdminFile>) => { const r = await apiRequest("POST", "/api/files", d); return r.json(); }, onSuccess: () => { refetch(); toast({ title: "File added" }); setShowForm(false); }, onError: () => { toast({ title: "Failed to add file", variant: "destructive" }); } });
-  const deleteMutation = useMutation({ mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/files/${id}`); }, onSuccess: () => { refetch(); toast({ title: "File deleted" }); }, onError: () => { toast({ title: "Failed to delete file", variant: "destructive" }); } });
+  const createMutation = useMutation({
+    mutationFn: async (d: Partial<AdminFile>) => { const r = await apiRequest("POST", "/api/files", d); return r.json(); },
+    onSuccess: () => { refetch(); toast({ title: "File added" }); setShowAddForm(false); },
+    onError: () => { toast({ title: "Failed to add file", variant: "destructive" }); },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/files/${id}`); },
+    onSuccess: () => { refetch(); toast({ title: "File deleted" }); },
+    onError: () => { toast({ title: "Failed to delete file", variant: "destructive" }); },
+  });
+  const moveMutation = useMutation({
+    mutationFn: async ({ id, folder }: { id: string; folder: string }) => { const r = await apiRequest("PATCH", `/api/files/${id}`, { folder }); return r.json(); },
+    onSuccess: () => { refetch(); toast({ title: "File moved" }); },
+  });
 
-  const categories = ["all", "contracts", "invoices", "marketing", "client-assets", "lead-magnets", "scripts", "general"];
+  // Merge admin files + resources (Classroom) into one view
+  const allFiles: AdminFile[] = useMemo(() => {
+    const resourcesAsFiles: AdminFile[] = resources.map(r => ({
+      id: `res-${r.id}`,
+      name: r.title,
+      size: 0,
+      type: r.type === "pdf" ? "document" : r.type === "video" ? "video" : "document",
+      category: r.category,
+      folder: "Classroom",
+      uploadedAt: r.createdAt,
+      url: r.url,
+    }));
+    return [...files, ...resourcesAsFiles];
+  }, [files, resources]);
+
+  // Build folder tree
+  const folderTree = useMemo(() => {
+    const usedFolders = Array.from(new Set(allFiles.map(f => f.folder || "").filter(Boolean)));
+    const allFolders = Array.from(new Set([...DEFAULT_FOLDERS, ...usedFolders])).sort();
+    // Build parent -> children map
+    const topLevel: string[] = [];
+    const children: Record<string, string[]> = {};
+    for (const f of allFolders) {
+      const parts = f.split("/");
+      if (parts.length === 1) {
+        topLevel.push(f);
+      } else {
+        const parent = parts.slice(0, -1).join("/");
+        if (!children[parent]) children[parent] = [];
+        children[parent].push(f);
+      }
+    }
+    return { topLevel, children, allFolders };
+  }, [allFiles]);
+
+  // Files in current folder
+  const folderFiles = useMemo(() => {
+    let filtered = allFiles.filter(f => {
+      const fileFolder = (f as any).folder || "";
+      if (currentFolder === "") return !fileFolder; // root
+      return fileFolder === currentFolder || fileFolder.startsWith(currentFolder + "/");
+    });
+    if (search) {
+      filtered = filtered.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+    }
+    return filtered;
+  }, [allFiles, currentFolder, search]);
+
+  // Subfolders of current folder
+  const subfolders = useMemo(() => {
+    if (currentFolder === "") return folderTree.topLevel;
+    return (folderTree.children[currentFolder] || []).map(f => f.split("/").pop()!);
+  }, [currentFolder, folderTree]);
+
+  // Direct files in current folder (not in subfolders)
+  const directFiles = useMemo(() => {
+    return allFiles.filter(f => {
+      const fileFolder = (f as any).folder || "";
+      if (currentFolder === "") return !fileFolder;
+      return fileFolder === currentFolder;
+    }).filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()));
+  }, [allFiles, currentFolder, search]);
+
+  // File count per folder
+  const folderCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const f of allFiles) {
+      const folder = (f as any).folder || "";
+      if (folder) {
+        counts[folder] = (counts[folder] || 0) + 1;
+        // Also count for parent folders
+        const parts = folder.split("/");
+        for (let i = 1; i < parts.length; i++) {
+          const parent = parts.slice(0, i).join("/");
+          counts[parent] = (counts[parent] || 0) + 1;
+        }
+      }
+    }
+    return counts;
+  }, [allFiles]);
+
+  const uploadFiles = async (fileList: FileList | File[]) => {
+    setUploading(true);
+    let uploaded = 0;
+    for (const file of Array.from(fileList)) {
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("folder", currentFolder);
+        fd.append("category", currentFolder === "Classroom" ? "classroom" : "general");
+        const resp = await fetch("/api/files/upload", { method: "POST", body: fd, credentials: "include" });
+        if (!resp.ok) { const e = await resp.json().catch(() => ({ error: "Upload failed" })); throw new Error((e as any).error); }
+        uploaded++;
+      } catch (err: any) {
+        toast({ title: `Failed: ${file.name}`, description: err.message, variant: "destructive" });
+      }
+    }
+    setUploading(false);
+    if (uploaded > 0) { refetch(); toast({ title: `${uploaded} file${uploaded > 1 ? "s" : ""} uploaded` }); }
+  };
+
+  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files); };
+
   const typeIcons: Record<string, React.ElementType> = { document: FileText, image: File, video: Video, spreadsheet: FileText, other: File };
-  const filtered = useMemo(() => files.filter((f) => filterCat === "all" || f.category === filterCat).filter((f) => !search || f.name.toLowerCase().includes(search.toLowerCase())), [files, filterCat, search]);
+  const breadcrumbs = currentFolder ? currentFolder.split("/") : [];
 
-  const [form, setForm] = useState({ name: "", url: "", type: "document", category: "general", size: 0 });
+  const [form, setForm] = useState({ name: "", url: "", type: "document", category: "general" });
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div><h2 className="text-lg font-bold">File Manager</h2><p className="text-xs text-muted-foreground">{files.length} files — contracts, lead magnets, scripts, assets</p></div>
-        <Button size="sm" onClick={() => { setForm({ name: "", url: "", type: "document", category: "general", size: 0 }); setShowForm(true); }}><Upload className="w-3.5 h-3.5" />Add File</Button>
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2"><FolderOpen className="w-5 h-5 text-primary" />File Manager</h2>
+          <p className="text-xs text-muted-foreground mt-1">{allFiles.length} files across {folderTree.allFolders.length} folders</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => { setForm({ name: "", url: "", type: "document", category: "general" }); setShowAddForm(true); }}><Plus className="w-3.5 h-3.5" />Add Link</Button>
+          <Button size="sm" onClick={() => fileInputRef.current?.click()}><Upload className="w-3.5 h-3.5" />Upload</Button>
+        </div>
       </div>
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input placeholder="Search files..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" /></div>
-        <Select value={filterCat} onValueChange={setFilterCat}><SelectTrigger className="w-full sm:w-44 h-9"><SelectValue /></SelectTrigger><SelectContent>{categories.map((c) => <SelectItem key={c} value={c}>{c === "all" ? "All Categories" : c.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}</SelectItem>)}</SelectContent></Select>
-      </div>
-      {filtered.length === 0 ? (
-        <Card className="overflow-visible border-dashed"><CardContent className="p-8 text-center"><FolderOpen className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" /><p className="text-sm text-muted-foreground">No files yet. Add contracts, lead magnets, scripts, and more.</p></CardContent></Card>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{filtered.map((file) => {
-          const Icon = typeIcons[file.type] || File;
+
+      {/* Breadcrumbs */}
+      <div className="flex items-center gap-1 text-sm">
+        <Button variant="ghost" size="sm" className={`h-7 text-xs ${currentFolder === "" ? "font-bold text-primary" : ""}`} onClick={() => setCurrentFolder("")}>
+          <FolderOpen className="w-3 h-3 mr-1" />All Files
+        </Button>
+        {breadcrumbs.map((crumb, i) => {
+          const path = breadcrumbs.slice(0, i + 1).join("/");
           return (
-            <Card key={file.id} className="overflow-visible border-border/50"><CardContent className="p-4">
+            <span key={path} className="flex items-center gap-1">
+              <span className="text-muted-foreground">/</span>
+              <Button variant="ghost" size="sm" className={`h-7 text-xs ${path === currentFolder ? "font-bold text-primary" : ""}`} onClick={() => setCurrentFolder(path)}>
+                {crumb}
+              </Button>
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+        <Input placeholder="Search files..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+      </div>
+
+      {/* Upload zone */}
+      <Card
+        className={`border-2 border-dashed transition-all cursor-pointer ${isDragging ? "border-primary bg-primary/5" : "border-border/50 hover:border-primary/30"}`}
+        onDrop={handleDrop}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <CardContent className="py-4 text-center">
+          <input ref={fileInputRef} type="file" multiple className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.mp4,.webm,.zip" onChange={(e) => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ""; }} />
+          {uploading ? (
+            <><RefreshCw className="w-6 h-6 text-primary mx-auto mb-1 animate-spin" /><p className="text-xs font-medium">Uploading...</p></>
+          ) : (
+            <><Upload className="w-6 h-6 text-muted-foreground/50 mx-auto mb-1" /><p className="text-xs font-medium">{isDragging ? "Drop files here" : `Drop files to upload${currentFolder ? ` to ${currentFolder}` : ""}`}</p></>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Subfolders */}
+      {subfolders.length > 0 && !search && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+          {subfolders.map((name) => {
+            const fullPath = currentFolder ? `${currentFolder}/${name}` : name;
+            const count = folderCounts[fullPath] || 0;
+            const hasChildren = (folderTree.children[fullPath] || []).length > 0;
+            return (
+              <Card key={name} className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setCurrentFolder(fullPath)}>
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                    <FolderOpen className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{name}</p>
+                    <p className="text-[10px] text-muted-foreground">{count} file{count !== 1 ? "s" : ""}{hasChildren ? " + subfolders" : ""}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Files in current folder */}
+      {directFiles.length === 0 && subfolders.length === 0 ? (
+        <Card className="overflow-visible border-dashed"><CardContent className="p-8 text-center"><FolderOpen className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" /><p className="text-sm text-muted-foreground">{search ? "No files match your search." : "This folder is empty. Upload files or add links."}</p></CardContent></Card>
+      ) : directFiles.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{directFiles.map((file) => {
+          const Icon = typeIcons[file.type] || File;
+          const isResource = file.id.startsWith("res-");
+          return (
+            <Card key={file.id} className="overflow-visible border-border/50 hover:border-primary/30 transition-colors"><CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-md bg-muted/50 flex items-center justify-center shrink-0"><Icon className="w-5 h-5 text-muted-foreground" /></div>
                 <div className="min-w-0 flex-1">
@@ -2642,31 +2843,30 @@ function FilesTab() {
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant="outline" className="text-[9px]">{file.category}</Badge>
                     {file.size > 0 && <span className="text-[10px] text-muted-foreground">{formatBytes(file.size)}</span>}
+                    {isResource && <Badge variant="outline" className="text-[9px] border-primary/30 text-primary">Resource</Badge>}
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1">{new Date(file.uploadedAt).toLocaleDateString()}</p>
                 </div>
                 <div className="flex flex-col gap-1">
                   {file.url && <a href={file.url} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7"><ExternalLink className="w-3 h-3" /></Button></a>}
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(file.id)}><Trash2 className="w-3 h-3" /></Button>
+                  {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(file.id)}><Trash2 className="w-3 h-3" /></Button>}
                 </div>
               </div>
             </CardContent></Card>
           );
         })}</div>
-      )}
-      <Dialog open={showForm} onOpenChange={(o) => !o && setShowForm(false)}>
+      ) : null}
+
+      {/* Add Link Dialog */}
+      <Dialog open={showAddForm} onOpenChange={(o) => !o && setShowAddForm(false)}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Add File</DialogTitle><DialogDescription>Track a file or resource</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>Add File Link</DialogTitle><DialogDescription>Track a file or resource by URL</DialogDescription></DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1.5"><Label className="text-xs">File Name</Label><Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Referral Agreement v2.pdf" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">File Name</Label><Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Statement Review Guide.pdf" /></div>
             <div className="space-y-1.5"><Label className="text-xs">URL / Link</Label><Input value={form.url} onChange={(e) => setForm((p) => ({ ...p, url: e.target.value }))} placeholder="https://drive.google.com/..." /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label className="text-xs">Type</Label><Select value={form.type} onValueChange={(v) => setForm((p) => ({ ...p, type: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="document">Document</SelectItem><SelectItem value="image">Image</SelectItem><SelectItem value="video">Video</SelectItem><SelectItem value="spreadsheet">Spreadsheet</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
-              <div className="space-y-1.5"><Label className="text-xs">Category</Label><Select value={form.category} onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="contracts">Contracts</SelectItem><SelectItem value="invoices">Invoices</SelectItem><SelectItem value="marketing">Marketing</SelectItem><SelectItem value="client-assets">Client Assets</SelectItem><SelectItem value="lead-magnets">Lead Magnets</SelectItem><SelectItem value="scripts">Scripts & Templates</SelectItem><SelectItem value="general">General</SelectItem></SelectContent></Select></div>
-            </div>
-            <div className="space-y-1.5"><Label className="text-xs">Size (bytes, optional)</Label><Input type="number" value={form.size || ""} onChange={(e) => setForm((p) => ({ ...p, size: Number(e.target.value) }))} /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Type</Label><Select value={form.type} onValueChange={(v) => setForm((p) => ({ ...p, type: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="document">Document</SelectItem><SelectItem value="image">Image</SelectItem><SelectItem value="video">Video</SelectItem><SelectItem value="spreadsheet">Spreadsheet</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button><Button onClick={() => createMutation.mutate(form)} disabled={!form.name}><Save className="w-3.5 h-3.5" />Add File</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button><Button onClick={() => createMutation.mutate({ ...form, folder: currentFolder })} disabled={!form.name}><Save className="w-3.5 h-3.5" />Add</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
