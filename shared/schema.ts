@@ -113,6 +113,7 @@ export const adminFiles = pgTable("admin_files", {
   size: integer("size").notNull().default(0),
   type: text("type").notNull().default("document"),
   category: text("category").notNull().default("general"),
+  folder: text("folder").notNull().default(""),
   uploadedAt: text("uploaded_at").notNull(),
   url: text("url").notNull().default(""),
 });

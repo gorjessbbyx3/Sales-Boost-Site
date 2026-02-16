@@ -558,108 +558,83 @@ RULES:
         return res.status(400).json({ error: "No file uploaded. Please attach your merchant statement." });
       }
 
-      // Get AI config for API key
-      const configs = await db.select().from(schema.aiConfig).limit(1);
-      const apiKey = configs[0]?.apiKey || process.env.ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ error: "AI service not configured. Please contact us for a manual review." });
-      }
-
+      const enrichWorkerUrl = process.env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
       const fileBuffer = req.file.buffer;
       const mimeType = req.file.mimetype || "application/pdf";
-      const base64Data = fileBuffer.toString("base64");
+      const isPdf = mimeType.includes("pdf");
 
-      const anthropic = new Anthropic({ apiKey });
+      let requestBody: Record<string, string>;
 
-      // Determine media type for API
-      let mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp" | "application/pdf" = "application/pdf";
-      if (mimeType.includes("jpeg") || mimeType.includes("jpg")) mediaType = "image/jpeg";
-      else if (mimeType.includes("png")) mediaType = "image/png";
-      else if (mimeType.includes("webp")) mediaType = "image/webp";
-      else if (mimeType.includes("gif")) mediaType = "image/gif";
-
-      const isPdf = mediaType === "application/pdf";
-
-      const content: any[] = [];
       if (isPdf) {
-        content.push({
-          type: "document",
-          source: { type: "base64", media_type: "application/pdf", data: base64Data },
-        });
+        // Extract text from PDF and send to Workers AI text analysis
+        let pdfParse: (buffer: Buffer) => Promise<{ text: string }>;
+        try {
+          const mod = await import("pdf-parse");
+          pdfParse = (mod as any).default || mod;
+        } catch {
+          return res.status(500).json({ error: "PDF processing unavailable. Please upload an image instead." });
+        }
+        const pdfData = await pdfParse(fileBuffer);
+        const extractedText = pdfData.text || "";
+        if (extractedText.trim().length < 20) {
+          // Scanned PDF with no selectable text — fall back to image analysis
+          requestBody = { imageBase64: fileBuffer.toString("base64"), imageType: "application/pdf" };
+        } else {
+          requestBody = { text: extractedText };
+        }
       } else {
-        content.push({
-          type: "image",
-          source: { type: "base64", media_type: mediaType, data: base64Data },
-        });
-      }
-      content.push({
-        type: "text",
-        text: `You are an expert merchant services consultant analyzing a merchant processing statement. Carefully examine every line item, fee, and charge on this statement.
-
-Your task:
-1. Identify ALL hidden fees, junk fees, inflated rates, and unnecessary charges
-2. Calculate or estimate the merchant's effective rate (total fees ÷ total volume)
-3. Compare to the industry average effective rate (typically 2.2-2.8% for most retail/restaurant)
-4. Estimate how much they are overpaying per month
-5. Provide specific, actionable recommendations
-
-IMPORTANT: Respond ONLY with valid JSON in this exact format (no markdown, no backticks, no commentary):
-{
-  "summary": "One sentence summary of findings",
-  "effectiveRate": "X.XX%",
-  "industryAverage": "X.XX%",
-  "estimatedOverpay": "$XXX",
-  "monthlyVolume": "$XX,XXX",
-  "hiddenFees": [
-    {
-      "name": "Fee name",
-      "amount": "$XX.XX",
-      "severity": "high|medium|low",
-      "explanation": "Why this fee is problematic and what it should be"
-    }
-  ],
-  "recommendations": [
-    "Specific actionable recommendation"
-  ],
-  "overallGrade": "A|B|C|D|F"
-}
-
-Grade scale: A = excellent rates, B = slightly above average, C = moderately overcharged, D = significantly overcharged, F = severely overcharged.
-
-If you cannot read the statement clearly, still provide your best analysis based on what you can see. Always find at least a few areas of concern — processors almost always include unnecessary fees.`
-      });
-
-      const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-5-20250514",
-        max_tokens: 4000,
-        messages: [{ role: "user", content }],
-      });
-
-      const text = response.content
-        .filter((block): block is Anthropic.TextBlock => block.type === "text")
-        .map((block) => block.text)
-        .join("");
-
-      // Parse JSON response - handle potential markdown wrapping
-      let cleaned = text.trim();
-      if (cleaned.startsWith("```")) {
-        cleaned = cleaned.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+        // Image upload — send to Workers AI vision model
+        requestBody = { imageBase64: fileBuffer.toString("base64"), imageType: mimeType };
       }
 
-      const analysis = JSON.parse(cleaned);
+      const workerHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (process.env.WORKER_KEY) workerHeaders["X-Worker-Key"] = process.env.WORKER_KEY;
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout for analysis
+      const aiResp = await fetch(`${enrichWorkerUrl}/analyze-statement`, {
+        method: "POST",
+        headers: workerHeaders,
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!aiResp.ok) {
+        const errData = await aiResp.json().catch(() => ({ error: "Worker error" }));
+        throw new Error((errData as any).error || "Analysis service returned an error");
+      }
+
+      const analysis: any = await aiResp.json();
 
       // Log as a lead activity
       logActivity("Statement Review", `AI analysis completed — Grade: ${analysis.overallGrade}, Overpay: ${analysis.estimatedOverpay}`, "lead");
 
+      // Auto-save the uploaded statement to admin files ("Uploaded Statements" folder)
+      try {
+        let fileUrl = "";
+        if (r2Enabled) {
+          fileUrl = await uploadToR2(fileBuffer, req.file.originalname, "statements");
+        }
+        await db.insert(schema.adminFiles).values({
+          id: randomUUID(),
+          name: req.file.originalname,
+          size: req.file.size,
+          type: isPdf ? "document" : "image",
+          category: "statements",
+          folder: "Uploaded Statements",
+          uploadedAt: new Date().toISOString(),
+          url: fileUrl,
+        });
+      } catch (saveErr) {
+        console.error("Failed to save statement file:", saveErr);
+      }
+
       res.json(analysis);
     } catch (err: any) {
       console.error("Statement analysis error:", err.message || err);
-      if (err instanceof SyntaxError) {
-        return res.status(500).json({ error: "AI returned an unexpected format. Please try again or contact us for a manual review." });
-      }
       const msg = err.message || "";
-      const safeError = msg.includes("rate_limit") ? "AI service is busy. Please try again in a moment."
-        : msg.includes("invalid_api_key") ? "AI service configuration error. Please contact us."
+      const safeError = msg.includes("abort") ? "Analysis took too long. Please try a smaller file or call us."
         : "Analysis failed. Please try again or call us at (808) 767-5460 for a free manual review.";
       res.status(500).json({ error: safeError });
     }
@@ -802,6 +777,7 @@ If you cannot read the statement clearly, still provide your best analysis based
 
       // Save as a lead
       try {
+        const now = new Date().toISOString();
         await db.insert(schema.leads).values({
           id: randomUUID(),
           name,
@@ -810,6 +786,8 @@ If you cannot read the statement clearly, still provide your best analysis based
           source: "statement-review",
           status: "new",
           notes: type === "report" ? "AI statement report emailed" : "Requested self-review guides",
+          createdAt: now,
+          updatedAt: now,
         });
       } catch (leadErr) {
         console.error("Failed to save statement review lead:", leadErr);
@@ -843,6 +821,91 @@ If you cannot read the statement clearly, still provide your best analysis based
   app.get("/api/contact-leads", requireAdminSession, async (_req: Request, res: Response) => {
     const contactLeadRows = await storage.getContactLeads();
     res.json(contactLeadRows);
+  });
+
+  // ─── Partner Agreement (Public form → saved to admin files) ─────
+
+  app.post("/api/partner-agreement", publicLeadLimiter, async (req: Request, res: Response) => {
+    try {
+      const { partnerName, businessName, email, phone, address, businessType, agreeTerms, signature, date } = req.body;
+      if (!partnerName || !businessName || !email || !agreeTerms || !signature) {
+        return res.status(400).json({ error: "Required fields: partnerName, businessName, email, agreeTerms, signature" });
+      }
+
+      // Generate a formatted HTML document
+      const docHtml = `<!DOCTYPE html>
+<html><head><title>Partner Agreement — ${businessName}</title>
+<style>body{font-family:Arial,sans-serif;max-width:700px;margin:40px auto;color:#333;line-height:1.6}h1{color:#0f172a;border-bottom:2px solid #4aeaff;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin:20px 0}td{padding:8px 12px;border-bottom:1px solid #eee}td:first-child{font-weight:bold;width:180px;color:#555}.sig{border-top:2px solid #333;padding-top:8px;margin-top:40px}</style>
+</head><body>
+<h1>TechSavvy Hawaii — Partner Agreement</h1>
+<p>Submitted: ${date || new Date().toLocaleDateString()}</p>
+<table>
+<tr><td>Partner Name</td><td>${partnerName}</td></tr>
+<tr><td>Business Name</td><td>${businessName}</td></tr>
+<tr><td>Email</td><td>${email}</td></tr>
+<tr><td>Phone</td><td>${phone || "—"}</td></tr>
+<tr><td>Address</td><td>${address || "—"}</td></tr>
+<tr><td>Business Type</td><td>${businessType || "—"}</td></tr>
+<tr><td>Terms Accepted</td><td>Yes</td></tr>
+</table>
+<div class="sig">
+<p><strong>Signature:</strong> ${signature}</p>
+<p><strong>Date:</strong> ${date || new Date().toLocaleDateString()}</p>
+</div>
+</body></html>`;
+
+      // Save as a file in the admin files system
+      const fileName = `Partner Agreement — ${businessName} (${new Date().toISOString().slice(0, 10)}).html`;
+      let fileUrl = "";
+      if (r2Enabled) {
+        const buffer = Buffer.from(docHtml, "utf-8");
+        fileUrl = await uploadToR2(buffer, fileName, "partner-agreements");
+      }
+
+      await db.insert(schema.adminFiles).values({
+        id: randomUUID(),
+        name: fileName,
+        size: docHtml.length,
+        type: "document",
+        category: "contracts",
+        folder: "Partner Agreements",
+        uploadedAt: new Date().toISOString(),
+        url: fileUrl,
+      });
+
+      // Also save as a lead
+      try {
+        await db.insert(schema.leads).values({
+          id: randomUUID(),
+          name: partnerName,
+          email,
+          business: businessName,
+          phone: phone || "",
+          address: address || "",
+          source: "partner-agreement",
+          status: "new",
+          vertical: businessType || "other",
+          notes: "Signed partner agreement via website form",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          currentProcessor: "", currentEquipment: "", monthlyVolume: "",
+          painPoints: "", nextStep: "review agreement", nextStepDate: "",
+          decisionMakerName: partnerName, decisionMakerRole: "owner",
+          bestContactMethod: "email", package: "terminal",
+          attachments: "[]",
+        });
+      } catch (leadErr) {
+        console.error("Failed to save partner lead:", leadErr);
+      }
+
+      logActivity("Partner Agreement", `${partnerName} (${businessName}) signed partner agreement`, "lead");
+      sendSlackNotification(`New partner agreement: ${partnerName} — ${businessName} (${email})`, "newLead");
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("Partner agreement error:", err);
+      res.status(500).json({ error: "Failed to save agreement. Please try again." });
+    }
   });
 
   // ─── Leads CRUD ─────────────────────────────────────────────────
@@ -1048,11 +1111,28 @@ If you cannot read the statement clearly, still provide your best analysis based
     res.json({ success: true });
   });
 
-  // ─── File Management ────────────────────────────────────────────
+  // ─── File Management (with folder support) ─────────────────────
+
+  const DEFAULT_FOLDERS = [
+    "Classroom",
+    "Uploaded Statements",
+    "Partner Agreements",
+    "Client Resources",
+    "Client Resources/Checklist",
+    "Website Resources",
+  ];
 
   app.get("/api/files", requireAdminSession, async (_req, res) => {
     const rows = await db.select().from(schema.adminFiles);
     res.json(rows);
+  });
+
+  app.get("/api/files/folders", requireAdminSession, async (_req, res) => {
+    // Return all unique folders (including defaults)
+    const rows = await db.select({ folder: schema.adminFiles.folder }).from(schema.adminFiles);
+    const usedFolders = Array.from(new Set(rows.map(r => r.folder).filter(Boolean)));
+    const allFolders = Array.from(new Set([...DEFAULT_FOLDERS, ...usedFolders])).sort();
+    res.json(allFolders);
   });
 
   app.post("/api/files", requireAdminSession, async (req, res) => {
@@ -1063,11 +1143,54 @@ If you cannot read the statement clearly, still provide your best analysis based
       size: req.body.size || 0,
       type: req.body.type || "document",
       category: req.body.category || "general",
+      folder: req.body.folder || "",
       uploadedAt: new Date().toISOString(),
       url: req.body.url || "",
     }).returning();
-    logActivity("File Added", file.name, "file");
+    logActivity("File Added", `${file.name} → ${file.folder || "root"}`, "file");
     res.status(201).json(file);
+  });
+
+  app.post("/api/files/upload", requireAdminSession, upload.single("file"), async (req: any, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+      const file = req.file as Express.Multer.File;
+      let fileUrl: string;
+      if (r2Enabled) {
+        const prefix = (req.body.folder || "general").toLowerCase().replace(/[^a-z0-9-]/g, "-");
+        fileUrl = await uploadToR2(file.buffer, file.originalname, prefix);
+      } else {
+        fileUrl = `/uploads/resources/${file.filename}`;
+      }
+      const ext = path.extname(file.originalname).toLowerCase().replace(".", "");
+      const typeMap: Record<string, string> = { pdf: "document", doc: "document", docx: "document", xls: "spreadsheet", xlsx: "spreadsheet", ppt: "document", pptx: "document", png: "image", jpg: "image", jpeg: "image", gif: "image", mp4: "video", webm: "video", zip: "other" };
+      const id = randomUUID();
+      const [record] = await db.insert(schema.adminFiles).values({
+        id,
+        name: req.body.name || file.originalname.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
+        size: file.size,
+        type: typeMap[ext] || "document",
+        category: req.body.category || "general",
+        folder: req.body.folder || "",
+        uploadedAt: new Date().toISOString(),
+        url: fileUrl,
+      }).returning();
+      logActivity("File Uploaded", `${record.name} → ${record.folder || "root"}`, "file");
+      res.status(201).json(record);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Upload failed" });
+    }
+  });
+
+  app.patch("/api/files/:id", requireAdminSession, async (req, res) => {
+    const updates: Record<string, any> = {};
+    if (req.body.name !== undefined) updates.name = req.body.name;
+    if (req.body.folder !== undefined) updates.folder = req.body.folder;
+    if (req.body.category !== undefined) updates.category = req.body.category;
+    const [updated] = await db.update(schema.adminFiles).set(updates).where(eq(schema.adminFiles.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "File not found" });
+    logActivity("File Updated", updated.name, "file");
+    res.json(updated);
   });
 
   app.delete("/api/files/:id", requireAdminSession, async (req, res) => {
@@ -2885,7 +3008,7 @@ Return ONLY valid JSON, no other text.`,
     const { assigneeId } = req.body;
     const [updated] = await db.update(schema.clients).set({ notes: `[ASSIGNED:${assigneeId}] ` }).where(eq(schema.clients.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Client not found" });
-    logActivity("Client Assigned", `${updated.businessName} → ${assigneeId}`, "client");
+    logActivity("Client Assigned", `${updated.business} → ${assigneeId}`, "client");
     res.json(updated);
   });
 
