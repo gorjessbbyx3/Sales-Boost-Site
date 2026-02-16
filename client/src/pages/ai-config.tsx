@@ -628,7 +628,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       { value: "user-mgmt", icon: Users, label: "Users & Roles" },
       { value: "materials", icon: ClipboardList, label: "Materials" },
       { value: "files", icon: FolderOpen, label: "Files" },
-      { value: "resources", icon: Library, label: "Resources" },
+      { value: "resources", icon: GraduationCap, label: "Classroom Tools" },
       { value: "integrations", icon: Plug, label: "Integrations" },
       { value: "security", icon: Lock, label: "Security" },
       { value: "activity", icon: Activity, label: "Activity Log" },
@@ -3023,6 +3023,7 @@ function ResourcesManagerTab() {
   });
   const [showDialog, setShowDialog] = useState(false);
   const [editingResource, setEditingResource] = useState<AdminResource | null>(null);
+  const [previewResource, setPreviewResource] = useState<AdminResource | null>(null);
   const [filterCat, setFilterCat] = useState("all");
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -3085,6 +3086,47 @@ function ResourcesManagerTab() {
     }
   };
 
+  const isPreviewable = (r: AdminResource) => {
+    if (!r.url) return false;
+    const lower = r.url.toLowerCase();
+    return r.type === "pdf" || lower.endsWith(".pdf") || lower.endsWith(".ppt") || lower.endsWith(".pptx") ||
+      lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".gif") || lower.endsWith(".webp");
+  };
+
+  const isImage = (url: string) => /\.(png|jpg|jpeg|gif|webp)$/i.test(url);
+  const isPdf = (r: AdminResource) => r.type === "pdf" || r.url?.toLowerCase().endsWith(".pdf");
+  const isPpt = (r: AdminResource) => /\.(ppt|pptx)$/i.test(r.url || "");
+
+  const getTypeIcon = (r: AdminResource) => {
+    if (isPdf(r)) return <FileText className="w-8 h-8 text-orange-400" />;
+    if (isPpt(r)) return <File className="w-8 h-8 text-red-400" />;
+    if (r.type === "video") return <Video className="w-8 h-8 text-purple-400" />;
+    if (r.type === "doc") return <FileText className="w-8 h-8 text-blue-400" />;
+    if (r.type === "template") return <File className="w-8 h-8 text-emerald-400" />;
+    return <File className="w-8 h-8 text-muted-foreground" />;
+  };
+
+  const getTypeBadgeColor = (r: AdminResource) => {
+    if (isPdf(r)) return "text-orange-400 bg-orange-400/10 border-orange-400/20";
+    if (isPpt(r)) return "text-red-400 bg-red-400/10 border-red-400/20";
+    if (r.type === "video") return "text-purple-400 bg-purple-400/10 border-purple-400/20";
+    if (r.type === "doc") return "text-blue-400 bg-blue-400/10 border-blue-400/20";
+    if (r.type === "template") return "text-emerald-400 bg-emerald-400/10 border-emerald-400/20";
+    return "text-muted-foreground bg-muted/30";
+  };
+
+  const getTypeLabel = (r: AdminResource) => {
+    if (isPpt(r)) return "PowerPoint";
+    return RESOURCE_TYPES[r.type] || r.type;
+  };
+
+  const getPreviewUrl = (r: AdminResource) => {
+    if (!r.url) return "";
+    if (isPdf(r)) return r.url;
+    if (isPpt(r)) return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + r.url)}`;
+    return r.url;
+  };
+
   const filtered = filterCat === "all" ? resources : resources.filter((r) => r.category === filterCat);
   const grouped = Object.entries(RESOURCE_CATEGORIES).map(([catId, catLabel]) => ({
     id: catId,
@@ -3096,8 +3138,8 @@ function ResourcesManagerTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-lg font-bold flex items-center gap-2"><Library className="w-5 h-5 text-primary" />Resources Manager</h2>
-          <p className="text-xs text-muted-foreground mt-1">Upload files directly — {resources.length} total, {resources.filter((r) => r.published).length} published</p>
+          <h2 className="text-lg font-bold flex items-center gap-2"><GraduationCap className="w-5 h-5 text-primary" />Classroom Tools</h2>
+          <p className="text-xs text-muted-foreground mt-1">Upload and manage files — {resources.length} total, {resources.filter((r) => r.published).length} published</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={filterCat} onValueChange={setFilterCat}>
@@ -3118,7 +3160,7 @@ function ResourcesManagerTab() {
         onDragLeave={handleDragLeave}
         onClick={() => fileInputRef.current?.click()}
       >
-        <CardContent className="py-8 text-center">
+        <CardContent className="py-6 text-center">
           <input
             ref={fileInputRef}
             type="file"
@@ -3129,14 +3171,14 @@ function ResourcesManagerTab() {
           />
           {uploading ? (
             <>
-              <RefreshCw className="w-10 h-10 text-primary mx-auto mb-3 animate-spin" />
+              <RefreshCw className="w-8 h-8 text-primary mx-auto mb-2 animate-spin" />
               <p className="text-sm font-medium">Uploading files...</p>
             </>
           ) : (
             <>
-              <Upload className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+              <Upload className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
               <p className="text-sm font-medium">{isDragging ? "Drop files here" : "Drag & drop files or click to browse"}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">PDF, DOC, XLS, PPT, images, videos, ZIP — up to 50MB each</p>
+              <p className="text-[10px] text-muted-foreground mt-1">PDF, DOC, XLS, PPT, images, videos, ZIP</p>
               <div className="flex items-center justify-center gap-2 mt-3">
                 <Label className="text-[10px] text-muted-foreground">Upload to:</Label>
                 <Select value={uploadCategory} onValueChange={setUploadCategory}>
@@ -3151,69 +3193,138 @@ function ResourcesManagerTab() {
         </CardContent>
       </Card>
 
-      {/* Resource list by category */}
+      {/* Gallery by category */}
       {grouped.map((group) => (
-        <Card key={group.id} className="overflow-visible">
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-sm font-semibold">{group.label} ({group.items.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs w-8">#</TableHead>
-                  <TableHead className="text-xs">Title</TableHead>
-                  <TableHead className="text-xs w-20">Type</TableHead>
-                  <TableHead className="text-xs w-20">Status</TableHead>
-                  <TableHead className="text-xs w-16">Featured</TableHead>
-                  <TableHead className="text-xs w-24 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {group.items.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="text-xs text-muted-foreground">{r.order}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="text-sm font-medium truncate max-w-xs">{r.title}</p>
-                        <p className="text-[10px] text-muted-foreground truncate max-w-xs">{r.description}</p>
-                        {r.url && <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-0.5 mt-0.5"><ExternalLink className="w-2.5 h-2.5" />{r.url.startsWith("/uploads") ? "View file" : "Link"}</a>}
-                      </div>
-                    </TableCell>
-                    <TableCell><Badge variant="outline" className="text-[10px]">{RESOURCE_TYPES[r.type] || r.type}</Badge></TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-[10px] cursor-pointer ${r.published ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" : "text-muted-foreground bg-muted/30"}`}
-                        onClick={() => updateMut.mutate({ id: r.id, published: !r.published })}>
-                        {r.published ? "Published" : "Draft"}
+        <div key={group.id} className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+            {group.label}
+            <Badge variant="outline" className="text-[10px]">{group.items.length}</Badge>
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {group.items.map((r) => (
+              <Card
+                key={r.id}
+                className={`overflow-hidden group relative transition-all hover:shadow-md hover:border-primary/30 ${!r.published ? "opacity-60" : ""}`}
+              >
+                {/* Thumbnail / Preview area */}
+                <div
+                  className="aspect-[4/3] bg-muted/30 flex items-center justify-center relative cursor-pointer overflow-hidden"
+                  onClick={() => isPreviewable(r) ? setPreviewResource(r) : r.url && window.open(r.url, "_blank")}
+                >
+                  {r.thumbnailUrl || (r.url && isImage(r.url)) ? (
+                    <img src={r.thumbnailUrl || r.url} alt={r.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1.5">
+                      {getTypeIcon(r)}
+                      <Badge variant="outline" className={`text-[9px] ${getTypeBadgeColor(r)}`}>
+                        {getTypeLabel(r)}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {r.featured ? (
-                        <Badge variant="outline" className="text-[10px] text-amber-400 bg-amber-400/10 border-amber-400/20 cursor-pointer" onClick={() => updateMut.mutate({ id: r.id, featured: false })}><Star className="w-2.5 h-2.5" /></Badge>
-                      ) : (
-                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-30 hover:opacity-100" onClick={() => updateMut.mutate({ id: r.id, featured: true })}><Star className="w-2.5 h-2.5" /></Button>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center gap-1 justify-end">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)}><Edit3 className="w-3 h-3" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-300" onClick={() => { if (confirm("Delete this resource?")) deleteMut.mutate(r.id); }}><Trash2 className="w-3 h-3" /></Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                    </div>
+                  )}
+
+                  {/* Hover overlay with preview button */}
+                  {isPreviewable(r) && (
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button size="sm" variant="secondary" className="text-xs gap-1.5">
+                        <ExternalLink className="w-3 h-3" />
+                        Preview
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Featured star */}
+                  {r.featured && (
+                    <div className="absolute top-1.5 right-1.5">
+                      <Badge variant="outline" className="text-[9px] bg-amber-400/20 text-amber-400 border-amber-400/30"><Star className="w-2.5 h-2.5" /></Badge>
+                    </div>
+                  )}
+
+                  {/* Status indicator */}
+                  {!r.published && (
+                    <div className="absolute top-1.5 left-1.5">
+                      <Badge variant="outline" className="text-[9px] bg-muted/80 text-muted-foreground">Draft</Badge>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <CardContent className="p-3 space-y-1.5">
+                  <p className="text-xs font-semibold truncate" title={r.title}>{r.title}</p>
+                  {r.description && <p className="text-[10px] text-muted-foreground line-clamp-2">{r.description}</p>}
+
+                  {/* Actions row */}
+                  <div className="flex items-center justify-between pt-1">
+                    <Badge variant="outline" className={`text-[9px] cursor-pointer ${r.published ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" : "text-muted-foreground bg-muted/30"}`}
+                      onClick={() => updateMut.mutate({ id: r.id, published: !r.published })}>
+                      {r.published ? "Published" : "Draft"}
+                    </Badge>
+                    <div className="flex items-center gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-50 hover:opacity-100" onClick={() => updateMut.mutate({ id: r.id, featured: !r.featured })} title={r.featured ? "Remove featured" : "Mark featured"}>
+                        <Star className={`w-3 h-3 ${r.featured ? "text-amber-400 fill-amber-400" : ""}`} />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-50 hover:opacity-100" onClick={() => openEdit(r)} title="Edit"><Edit3 className="w-3 h-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-50 hover:opacity-100 text-red-400 hover:text-red-300" onClick={() => { if (confirm("Delete this resource?")) deleteMut.mutate(r.id); }} title="Delete"><Trash2 className="w-3 h-3" /></Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       ))}
 
       {filtered.length === 0 && (
         <Card className="border-dashed"><CardContent className="p-8 text-center">
-          <Library className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No resources yet. Upload some files above to get started.</p>
+          <GraduationCap className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No files yet. Upload some files above to get started.</p>
         </CardContent></Card>
       )}
+
+      {/* File Preview Dialog */}
+      <Dialog open={!!previewResource} onOpenChange={(o) => { if (!o) setPreviewResource(null); }}>
+        <DialogContent className="max-w-4xl w-[95vw] h-[85vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-5 py-3 border-b border-border/50 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-sm truncate">{previewResource?.title}</DialogTitle>
+                <DialogDescription className="text-[10px] truncate">{previewResource?.description || getTypeLabel(previewResource!)}</DialogDescription>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 ml-3">
+                {previewResource?.url && (
+                  <Button variant="outline" size="sm" className="text-xs h-7 gap-1" asChild>
+                    <a href={previewResource.url} target="_blank" rel="noopener noreferrer" download>
+                      <ExternalLink className="w-3 h-3" />
+                      Open
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 bg-muted/20">
+            {previewResource && isPdf(previewResource) && (
+              <iframe
+                src={previewResource.url}
+                className="w-full h-full border-0"
+                title={previewResource.title}
+              />
+            )}
+            {previewResource && isPpt(previewResource) && (
+              <iframe
+                src={getPreviewUrl(previewResource)}
+                className="w-full h-full border-0"
+                title={previewResource.title}
+                sandbox="allow-scripts allow-same-origin allow-popups"
+              />
+            )}
+            {previewResource && previewResource.url && isImage(previewResource.url) && (
+              <div className="w-full h-full flex items-center justify-center p-4">
+                <img src={previewResource.url} alt={previewResource.title} className="max-w-full max-h-full object-contain rounded" />
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Resource Dialog */}
       <Dialog open={showDialog} onOpenChange={(o) => { setShowDialog(o); if (!o) setEditingResource(null); }}>
