@@ -213,6 +213,16 @@ export async function registerRoutes(
     message: { error: "Too many submissions. Please try again shortly." },
   });
 
+  // ─── Health Check ─────────────────────────────────────────────
+  app.get("/api/health", (_req, res) => {
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
+      env: process.env.NODE_ENV || "development",
+    });
+  });
+
   // ─── Password helpers ────────────────────────────────────────────
 
   function hashPassword(password: string): string {
@@ -515,8 +525,13 @@ RULES:
 
       res.json({ reply: text });
     } catch (err: any) {
-      console.error("Anthropic API error:", err.message);
-      res.status(500).json({ error: "Failed to get AI response. Please try again." });
+      const errMsg = err.message || "";
+      console.error("Anthropic API error:", errMsg);
+      // Don't leak internal error details to the client
+      const safeError = errMsg.includes("rate_limit") ? "AI service is busy. Please try again in a moment."
+        : errMsg.includes("invalid_api_key") ? "AI service configuration error."
+        : "Failed to get AI response. Please try again.";
+      res.status(500).json({ error: safeError });
     }
   });
 
@@ -582,18 +597,23 @@ RULES:
 
   // Public lead creation from website contact form (no auth required)
   app.post("/api/leads/public", publicLeadLimiter, async (req, res) => {
+    const parsed = schema.publicLeadSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid submission", details: parsed.error.flatten().fieldErrors });
+    }
+    const data = parsed.data;
     const id = randomUUID();
     const now = new Date().toISOString();
     const [lead] = await db.insert(schema.leads).values({
       id,
-      name: req.body.name || "",
-      business: req.body.business || "",
-      phone: req.body.phone || "",
-      email: req.body.email || "",
-      package: req.body.package || "terminal",
+      name: data.name,
+      business: data.business,
+      phone: data.phone,
+      email: data.email || "",
+      package: data.package,
       status: "new",
       source: "lead-magnet",
-      notes: req.body.notes || "",
+      notes: data.notes,
       attachments: "[]",
       createdAt: now,
       updatedAt: now,

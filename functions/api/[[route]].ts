@@ -10,8 +10,28 @@ interface Env {
 
 type Ctx = EventContext<Env, string, unknown>;
 
+const ALLOWED_ORIGINS = [
+  "https://techsavvyhawaii.com",
+  "https://www.techsavvyhawaii.com",
+  "https://tech-savvy-hawaii.replit.app",
+  "http://localhost:5000",
+  "http://localhost:3000",
+];
+
+function getCorsHeaders(request: Request): Record<string, string> {
+  const origin = request.headers.get("Origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Cookie",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
+
+// Legacy static fallback for routes that don't have the request object
 const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://techsavvyhawaii.com",
   "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Cookie",
   "Access-Control-Allow-Credentials": "true",

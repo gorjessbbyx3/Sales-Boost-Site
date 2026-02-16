@@ -19,7 +19,15 @@
  * Deploy: cd worker && npx wrangler deploy
  */
 
-const MODEL = "@cf/meta/llama-3-8b-instruct";
+const MODEL = "@cf/meta/llama-3.1-8b-instruct";
+
+const ALLOWED_ORIGINS = [
+  "https://techsavvyhawaii.com",
+  "https://www.techsavvyhawaii.com",
+  "https://tech-savvy-hawaii.replit.app",
+  "http://localhost:5000",
+  "http://localhost:3000",
+];
 
 // ---------------------------------------------------------------------------
 // Router
@@ -27,14 +35,17 @@ const MODEL = "@cf/meta/llama-3-8b-instruct";
 
 export default {
   async fetch(request, env) {
+    const origin = request.headers.get("Origin") || "";
+    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders() });
+      return new Response(null, { status: 204, headers: corsHeaders(allowedOrigin) });
     }
 
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
 
-    // GET / — health check + route listing
+    // GET / — health check (no auth required)
     if (request.method === "GET" && path === "/") {
       return jsonResponse({
         service: "Tech Savvy Hawaii AI Worker",
@@ -52,19 +63,27 @@ export default {
           "POST /roleplay",
           "POST /classify",
           "POST /extract-statement",
+          "POST /chat",
         ],
-      });
+      }, 200, allowedOrigin);
     }
 
     if (request.method !== "POST") {
-      return jsonResponse({ error: "POST required" }, 405);
+      return jsonResponse({ error: "POST required" }, 405, allowedOrigin);
+    }
+
+    // Auth: require shared secret on all POST routes
+    const workerKey = env.WORKER_KEY || "";
+    const providedKey = request.headers.get("X-Worker-Key") || "";
+    if (workerKey && providedKey !== workerKey) {
+      return jsonResponse({ error: "Unauthorized" }, 401, allowedOrigin);
     }
 
     let body;
     try {
       body = await request.json();
     } catch {
-      return jsonResponse({ error: "Invalid JSON body" }, 400);
+      return jsonResponse({ error: "Invalid JSON body" }, 400, allowedOrigin);
     }
 
     const handlers = {
@@ -79,19 +98,23 @@ export default {
       "/roleplay": handleRoleplay,
       "/classify": handleClassify,
       "/extract-statement": handleExtractStatement,
+      "/chat": handleChat,
     };
 
     // Legacy: POST to / still runs enrich for backward compat
     const handler = handlers[path] || (path === "/" ? handleEnrich : null);
 
     if (!handler) {
-      return jsonResponse({ error: `Unknown route: ${path}` }, 404);
+      return jsonResponse({ error: `Unknown route: ${path}` }, 404, allowedOrigin);
     }
 
     try {
-      return await handler(body, env);
+      const response = await handler(body, env);
+      // Inject correct CORS origin at router level
+      response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+      return response;
     } catch (err) {
-      return jsonResponse({ error: err.message || "Internal error" }, 500);
+      return jsonResponse({ error: "Internal processing error" }, 500, allowedOrigin);
     }
   },
 };
@@ -534,6 +557,26 @@ Return ONLY valid JSON.`;
 }
 
 // ---------------------------------------------------------------------------
+// /chat — Public website chat (free via Workers AI)
+// ---------------------------------------------------------------------------
+
+async function handleChat(body, env) {
+  const { message, systemPrompt } = body;
+  if (!message || typeof message !== "string" || message.length > 2000) {
+    return jsonResponse({ error: "Message required (max 2000 chars)" }, 400);
+  }
+
+  const defaultSystem = `You are a helpful assistant for TechSavvy Hawaii, a zero-fee payment processing company.
+TechSavvy offers: zero processing fees (customers pay a small surcharge), one-time $399 terminal cost,
+no monthly fees, no contracts, and a free custom website for all processing customers.
+Be friendly, concise, and professional. Keep answers under 150 words.
+If asked about specific pricing or contracts, direct them to call (808) 767-5460.`;
+
+  const raw = await runAI(env, systemPrompt || defaultSystem, message, 512);
+  return jsonResponse({ reply: raw });
+}
+
+// ---------------------------------------------------------------------------
 // AI Runner
 // ---------------------------------------------------------------------------
 
@@ -554,9 +597,24 @@ async function runAI(env, systemPrompt, userMessage, maxTokens = 512) {
 // ---------------------------------------------------------------------------
 
 function parseJSON(raw) {
-  try { return JSON.parse(raw.trim()); } catch {}
-  const m = raw.match(/\{[\s\S]*\}/);
-  if (m) { try { return JSON.parse(m[0]); } catch {} }
+  if (!raw || typeof raw !== "string") return null;
+  const cleaned = raw.trim();
+  // Attempt 1: direct parse
+  try { return JSON.parse(cleaned); } catch {}
+  // Attempt 2: extract JSON object from surrounding text
+  const m = cleaned.match(/\{[\s\S]*\}/);
+  if (m) {
+    try { return JSON.parse(m[0]); } catch {}
+    // Attempt 3: fix common LLM JSON issues (trailing commas, single quotes)
+    try {
+      const fixed = m[0]
+        .replace(/,\s*([}\]])/g, "$1")       // trailing commas
+        .replace(/'/g, '"')                    // single quotes
+        .replace(/(\w+)\s*:/g, '"$1":')        // unquoted keys
+        .replace(/""+/g, '"');                  // double-double quotes
+      return JSON.parse(fixed);
+    } catch {}
+  }
   return null;
 }
 
@@ -576,17 +634,17 @@ function validateVertical(v) {
   return VALID_VERTICALS.includes(lower) ? lower : "other";
 }
 
-function corsHeaders() {
+function corsHeaders(origin = "https://techsavvyhawaii.com") {
   return {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-Worker-Key",
   };
 }
 
-function jsonResponse(data, status = 200) {
+function jsonResponse(data, status = 200, origin = "https://techsavvyhawaii.com") {
   return new Response(JSON.stringify(data, null, 2), {
     status,
-    headers: { "Content-Type": "application/json", ...corsHeaders() },
+    headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
   });
 }

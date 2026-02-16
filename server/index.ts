@@ -25,9 +25,18 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret && process.env.NODE_ENV === "production") {
+  console.error("FATAL: SESSION_SECRET environment variable is required in production");
+  process.exit(1);
+}
+if (!sessionSecret) {
+  console.warn("⚠️  SESSION_SECRET not set — using dev fallback (NOT safe for production)");
+}
+
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "techsavvy-dev-secret",
+    secret: sessionSecret || "techsavvy-dev-secret-NOT-FOR-PRODUCTION",
     resave: false,
     saveUninitialized: false,
     cookie: {

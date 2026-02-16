@@ -498,6 +498,16 @@ export const insertAiConfigSchema = createInsertSchema(aiConfig).omit({
 
 export const updateAiConfigSchema = insertAiConfigSchema.partial();
 
+// Public lead submission (from website / lead magnets) — strict validation
+export const publicLeadSchema = z.object({
+  name: z.string().max(200).transform(v => v.replace(/<[^>]*>/g, "").trim()).default(""),
+  business: z.string().max(200).transform(v => v.replace(/<[^>]*>/g, "").trim()).default(""),
+  phone: z.string().max(30).transform(v => v.replace(/[^0-9+() -]/g, "").trim()).default(""),
+  email: z.string().max(254).email().optional().or(z.literal("")),
+  package: z.enum(["terminal", "gateway", "both", "website", "custom"]).default("terminal"),
+  notes: z.string().max(2000).transform(v => v.replace(/<[^>]*>/g, "").trim()).default(""),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type AiConfig = typeof aiConfig.$inferSelect;

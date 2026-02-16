@@ -13,6 +13,10 @@ import { sendEmail } from "./email";
 // 4. Auto-send queued emails
 
 let autopilotTimer: ReturnType<typeof setInterval> | null = null;
+let consecutiveFailures = 0;
+const MAX_CONSECUTIVE_FAILURES = 3;
+const BACKOFF_MS = 30 * 60 * 1000; // 30 minutes
+let backoffUntil: number = 0;
 
 function log(msg: string) {
   console.log(`[Autopilot] ${new Date().toISOString().slice(11, 19)} ${msg}`);
@@ -134,9 +138,11 @@ export async function autoEnrichLead(leadId: string): Promise<void> {
 
     const enrichCtrl = new AbortController();
     const enrichTimeout = setTimeout(() => enrichCtrl.abort(), 15000);
+    const workerHeaders: Record<string, string> = { "Content-Type": "application/json" };
+    if (process.env.WORKER_KEY) workerHeaders["X-Worker-Key"] = process.env.WORKER_KEY;
     const aiResp = await fetch(enrichWorkerUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: workerHeaders,
       body: JSON.stringify({ text: cleaned }),
       signal: enrichCtrl.signal,
     });
@@ -173,9 +179,11 @@ export async function autoEnrichLead(leadId: string): Promise<void> {
     try {
       const [freshLead] = await db.select().from(schema.leads).where(eq(schema.leads.id, leadId));
       if (freshLead) {
+        const scoreHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        if (process.env.WORKER_KEY) scoreHeaders["X-Worker-Key"] = process.env.WORKER_KEY;
         const scoreResp = await fetch(`${enrichWorkerUrl}/score`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: scoreHeaders,
           body: JSON.stringify({
             business: freshLead.business,
             vertical: freshLead.vertical,
@@ -219,9 +227,11 @@ export async function classifyInboundEmail(subject: string, body: string): Promi
 } | null> {
   const workerUrl = process.env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
   try {
+    const classifyHeaders: Record<string, string> = { "Content-Type": "application/json" };
+    if (process.env.WORKER_KEY) classifyHeaders["X-Worker-Key"] = process.env.WORKER_KEY;
     const resp = await fetch(`${workerUrl}/classify`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: classifyHeaders,
       body: JSON.stringify({ text: `Subject: ${subject}\n\n${body}`.slice(0, 2000) }),
     });
     if (!resp.ok) return null;
@@ -253,12 +263,10 @@ async function queueInitialOutreach(): Promise<number> {
   const todayStr = now.toISOString().slice(0, 10);
 
   // Check how many we've already sent today
-  const sentToday = await db.select({ id: schema.outreachQueue.id })
+  const sentAll = await db.select({ id: schema.outreachQueue.id, sentAt: schema.outreachQueue.sentAt })
     .from(schema.outreachQueue)
-    .where(and(
-      eq(schema.outreachQueue.status, "sent"),
-    ));
-  const sentTodayCount = sentToday.filter(s => true).length; // simplified
+    .where(eq(schema.outreachQueue.status, "sent"));
+  const sentTodayCount = sentAll.filter(s => s.sentAt && s.sentAt.startsWith(todayStr)).length;
   const remaining = (cfg.maxOutreachPerDay || 15) - sentTodayCount;
   if (remaining <= 0) return 0;
 
@@ -526,6 +534,12 @@ async function runAutopilot(): Promise<void> {
   const cfg = await getConfig();
   if (!cfg?.enabled) return;
 
+  // Circuit breaker: skip if in backoff period
+  if (Date.now() < backoffUntil) {
+    log(`In backoff period (${consecutiveFailures} failures). Resuming at ${new Date(backoffUntil).toISOString().slice(11, 19)}`);
+    return;
+  }
+
   log("Running autopilot tick...");
 
   try {
@@ -552,8 +566,17 @@ async function runAutopilot(): Promise<void> {
     if (newQueued + followUpsQueued + magnetFollowUps + generated + sent > 0) {
       log(`Tick complete: queued=${newQueued} follow-ups=${followUpsQueued} magnet=${magnetFollowUps} generated=${generated} sent=${sent}`);
     }
+
+    // Reset circuit breaker on success
+    consecutiveFailures = 0;
+    backoffUntil = 0;
   } catch (err) {
-    log(`Error: ${err}`);
+    consecutiveFailures++;
+    log(`Error (failure ${consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES}): ${err}`);
+    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      backoffUntil = Date.now() + BACKOFF_MS;
+      log(`Circuit breaker tripped — pausing autopilot for 30 minutes`);
+    }
   }
 }
 
