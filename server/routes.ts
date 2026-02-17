@@ -35,7 +35,7 @@ const upload = multer({
       }),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
   fileFilter: (_req, file, cb) => {
-    const allowed = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".png", ".jpg", ".jpeg", ".gif", ".mp4", ".webm", ".zip"];
+    const allowed = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".csv", ".ppt", ".pptx", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".mp4", ".webm", ".zip", ".txt", ".html", ".htm"];
     const ext = path.extname(file.originalname).toLowerCase();
     cb(null, allowed.includes(ext));
   },
@@ -1164,7 +1164,7 @@ RULES:
         fileUrl = `/uploads/resources/${file.filename}`;
       }
       const ext = path.extname(file.originalname).toLowerCase().replace(".", "");
-      const typeMap: Record<string, string> = { pdf: "document", doc: "document", docx: "document", xls: "spreadsheet", xlsx: "spreadsheet", ppt: "document", pptx: "document", png: "image", jpg: "image", jpeg: "image", gif: "image", mp4: "video", webm: "video", zip: "other" };
+      const typeMap: Record<string, string> = { pdf: "document", doc: "document", docx: "document", txt: "document", html: "document", htm: "document", xls: "spreadsheet", xlsx: "spreadsheet", csv: "spreadsheet", ppt: "document", pptx: "document", png: "image", jpg: "image", jpeg: "image", gif: "image", webp: "image", svg: "image", mp4: "video", webm: "video", zip: "other" };
       const id = randomUUID();
       const [record] = await db.insert(schema.adminFiles).values({
         id,
