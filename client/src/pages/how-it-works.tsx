@@ -65,8 +65,8 @@ function HowItWorksHero() {
 
           <motion.div className="mt-8 rounded-xl overflow-hidden bg-muted/30 max-w-2xl mx-auto" variants={fadeUp}>
             <img
-              src="/images/How_it_works.png"
-              alt="How TechSavvy zero-fee payment processing works"
+              src="/images/how-it-works-steps.jpeg"
+              alt="How TechSavvy zero-fee payment processing works — Step 1: Customer pays with card, Step 2: Small non-cash adjustment, Business keeps 100% of payment"
               className="w-full max-h-[50vh] object-contain"
             />
           </motion.div>

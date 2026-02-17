@@ -420,6 +420,14 @@ export default function StatementReviewPage() {
                     audit your own statement at your own pace.
                   </p>
 
+                  <div className="rounded-xl overflow-hidden mb-6">
+                    <img
+                      src="/images/statement-analysis-guides.png"
+                      alt="Free payment processing guides — Rate Comparison Guide, Statement Checklist, Security Checklist, and Cash Discount Explained"
+                      className="w-full h-auto object-cover"
+                    />
+                  </div>
+
                   <div className="space-y-3 mb-6">
                     {[
                       { title: "Statement Checklist", desc: "10-point audit to catch hidden fees" },

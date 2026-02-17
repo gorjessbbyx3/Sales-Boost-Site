@@ -1115,6 +1115,7 @@ RULES:
 
   const DEFAULT_FOLDERS = [
     "Classroom",
+    "Equipment",
     "Uploaded Statements",
     "Partner Agreements",
     "Client Resources",
