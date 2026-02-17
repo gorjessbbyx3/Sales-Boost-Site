@@ -2603,6 +2603,7 @@ function TaskFormDialog({ open, onClose, onSave, task }: { open: boolean; onClos
 
 const DEFAULT_FOLDERS = [
   "Classroom",
+  "Equipment",
   "Uploaded Statements",
   "Partner Agreements",
   "Client Resources",
@@ -2745,7 +2746,10 @@ function FilesManagerTab() {
   const typeIcons: Record<string, React.ElementType> = { document: FileText, image: File, video: Video, spreadsheet: FileText, other: File };
   const breadcrumbs = currentFolder ? currentFolder.split("/") : [];
 
-  const [form, setForm] = useState({ name: "", url: "", type: "document", category: "general" });
+  const [form, setForm] = useState({ name: "", url: "", type: "document", category: "general", folder: "" });
+  const [addFileMode, setAddFileMode] = useState<"link" | "upload">("link");
+  const addFileInputRef = useRef<HTMLInputElement>(null);
+  const [addFileUploading, setAddFileUploading] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -2756,7 +2760,7 @@ function FilesManagerTab() {
           <p className="text-xs text-muted-foreground mt-1">{allFiles.length} files across {folderTree.allFolders.length} folders</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => { setForm({ name: "", url: "", type: "document", category: "general" }); setShowAddForm(true); }}><Plus className="w-3.5 h-3.5" />Add Link</Button>
+          <Button size="sm" variant="outline" onClick={() => { setForm({ name: "", url: "", type: "document", category: "general", folder: currentFolder }); setAddFileMode("link"); setShowAddForm(true); }}><Plus className="w-3.5 h-3.5" />Add File</Button>
           <Button size="sm" onClick={() => fileInputRef.current?.click()}><Upload className="w-3.5 h-3.5" />Upload</Button>
         </div>
       </div>
@@ -2857,16 +2861,85 @@ function FilesManagerTab() {
         })}</div>
       ) : null}
 
-      {/* Add Link Dialog */}
+      {/* Add File Dialog (Link or Upload) */}
       <Dialog open={showAddForm} onOpenChange={(o) => !o && setShowAddForm(false)}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Add File Link</DialogTitle><DialogDescription>Track a file or resource by URL</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>Add File</DialogTitle><DialogDescription>Upload a file or add a link to an external resource</DialogDescription></DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1.5"><Label className="text-xs">File Name</Label><Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Statement Review Guide.pdf" /></div>
-            <div className="space-y-1.5"><Label className="text-xs">URL / Link</Label><Input value={form.url} onChange={(e) => setForm((p) => ({ ...p, url: e.target.value }))} placeholder="https://drive.google.com/..." /></div>
-            <div className="space-y-1.5"><Label className="text-xs">Type</Label><Select value={form.type} onValueChange={(v) => setForm((p) => ({ ...p, type: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="document">Document</SelectItem><SelectItem value="image">Image</SelectItem><SelectItem value="video">Video</SelectItem><SelectItem value="spreadsheet">Spreadsheet</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+            {/* Mode Toggle */}
+            <div className="flex gap-2">
+              <Button size="sm" variant={addFileMode === "upload" ? "default" : "outline"} className="flex-1" onClick={() => setAddFileMode("upload")}><Upload className="w-3.5 h-3.5 mr-1.5" />Upload File</Button>
+              <Button size="sm" variant={addFileMode === "link" ? "default" : "outline"} className="flex-1" onClick={() => setAddFileMode("link")}><ExternalLink className="w-3.5 h-3.5 mr-1.5" />Add Link</Button>
+            </div>
+
+            {addFileMode === "upload" ? (
+              <>
+                <div
+                  className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
+                  onClick={() => addFileInputRef.current?.click()}
+                >
+                  <input
+                    ref={addFileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.mp4,.webm,.zip"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setAddFileUploading(true);
+                      try {
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        fd.append("folder", form.folder);
+                        fd.append("category", form.folder === "Classroom" ? "classroom" : "general");
+                        const resp = await fetch("/api/files/upload", { method: "POST", body: fd, credentials: "include" });
+                        if (!resp.ok) {
+                          const errData = await resp.json().catch(() => ({ error: "Upload failed" }));
+                          throw new Error((errData as any).error || "Upload failed");
+                        }
+                        refetch();
+                        toast({ title: "File uploaded", description: `${file.name} added to ${form.folder || "root"}` });
+                        setShowAddForm(false);
+                      } catch (err: any) {
+                        toast({ title: `Upload failed: ${file.name}`, description: err.message, variant: "destructive" });
+                      } finally {
+                        setAddFileUploading(false);
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                  {addFileUploading ? (
+                    <><RefreshCw className="w-8 h-8 text-primary mx-auto mb-2 animate-spin" /><p className="text-sm font-medium">Uploading...</p></>
+                  ) : (
+                    <><Upload className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" /><p className="text-sm font-medium">Click to select a file</p><p className="text-xs text-muted-foreground mt-1">PDF, DOC, XLS, images, video — up to 50 MB</p></>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-1.5"><Label className="text-xs">File Name</Label><Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Statement Review Guide.pdf" /></div>
+                <div className="space-y-1.5"><Label className="text-xs">URL / Link</Label><Input value={form.url} onChange={(e) => setForm((p) => ({ ...p, url: e.target.value }))} placeholder="https://drive.google.com/..." /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Type</Label><Select value={form.type} onValueChange={(v) => setForm((p) => ({ ...p, type: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="document">Document</SelectItem><SelectItem value="image">Image</SelectItem><SelectItem value="video">Video</SelectItem><SelectItem value="spreadsheet">Spreadsheet</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+              </>
+            )}
+
+            {/* Folder Selector */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Folder</Label>
+              <Select value={form.folder} onValueChange={(v) => setForm((p) => ({ ...p, folder: v === "__root__" ? "" : v }))}>
+                <SelectTrigger><SelectValue placeholder="Select a folder" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__root__">Root (No Folder)</SelectItem>
+                  {folderTree.allFolders.map((f) => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button><Button onClick={() => createMutation.mutate({ ...form, folder: currentFolder })} disabled={!form.name}><Save className="w-3.5 h-3.5" />Add</Button></DialogFooter>
+          {addFileMode === "link" && (
+            <DialogFooter><Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button><Button onClick={() => createMutation.mutate({ name: form.name, url: form.url, type: form.type, category: form.category, folder: form.folder })} disabled={!form.name}><Save className="w-3.5 h-3.5" />Add</Button></DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>
