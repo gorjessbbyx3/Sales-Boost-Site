@@ -24,7 +24,7 @@ import {
   BarChart3, ArrowUpRight, ArrowDownRight,
   Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
   Pin, PinOff, Sparkles, Clock, UserCog, Briefcase, Sun, Moon,
-  ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu,
+  ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu, Eye,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { useTheme } from "@/hooks/use-theme";
@@ -2750,6 +2750,7 @@ function FilesManagerTab() {
   const [addFileMode, setAddFileMode] = useState<"link" | "upload">("link");
   const addFileInputRef = useRef<HTMLInputElement>(null);
   const [addFileUploading, setAddFileUploading] = useState(false);
+  const [previewFile, setPreviewFile] = useState<AdminFile | null>(null);
 
   return (
     <div className="space-y-4">
@@ -2838,8 +2839,12 @@ function FilesManagerTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{directFiles.map((file) => {
           const Icon = typeIcons[file.type] || File;
           const isResource = file.id.startsWith("res-");
+          const canPreview = file.url && (file.type === "document" || file.type === "image" || file.type === "video" || file.url.match(/\.(pdf|png|jpg|jpeg|gif|webp|mp4|webm)$/i));
           return (
-            <Card key={file.id} className="overflow-visible border-border/50 hover:border-primary/30 transition-colors"><CardContent className="p-4">
+            <Card key={file.id} className="overflow-visible border-border/50 hover:border-primary/30 transition-colors cursor-pointer" onClick={() => {
+              if (!file.url) return;
+              if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
+            }}><CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-md bg-muted/50 flex items-center justify-center shrink-0"><Icon className="w-5 h-5 text-muted-foreground" /></div>
                 <div className="min-w-0 flex-1">
@@ -2851,9 +2856,10 @@ function FilesManagerTab() {
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1">{new Date(file.uploadedAt).toLocaleDateString()}</p>
                 </div>
-                <div className="flex flex-col gap-1">
-                  {file.url && <a href={file.url} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7"><ExternalLink className="w-3 h-3" /></Button></a>}
-                  {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(file.id)}><Trash2 className="w-3 h-3" /></Button>}
+                <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
+                  {file.url && canPreview && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewFile(file)} title="Preview"><Eye className="w-3 h-3" /></Button>}
+                  {file.url && <a href={file.url} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7" title="Open in new tab"><ExternalLink className="w-3 h-3" /></Button></a>}
+                  {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(file.id)} title="Delete"><Trash2 className="w-3 h-3" /></Button>}
                 </div>
               </div>
             </CardContent></Card>
@@ -2940,6 +2946,51 @@ function FilesManagerTab() {
           {addFileMode === "link" && (
             <DialogFooter><Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button><Button onClick={() => createMutation.mutate({ name: form.name, url: form.url, type: form.type, category: form.category, folder: form.folder })} disabled={!form.name}><Save className="w-3.5 h-3.5" />Add</Button></DialogFooter>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* File Preview Modal */}
+      <Dialog open={!!previewFile} onOpenChange={(o) => !o && setPreviewFile(null)}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 pr-8">
+              <FileText className="w-4 h-4 text-primary shrink-0" />
+              <span className="truncate">{previewFile?.name}</span>
+            </DialogTitle>
+            <DialogDescription className="flex items-center gap-3">
+              {previewFile?.type && <Badge variant="outline" className="text-[10px]">{previewFile.type}</Badge>}
+              {previewFile && previewFile.size > 0 && <span className="text-xs">{formatBytes(previewFile.size)}</span>}
+              {previewFile?.folder && <span className="text-xs text-muted-foreground">in {previewFile.folder}</span>}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 overflow-auto rounded-lg border border-border bg-black/20">
+            {previewFile?.url && (() => {
+              const url = previewFile.url;
+              const isPdf = previewFile.type === "document" || url.match(/\.pdf$/i);
+              const isImage = previewFile.type === "image" || url.match(/\.(png|jpg|jpeg|gif|webp)$/i);
+              const isVideo = previewFile.type === "video" || url.match(/\.(mp4|webm)$/i);
+              if (isImage) {
+                return <img src={url} alt={previewFile.name} className="max-w-full max-h-[65vh] mx-auto object-contain p-2" />;
+              }
+              if (isVideo) {
+                return <video src={url} controls className="w-full max-h-[65vh] mx-auto" />;
+              }
+              if (isPdf) {
+                return <iframe src={url} title={previewFile.name} className="w-full h-[65vh] border-0" />;
+              }
+              return (
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                  <File className="w-16 h-16 text-muted-foreground/30 mb-4" />
+                  <p className="text-sm text-muted-foreground mb-4">Preview not available for this file type</p>
+                  <Button onClick={() => window.open(url, "_blank", "noopener,noreferrer")}><ExternalLink className="w-3.5 h-3.5 mr-1.5" />Open in New Tab</Button>
+                </div>
+              );
+            })()}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            {previewFile?.url && <Button variant="outline" size="sm" onClick={() => window.open(previewFile.url, "_blank", "noopener,noreferrer")}><ExternalLink className="w-3.5 h-3.5 mr-1.5" />Open in New Tab</Button>}
+            <Button variant="outline" size="sm" onClick={() => setPreviewFile(null)}>Close</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
