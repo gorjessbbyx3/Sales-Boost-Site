@@ -548,7 +548,7 @@ function ContactSection() {
         "bundle-trial": "trial",
         "online-only": "online",
         "high-risk": "high-risk",
-        "statement-analysis": "statement-analysis",
+        "online-store": "online-store",
         "questions": "questions",
       };
       await apiRequest("POST", "/api/leads/public", {
@@ -806,7 +806,7 @@ function ContactSection() {
                       <option value="bundle-trial">30-Day Free Trial</option>
                       <option value="online-only">Online Payment Processing</option>
                       <option value="high-risk">High-Risk Merchant Account</option>
-                      <option value="statement-analysis">AI Statement Analysis</option>
+                      <option value="online-store">Online Store or App</option>
                       <option value="questions">Just Have Questions</option>
                     </select>
                   </div>
