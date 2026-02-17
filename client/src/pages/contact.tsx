@@ -534,7 +534,6 @@ function ContactSection() {
     businessType: "",
     monthlyVolume: "",
     interest: "bundle-terminal",
-    hasWebsite: "",
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
@@ -549,8 +548,7 @@ function ContactSection() {
         "bundle-trial": "trial",
         "online-only": "online",
         "high-risk": "high-risk",
-        "website-only": "website",
-        "premium-web": "premium-web",
+        "statement-analysis": "statement-analysis",
         "questions": "questions",
       };
       await apiRequest("POST", "/api/leads/public", {
@@ -563,7 +561,6 @@ function ContactSection() {
         notes: [
           formData.businessType && `Type: ${formData.businessType}`,
           formData.monthlyVolume && `Volume: ${formData.monthlyVolume}`,
-          formData.hasWebsite && `Has website: ${formData.hasWebsite}`,
           formData.message,
         ].filter(Boolean).join(" | "),
       });
@@ -602,16 +599,16 @@ function ContactSection() {
             variants={fadeUp}
             data-testid="text-contact-title"
           >
-            Free Website Mockup +{" "}
+            Get Your Free{" "}
             <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-              Savings Quote
+              Savings Analysis
             </span>
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base"
             variants={fadeUp}
           >
-            Tell us about your business and we'll send you a personalized website mockup \u2014 plus a free savings analysis on your processing fees. No strings attached.
+            Tell us about your business and we'll show you exactly how much you can save on payment processing fees. No strings attached.
           </motion.p>
         </motion.div>
 
@@ -658,9 +655,10 @@ function ContactSection() {
             <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center shrink-0">
               <Clock className="w-5 h-5 text-primary" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-xs text-muted-foreground">Business Hours</div>
-              <div className="text-sm font-semibold text-foreground">Mon\u2013Fri, 8 AM \u2013 5 PM</div>
+              <div className="text-sm font-semibold text-foreground">Mon - Fri</div>
+              <div className="text-xs text-muted-foreground">8 AM - 5 PM HST</div>
             </div>
           </motion.div>
         </motion.div>
@@ -680,10 +678,10 @@ function ContactSection() {
                     <Check className="w-8 h-8 text-primary" />
                   </div>
                   <h3 className="text-2xl font-bold text-foreground mb-3" data-testid="text-contact-success">
-                    Your Mockup & Quote Are On the Way!
+                    Your Savings Analysis Is On the Way!
                   </h3>
                   <p className="text-muted-foreground max-w-md mx-auto">
-                    We're preparing your personalized website mockup and processing savings analysis. Our team will reach out within a few hours.
+                    We're preparing your personalized processing savings analysis. Our team will reach out within a few hours.
                   </p>
                 </div>
               ) : (
@@ -794,43 +792,23 @@ function ContactSection() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1.5 block">
-                        I'm Interested In
-                      </label>
-                      <select
-                        value={formData.interest}
-                        onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
-                        className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                        data-testid="select-contact-interest"
-                      >
-                        <option value="bundle-terminal">Terminal + Free Website ($399)</option>
-                        <option value="bundle-trial">Free Trial + Website ($199 add-on)</option>
-                        <option value="online-only">Online-Only Package (FREE)</option>
-                        <option value="high-risk">High-Risk Merchant Account</option>
-                        <option value="website-only">Website Design Only</option>
-                        <option value="premium-web">Premium Web Package + Maintenance</option>
-                        <option value="questions">Just Have Questions</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1.5 block">
-                        Do You Have a Website?
-                      </label>
-                      <select
-                        value={formData.hasWebsite}
-                        onChange={(e) => setFormData({ ...formData, hasWebsite: e.target.value })}
-                        className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                        data-testid="select-contact-website"
-                      >
-                        <option value="">Select...</option>
-                        <option value="no">No \u2014 I need one built</option>
-                        <option value="outdated">Yes, but it needs a redesign</option>
-                        <option value="yes-basic">Yes, but no online payments</option>
-                        <option value="yes-good">Yes, and it works well</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">
+                      I'm Interested In
+                    </label>
+                    <select
+                      value={formData.interest}
+                      onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
+                      className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      data-testid="select-contact-interest"
+                    >
+                      <option value="bundle-terminal">Zero-Fee Terminal ($399)</option>
+                      <option value="bundle-trial">30-Day Free Trial</option>
+                      <option value="online-only">Online Payment Processing</option>
+                      <option value="high-risk">High-Risk Merchant Account</option>
+                      <option value="statement-analysis">AI Statement Analysis</option>
+                      <option value="questions">Just Have Questions</option>
+                    </select>
                   </div>
 
                   <div>
@@ -842,28 +820,28 @@ function ContactSection() {
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
-                      placeholder="What does your business do? What would you want on your website? (e.g., online menu, booking calendar, product shop, contact form...)"
+                      placeholder="Tell us about your business, what you're looking for, or any questions you have..."
                       data-testid="input-contact-message"
                     />
                   </div>
 
                   <Button type="submit" size="lg" className="w-full" disabled={submitting} data-testid="button-contact-submit">
-                    {submitting ? "Submitting..." : "Get My Free Mockup + Savings Quote"}
+                    {submitting ? "Submitting..." : "Get My Free Savings Analysis"}
                     {!submitting && <ArrowRight className="w-4 h-4" />}
                   </Button>
 
                   <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1.5">
                       <Check className="w-3.5 h-3.5 text-primary" />
-                      <span>100% free \u2014 no commitment</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-primary" />
-                      <span>Personalized mockup</span>
+                      <span>100% free — no commitment</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Check className="w-3.5 h-3.5 text-primary" />
                       <span>Savings analysis included</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-primary" />
+                      <span>Response within a few hours</span>
                     </div>
                   </div>
                 </form>
