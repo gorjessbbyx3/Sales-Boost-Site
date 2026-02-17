@@ -25,7 +25,7 @@ function Navbar() {
 
   const links = [
     { label: "How It Works", href: "/how-it-works" },
-    { label: "Statement Review", href: "/statement-review" },
+    { label: "AI Statement Analysis", href: "/statement-review" },
     { label: "Pricing", href: "/pricing" },
     { label: "Online Processing", href: "/online-processing" },
     { label: "High-Risk", href: "/high-risk" },
@@ -73,8 +73,8 @@ function Navbar() {
               </Link>
             </Button>
             <Button size="sm" asChild>
-              <Link href="/contact" data-testid="link-nav-get-terminal">
-                Get Your Terminal
+              <Link href="/statement-review" data-testid="link-nav-statement-analysis">
+                AI Statement Analysis
                 <ArrowRight className="w-3 h-3" />
               </Link>
             </Button>
@@ -114,8 +114,8 @@ function Navbar() {
               </Link>
             </Button>
             <Button size="sm" asChild className="w-full">
-              <Link href="/contact" data-testid="link-mobile-get-terminal" onClick={() => setMobileOpen(false)}>
-                Get Your Terminal
+              <Link href="/statement-review" data-testid="link-mobile-statement-analysis" onClick={() => setMobileOpen(false)}>
+                AI Statement Analysis
               </Link>
             </Button>
             <a

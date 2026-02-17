@@ -592,14 +592,14 @@ function LiveExampleSection() {
                 </div>
                 <div className="flex-1 mx-4">
                   <div className="bg-background rounded-md px-3 py-1 text-xs text-muted-foreground text-center border">
-                    poormantowing.com
+                    allin1bonding.vercel.app
                   </div>
                 </div>
               </div>
               <div className="relative w-full" style={{ paddingBottom: "62.5%" }}>
                 <iframe
-                  src="https://poormantowing.com"
-                  title="Poorman Towing — Example TechSavvy Website"
+                  src="https://allin1bonding.vercel.app/"
+                  title="All In 1 Bonding — Example TechSavvy Website"
                   className="absolute inset-0 w-full h-full border-0"
                   loading="lazy"
                   sandbox="allow-scripts allow-same-origin"
@@ -607,10 +607,10 @@ function LiveExampleSection() {
               </div>
             </Card>
             <p className="text-center text-xs text-muted-foreground mt-3">
-              <a href="https://poormantowing.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
-                poormantowing.com
+              <a href="https://allin1bonding.vercel.app/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
+                allin1bonding.vercel.app
               </a>{" "}
-              — built by TechSavvy for a local Hawai'i towing business
+              — built by TechSavvy
             </p>
           </motion.div>
         </motion.div>

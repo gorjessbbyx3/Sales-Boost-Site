@@ -124,6 +124,48 @@ export function ChatWidget() {
                 </div>
               </div>
 
+              {messages.length === 0 && (
+                <div className="flex flex-wrap gap-2 pl-9" data-testid="chat-quick-options">
+                  {[
+                    "How does zero-fee processing work?",
+                    "What are your terminal options?",
+                    "Do you support high-risk merchants?",
+                    "I'd like a free savings analysis",
+                  ].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        setInput(option);
+                        setTimeout(() => {
+                          const userMsg: ChatMessage = { role: "user", content: option };
+                          setMessages([userMsg]);
+                          setIsLoading(true);
+                          apiRequest("POST", "/api/chat", {
+                            message: option,
+                            history: [],
+                          })
+                            .then((res) => res.json())
+                            .then((data) => {
+                              setMessages([userMsg, { role: "assistant", content: data.reply }]);
+                            })
+                            .catch(() => {
+                              setMessages([userMsg, { role: "assistant", content: "Sorry, I encountered an error. Please try again." }]);
+                            })
+                            .finally(() => {
+                              setIsLoading(false);
+                              setInput("");
+                            });
+                        }, 0);
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-full border border-primary/20 text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {messages.map((msg, i) => (
                 <div
                   key={i}
