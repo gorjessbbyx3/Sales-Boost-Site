@@ -1136,6 +1136,33 @@ RULES:
     res.json(allFolders);
   });
 
+  // Create a new folder (adds a hidden marker file so the folder persists)
+  app.post("/api/files/folders", requireAdminSession, async (req, res) => {
+    const folderName = (req.body.name || "").trim();
+    const parent = (req.body.parent || "").trim();
+    if (!folderName) return res.status(400).json({ error: "Folder name is required" });
+    const fullPath = parent ? `${parent}/${folderName}` : folderName;
+    // Check if folder already has files (i.e. exists)
+    const rows = await db.select({ folder: schema.adminFiles.folder }).from(schema.adminFiles);
+    const existing = new Set(rows.map(r => r.folder).filter(Boolean));
+    const allKnown = new Set([...DEFAULT_FOLDERS, ...existing]);
+    if (allKnown.has(fullPath)) return res.status(409).json({ error: "Folder already exists" });
+    // Create a hidden marker entry so the folder persists
+    const id = randomUUID();
+    await db.insert(schema.adminFiles).values({
+      id,
+      name: `.folder-marker`,
+      size: 0,
+      type: "other",
+      category: "system",
+      folder: fullPath,
+      uploadedAt: new Date().toISOString(),
+      url: "",
+    });
+    logActivity("Folder Created", fullPath, "file");
+    res.status(201).json({ folder: fullPath });
+  });
+
   app.post("/api/files", requireAdminSession, async (req, res) => {
     const id = randomUUID();
     const [file] = await db.insert(schema.adminFiles).values({

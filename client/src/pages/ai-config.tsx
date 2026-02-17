@@ -2639,8 +2639,26 @@ function FilesManagerTab() {
   });
   const moveMutation = useMutation({
     mutationFn: async ({ id, folder }: { id: string; folder: string }) => { const r = await apiRequest("PATCH", `/api/files/${id}`, { folder }); return r.json(); },
-    onSuccess: () => { refetch(); toast({ title: "File moved" }); },
+    onSuccess: () => { refetch(); toast({ title: "File moved" }); setMoveTarget(null); },
   });
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => { const r = await apiRequest("PATCH", `/api/files/${id}`, { name }); return r.json(); },
+    onSuccess: () => { refetch(); toast({ title: "File renamed" }); setRenameTarget(null); },
+    onError: () => { toast({ title: "Failed to rename file", variant: "destructive" }); },
+  });
+  const createFolderMutation = useMutation({
+    mutationFn: async ({ name, parent }: { name: string; parent: string }) => { const r = await apiRequest("POST", "/api/files/folders", { name, parent }); return r.json(); },
+    onSuccess: () => { refetch(); toast({ title: "Folder created" }); setShowNewFolder(false); setNewFolderName(""); },
+    onError: (err: any) => { toast({ title: err.message?.includes("409") ? "Folder already exists" : "Failed to create folder", variant: "destructive" }); },
+  });
+
+  // State for rename, move, and new folder dialogs
+  const [renameTarget, setRenameTarget] = useState<AdminFile | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [moveTarget, setMoveTarget] = useState<AdminFile | null>(null);
+  const [moveFolder, setMoveFolder] = useState("");
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
 
   // Merge admin files + resources (Classroom) into one view
   const allFiles: AdminFile[] = useMemo(() => {
@@ -2654,7 +2672,9 @@ function FilesManagerTab() {
       uploadedAt: r.createdAt,
       url: r.url,
     }));
-    return [...files, ...resourcesAsFiles];
+    // Exclude hidden folder marker entries from display
+    const visibleFiles = files.filter(f => f.name !== ".folder-marker");
+    return [...visibleFiles, ...resourcesAsFiles];
   }, [files, resources]);
 
   // Build folder tree
@@ -2846,6 +2866,8 @@ function FilesManagerTab() {
           <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/30" onClick={(e) => e.stopPropagation()}>
             {file.url && <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex-1"><Button variant="ghost" size="sm" className="h-7 w-full text-xs"><ExternalLink className="w-3 h-3 mr-1" />Open</Button></a>}
             {file.url && <a href={file.url} download><Button variant="ghost" size="sm" className="h-7 text-xs"><Download className="w-3 h-3" /></Button></a>}
+            {!isResource && <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setRenameTarget(file); setRenameValue(file.name); }} title="Rename"><Edit3 className="w-3 h-3" /></Button>}
+            {!isResource && <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setMoveTarget(file); setMoveFolder(file.folder || ""); }} title="Move"><FolderOpen className="w-3 h-3" /></Button>}
             {!isResource && <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => deleteMutation.mutate(file.id)}><Trash2 className="w-3 h-3" /></Button>}
           </div>
         </CardContent>
@@ -2890,6 +2912,8 @@ function FilesManagerTab() {
           {canPreview && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewFile(file)} title="Preview"><Eye className="w-3 h-3" /></Button>}
           {file.url && <a href={file.url} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7" title="Open"><ExternalLink className="w-3 h-3" /></Button></a>}
           {file.url && <a href={file.url} download><Button variant="ghost" size="icon" className="h-7 w-7" title="Download"><Download className="w-3 h-3" /></Button></a>}
+          {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setRenameTarget(file); setRenameValue(file.name); }} title="Rename"><Edit3 className="w-3 h-3" /></Button>}
+          {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setMoveTarget(file); setMoveFolder(file.folder || ""); }} title="Move to folder"><FolderOpen className="w-3 h-3" /></Button>}
           {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(file.id)} title="Delete"><Trash2 className="w-3 h-3" /></Button>}
         </div>
       </div>
@@ -2910,6 +2934,7 @@ function FilesManagerTab() {
             <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode("grid")} title="Grid view"><LayoutGrid className="w-3.5 h-3.5" /></Button>
             <Button variant={viewMode === "list" ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode("list")} title="List view"><LayoutList className="w-3.5 h-3.5" /></Button>
           </div>
+          <Button size="sm" variant="outline" onClick={() => { setNewFolderName(""); setShowNewFolder(true); }}><FolderOpen className="w-3.5 h-3.5" />New Folder</Button>
           <Button size="sm" variant="outline" onClick={() => { setForm({ name: "", url: "", type: "document", category: "general", folder: currentFolder }); setAddFileMode("link"); setShowAddForm(true); }}><Plus className="w-3.5 h-3.5" />Add File</Button>
           <Button size="sm" onClick={() => fileInputRef.current?.click()}><Upload className="w-3.5 h-3.5" />Upload</Button>
         </div>
@@ -3143,6 +3168,56 @@ function FilesManagerTab() {
             {previewFile?.url && <Button variant="outline" size="sm" onClick={() => window.open(previewFile.url, "_blank", "noopener,noreferrer")}><ExternalLink className="w-3.5 h-3.5 mr-1.5" />Open in New Tab</Button>}
             <Button variant="outline" size="sm" onClick={() => setPreviewFile(null)}>Close</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename File Dialog */}
+      <Dialog open={!!renameTarget} onOpenChange={(o) => !o && setRenameTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Rename File</DialogTitle><DialogDescription>Enter a new name for this file</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <Input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} placeholder="File name" autoFocus onKeyDown={(e) => { if (e.key === "Enter" && renameValue.trim() && renameTarget) renameMutation.mutate({ id: renameTarget.id, name: renameValue.trim() }); }} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameTarget(null)}>Cancel</Button>
+            <Button onClick={() => { if (renameTarget && renameValue.trim()) renameMutation.mutate({ id: renameTarget.id, name: renameValue.trim() }); }} disabled={!renameValue.trim() || renameValue === renameTarget?.name}><Save className="w-3.5 h-3.5" />Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move File Dialog */}
+      <Dialog open={!!moveTarget} onOpenChange={(o) => !o && setMoveTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Move File</DialogTitle><DialogDescription>Select destination folder for &ldquo;{moveTarget?.name}&rdquo;</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <Select value={moveFolder || "__root__"} onValueChange={(v) => setMoveFolder(v === "__root__" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Select folder" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__root__">Root (No Folder)</SelectItem>
+                {folderTree.allFolders.map((f) => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveTarget(null)}>Cancel</Button>
+            <Button onClick={() => { if (moveTarget) moveMutation.mutate({ id: moveTarget.id, folder: moveFolder }); }} disabled={moveFolder === (moveTarget?.folder || "")}><FolderOpen className="w-3.5 h-3.5" />Move</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Folder Dialog */}
+      <Dialog open={showNewFolder} onOpenChange={(o) => !o && setShowNewFolder(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Create New Folder</DialogTitle><DialogDescription>{currentFolder ? `Inside "${currentFolder}"` : "At the root level"}</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <Input value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="Folder name" autoFocus onKeyDown={(e) => { if (e.key === "Enter" && newFolderName.trim()) createFolderMutation.mutate({ name: newFolderName.trim(), parent: currentFolder }); }} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewFolder(false)}>Cancel</Button>
+            <Button onClick={() => { if (newFolderName.trim()) createFolderMutation.mutate({ name: newFolderName.trim(), parent: currentFolder }); }} disabled={!newFolderName.trim()}><FolderOpen className="w-3.5 h-3.5" />Create</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
