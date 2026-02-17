@@ -24,7 +24,8 @@ import {
   BarChart3, ArrowUpRight, ArrowDownRight,
   Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
   Pin, PinOff, Sparkles, Clock, UserCog, Briefcase, Sun, Moon,
-  ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu,
+  ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu, Eye,
+  Download, LayoutList, LayoutGrid, Image, FileSpreadsheet,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { useTheme } from "@/hooks/use-theme";
@@ -2622,6 +2623,7 @@ function FilesManagerTab() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -2637,8 +2639,26 @@ function FilesManagerTab() {
   });
   const moveMutation = useMutation({
     mutationFn: async ({ id, folder }: { id: string; folder: string }) => { const r = await apiRequest("PATCH", `/api/files/${id}`, { folder }); return r.json(); },
-    onSuccess: () => { refetch(); toast({ title: "File moved" }); },
+    onSuccess: () => { refetch(); toast({ title: "File moved" }); setMoveTarget(null); },
   });
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => { const r = await apiRequest("PATCH", `/api/files/${id}`, { name }); return r.json(); },
+    onSuccess: () => { refetch(); toast({ title: "File renamed" }); setRenameTarget(null); },
+    onError: () => { toast({ title: "Failed to rename file", variant: "destructive" }); },
+  });
+  const createFolderMutation = useMutation({
+    mutationFn: async ({ name, parent }: { name: string; parent: string }) => { const r = await apiRequest("POST", "/api/files/folders", { name, parent }); return r.json(); },
+    onSuccess: () => { refetch(); toast({ title: "Folder created" }); setShowNewFolder(false); setNewFolderName(""); },
+    onError: (err: any) => { toast({ title: err.message?.includes("409") ? "Folder already exists" : "Failed to create folder", variant: "destructive" }); },
+  });
+
+  // State for rename, move, and new folder dialogs
+  const [renameTarget, setRenameTarget] = useState<AdminFile | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [moveTarget, setMoveTarget] = useState<AdminFile | null>(null);
+  const [moveFolder, setMoveFolder] = useState("");
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
 
   // Merge admin files + resources (Classroom) into one view
   const allFiles: AdminFile[] = useMemo(() => {
@@ -2652,14 +2672,15 @@ function FilesManagerTab() {
       uploadedAt: r.createdAt,
       url: r.url,
     }));
-    return [...files, ...resourcesAsFiles];
+    // Exclude hidden folder marker entries from display
+    const visibleFiles = files.filter(f => f.name !== ".folder-marker");
+    return [...visibleFiles, ...resourcesAsFiles];
   }, [files, resources]);
 
   // Build folder tree
   const folderTree = useMemo(() => {
     const usedFolders = Array.from(new Set(allFiles.map(f => f.folder || "").filter(Boolean)));
     const allFolders = Array.from(new Set([...DEFAULT_FOLDERS, ...usedFolders])).sort();
-    // Build parent -> children map
     const topLevel: string[] = [];
     const children: Record<string, string[]> = {};
     for (const f of allFolders) {
@@ -2675,19 +2696,6 @@ function FilesManagerTab() {
     return { topLevel, children, allFolders };
   }, [allFiles]);
 
-  // Files in current folder
-  const folderFiles = useMemo(() => {
-    let filtered = allFiles.filter(f => {
-      const fileFolder = (f as any).folder || "";
-      if (currentFolder === "") return !fileFolder; // root
-      return fileFolder === currentFolder || fileFolder.startsWith(currentFolder + "/");
-    });
-    if (search) {
-      filtered = filtered.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
-    }
-    return filtered;
-  }, [allFiles, currentFolder, search]);
-
   // Subfolders of current folder
   const subfolders = useMemo(() => {
     if (currentFolder === "") return folderTree.topLevel;
@@ -2697,20 +2705,25 @@ function FilesManagerTab() {
   // Direct files in current folder (not in subfolders)
   const directFiles = useMemo(() => {
     return allFiles.filter(f => {
-      const fileFolder = (f as any).folder || "";
+      const fileFolder = f.folder || "";
       if (currentFolder === "") return !fileFolder;
       return fileFolder === currentFolder;
     }).filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()));
   }, [allFiles, currentFolder, search]);
 
+  // When searching, show ALL matching files regardless of folder
+  const searchResults = useMemo(() => {
+    if (!search) return [];
+    return allFiles.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+  }, [allFiles, search]);
+
   // File count per folder
   const folderCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const f of allFiles) {
-      const folder = (f as any).folder || "";
+      const folder = f.folder || "";
       if (folder) {
         counts[folder] = (counts[folder] || 0) + 1;
-        // Also count for parent folders
         const parts = folder.split("/");
         for (let i = 1; i < parts.length; i++) {
           const parent = parts.slice(0, i).join("/");
@@ -2743,13 +2756,169 @@ function FilesManagerTab() {
 
   const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files); };
 
-  const typeIcons: Record<string, React.ElementType> = { document: FileText, image: File, video: Video, spreadsheet: FileText, other: File };
-  const breadcrumbs = currentFolder ? currentFolder.split("/") : [];
+  // Helper: file extension from URL or name
+  const getFileExt = (file: AdminFile) => {
+    const src = file.url || file.name || "";
+    const match = src.match(/\.([a-zA-Z0-9]+)(\?.*)?$/);
+    return match ? match[1].toLowerCase() : "";
+  };
 
+  // Helper: is this file actually previewable in browser?
+  const isPreviewable = (file: AdminFile) => {
+    if (!file.url) return false;
+    const ext = getFileExt(file);
+    const url = file.url.toLowerCase();
+    // Images
+    if (file.type === "image" || ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return true;
+    // Video
+    if (file.type === "video" || ["mp4", "webm"].includes(ext)) return true;
+    // PDFs (only actual PDFs can be rendered in iframe, not .doc/.docx)
+    if (ext === "pdf" || url.endsWith(".pdf")) return true;
+    // HTML files
+    if (ext === "html" || ext === "htm") return true;
+    return false;
+  };
+
+  // Helper: is image file?
+  const isImageFile = (file: AdminFile) => {
+    if (file.type === "image") return true;
+    const ext = getFileExt(file);
+    return ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext);
+  };
+
+  // Helper: get file type icon with color
+  const getFileIcon = (file: AdminFile): { icon: React.ElementType; color: string; bg: string } => {
+    const ext = getFileExt(file);
+    if (isImageFile(file)) return { icon: Image, color: "text-emerald-400", bg: "bg-emerald-400/10" };
+    if (file.type === "video" || ["mp4", "webm", "mov"].includes(ext)) return { icon: Video, color: "text-purple-400", bg: "bg-purple-400/10" };
+    if (file.type === "spreadsheet" || ["xls", "xlsx", "csv"].includes(ext)) return { icon: FileSpreadsheet, color: "text-green-500", bg: "bg-green-500/10" };
+    if (ext === "pdf") return { icon: FileText, color: "text-red-400", bg: "bg-red-400/10" };
+    if (["doc", "docx"].includes(ext)) return { icon: FileText, color: "text-blue-400", bg: "bg-blue-400/10" };
+    if (["ppt", "pptx"].includes(ext)) return { icon: FileText, color: "text-orange-400", bg: "bg-orange-400/10" };
+    if (["zip", "rar", "7z"].includes(ext)) return { icon: File, color: "text-yellow-500", bg: "bg-yellow-500/10" };
+    if (file.type === "document") return { icon: FileText, color: "text-blue-400", bg: "bg-blue-400/10" };
+    return { icon: File, color: "text-muted-foreground", bg: "bg-muted/50" };
+  };
+
+  // Helper: get human-readable type label
+  const getTypeLabel = (file: AdminFile) => {
+    const ext = getFileExt(file);
+    const labels: Record<string, string> = {
+      pdf: "PDF", doc: "Word", docx: "Word", xls: "Excel", xlsx: "Excel",
+      ppt: "PPT", pptx: "PPT", png: "Image", jpg: "Image", jpeg: "Image",
+      gif: "GIF", webp: "Image", svg: "SVG", mp4: "Video", webm: "Video",
+      zip: "Archive", csv: "CSV", html: "HTML",
+    };
+    return labels[ext] || file.type || "File";
+  };
+
+  const breadcrumbs = currentFolder ? currentFolder.split("/") : [];
   const [form, setForm] = useState({ name: "", url: "", type: "document", category: "general", folder: "" });
   const [addFileMode, setAddFileMode] = useState<"link" | "upload">("link");
   const addFileInputRef = useRef<HTMLInputElement>(null);
   const [addFileUploading, setAddFileUploading] = useState(false);
+  const [previewFile, setPreviewFile] = useState<AdminFile | null>(null);
+
+  // Which files to display: search results (global) or directFiles (in current folder)
+  const displayFiles = search ? searchResults : directFiles;
+
+  // Render a single file card (grid mode)
+  const renderFileCard = (file: AdminFile) => {
+    const { icon: TypeIcon, color, bg } = getFileIcon(file);
+    const isResource = file.id.startsWith("res-");
+    const canPreview = isPreviewable(file);
+    const isImg = isImageFile(file);
+    const typeLabel = getTypeLabel(file);
+
+    return (
+      <Card key={file.id} className="overflow-hidden border-border/50 hover:border-primary/30 transition-colors group cursor-pointer" onClick={() => {
+        if (!file.url) return;
+        if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
+      }}>
+        {/* Thumbnail area */}
+        <div className={`relative h-32 ${bg} flex items-center justify-center overflow-hidden`}>
+          {isImg && file.url ? (
+            <img src={file.url} alt={file.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden"); }} />
+          ) : null}
+          {isImg && file.url ? (
+            <TypeIcon className={`w-10 h-10 ${color} hidden`} />
+          ) : (
+            <TypeIcon className={`w-10 h-10 ${color}`} />
+          )}
+          {/* Type badge */}
+          <span className={`absolute top-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded ${bg} ${color} border border-current/10`}>{typeLabel}</span>
+          {/* Action buttons overlay */}
+          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+            {canPreview && <Button variant="secondary" size="icon" className="h-6 w-6 bg-background/80 backdrop-blur-sm" onClick={() => setPreviewFile(file)} title="Preview"><Eye className="w-3 h-3" /></Button>}
+            {file.url && <a href={file.url} download onClick={(e) => e.stopPropagation()}><Button variant="secondary" size="icon" className="h-6 w-6 bg-background/80 backdrop-blur-sm" title="Download"><Download className="w-3 h-3" /></Button></a>}
+          </div>
+        </div>
+        {/* File info */}
+        <CardContent className="p-3">
+          <p className="text-sm font-medium truncate" title={file.name}>{file.name}</p>
+          <div className="flex items-center gap-2 mt-1.5">
+            {file.size > 0 && <span className="text-[10px] text-muted-foreground">{formatBytes(file.size)}</span>}
+            <span className="text-[10px] text-muted-foreground">{new Date(file.uploadedAt).toLocaleDateString()}</span>
+            {isResource && <Badge variant="outline" className="text-[9px] border-primary/30 text-primary">Resource</Badge>}
+          </div>
+          {search && file.folder && <p className="text-[10px] text-muted-foreground mt-1 truncate">in {file.folder}</p>}
+          {/* Bottom actions */}
+          <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/30" onClick={(e) => e.stopPropagation()}>
+            {file.url && <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex-1"><Button variant="ghost" size="sm" className="h-7 w-full text-xs"><ExternalLink className="w-3 h-3 mr-1" />Open</Button></a>}
+            {file.url && <a href={file.url} download><Button variant="ghost" size="sm" className="h-7 text-xs"><Download className="w-3 h-3" /></Button></a>}
+            {!isResource && <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setRenameTarget(file); setRenameValue(file.name); }} title="Rename"><Edit3 className="w-3 h-3" /></Button>}
+            {!isResource && <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setMoveTarget(file); setMoveFolder(file.folder || ""); }} title="Move"><FolderOpen className="w-3 h-3" /></Button>}
+            {!isResource && <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => deleteMutation.mutate(file.id)}><Trash2 className="w-3 h-3" /></Button>}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Render file row (list mode)
+  const renderFileRow = (file: AdminFile) => {
+    const { icon: TypeIcon, color } = getFileIcon(file);
+    const isResource = file.id.startsWith("res-");
+    const canPreview = isPreviewable(file);
+    const isImg = isImageFile(file);
+    const typeLabel = getTypeLabel(file);
+
+    return (
+      <div key={file.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group" onClick={() => {
+        if (!file.url) return;
+        if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
+      }}>
+        {/* Thumbnail */}
+        <div className={`w-10 h-10 rounded-md ${isImg && file.url ? "" : `bg-muted/50`} flex items-center justify-center shrink-0 overflow-hidden`}>
+          {isImg && file.url ? (
+            <img src={file.url} alt="" className="w-full h-full object-cover rounded-md" onError={(e) => { (e.target as HTMLImageElement).replaceWith(Object.assign(document.createElement("div"), { className: "w-10 h-10 rounded-md bg-muted/50 flex items-center justify-center" })); }} />
+          ) : (
+            <TypeIcon className={`w-5 h-5 ${color}`} />
+          )}
+        </div>
+        {/* Name + meta */}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium truncate">{file.name}</p>
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-medium ${color}`}>{typeLabel}</span>
+            {file.size > 0 && <span className="text-[10px] text-muted-foreground">{formatBytes(file.size)}</span>}
+            <span className="text-[10px] text-muted-foreground">{new Date(file.uploadedAt).toLocaleDateString()}</span>
+            {isResource && <Badge variant="outline" className="text-[9px] border-primary/30 text-primary">Resource</Badge>}
+            {search && file.folder && <span className="text-[10px] text-muted-foreground">in {file.folder}</span>}
+          </div>
+        </div>
+        {/* Actions */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={(e) => e.stopPropagation()}>
+          {canPreview && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewFile(file)} title="Preview"><Eye className="w-3 h-3" /></Button>}
+          {file.url && <a href={file.url} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7" title="Open"><ExternalLink className="w-3 h-3" /></Button></a>}
+          {file.url && <a href={file.url} download><Button variant="ghost" size="icon" className="h-7 w-7" title="Download"><Download className="w-3 h-3" /></Button></a>}
+          {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setRenameTarget(file); setRenameValue(file.name); }} title="Rename"><Edit3 className="w-3 h-3" /></Button>}
+          {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setMoveTarget(file); setMoveFolder(file.folder || ""); }} title="Move to folder"><FolderOpen className="w-3 h-3" /></Button>}
+          {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(file.id)} title="Delete"><Trash2 className="w-3 h-3" /></Button>}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -2757,16 +2926,22 @@ function FilesManagerTab() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold flex items-center gap-2"><FolderOpen className="w-5 h-5 text-primary" />File Manager</h2>
-          <p className="text-xs text-muted-foreground mt-1">{allFiles.length} files across {folderTree.allFolders.length} folders</p>
+          <p className="text-xs text-muted-foreground mt-1">{allFiles.length} file{allFiles.length !== 1 ? "s" : ""} across {folderTree.allFolders.length} folders</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex border border-border rounded-md overflow-hidden">
+            <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode("grid")} title="Grid view"><LayoutGrid className="w-3.5 h-3.5" /></Button>
+            <Button variant={viewMode === "list" ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode("list")} title="List view"><LayoutList className="w-3.5 h-3.5" /></Button>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => { setNewFolderName(""); setShowNewFolder(true); }}><FolderOpen className="w-3.5 h-3.5" />New Folder</Button>
           <Button size="sm" variant="outline" onClick={() => { setForm({ name: "", url: "", type: "document", category: "general", folder: currentFolder }); setAddFileMode("link"); setShowAddForm(true); }}><Plus className="w-3.5 h-3.5" />Add File</Button>
           <Button size="sm" onClick={() => fileInputRef.current?.click()}><Upload className="w-3.5 h-3.5" />Upload</Button>
         </div>
       </div>
 
       {/* Breadcrumbs */}
-      <div className="flex items-center gap-1 text-sm">
+      <div className="flex items-center gap-1 text-sm flex-wrap">
         <Button variant="ghost" size="sm" className={`h-7 text-xs ${currentFolder === "" ? "font-bold text-primary" : ""}`} onClick={() => setCurrentFolder("")}>
           <FolderOpen className="w-3 h-3 mr-1" />All Files
         </Button>
@@ -2786,7 +2961,8 @@ function FilesManagerTab() {
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-        <Input placeholder="Search files..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+        <Input placeholder="Search all files..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+        {search && <p className="text-[10px] text-muted-foreground mt-1">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""} found across all folders</p>}
       </div>
 
       {/* Upload zone */}
@@ -2798,67 +2974,66 @@ function FilesManagerTab() {
         onClick={() => fileInputRef.current?.click()}
       >
         <CardContent className="py-4 text-center">
-          <input ref={fileInputRef} type="file" multiple className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.mp4,.webm,.zip" onChange={(e) => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ""; }} />
+          <input ref={fileInputRef} type="file" multiple className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.svg,.mp4,.webm,.zip,.txt,.html" onChange={(e) => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ""; }} />
           {uploading ? (
             <><RefreshCw className="w-6 h-6 text-primary mx-auto mb-1 animate-spin" /><p className="text-xs font-medium">Uploading...</p></>
           ) : (
-            <><Upload className="w-6 h-6 text-muted-foreground/50 mx-auto mb-1" /><p className="text-xs font-medium">{isDragging ? "Drop files here" : `Drop files to upload${currentFolder ? ` to ${currentFolder}` : ""}`}</p></>
+            <><Upload className="w-6 h-6 text-muted-foreground/50 mx-auto mb-1" /><p className="text-xs font-medium">{isDragging ? "Drop files here" : `Drop files to upload${currentFolder ? ` to ${currentFolder}` : ""}`}</p><p className="text-[10px] text-muted-foreground mt-0.5">PDF, DOC, XLS, images, video — up to 50 MB</p></>
           )}
         </CardContent>
       </Card>
 
-      {/* Subfolders */}
+      {/* Subfolders (hidden during search) */}
       {subfolders.length > 0 && !search && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-          {subfolders.map((name) => {
-            const fullPath = currentFolder ? `${currentFolder}/${name}` : name;
-            const count = folderCounts[fullPath] || 0;
-            const hasChildren = (folderTree.children[fullPath] || []).length > 0;
-            return (
-              <Card key={name} className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setCurrentFolder(fullPath)}>
-                <CardContent className="p-3 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                    <FolderOpen className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{name}</p>
-                    <p className="text-[10px] text-muted-foreground">{count} file{count !== 1 ? "s" : ""}{hasChildren ? " + subfolders" : ""}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Folders</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {subfolders.map((name) => {
+              const fullPath = currentFolder ? `${currentFolder}/${name}` : name;
+              const count = folderCounts[fullPath] || 0;
+              const hasChildren = (folderTree.children[fullPath] || []).length > 0;
+              return (
+                <Card key={name} className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setCurrentFolder(fullPath)}>
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                      <FolderOpen className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{name}</p>
+                      <p className="text-[10px] text-muted-foreground">{count} file{count !== 1 ? "s" : ""}{hasChildren ? " + subfolders" : ""}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* Files in current folder */}
-      {directFiles.length === 0 && subfolders.length === 0 ? (
-        <Card className="overflow-visible border-dashed"><CardContent className="p-8 text-center"><FolderOpen className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" /><p className="text-sm text-muted-foreground">{search ? "No files match your search." : "This folder is empty. Upload files or add links."}</p></CardContent></Card>
-      ) : directFiles.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{directFiles.map((file) => {
-          const Icon = typeIcons[file.type] || File;
-          const isResource = file.id.startsWith("res-");
-          return (
-            <Card key={file.id} className="overflow-visible border-border/50 hover:border-primary/30 transition-colors"><CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-md bg-muted/50 flex items-center justify-center shrink-0"><Icon className="w-5 h-5 text-muted-foreground" /></div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{file.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-[9px]">{file.category}</Badge>
-                    {file.size > 0 && <span className="text-[10px] text-muted-foreground">{formatBytes(file.size)}</span>}
-                    {isResource && <Badge variant="outline" className="text-[9px] border-primary/30 text-primary">Resource</Badge>}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">{new Date(file.uploadedAt).toLocaleDateString()}</p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  {file.url && <a href={file.url} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7"><ExternalLink className="w-3 h-3" /></Button></a>}
-                  {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(file.id)}><Trash2 className="w-3 h-3" /></Button>}
-                </div>
-              </div>
-            </CardContent></Card>
-          );
-        })}</div>
+      {/* Files */}
+      {displayFiles.length === 0 && (!subfolders.length || search) ? (
+        <Card className="overflow-visible border-dashed">
+          <CardContent className="p-8 text-center">
+            <FolderOpen className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">{search ? "No files match your search." : "This folder is empty."}</p>
+            {!search && <p className="text-xs text-muted-foreground mt-1">Upload files or add links to get started.</p>}
+          </CardContent>
+        </Card>
+      ) : displayFiles.length > 0 ? (
+        <div>
+          {!search && <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Files ({displayFiles.length})</p>}
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {displayFiles.map(renderFileCard)}
+            </div>
+          ) : (
+            <Card className="overflow-hidden border-border/50">
+              <CardContent className="p-1 divide-y divide-border/30">
+                {displayFiles.map(renderFileRow)}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       ) : null}
 
       {/* Add File Dialog (Link or Upload) */}
@@ -2882,7 +3057,7 @@ function FilesManagerTab() {
                     ref={addFileInputRef}
                     type="file"
                     className="hidden"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.mp4,.webm,.zip"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.svg,.mp4,.webm,.zip,.txt,.html"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -2940,6 +3115,109 @@ function FilesManagerTab() {
           {addFileMode === "link" && (
             <DialogFooter><Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button><Button onClick={() => createMutation.mutate({ name: form.name, url: form.url, type: form.type, category: form.category, folder: form.folder })} disabled={!form.name}><Save className="w-3.5 h-3.5" />Add</Button></DialogFooter>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* File Preview Modal */}
+      <Dialog open={!!previewFile} onOpenChange={(o) => !o && setPreviewFile(null)}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 pr-8">
+              {previewFile && (() => { const { icon: Icon, color } = getFileIcon(previewFile); return <Icon className={`w-4 h-4 ${color} shrink-0`} />; })()}
+              <span className="truncate">{previewFile?.name}</span>
+            </DialogTitle>
+            <DialogDescription className="flex items-center gap-3">
+              {previewFile && <Badge variant="outline" className="text-[10px]">{getTypeLabel(previewFile)}</Badge>}
+              {previewFile && previewFile.size > 0 && <span className="text-xs">{formatBytes(previewFile.size)}</span>}
+              {previewFile?.folder && <span className="text-xs text-muted-foreground">in {previewFile.folder}</span>}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 overflow-auto rounded-lg border border-border bg-black/20">
+            {previewFile?.url && (() => {
+              const url = previewFile.url;
+              const ext = getFileExt(previewFile);
+              const isImg = isImageFile(previewFile);
+              const isVid = previewFile.type === "video" || ["mp4", "webm"].includes(ext);
+              const isPdf = ext === "pdf" || url.toLowerCase().endsWith(".pdf");
+              const isHtml = ext === "html" || ext === "htm";
+
+              if (isImg) {
+                return <img src={url} alt={previewFile.name} className="max-w-full max-h-[65vh] mx-auto object-contain p-2" />;
+              }
+              if (isVid) {
+                return <video src={url} controls className="w-full max-h-[65vh] mx-auto" />;
+              }
+              if (isPdf || isHtml) {
+                return <iframe src={url} title={previewFile.name} className="w-full h-[65vh] border-0" />;
+              }
+              return (
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                  {(() => { const { icon: Icon, color } = getFileIcon(previewFile); return <Icon className={`w-16 h-16 ${color} opacity-30 mb-4`} />; })()}
+                  <p className="text-sm font-medium mb-1">{previewFile.name}</p>
+                  <p className="text-xs text-muted-foreground mb-4">This file type ({getTypeLabel(previewFile)}) can't be previewed in the browser.</p>
+                  <div className="flex gap-2">
+                    <a href={url} download><Button variant="outline"><Download className="w-3.5 h-3.5 mr-1.5" />Download</Button></a>
+                    <Button onClick={() => window.open(url, "_blank", "noopener,noreferrer")}><ExternalLink className="w-3.5 h-3.5 mr-1.5" />Open in New Tab</Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            {previewFile?.url && <a href={previewFile.url} download><Button variant="outline" size="sm"><Download className="w-3.5 h-3.5 mr-1.5" />Download</Button></a>}
+            {previewFile?.url && <Button variant="outline" size="sm" onClick={() => window.open(previewFile.url, "_blank", "noopener,noreferrer")}><ExternalLink className="w-3.5 h-3.5 mr-1.5" />Open in New Tab</Button>}
+            <Button variant="outline" size="sm" onClick={() => setPreviewFile(null)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename File Dialog */}
+      <Dialog open={!!renameTarget} onOpenChange={(o) => !o && setRenameTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Rename File</DialogTitle><DialogDescription>Enter a new name for this file</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <Input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} placeholder="File name" autoFocus onKeyDown={(e) => { if (e.key === "Enter" && renameValue.trim() && renameTarget) renameMutation.mutate({ id: renameTarget.id, name: renameValue.trim() }); }} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameTarget(null)}>Cancel</Button>
+            <Button onClick={() => { if (renameTarget && renameValue.trim()) renameMutation.mutate({ id: renameTarget.id, name: renameValue.trim() }); }} disabled={!renameValue.trim() || renameValue === renameTarget?.name}><Save className="w-3.5 h-3.5" />Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move File Dialog */}
+      <Dialog open={!!moveTarget} onOpenChange={(o) => !o && setMoveTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Move File</DialogTitle><DialogDescription>Select destination folder for &ldquo;{moveTarget?.name}&rdquo;</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <Select value={moveFolder || "__root__"} onValueChange={(v) => setMoveFolder(v === "__root__" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Select folder" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__root__">Root (No Folder)</SelectItem>
+                {folderTree.allFolders.map((f) => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveTarget(null)}>Cancel</Button>
+            <Button onClick={() => { if (moveTarget) moveMutation.mutate({ id: moveTarget.id, folder: moveFolder }); }} disabled={moveFolder === (moveTarget?.folder || "")}><FolderOpen className="w-3.5 h-3.5" />Move</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Folder Dialog */}
+      <Dialog open={showNewFolder} onOpenChange={(o) => !o && setShowNewFolder(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Create New Folder</DialogTitle><DialogDescription>{currentFolder ? `Inside "${currentFolder}"` : "At the root level"}</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <Input value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="Folder name" autoFocus onKeyDown={(e) => { if (e.key === "Enter" && newFolderName.trim()) createFolderMutation.mutate({ name: newFolderName.trim(), parent: currentFolder }); }} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewFolder(false)}>Cancel</Button>
+            <Button onClick={() => { if (newFolderName.trim()) createFolderMutation.mutate({ name: newFolderName.trim(), parent: currentFolder }); }} disabled={!newFolderName.trim()}><FolderOpen className="w-3.5 h-3.5" />Create</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -3508,7 +3786,7 @@ function ResourcesManagerTab() {
             type="file"
             multiple
             className="hidden"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.mp4,.webm,.zip"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.svg,.mp4,.webm,.zip,.txt,.html"
             onChange={(e) => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ""; }}
           />
           {uploading ? (
