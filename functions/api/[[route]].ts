@@ -3,9 +3,11 @@
 
 interface Env {
   DB: D1Database;
+  FILES_BUCKET: R2Bucket;
   SESSION_SECRET: string;
   ANTHROPIC_API_KEY: string;
   RESEND_API_KEY: string;
+  R2_PUBLIC_URL: string;
 }
 
 type Ctx = EventContext<Env, string, unknown>;
@@ -1395,18 +1397,114 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       } catch { return json([]); }
     }
 
+    // List all folders
+    if (path === "/api/files/folders" && method === "GET") {
+      const defaults = ["Classroom", "Equipment", "Uploaded Statements", "Partner Agreements", "Client Resources", "Client Resources/Checklist", "Website Resources"];
+      try {
+        const { results } = await env.DB.prepare("SELECT DISTINCT folder FROM admin_files WHERE folder != ''").all();
+        const used = (results || []).map((r: any) => r.folder as string);
+        const all = Array.from(new Set([...defaults, ...used])).sort();
+        return json(all);
+      } catch { return json(defaults); }
+    }
+
+    // Create a new folder (marker file)
+    if (path === "/api/files/folders" && method === "POST") {
+      const body: any = await request.json();
+      const folderName = (body.name || "").trim();
+      const parent = (body.parent || "").trim();
+      if (!folderName) return err("Folder name is required");
+      const fullPath = parent ? `${parent}/${folderName}` : folderName;
+      const id = genId();
+      await env.DB.prepare(
+        "INSERT INTO admin_files (id, name, size, type, category, folder, uploaded_at, url) VALUES (?, ?, 0, 'other', 'system', ?, ?, '')"
+      ).bind(id, ".folder-marker", fullPath, now()).run();
+      return json({ folder: fullPath }, 201);
+    }
+
+    // Create file entry (link mode)
     if (path === "/api/files" && method === "POST") {
       const body: any = await request.json();
       const id = genId();
       await env.DB.prepare(
-        "INSERT INTO admin_files (id, name, size, type, category, uploaded_at, url) VALUES (?, ?, ?, ?, ?, ?, ?)"
-      ).bind(id, body.name || "untitled", body.size || 0, body.type || "document", body.category || "general", now(), body.url || "").run();
+        "INSERT INTO admin_files (id, name, size, type, category, folder, uploaded_at, url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      ).bind(id, body.name || "untitled", body.size || 0, body.type || "document", body.category || "general", body.folder || "", now(), body.url || "").run();
       const row = await env.DB.prepare("SELECT * FROM admin_files WHERE id = ?").bind(id).first();
       return json(mapFile(row!), 201);
     }
 
+    // Upload file to R2
+    if (path === "/api/files/upload" && method === "POST") {
+      try {
+        const formData = await request.formData();
+        const file = formData.get("file") as File | null;
+        if (!file) return err("No file uploaded");
+        const folder = (formData.get("folder") as string) || "";
+        const category = (formData.get("category") as string) || "general";
+        const customName = formData.get("name") as string | null;
+
+        const ext = file.name.includes(".") ? file.name.substring(file.name.lastIndexOf(".")).toLowerCase() : "";
+        const typeMap: Record<string, string> = { ".pdf": "document", ".doc": "document", ".docx": "document", ".txt": "document", ".html": "document", ".htm": "document", ".xls": "spreadsheet", ".xlsx": "spreadsheet", ".csv": "spreadsheet", ".ppt": "document", ".pptx": "document", ".png": "image", ".jpg": "image", ".jpeg": "image", ".gif": "image", ".webp": "image", ".svg": "image", ".mp4": "video", ".webm": "video", ".zip": "other" };
+        const fileType = typeMap[ext] || "document";
+
+        // Upload to R2
+        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+        const r2Key = `${(folder || "general").toLowerCase().replace(/[^a-z0-9-]/g, "-")}/${Date.now()}-${baseName}${ext}`;
+        const arrayBuf = await file.arrayBuffer();
+
+        const mimeMap: Record<string, string> = { ".pdf": "application/pdf", ".doc": "application/msword", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".xls": "application/vnd.ms-excel", ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".csv": "text/csv", ".ppt": "application/vnd.ms-powerpoint", ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml", ".mp4": "video/mp4", ".webm": "video/webm", ".zip": "application/zip", ".txt": "text/plain", ".html": "text/html" };
+
+        await env.FILES_BUCKET.put(r2Key, arrayBuf, {
+          httpMetadata: { contentType: mimeMap[ext] || "application/octet-stream" },
+        });
+
+        const publicUrl = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+        const fileUrl = `${publicUrl}/${r2Key}`;
+
+        const displayName = customName || file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        const id = genId();
+        await env.DB.prepare(
+          "INSERT INTO admin_files (id, name, size, type, category, folder, uploaded_at, url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        ).bind(id, displayName, file.size, fileType, category, folder, now(), fileUrl).run();
+        const row = await env.DB.prepare("SELECT * FROM admin_files WHERE id = ?").bind(id).first();
+        return json(mapFile(row!), 201);
+      } catch (e: any) {
+        return json({ error: e.message || "Upload failed" }, 500);
+      }
+    }
+
     const fileMatch = path.match(/^\/api\/files\/([^/]+)$/);
+
+    // PATCH file (rename / move)
+    if (fileMatch && method === "PATCH") {
+      const body: any = await request.json();
+      const updates: string[] = [];
+      const values: any[] = [];
+      if (body.name !== undefined) { updates.push("name = ?"); values.push(body.name); }
+      if (body.folder !== undefined) { updates.push("folder = ?"); values.push(body.folder); }
+      if (body.category !== undefined) { updates.push("category = ?"); values.push(body.category); }
+      if (updates.length === 0) return err("No updates provided");
+      values.push(fileMatch[1]);
+      await env.DB.prepare(`UPDATE admin_files SET ${updates.join(", ")} WHERE id = ?`).bind(...values).run();
+      const row = await env.DB.prepare("SELECT * FROM admin_files WHERE id = ?").bind(fileMatch[1]).first();
+      if (!row) return err("File not found", 404);
+      return json(mapFile(row));
+    }
+
+    // DELETE file
     if (fileMatch && method === "DELETE") {
+      // Try to delete from R2 if URL looks like an R2 URL
+      try {
+        const row = await env.DB.prepare("SELECT url FROM admin_files WHERE id = ?").bind(fileMatch[1]).first();
+        if (row?.url && env.FILES_BUCKET) {
+          const publicUrl = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+          const url = row.url as string;
+          if (url.startsWith(publicUrl)) {
+            const key = url.slice(publicUrl.length + 1);
+            await env.FILES_BUCKET.delete(key);
+          }
+        }
+      } catch { /* best effort */ }
       await env.DB.prepare("DELETE FROM admin_files WHERE id = ?").bind(fileMatch[1]).run();
       return json({ success: true });
     }
@@ -2256,7 +2354,7 @@ function mapMaterial(row: Record<string, unknown>) {
 }
 
 function mapFile(row: Record<string, unknown>) {
-  return { id: row.id, name: row.name, size: row.size, type: row.type, category: row.category, uploadedAt: row.uploaded_at, url: row.url };
+  return { id: row.id, name: row.name, size: row.size, type: row.type, category: row.category, folder: row.folder || "", uploadedAt: row.uploaded_at, url: row.url };
 }
 
 function mapInvoice(row: Record<string, unknown>) {

@@ -6,7 +6,7 @@ const accountId = process.env.R2_ACCOUNT_ID || "";
 const accessKeyId = process.env.R2_ACCESS_KEY_ID || "";
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || "";
 const bucketName = process.env.R2_BUCKET_NAME || "techsavvy-assets";
-const publicUrl = (process.env.R2_PUBLIC_URL || "").replace(/\/$/, ""); // no trailing slash
+const publicUrl = (process.env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
 
 const r2Enabled = !!(accountId && accessKeyId && secretAccessKey && publicUrl);
 
