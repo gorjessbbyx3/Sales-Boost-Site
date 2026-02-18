@@ -2659,6 +2659,7 @@ function FilesManagerTab() {
   const [moveFolder, setMoveFolder] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<AdminFile | null>(null);
 
   // Merge admin files + resources (Classroom) into one view
   const allFiles: AdminFile[] = useMemo(() => {
@@ -2908,7 +2909,7 @@ function FilesManagerTab() {
             {file.url && <a href={file.url} download><Button variant="ghost" size="sm" className="h-7 text-xs"><Download className="w-3 h-3" /></Button></a>}
             {!isResource && <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setRenameTarget(file); setRenameValue(file.name); }} title="Rename"><Edit3 className="w-3 h-3" /></Button>}
             {!isResource && <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setMoveTarget(file); setMoveFolder(file.folder || ""); }} title="Move"><FolderOpen className="w-3 h-3" /></Button>}
-            {!isResource && <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => deleteMutation.mutate(file.id)}><Trash2 className="w-3 h-3" /></Button>}
+            {!isResource && <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => setDeleteTarget(file)}><Trash2 className="w-3 h-3" /></Button>}
           </div>
         </CardContent>
       </Card>
@@ -2955,7 +2956,7 @@ function FilesManagerTab() {
           {file.url && <a href={file.url} download><Button variant="ghost" size="icon" className="h-7 w-7" title="Download"><Download className="w-3 h-3" /></Button></a>}
           {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setRenameTarget(file); setRenameValue(file.name); }} title="Rename"><Edit3 className="w-3 h-3" /></Button>}
           {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setMoveTarget(file); setMoveFolder(file.folder || ""); }} title="Move to folder"><FolderOpen className="w-3 h-3" /></Button>}
-          {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(file.id)} title="Delete"><Trash2 className="w-3 h-3" /></Button>}
+          {!isResource && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTarget(file)} title="Delete"><Trash2 className="w-3 h-3" /></Button>}
         </div>
       </div>
     );
@@ -3079,7 +3080,7 @@ function FilesManagerTab() {
 
       {/* Add File Dialog (Link or Upload) */}
       <Dialog open={showAddForm} onOpenChange={(o) => !o && setShowAddForm(false)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
           <DialogHeader><DialogTitle>Add File</DialogTitle><DialogDescription>Upload a file or add a link to an external resource</DialogDescription></DialogHeader>
           <div className="space-y-3">
             {/* Mode Toggle */}
@@ -3232,22 +3233,23 @@ function FilesManagerTab() {
 
       {/* Move File Dialog */}
       <Dialog open={!!moveTarget} onOpenChange={(o) => !o && setMoveTarget(null)}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm" onPointerDownOutside={(e) => e.preventDefault()}>
           <DialogHeader><DialogTitle>Move File</DialogTitle><DialogDescription>Select destination folder for &ldquo;{moveTarget?.name}&rdquo;</DialogDescription></DialogHeader>
           <div className="space-y-3">
+            <Label className="text-xs">Current folder: <span className="font-medium">{moveTarget?.folder || "Root"}</span></Label>
             <Select value={moveFolder || "__root__"} onValueChange={(v) => setMoveFolder(v === "__root__" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="Select folder" /></SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" sideOffset={4}>
                 <SelectItem value="__root__">Root (No Folder)</SelectItem>
                 {folderTree.allFolders.map((f) => (
-                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                  <SelectItem key={f} value={f}>{f}{f === (moveTarget?.folder || "") ? " (current)" : ""}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMoveTarget(null)}>Cancel</Button>
-            <Button onClick={() => { if (moveTarget) moveMutation.mutate({ id: moveTarget.id, folder: moveFolder }); }} disabled={moveFolder === (moveTarget?.folder || "")}><FolderOpen className="w-3.5 h-3.5" />Move</Button>
+            <Button onClick={() => { if (moveTarget) { if (moveFolder === (moveTarget.folder || "")) { toast({ title: "File is already in this folder" }); return; } moveMutation.mutate({ id: moveTarget.id, folder: moveFolder }); } }}><FolderOpen className="w-3.5 h-3.5" />Move</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -3262,6 +3264,20 @@ function FilesManagerTab() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewFolder(false)}>Cancel</Button>
             <Button onClick={() => { if (newFolderName.trim()) createFolderMutation.mutate({ name: newFolderName.trim(), parent: currentFolder }); }} disabled={!newFolderName.trim()}><FolderOpen className="w-3.5 h-3.5" />Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-destructive" />Delete File</DialogTitle>
+            <DialogDescription>Are you sure you want to delete &ldquo;{deleteTarget?.name}&rdquo;? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => { if (deleteTarget) { deleteMutation.mutate(deleteTarget.id); setDeleteTarget(null); } }}><Trash2 className="w-3.5 h-3.5" />Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
