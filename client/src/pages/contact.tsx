@@ -22,6 +22,7 @@ import {
   TrendingUp,
   ThumbsUp,
   Quote,
+  Gift,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -848,6 +849,28 @@ function ContactSection() {
               )}
             </CardContent>
           </Card>
+        </motion.div>
+
+        {/* Referral CTA */}
+        <motion.div
+          className="text-center mt-8 py-6 border-t border-border/30"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+        >
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Gift className="w-4 h-4 text-primary" />
+            <p className="text-sm font-medium text-foreground">Don't have a business but know one that could benefit?</p>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Refer a local business and help them save thousands on processing fees.
+          </p>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/refer">
+              Refer a Business
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </Button>
         </motion.div>
       </div>
     </section>

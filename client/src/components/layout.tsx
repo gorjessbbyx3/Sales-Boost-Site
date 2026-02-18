@@ -219,6 +219,11 @@ function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/refer" className="transition-colors hover:text-white" data-testid="link-footer-refer">
+                  Refer a Business
+                </Link>
+              </li>
+              <li>
                 <Link href="/" className="transition-colors hover:text-white" data-testid="link-footer-top">
                   Home
                 </Link>

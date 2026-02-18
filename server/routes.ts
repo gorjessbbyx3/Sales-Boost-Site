@@ -942,6 +942,50 @@ RULES:
     }
   });
 
+  // ─── Public Referral Program ────────────────────────────────────
+
+  app.post("/api/referrals/public", publicLeadLimiter, async (req: Request, res: Response) => {
+    try {
+      const {
+        referrerName, referrerEmail, referrerPhone,
+        businessName, businessOwner, businessPhone, businessEmail,
+        businessType, notes,
+      } = req.body;
+
+      if (!referrerName || !businessName) {
+        return res.status(400).json({ error: "Your name and the business name are required." });
+      }
+
+      const now = new Date().toISOString();
+      const leadId = randomUUID();
+
+      // Create lead from the referred business
+      await db.insert(schema.leads).values({
+        id: leadId,
+        name: businessOwner || businessName,
+        business: businessName,
+        phone: businessPhone || "",
+        email: businessEmail || "",
+        source: "referral",
+        status: "new",
+        vertical: businessType || "other",
+        notes: `Referred by: ${referrerName} (${referrerEmail || referrerPhone || "no contact"}). ${notes || ""}`.trim(),
+        nextStep: "Contact referred business",
+        nextStepDate: new Date(Date.now() + 2 * 86400000).toISOString().split("T")[0],
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      logActivity("Referral Received", `${referrerName} referred ${businessName}`, "lead");
+      sendSlackNotification(`🤝 New referral! ${referrerName} referred ${businessName} (${businessOwner || "no owner name"}) — ${businessPhone || businessEmail || "no contact info"}`, "newLead");
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("Referral submission error:", err);
+      res.status(500).json({ error: "Failed to submit referral. Please try again." });
+    }
+  });
+
   // ─── Leads CRUD ─────────────────────────────────────────────────
 
   app.get("/api/leads", requireAdminSession, async (_req, res) => {
