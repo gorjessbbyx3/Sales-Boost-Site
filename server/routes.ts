@@ -1349,6 +1349,83 @@ RULES:
     res.json({ success: true });
   });
 
+  // ─── Equipment Tracker ─────────────────────────────────────────────
+
+  app.get("/api/equipment", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.equipment);
+    res.json(rows);
+  });
+
+  app.post("/api/equipment", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const [item] = await db.insert(schema.equipment).values({
+      id,
+      name: req.body.name || "",
+      type: req.body.type || "terminal",
+      serialNumber: req.body.serialNumber || "",
+      model: req.body.model || "",
+      status: req.body.status || "available",
+      condition: req.body.condition || "new",
+      clientId: req.body.clientId || "",
+      clientName: req.body.clientName || "",
+      deployedDate: req.body.deployedDate || "",
+      purchaseDate: req.body.purchaseDate || "",
+      purchaseCost: req.body.purchaseCost || 0,
+      warrantyExpiry: req.body.warrantyExpiry || "",
+      notes: req.body.notes || "",
+      createdAt: now,
+      updatedAt: now,
+    }).returning();
+    logActivity("Equipment Added", `${item.name} (${item.serialNumber || "no S/N"}) — ${item.status}`, "equipment");
+    res.status(201).json(item);
+  });
+
+  app.patch("/api/equipment/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body, updatedAt: new Date().toISOString() };
+    const updateData = pickColumns(schema.equipment, body);
+    const [updated] = await db.update(schema.equipment).set(updateData).where(eq(schema.equipment.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Equipment not found" });
+
+    // If deploying to a client, auto-update status
+    if (body.clientId && body.clientId !== "" && updated.status === "available") {
+      await db.update(schema.equipment).set({ status: "deployed", deployedDate: new Date().toISOString().split("T")[0] }).where(eq(schema.equipment.id, req.params.id as string));
+    }
+
+    logActivity("Equipment Updated", `${updated.name} → ${updated.status}${updated.clientName ? ` (${updated.clientName})` : ""}`, "equipment");
+    res.json(updated);
+  });
+
+  app.delete("/api/equipment/:id", requireAdminSession, async (req, res) => {
+    const [deleted] = await db.delete(schema.equipment).where(eq(schema.equipment.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Equipment Removed", `${deleted.name} (${deleted.serialNumber || "no S/N"})`, "equipment");
+    res.json({ success: true });
+  });
+
+  // Bulk assign equipment to a client
+  app.post("/api/equipment/assign", requireAdminSession, async (req, res) => {
+    const { equipmentIds, clientId, clientName } = req.body;
+    if (!equipmentIds?.length) return res.status(400).json({ error: "No equipment selected" });
+    const now = new Date().toISOString();
+    for (const eqId of equipmentIds) {
+      await db.update(schema.equipment).set({
+        clientId: clientId || "",
+        clientName: clientName || "",
+        status: clientId ? "deployed" : "available",
+        deployedDate: clientId ? now.split("T")[0] : "",
+        updatedAt: now,
+      }).where(eq(schema.equipment.id, eqId));
+    }
+    logActivity("Equipment Assigned", `${equipmentIds.length} item(s) → ${clientName || "unassigned"}`, "equipment");
+    res.json({ success: true });
+  });
+
+  // Get equipment for a specific client
+  app.get("/api/equipment/client/:clientId", requireAdminSession, async (req, res) => {
+    const rows = await db.select().from(schema.equipment).where(eq(schema.equipment.clientId, req.params.clientId as string));
+    res.json(rows);
+  });
+
   // ─── Activity Log ───────────────────────────────────────────────
 
   app.get("/api/activity", requireAdminSession, async (_req, res) => {

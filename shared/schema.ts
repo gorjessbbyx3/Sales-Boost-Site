@@ -90,6 +90,27 @@ export const clients = pgTable("clients", {
   notes: text("notes").notNull().default(""),
 });
 
+// ─── Equipment ────────────────────────────────────────────────────────
+
+export const equipment = pgTable("equipment", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().default(""),            // e.g. "Valor VL100", "PAX A920"
+  type: text("type").notNull().default("terminal"),     // terminal, pos, gateway, pinpad, printer, other
+  serialNumber: text("serial_number").notNull().default(""),
+  model: text("model").notNull().default(""),
+  status: text("status").notNull().default("available"), // available, deployed, maintenance, decommissioned, lost
+  condition: text("condition").notNull().default("new"), // new, good, fair, poor
+  clientId: text("client_id").notNull().default(""),     // linked client (empty = in inventory)
+  clientName: text("client_name").notNull().default(""), // denormalized for easy display
+  deployedDate: text("deployed_date").notNull().default(""),
+  purchaseDate: text("purchase_date").notNull().default(""),
+  purchaseCost: real("purchase_cost").notNull().default(0),
+  warrantyExpiry: text("warranty_expiry").notNull().default(""),
+  notes: text("notes").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 // ─── Revenue ─────────────────────────────────────────────────────────
 
 export const revenueEntries = pgTable("revenue", {

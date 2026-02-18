@@ -25,7 +25,7 @@ import {
   Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
   Pin, PinOff, Sparkles, Clock, UserCog, Briefcase, Sun, Moon,
   ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu, Eye,
-  Download, LayoutList, LayoutGrid, Image, FileSpreadsheet,
+  Download, LayoutList, LayoutGrid, Image, FileSpreadsheet, Monitor,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { useTheme } from "@/hooks/use-theme";
@@ -34,6 +34,7 @@ import DealsTab from "./admin/DealsTab";
 import ForecastTab from "./admin/ForecastTab";
 import UsersTab from "./admin/UsersTab";
 import AutopilotTab from "./admin/AutopilotTab";
+import EquipmentTab from "./admin/EquipmentTab";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -639,6 +640,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       { value: "autopilot", icon: Zap, label: "Autopilot" },
       { value: "ai-tools", icon: Sparkles, label: "AI Tools" },
       { value: "files", icon: FolderOpen, label: "Files" },
+      { value: "equipment", icon: Monitor, label: "Equipment" },
     ]},
     { label: "", tabs: [
       { value: "settings", icon: Settings, label: "Settings" },
@@ -750,6 +752,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsContent value="autopilot"><AutopilotTab /></TabsContent>
               <TabsContent value="ai-tools"><AiToolsTab /></TabsContent>
               <TabsContent value="files"><FilesManagerTab /></TabsContent>
+              <TabsContent value="equipment"><EquipmentTab /></TabsContent>
               <TabsContent value="settings"><SettingsTab /></TabsContent>
             </Tabs>
           </div>
