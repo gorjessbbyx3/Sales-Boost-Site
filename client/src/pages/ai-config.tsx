@@ -338,6 +338,17 @@ interface ResendEmailConfig {
   forwardCopyTo: string;
 }
 
+interface OutreachTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  category: "cold" | "follow-up" | "confirmation";
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface CallScriptData {
   id: string;
   leadId: string;
@@ -429,11 +440,17 @@ const ACTIVITY_COLORS: Record<string, string> = {
   task: "bg-yellow-400", file: "bg-orange-400", integration: "bg-pink-400", auth: "bg-gray-400",
 };
 
-const MATERIAL_CATEGORIES: Record<string, { label: string; icon: string }> = {
-  sales: { label: "Sales & Outreach Assets", icon: "S" },
-  "lead-gen": { label: "Lead Generation Assets", icon: "L" },
-  partner: { label: "Partner Program Assets", icon: "P" },
-  tracking: { label: "Tracking & Ops Assets", icon: "T" },
+const MATERIAL_CATEGORIES: Record<string, { label: string; icon: typeof Target; color: string; borderColor: string }> = {
+  sales: { label: "Sales & Outreach", icon: Target, color: "text-blue-400", borderColor: "border-l-blue-400" },
+  "lead-gen": { label: "Lead Generation", icon: Sparkles, color: "text-purple-400", borderColor: "border-l-purple-400" },
+  partner: { label: "Partner Program", icon: Users, color: "text-amber-400", borderColor: "border-l-amber-400" },
+  tracking: { label: "Tracking & Ops", icon: BarChart3, color: "text-emerald-400", borderColor: "border-l-emerald-400" },
+};
+
+const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string; icon: typeof Mail }> = {
+  cold: { label: "Cold Outreach", color: "text-blue-400 bg-blue-400/10", icon: Send },
+  "follow-up": { label: "Follow-Up", color: "text-amber-400 bg-amber-400/10", icon: RefreshCw },
+  confirmation: { label: "Confirmation", color: "text-emerald-400 bg-emerald-400/10", icon: CheckCircle },
 };
 
 const PLAYBOOK_SCRIPTS = {
@@ -2150,79 +2167,160 @@ function MaterialsTab() {
     onError: () => { toast({ title: "Failed to update material", variant: "destructive" }); },
   });
 
-  const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-    "not-started": { label: "Not Started", color: "text-muted-foreground", bg: "bg-muted/30" },
-    "in-progress": { label: "In Progress", color: "text-yellow-400", bg: "bg-yellow-400/10" },
-    completed: { label: "Completed", color: "text-emerald-400", bg: "bg-emerald-400/10" },
+  const statusConfig: Record<string, { label: string; color: string; bg: string; icon: typeof CheckCircle }> = {
+    "not-started": { label: "Not Started", color: "text-muted-foreground", bg: "bg-muted/30", icon: Clock },
+    "in-progress": { label: "In Progress", color: "text-yellow-400", bg: "bg-yellow-400/10", icon: RefreshCw },
+    completed: { label: "Completed", color: "text-emerald-400", bg: "bg-emerald-400/10", icon: CheckCircle },
   };
 
   const categories = ["sales", "lead-gen", "partner", "tracking"];
+  const totalCompleted = items.filter(i => i.status === "completed").length;
+  const overallPct = items.length > 0 ? Math.round((totalCompleted / items.length) * 100) : 0;
 
   return (
     <div className="space-y-6">
-      <div><h2 className="text-lg font-bold flex items-center gap-2"><ClipboardList className="w-5 h-5 text-primary" />Materials Checklist</h2><p className="text-xs text-muted-foreground mt-1">Track creation of all sales, lead gen, partner, and tracking assets</p></div>
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <ClipboardList className="w-5 h-5 text-primary" />Materials Checklist
+        </h2>
+        <p className="text-xs text-muted-foreground mt-1">Track creation of all sales, lead gen, partner, and tracking assets</p>
+      </div>
 
+      {/* Overall Progress */}
+      <Card className="overflow-visible border-border/50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold">Overall Progress</span>
+            <span className="text-xs text-muted-foreground">{totalCompleted} / {items.length} completed</span>
+          </div>
+          <Progress value={overallPct} className="h-2.5" />
+          <div className="flex items-center gap-4 mt-3">
+            {Object.entries(statusConfig).map(([key, cfg]) => {
+              const StatusIcon = cfg.icon;
+              const count = items.filter(i => i.status === key).length;
+              return (
+                <div key={key} className="flex items-center gap-1.5 text-[10px]">
+                  <StatusIcon className={`w-3 h-3 ${cfg.color}`} />
+                  <span className="text-muted-foreground">{cfg.label}: <span className="font-medium text-foreground">{count}</span></span>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Per-Category KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {categories.map((cat) => {
+          const catCfg = MATERIAL_CATEGORIES[cat];
+          const CatIcon = catCfg?.icon || ClipboardList;
           const catItems = items.filter((i) => i.category === cat);
           const completed = catItems.filter((i) => i.status === "completed").length;
+          const inProgress = catItems.filter((i) => i.status === "in-progress").length;
           const pct = catItems.length > 0 ? Math.round((completed / catItems.length) * 100) : 0;
           return (
             <Card key={cat} className="overflow-visible border-border/50">
               <CardContent className="p-3">
-                <p className="text-[10px] font-semibold text-muted-foreground mb-1">{MATERIAL_CATEGORIES[cat]?.label || cat}</p>
-                <div className="flex items-center justify-between mb-1"><span className="text-sm font-bold">{completed}/{catItems.length}</span><span className="text-[10px] text-muted-foreground">{pct}%</span></div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center">
+                    <CatIcon className={`w-4 h-4 ${catCfg?.color || "text-primary"}`} />
+                  </div>
+                  <p className="text-[10px] font-semibold text-muted-foreground truncate">{catCfg?.label || cat}</p>
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-bold">{completed}/{catItems.length}</span>
+                  <span className={`text-[10px] font-medium ${pct === 100 ? "text-emerald-400" : "text-muted-foreground"}`}>{pct}%</span>
+                </div>
                 <Progress value={pct} className="h-1.5" />
+                {inProgress > 0 && <p className="text-[9px] text-yellow-400 mt-1">{inProgress} in progress</p>}
               </CardContent>
             </Card>
           );
         })}
       </div>
 
+      {/* Per-Category Detail Cards */}
       {categories.map((cat) => {
+        const catCfg = MATERIAL_CATEGORIES[cat];
+        const CatIcon = catCfg?.icon || ClipboardList;
         const catItems = items.filter((i) => i.category === cat);
+        const completed = catItems.filter((i) => i.status === "completed").length;
         if (catItems.length === 0) return null;
         return (
-          <Card key={cat} className="overflow-visible border-border/50">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">{MATERIAL_CATEGORIES[cat]?.label || cat}</CardTitle></CardHeader>
+          <Card key={cat} className={`overflow-visible border-border/50 border-l-4 ${catCfg?.borderColor || "border-l-primary"}`}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CatIcon className={`w-4 h-4 ${catCfg?.color || "text-primary"}`} />
+                  <CardTitle className="text-sm font-semibold">{catCfg?.label || cat}</CardTitle>
+                  <Badge variant="outline" className="text-[10px]">{completed}/{catItems.length}</Badge>
+                </div>
+                <Progress value={catItems.length > 0 ? (completed / catItems.length) * 100 : 0} className="h-1.5 w-24" />
+              </div>
+            </CardHeader>
             <CardContent className="pt-0">
-              <div className="space-y-2">
-                {catItems.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
-                    <Select value={item.status} onValueChange={(v) => { updateMutation.mutate({ id: item.id, status: v }); }}>
-                      <SelectTrigger className={`h-7 w-28 text-[10px] shrink-0 ${statusConfig[item.status]?.bg} ${statusConfig[item.status]?.color}`}><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="not-started">Not Started</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <div className="min-w-0 flex-1">
-                      <p className={`text-xs font-medium ${item.status === "completed" ? "line-through text-muted-foreground" : ""}`}>{item.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{item.description}</p>
+              <div className="space-y-1">
+                {catItems.map((item) => {
+                  const st = statusConfig[item.status] || statusConfig["not-started"];
+                  const StatusIcon = st.icon;
+                  return (
+                    <div key={item.id} className={`flex items-center gap-3 py-2.5 px-2 rounded-lg hover:bg-muted/30 transition-colors ${item.status === "completed" ? "opacity-70" : ""}`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${st.bg}`}>
+                        <StatusIcon className={`w-3.5 h-3.5 ${st.color}`} />
+                      </div>
+                      <Select value={item.status} onValueChange={(v) => updateMutation.mutate({ id: item.id, status: v })}>
+                        <SelectTrigger className={`h-7 w-28 text-[10px] shrink-0 border ${st.bg} ${st.color}`}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="not-started"><span className="flex items-center gap-1.5"><Clock className="w-3 h-3" />Not Started</span></SelectItem>
+                          <SelectItem value="in-progress"><span className="flex items-center gap-1.5"><RefreshCw className="w-3 h-3" />In Progress</span></SelectItem>
+                          <SelectItem value="completed"><span className="flex items-center gap-1.5"><CheckCircle className="w-3 h-3" />Completed</span></SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-xs font-medium ${item.status === "completed" ? "line-through text-muted-foreground" : ""}`}>{item.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{item.description}</p>
+                        {item.updatedAt && <p className="text-[9px] text-muted-foreground/60 mt-0.5">Updated {timeAgo(item.updatedAt)}</p>}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {editingUrl === item.id ? (
+                          <div className="flex items-center gap-1">
+                            <Input className="h-7 w-40 text-[10px]" value={urlValue} onChange={(e) => setUrlValue(e.target.value)} placeholder="File URL..." />
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => { updateMutation.mutate({ id: item.id, fileUrl: urlValue }); setEditingUrl(null); }}><Check className="w-3 h-3" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => setEditingUrl(null)}><X className="w-3 h-3" /></Button>
+                          </div>
+                        ) : (
+                          <>
+                            {item.fileUrl && (
+                              <a href={item.fileUrl} target="_blank" rel="noopener noreferrer">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary"><ExternalLink className="w-3.5 h-3.5" /></Button>
+                              </a>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingUrl(item.id); setUrlValue(item.fileUrl || ""); }} title="Attach file URL">
+                              <Paperclip className={`w-3.5 h-3.5 ${item.fileUrl ? "text-primary" : ""}`} />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {editingUrl === item.id ? (
-                        <div className="flex items-center gap-1">
-                          <Input className="h-7 w-40 text-[10px]" value={urlValue} onChange={(e) => setUrlValue(e.target.value)} placeholder="File URL..." />
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { updateMutation.mutate({ id: item.id, fileUrl: urlValue }); setEditingUrl(null); }}><Check className="w-3 h-3" /></Button>
-                        </div>
-                      ) : (
-                        <>
-                          {item.fileUrl ? (
-                            <a href={item.fileUrl} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7 text-primary"><ExternalLink className="w-3 h-3" /></Button></a>
-                          ) : null}
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingUrl(item.id); setUrlValue(item.fileUrl || ""); }} title="Attach file URL"><Paperclip className="w-3 h-3" /></Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
         );
       })}
+
+      {/* Empty state */}
+      {items.length === 0 && (
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <ClipboardList className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">No materials tracked yet</p>
+            <p className="text-xs text-muted-foreground mt-1">Materials will appear here once configured</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -5315,6 +5413,44 @@ function InboxTab() {
     },
   });
 
+  // Template state
+  const { data: templates = [], refetch: refetchTemplates } = useQuery<OutreachTemplate[]>({ queryKey: ["/api/email/templates"] });
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showTemplateForm, setShowTemplateForm] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<OutreachTemplate | null>(null);
+  const [templateName, setTemplateName] = useState("");
+  const [templateSubject, setTemplateSubject] = useState("");
+  const [templateBody, setTemplateBody] = useState("");
+  const [templateCategory, setTemplateCategory] = useState<"cold" | "follow-up" | "confirmation">("cold");
+
+  const resetTemplateForm = () => { setTemplateName(""); setTemplateSubject(""); setTemplateBody(""); setTemplateCategory("cold"); };
+
+  const createTemplateMutation = useMutation({
+    mutationFn: async (data: { name: string; subject: string; body: string; category: string }) => {
+      const res = await apiRequest("POST", "/api/email/templates", data);
+      return res.json();
+    },
+    onSuccess: () => { toast({ title: "Template created" }); refetchTemplates(); setShowTemplateForm(false); resetTemplateForm(); },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: { id: string; name?: string; subject?: string; body?: string; category?: string }) => {
+      const res = await apiRequest("PATCH", `/api/email/templates/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => { toast({ title: "Template updated" }); refetchTemplates(); setShowTemplateForm(false); setEditingTemplate(null); resetTemplateForm(); },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/email/templates/${id}`);
+      return res.json();
+    },
+    onSuccess: () => { toast({ title: "Template deleted" }); refetchTemplates(); },
+  });
+
   const sourceLabel: Record<string, string> = {
     direct: "Direct Email",
     "contact-form": "Contact Form",
@@ -5404,6 +5540,7 @@ function InboxTab() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}><Settings className="w-4 h-4 mr-1" />Config</Button>
+          <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)}><FileText className="w-4 h-4 mr-1" />Templates</Button>
           <Button variant="outline" size="sm" onClick={() => setShowOutreach(true)}><Zap className="w-4 h-4 mr-1" />Outreach</Button>
           <Button size="sm" onClick={() => setShowCompose(true)}><Plus className="w-4 h-4 mr-1" />Compose</Button>
         </div>
@@ -5474,6 +5611,18 @@ function InboxTab() {
       <Dialog open={showCompose} onOpenChange={setShowCompose}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Compose Email</DialogTitle><DialogDescription>Send from contact@techsavvyhawaii.com</DialogDescription></DialogHeader>
+          {templates.length > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
+              <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="text-[10px] text-muted-foreground shrink-0">Load template:</span>
+              <Select onValueChange={(id) => { const t = templates.find(tpl => tpl.id === id); if (t) { setComposeSubject(t.subject); setComposeBody(t.body); } }}>
+                <SelectTrigger className="h-7 text-[10px] flex-1"><SelectValue placeholder="Choose a template..." /></SelectTrigger>
+                <SelectContent>
+                  {templates.map(t => <SelectItem key={t.id} value={t.id} className="text-xs">{t.name} ({TEMPLATE_CATEGORIES[t.category]?.label || t.category})</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-3">
             <div className="space-y-1.5"><Label className="text-xs">To</Label><Input value={composeTo} onChange={(e) => setComposeTo(e.target.value)} placeholder="recipient@email.com" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Subject</Label><Input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} placeholder="Email subject" /></div>
@@ -5625,6 +5774,100 @@ function InboxTab() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Templates Dialog */}
+      <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary" />Email Templates</DialogTitle>
+            <DialogDescription>Manage reusable email templates for outreach campaigns</DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs text-muted-foreground">{templates.length} template{templates.length !== 1 ? "s" : ""}</p>
+            <Button size="sm" onClick={() => { resetTemplateForm(); setEditingTemplate(null); setShowTemplateForm(true); }}><Plus className="w-4 h-4 mr-1" />New Template</Button>
+          </div>
+          {templates.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <FileText className="w-8 h-8 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No templates yet</p>
+              <p className="text-xs mt-1">Create your first email template to speed up outreach</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {templates.map((t) => {
+                const catCfg = TEMPLATE_CATEGORIES[t.category] || TEMPLATE_CATEGORIES.cold;
+                const CatIcon = catCfg.icon;
+                return (
+                  <Card key={t.id} className="border-border/50 hover:border-primary/20 transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-sm font-semibold truncate">{t.name || "Untitled"}</h3>
+                            <Badge variant="outline" className={`text-[10px] ${catCfg.color}`}><CatIcon className="w-3 h-3 mr-1" />{catCfg.label}</Badge>
+                            {t.isDefault && <Badge className="text-[9px]">Default</Badge>}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">Subject: {t.subject || "(no subject)"}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{t.body || "(no body)"}</p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setComposeSubject(t.subject); setComposeBody(t.body); setShowTemplates(false); setShowCompose(true); }}><Copy className="w-3 h-3 mr-1" />Use</Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingTemplate(t); setTemplateName(t.name); setTemplateSubject(t.subject); setTemplateBody(t.body); setTemplateCategory(t.category); setShowTemplateForm(true); }}><Edit3 className="w-3 h-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400" onClick={() => deleteTemplateMutation.mutate(t.id)}><Trash2 className="w-3 h-3" /></Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Form Dialog */}
+      <Dialog open={showTemplateForm} onOpenChange={(v) => { setShowTemplateForm(v); if (!v) { setEditingTemplate(null); resetTemplateForm(); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingTemplate ? "Edit Template" : "New Template"}</DialogTitle>
+            <DialogDescription>{editingTemplate ? "Update this email template" : "Create a reusable email template"}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5"><Label className="text-xs">Template Name</Label><Input value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="e.g. Cold Outreach - Restaurant" /></div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Category</Label>
+              <Select value={templateCategory} onValueChange={(v) => setTemplateCategory(v as "cold" | "follow-up" | "confirmation")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cold">Cold Outreach</SelectItem>
+                  <SelectItem value="follow-up">Follow-Up</SelectItem>
+                  <SelectItem value="confirmation">Confirmation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Subject Line</Label><Input value={templateSubject} onChange={(e) => setTemplateSubject(e.target.value)} placeholder="Email subject..." /></div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Body</Label>
+              <Textarea value={templateBody} onChange={(e) => setTemplateBody(e.target.value)} placeholder="Write your email template body..." rows={8} className="resize-none text-sm" />
+              <p className="text-[10px] text-muted-foreground">Tip: Use placeholders like {"{business}"}, {"{name}"}, {"{vertical}"} for personalization</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowTemplateForm(false); setEditingTemplate(null); resetTemplateForm(); }}>Cancel</Button>
+            <Button disabled={!templateName || !templateSubject || (editingTemplate ? updateTemplateMutation.isPending : createTemplateMutation.isPending)}
+              onClick={() => {
+                if (editingTemplate) {
+                  updateTemplateMutation.mutate({ id: editingTemplate.id, name: templateName, subject: templateSubject, body: templateBody, category: templateCategory });
+                } else {
+                  createTemplateMutation.mutate({ name: templateName, subject: templateSubject, body: templateBody, category: templateCategory });
+                }
+              }}>
+              <Save className="w-4 h-4 mr-1" />
+              {editingTemplate ? (updateTemplateMutation.isPending ? "Saving..." : "Save Changes") : (createTemplateMutation.isPending ? "Creating..." : "Create Template")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
