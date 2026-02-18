@@ -7,10 +7,8 @@ let pdfjsLib: any = null;
 const getPdfjs = async () => {
   if (!pdfjsLib) {
     pdfjsLib = await import("pdfjs-dist");
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-      "pdfjs-dist/build/pdf.worker.min.mjs",
-      import.meta.url
-    ).toString();
+    // Use CDN worker for reliable loading across all bundlers
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
   }
   return pdfjsLib;
 };
@@ -125,15 +123,16 @@ export function PdfViewer({ url, className = "" }: PdfViewerProps) {
   }
 
   if (error) {
+    // Fall back to native browser PDF viewer (iframe) which supports multi-page
     return (
-      <div className={`flex items-center justify-center ${className}`} style={{ minHeight: "200px" }}>
-        <div className="text-center">
-          <p className="text-sm text-destructive mb-2">Could not render PDF</p>
-          <p className="text-xs text-muted-foreground mb-3">{error}</p>
-          <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank", "noopener,noreferrer")}>
+      <div className={`flex flex-col ${className}`}>
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30 rounded-t-lg shrink-0">
+          <span className="text-xs text-muted-foreground">Using browser PDF viewer</span>
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => window.open(url, "_blank", "noopener,noreferrer")}>
             Open in New Tab
           </Button>
         </div>
+        <iframe src={`${url}#toolbar=1&navpanes=1`} title="PDF" className="flex-1 border-0 bg-white rounded-b" style={{ minHeight: "300px" }} />
       </div>
     );
   }
@@ -192,6 +191,7 @@ const thumbnailCache = new Map<string, string>();
 export function PdfThumbnail({ url, className = "", width = 200, height = 128 }: PdfThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [src, setSrc] = useState<string | null>(thumbnailCache.get(url) || null);
 
   useEffect(() => {
@@ -228,15 +228,29 @@ export function PdfThumbnail({ url, className = "", width = 200, height = 128 }:
         }
         doc.destroy();
       } catch (err) {
-        // Silently fail — the file icon fallback will show
-        if (!cancelled) setReady(false);
+        // Mark as failed so fallback icon shows
+        if (!cancelled) { setFailed(true); setReady(false); }
       }
     })();
 
     return () => { cancelled = true; };
   }, [url, width, height, src]);
 
-  if (!ready || !src) return null;
+  if (failed) {
+    return (
+      <div className={`flex items-center justify-center ${className}`} style={{ width, height }}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-400 opacity-50"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 12v4"/><path d="M14 12v4"/></svg>
+      </div>
+    );
+  }
+
+  if (!ready || !src) {
+    return (
+      <div className={`flex items-center justify-center ${className}`} style={{ width: "100%", height: "100%" }}>
+        <div className="w-5 h-5 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <img

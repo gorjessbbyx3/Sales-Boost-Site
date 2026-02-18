@@ -3087,7 +3087,10 @@ function FilesManagerTab() {
         {/* Thumbnail area */}
         <div className={`relative h-32 ${thumbUrl ? "bg-black" : isPdf ? "bg-white" : bg} flex items-center justify-center overflow-hidden`}>
           {isPdf && file.url ? (
-            <PdfThumbnail url={file.url} className="w-full h-full object-cover" width={300} height={128} />
+            <>
+              <TypeIcon className={`w-10 h-10 ${color} absolute`} />
+              <PdfThumbnail url={file.url} className="w-full h-full object-cover relative z-10" width={300} height={128} />
+            </>
           ) : thumbUrl ? (
             <img src={thumbUrl} alt={file.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           ) : (
@@ -3157,7 +3160,10 @@ function FilesManagerTab() {
         {/* Thumbnail */}
         <div className={`w-10 h-10 rounded-md ${thumbUrl ? "bg-black" : isPdf ? "bg-white" : "bg-muted/50"} flex items-center justify-center shrink-0 overflow-hidden relative`}>
           {isPdf && file.url ? (
-            <PdfThumbnail url={file.url} className="w-full h-full object-cover rounded-md" width={40} height={40} />
+            <>
+              <TypeIcon className={`w-5 h-5 ${color} absolute`} />
+              <PdfThumbnail url={file.url} className="w-full h-full object-cover rounded-md relative z-10" width={40} height={40} />
+            </>
           ) : thumbUrl ? (
             <img src={thumbUrl} alt="" className="w-full h-full object-cover rounded-md" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           ) : (
@@ -3241,21 +3247,39 @@ function FilesManagerTab() {
         return (
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2 flex items-center gap-1.5">
-              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />Starred — Quick Access
+              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />Starred — Quick Access ({starredFiles.length})
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
               {starredFiles.map((file) => {
                 const { icon: TypeIcon, color, bg } = getFileIcon(file);
                 const canPreview = isPreviewable(file);
+                const isPdf = isPdfFile(file);
+                const ytThumb = getYouTubeThumbnail(file.url || "");
+                const isImg = isImageFile(file);
+                const hasThumbnail = (isPdf && !!file.url) || !!ytThumb || (isImg && !!file.url);
                 return (
                   <Card key={`star-${file.id}`} className="overflow-hidden border-yellow-400/20 hover:border-yellow-400/50 bg-yellow-400/[0.03] transition-colors cursor-pointer group" onClick={() => {
                     if (!file.url) return;
                     if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
                   }}>
-                    <CardContent className="p-3 flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-md ${bg} flex items-center justify-center shrink-0`}>
-                        <TypeIcon className={`w-5 h-5 ${color}`} />
+                    {hasThumbnail && (
+                      <div className={`relative h-24 ${isImg || ytThumb ? "bg-black" : "bg-white"} flex items-center justify-center overflow-hidden`}>
+                        {isPdf && file.url ? (
+                          <PdfThumbnail url={file.url} className="w-full h-full object-cover" width={300} height={96} />
+                        ) : ytThumb ? (
+                          <img src={ytThumb} alt="" className="w-full h-full object-cover" />
+                        ) : isImg && file.url ? (
+                          <img src={file.url} alt="" className="w-full h-full object-cover" />
+                        ) : null}
+                        {ytThumb && <div className="absolute inset-0 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center"><Video className="w-3.5 h-3.5 text-white ml-0.5" /></div></div>}
                       </div>
+                    )}
+                    <CardContent className="p-3 flex items-center gap-3">
+                      {!hasThumbnail && (
+                        <div className={`w-10 h-10 rounded-md ${bg} flex items-center justify-center shrink-0`}>
+                          <TypeIcon className={`w-5 h-5 ${color}`} />
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate">{file.name}</p>
                         <p className="text-[10px] text-muted-foreground">{file.folder || "Root"} • {getTypeLabel(file)}</p>
