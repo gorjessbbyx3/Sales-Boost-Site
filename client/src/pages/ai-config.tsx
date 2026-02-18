@@ -28,6 +28,7 @@ import {
   Download, LayoutList, LayoutGrid, Image, FileSpreadsheet, Monitor,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
+import { PdfViewer, PdfThumbnail } from "@/components/pdf-viewer";
 import { useTheme } from "@/hooks/use-theme";
 import { useState, useEffect, useMemo, useRef } from "react";
 import DealsTab from "./admin/DealsTab";
@@ -217,6 +218,7 @@ interface AdminFile {
   folder: string;
   uploadedAt: string;
   url: string;
+  starred: number;
 }
 
 interface SlackConfig {
@@ -2841,6 +2843,11 @@ function FilesManagerTab() {
     onSuccess: () => { refetch(); toast({ title: "Folder created" }); setShowNewFolder(false); setNewFolderName(""); },
     onError: (err: any) => { toast({ title: err.message?.includes("409") ? "Folder already exists" : "Failed to create folder", variant: "destructive" }); },
   });
+  const starMutation = useMutation({
+    mutationFn: async ({ id, starred }: { id: string; starred: number }) => { const r = await apiRequest("PATCH", `/api/files/${id}`, { starred }); return r.json(); },
+    onSuccess: () => { refetch(); },
+    onError: () => { toast({ title: "Failed to update star", variant: "destructive" }); },
+  });
 
   // State for rename, move, and new folder dialogs
   const [renameTarget, setRenameTarget] = useState<AdminFile | null>(null);
@@ -2865,6 +2872,7 @@ function FilesManagerTab() {
       folder: "Classroom",
       uploadedAt: r.createdAt,
       url: r.url,
+      starred: 0,
     }));
     // Exclude hidden folder marker entries from display
     const visibleFiles = files.filter(f => f.name !== ".folder-marker");
@@ -2980,6 +2988,12 @@ function FilesManagerTab() {
     return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   };
 
+  // Helper: is this a PDF file?
+  const isPdfFile = (file: AdminFile) => {
+    const ext = getFileExt(file);
+    return ext === "pdf" || file.url?.toLowerCase().endsWith(".pdf");
+  };
+
   // Helper: get thumbnail URL for any file (for the card preview area)
   const getThumbnailUrl = (file: AdminFile): string | null => {
     if (!file.url) return null;
@@ -2988,7 +3002,7 @@ function FilesManagerTab() {
     if (ytThumb) return ytThumb;
     // Images — use the file URL directly
     if (isImageFile(file)) return file.url;
-    // PDFs — no thumbnail (would need server-side rendering)
+    // PDFs handled by PdfThumbnail component directly
     return null;
   };
 
@@ -3063,6 +3077,7 @@ function FilesManagerTab() {
     const typeLabel = getTypeLabel(file);
     const thumbUrl = getThumbnailUrl(file);
     const yt = isYouTube(file);
+    const isPdf = isPdfFile(file);
 
     return (
       <Card key={file.id} className="overflow-hidden border-border/50 hover:border-primary/30 transition-colors group cursor-pointer" onClick={() => {
@@ -3070,8 +3085,10 @@ function FilesManagerTab() {
         if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
       }}>
         {/* Thumbnail area */}
-        <div className={`relative h-32 ${thumbUrl ? "bg-black" : bg} flex items-center justify-center overflow-hidden`}>
-          {thumbUrl ? (
+        <div className={`relative h-32 ${thumbUrl ? "bg-black" : isPdf ? "bg-white" : bg} flex items-center justify-center overflow-hidden`}>
+          {isPdf && file.url ? (
+            <PdfThumbnail url={file.url} className="w-full h-full object-cover" width={300} height={128} />
+          ) : thumbUrl ? (
             <img src={thumbUrl} alt={file.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           ) : (
             <TypeIcon className={`w-10 h-10 ${color}`} />
@@ -3080,8 +3097,15 @@ function FilesManagerTab() {
           {yt && <div className="absolute inset-0 flex items-center justify-center"><div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg"><Video className="w-5 h-5 text-white ml-0.5" /></div></div>}
           {/* Type badge */}
           <span className={`absolute top-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded ${yt ? "bg-red-600 text-white" : `${bg} ${color}`} border border-current/10`}>{typeLabel}</span>
+          {/* Star button */}
+          {!isResource && (
+            <Button variant="ghost" size="icon" className={`absolute top-1.5 right-1.5 h-7 w-7 ${file.starred ? "text-yellow-400 opacity-100" : "text-muted-foreground/60 opacity-0 group-hover:opacity-100"} transition-opacity hover:text-yellow-400`}
+              onClick={(e) => { e.stopPropagation(); starMutation.mutate({ id: file.id, starred: file.starred ? 0 : 1 }); }} title={file.starred ? "Unstar" : "Star"}>
+              <Star className={`w-4 h-4 ${file.starred ? "fill-yellow-400" : ""}`} />
+            </Button>
+          )}
           {/* Action buttons overlay */}
-          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
             {canPreview && <Button variant="secondary" size="icon" className="h-6 w-6 bg-background/80 backdrop-blur-sm" onClick={() => setPreviewFile(file)} title="Preview"><Eye className="w-3 h-3" /></Button>}
             {file.url && <a href={file.url} download onClick={(e) => e.stopPropagation()}><Button variant="secondary" size="icon" className="h-6 w-6 bg-background/80 backdrop-blur-sm" title="Download"><Download className="w-3 h-3" /></Button></a>}
           </div>
@@ -3116,15 +3140,25 @@ function FilesManagerTab() {
     const canPreview = isPreviewable(file);
     const typeLabel = getTypeLabel(file);
     const thumbUrl = getThumbnailUrl(file);
+    const isPdf = isPdfFile(file);
 
     return (
       <div key={file.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group" onClick={() => {
         if (!file.url) { toast({ title: "File not available", description: "This file was saved without a download link. Try re-uploading it.", variant: "destructive" }); return; }
         if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
       }}>
+        {/* Star indicator */}
+        {!isResource && (
+          <Button variant="ghost" size="icon" className={`h-6 w-6 shrink-0 ${file.starred ? "text-yellow-400" : "text-muted-foreground/30 opacity-0 group-hover:opacity-100"} transition-opacity hover:text-yellow-400`}
+            onClick={(e) => { e.stopPropagation(); starMutation.mutate({ id: file.id, starred: file.starred ? 0 : 1 }); }}>
+            <Star className={`w-3.5 h-3.5 ${file.starred ? "fill-yellow-400" : ""}`} />
+          </Button>
+        )}
         {/* Thumbnail */}
-        <div className={`w-10 h-10 rounded-md ${thumbUrl ? "bg-black" : "bg-muted/50"} flex items-center justify-center shrink-0 overflow-hidden relative`}>
-          {thumbUrl ? (
+        <div className={`w-10 h-10 rounded-md ${thumbUrl ? "bg-black" : isPdf ? "bg-white" : "bg-muted/50"} flex items-center justify-center shrink-0 overflow-hidden relative`}>
+          {isPdf && file.url ? (
+            <PdfThumbnail url={file.url} className="w-full h-full object-cover rounded-md" width={40} height={40} />
+          ) : thumbUrl ? (
             <img src={thumbUrl} alt="" className="w-full h-full object-cover rounded-md" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           ) : (
             <TypeIcon className={`w-5 h-5 ${color}`} />
@@ -3199,6 +3233,44 @@ function FilesManagerTab() {
         <Input placeholder="Search all files..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
         {search && <p className="text-[10px] text-muted-foreground mt-1">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""} found across all folders</p>}
       </div>
+
+      {/* Starred Files — Quick Access (only on home, not searching) */}
+      {!search && currentFolder === "" && (() => {
+        const starredFiles = allFiles.filter(f => f.starred && f.name !== ".folder-marker");
+        if (starredFiles.length === 0) return null;
+        return (
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2 flex items-center gap-1.5">
+              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />Starred — Quick Access
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              {starredFiles.map((file) => {
+                const { icon: TypeIcon, color, bg } = getFileIcon(file);
+                const canPreview = isPreviewable(file);
+                return (
+                  <Card key={`star-${file.id}`} className="overflow-hidden border-yellow-400/20 hover:border-yellow-400/50 bg-yellow-400/[0.03] transition-colors cursor-pointer group" onClick={() => {
+                    if (!file.url) return;
+                    if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
+                  }}>
+                    <CardContent className="p-3 flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-md ${bg} flex items-center justify-center shrink-0`}>
+                        <TypeIcon className={`w-5 h-5 ${color}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{file.folder || "Root"} • {getTypeLabel(file)}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-yellow-400 shrink-0 hover:text-yellow-500" onClick={(e) => { e.stopPropagation(); starMutation.mutate({ id: file.id, starred: 0 }); }} title="Unstar">
+                        <Star className="w-4 h-4 fill-yellow-400" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Upload zone */}
       <Card
@@ -3365,6 +3437,12 @@ function FilesManagerTab() {
               {previewFile && <Badge variant="outline" className="text-[10px]">{getTypeLabel(previewFile)}</Badge>}
               {previewFile && previewFile.size > 0 && <span className="text-xs">{formatBytes(previewFile.size)}</span>}
               {previewFile?.folder && <span className="text-xs text-muted-foreground">in {previewFile.folder}</span>}
+              {previewFile && !previewFile.id.startsWith("res-") && (
+                <Button variant="ghost" size="icon" className={`h-6 w-6 ml-auto ${previewFile.starred ? "text-yellow-400" : "text-muted-foreground"} hover:text-yellow-400`}
+                  onClick={() => starMutation.mutate({ id: previewFile.id, starred: previewFile.starred ? 0 : 1 })}>
+                  <Star className={`w-3.5 h-3.5 ${previewFile.starred ? "fill-yellow-400" : ""}`} />
+                </Button>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-auto rounded-lg border border-border bg-black/20">
@@ -3386,8 +3464,11 @@ function FilesManagerTab() {
               if (isVid) {
                 return <video src={url} controls className="w-full max-h-[65vh] mx-auto" />;
               }
-              if (isPdf || isHtml) {
-                return <iframe src={url} title={previewFile.name} className="w-full h-[65vh] border-0" />;
+              if (isPdf) {
+                return <PdfViewer url={url} className="w-full h-[65vh]" />;
+              }
+              if (isHtml) {
+                return <iframe src={url} title={previewFile.name} className="w-full h-[65vh] border-0 bg-white rounded" />;
               }
               return (
                 <div className="flex flex-col items-center justify-center p-12 text-center">

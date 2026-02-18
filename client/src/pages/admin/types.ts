@@ -170,6 +170,8 @@ export interface AdminFile {
   size: number;
   type: string;
   category: string;
+  folder?: string;
+  starred?: number;
   uploadedAt: string;
   url: string;
 }

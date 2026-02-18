@@ -1289,20 +1289,35 @@ RULES:
   });
 
   app.patch("/api/files/:id", requireAdminSession, async (req, res) => {
-    const updates: Record<string, any> = {};
-    if (req.body.name !== undefined) updates.name = req.body.name;
-    if (req.body.folder !== undefined) updates.folder = req.body.folder;
-    if (req.body.category !== undefined) updates.category = req.body.category;
-    const [updated] = await db.update(schema.adminFiles).set(updates).where(eq(schema.adminFiles.id, req.params.id as string)).returning();
-    if (!updated) return res.status(404).json({ error: "File not found" });
-    logActivity("File Updated", updated.name, "file");
-    res.json(updated);
+    try {
+      const updates: Record<string, any> = {};
+      if (req.body.name !== undefined) updates.name = req.body.name;
+      if (req.body.folder !== undefined) updates.folder = req.body.folder;
+      if (req.body.category !== undefined) updates.category = req.body.category;
+      if (req.body.starred !== undefined) updates.starred = req.body.starred;
+      await db.update(schema.adminFiles).set(updates).where(eq(schema.adminFiles.id, req.params.id as string));
+      const [updated] = await db.select().from(schema.adminFiles).where(eq(schema.adminFiles.id, req.params.id as string));
+      if (!updated) return res.status(404).json({ error: "File not found" });
+      logActivity("File Updated", updated.name, "file");
+      res.json(updated);
+    } catch (err: any) {
+      console.error("File PATCH error:", err);
+      res.status(500).json({ error: "Failed to update file" });
+    }
   });
 
   app.delete("/api/files/:id", requireAdminSession, async (req, res) => {
-    const [deleted] = await db.delete(schema.adminFiles).where(eq(schema.adminFiles.id, req.params.id as string)).returning();
-    if (deleted) logActivity("File Deleted", deleted.name, "file");
-    res.json({ success: true });
+    try {
+      const [file] = await db.select().from(schema.adminFiles).where(eq(schema.adminFiles.id, req.params.id as string));
+      if (file) {
+        await db.delete(schema.adminFiles).where(eq(schema.adminFiles.id, req.params.id as string));
+        logActivity("File Deleted", file.name, "file");
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("File DELETE error:", err);
+      res.status(500).json({ error: "Failed to delete file" });
+    }
   });
 
   // ─── Slack Integration ──────────────────────────────────────────

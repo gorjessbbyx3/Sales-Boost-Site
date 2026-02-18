@@ -156,6 +156,7 @@ export const adminFiles = pgTable("admin_files", {
   folder: text("folder").notNull().default(""),
   uploadedAt: text("uploaded_at").notNull(),
   url: text("url").notNull().default(""),
+  starred: integer("starred").notNull().default(0),
 });
 
 // ─── Slack Config (singleton row) ────────────────────────────────────
