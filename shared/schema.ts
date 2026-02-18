@@ -418,6 +418,7 @@ export const opportunities = pgTable("opportunities", {
   title: text("title").notNull().default(""),
   leadId: text("lead_id").notNull().default(""),
   clientId: text("client_id").notNull().default(""),
+  equipmentId: text("equipment_id").notNull().default(""),
   stage: text("stage").notNull().default("prospecting"), // prospecting, qualification, proposal, negotiation, closed-won, closed-lost
   value: real("value").notNull().default(0),
   probability: integer("probability").notNull().default(10), // 0-100

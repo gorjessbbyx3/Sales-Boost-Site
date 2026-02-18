@@ -159,6 +159,8 @@ export interface Task {
   priority: "low" | "medium" | "high";
   completed: boolean;
   linkedTo: string;
+  assignee: string;
+  planItemId: string;
   createdAt: string;
 }
 
@@ -308,6 +310,7 @@ export interface Opportunity {
   title: string;
   leadId: string;
   clientId: string;
+  equipmentId: string;
   stage: DealStage;
   value: number;
   probability: number;
@@ -324,6 +327,8 @@ export interface Opportunity {
   leadName?: string;
   leadBusiness?: string;
   assigneeName?: string;
+  equipmentName?: string;
+  equipmentSerial?: string;
 }
 
 export interface UserAccount {

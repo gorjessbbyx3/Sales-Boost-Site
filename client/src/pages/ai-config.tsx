@@ -2531,9 +2531,9 @@ function TasksTab() {
 
   const getAssigneeInfo = (assignee: string) => TEAM_MEMBERS_LIST.find(m => m.value === assignee);
 
-  // Calendar view: get week days from calendarDate
+  // Week days for the mini weekly strip (always current week)
   const weekDays = useMemo(() => {
-    const d = new Date(calendarDate + "T12:00:00");
+    const d = new Date(todayStr + "T12:00:00");
     const dayOfWeek = d.getDay();
     const start = new Date(d);
     start.setDate(d.getDate() - dayOfWeek);
@@ -2542,9 +2542,76 @@ function TasksTab() {
       day.setDate(start.getDate() + i);
       return day.toISOString().split("T")[0];
     });
+  }, [todayStr]);
+
+  // Full month days for the calendar view
+  const monthDays = useMemo(() => {
+    const d = new Date(calendarDate + "T12:00:00");
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startPad = firstDay.getDay(); // 0=Sun
+    const days: string[] = [];
+    // Pad with previous month days
+    for (let i = startPad - 1; i >= 0; i--) {
+      const prev = new Date(year, month, -i);
+      days.push(prev.toISOString().split("T")[0]);
+    }
+    // Current month days
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push(new Date(year, month, i).toISOString().split("T")[0]);
+    }
+    // Pad to fill last week
+    while (days.length % 7 !== 0) {
+      const next = new Date(year, month + 1, days.length - startPad - lastDay.getDate() + 1);
+      days.push(next.toISOString().split("T")[0]);
+    }
+    return days;
   }, [calendarDate]);
 
+  const currentMonth = new Date(calendarDate + "T12:00:00").getMonth();
+
   const SCHED_COLORS: Record<string, string> = { training: "bg-purple-400/20 text-purple-400", outreach: "bg-blue-400/20 text-blue-400", admin: "bg-gray-400/20 text-gray-400", meeting: "bg-emerald-400/20 text-emerald-400", "follow-up": "bg-orange-400/20 text-orange-400", development: "bg-cyan-400/20 text-cyan-400", general: "bg-gray-400/20 text-gray-400" };
+
+  // Mini weekly calendar strip component
+  const WeeklyStrip = () => (
+    <Card className="border-border/50">
+      <CardContent className="p-3">
+        <div className="grid grid-cols-7 gap-1">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+            <div key={d} className="text-[9px] text-center text-muted-foreground font-semibold">{d}</div>
+          ))}
+          {weekDays.map(day => {
+            const dayTasks = tasks.filter(t => t.dueDate === day && !t.completed);
+            const daySchedule = schedule.filter(s => s.date === day && s.status !== "completed");
+            const isToday = day === todayStr;
+            const count = dayTasks.length + daySchedule.length;
+            return (
+              <div key={day} className={`rounded-md p-1 min-h-[54px] ${isToday ? "border border-primary/50 bg-primary/5" : "border border-border/20"}`}>
+                <div className={`text-[10px] font-semibold text-center mb-0.5 ${isToday ? "text-primary" : "text-muted-foreground"}`}>
+                  {new Date(day + "T12:00:00").getDate()}
+                </div>
+                <div className="space-y-0.5">
+                  {daySchedule.slice(0, 2).map(s => (
+                    <div key={s.id} className={`text-[8px] px-0.5 py-px rounded truncate ${SCHED_COLORS[s.category] || SCHED_COLORS.general}`}>
+                      {s.time && <span className="font-mono">{s.time} </span>}{s.title.slice(0, 12)}
+                    </div>
+                  ))}
+                  {dayTasks.slice(0, 2).map(t => (
+                    <div key={t.id} className={`text-[8px] px-0.5 py-px rounded truncate ${t.priority === "high" ? "bg-red-400/15 text-red-400" : t.priority === "medium" ? "bg-yellow-400/15 text-yellow-500" : "bg-blue-400/15 text-blue-400"}`}>
+                      {t.title.slice(0, 12)}
+                    </div>
+                  ))}
+                  {count > 4 && <div className="text-[7px] text-center text-muted-foreground">+{count - 4}</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-4">
@@ -2576,6 +2643,9 @@ function TasksTab() {
 
       {viewMode === "list" ? (
         <>
+          {/* Weekly calendar strip at top of list view */}
+          <WeeklyStrip />
+
           <div className="flex gap-2 flex-wrap">
             {(["pending", "overdue", "all", "completed"] as const).map((f) => (
               <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" className={`text-xs ${f === "overdue" && overdueCount > 0 ? "border-destructive/50" : ""}`} onClick={() => setFilter(f)}>
@@ -2607,39 +2677,59 @@ function TasksTab() {
           )}
         </>
       ) : (
-        /* Calendar View */
+        /* Full Month Calendar View */
         <Card className="overflow-visible border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { const d = new Date(calendarDate + "T12:00:00"); d.setDate(d.getDate() - 7); setCalendarDate(d.toISOString().split("T")[0]); }}><ChevronLeft className="w-4 h-4" /></Button>
-              <div className="text-sm font-semibold">{new Date(calendarDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { const d = new Date(calendarDate + "T12:00:00"); d.setDate(d.getDate() + 7); setCalendarDate(d.toISOString().split("T")[0]); }}><ChevronRight className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                const d = new Date(calendarDate + "T12:00:00");
+                d.setMonth(d.getMonth() - 1);
+                setCalendarDate(d.toISOString().split("T")[0]);
+              }}><ChevronLeft className="w-4 h-4" /></Button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">
+                  {new Date(calendarDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                </span>
+                <Button variant="outline" size="sm" className="text-[10px] h-6 px-2" onClick={() => setCalendarDate(todayStr)}>Today</Button>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                const d = new Date(calendarDate + "T12:00:00");
+                d.setMonth(d.getMonth() + 1);
+                setCalendarDate(d.toISOString().split("T")[0]);
+              }}><ChevronRight className="w-4 h-4" /></Button>
             </div>
             <div className="grid grid-cols-7 gap-1">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => <div key={d} className="text-[10px] text-center text-muted-foreground font-semibold pb-1">{d}</div>)}
-              {weekDays.map(day => {
+              {monthDays.map((day, idx) => {
                 const dayTasks = tasks.filter(t => t.dueDate === day && !t.completed).filter(t => assigneeFilter === "all" || t.assignee === assigneeFilter);
                 const daySchedule = schedule.filter(s => s.date === day && s.status !== "completed");
                 const isToday = day === todayStr;
+                const isCurrentMonth = new Date(day + "T12:00:00").getMonth() === currentMonth;
                 return (
-                  <div key={day} className={`min-h-[100px] border rounded-md p-1.5 ${isToday ? "border-primary/50 bg-primary/5" : "border-border/30"}`}>
-                    <div className={`text-[10px] font-semibold mb-1 ${isToday ? "text-primary" : "text-muted-foreground"}`}>{new Date(day + "T12:00:00").getDate()}</div>
+                  <div key={`${day}-${idx}`} className={`min-h-[72px] border rounded-md p-1 ${isToday ? "border-primary/50 bg-primary/5" : "border-border/30"} ${!isCurrentMonth ? "opacity-40" : ""}`}>
+                    <div className={`text-[10px] font-semibold mb-0.5 ${isToday ? "text-primary" : "text-muted-foreground"}`}>
+                      {new Date(day + "T12:00:00").getDate()}
+                    </div>
                     <div className="space-y-0.5">
-                      {daySchedule.map(s => (
-                        <div key={s.id} className={`text-[9px] px-1 py-0.5 rounded ${SCHED_COLORS[s.category] || SCHED_COLORS.general} cursor-pointer`} title={s.title}
+                      {daySchedule.slice(0, 2).map(s => (
+                        <div key={s.id} className={`text-[8px] px-1 py-px rounded truncate cursor-pointer ${SCHED_COLORS[s.category] || SCHED_COLORS.general}`}
+                          title={s.title}
                           onClick={() => toggleScheduleMutation.mutate({ id: s.id, status: "completed" })}>
-                          {s.time && <span className="font-mono">{s.time} </span>}{s.title.slice(0, 20)}
+                          {s.time && <span className="font-mono">{s.time} </span>}{s.title.slice(0, 14)}
                         </div>
                       ))}
-                      {dayTasks.map(t => {
+                      {dayTasks.slice(0, 2).map(t => {
                         const ai = getAssigneeInfo(t.assignee);
                         return (
-                        <div key={t.id} className={`text-[9px] px-1 py-0.5 rounded cursor-pointer flex items-center gap-1 ${t.priority === "high" ? "bg-red-400/15 text-red-400" : t.priority === "medium" ? "bg-yellow-400/15 text-yellow-500" : "bg-blue-400/15 text-blue-400"}`}
+                        <div key={t.id} className={`text-[8px] px-1 py-px rounded cursor-pointer flex items-center gap-0.5 truncate ${t.priority === "high" ? "bg-red-400/15 text-red-400" : t.priority === "medium" ? "bg-yellow-400/15 text-yellow-500" : "bg-blue-400/15 text-blue-400"}`}
                           onClick={() => updateMutation.mutate({ id: t.id, completed: true })}>
                           {ai && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ai.color}`} />}
-                          {t.title.slice(0, 18)}
+                          {t.title.slice(0, 14)}
                         </div>
                       );})}
+                      {(daySchedule.length + dayTasks.length) > 4 && (
+                        <div className="text-[7px] text-center text-muted-foreground">+{daySchedule.length + dayTasks.length - 4} more</div>
+                      )}
                     </div>
                   </div>
                 );
@@ -2652,7 +2742,6 @@ function TasksTab() {
     </div>
   );
 }
-
 function TaskFormDialog({ open, onClose, onSave, task }: { open: boolean; onClose: () => void; onSave: (f: Partial<Task>) => void; task: Task | null; }) {
   const [form, setForm] = useState<Partial<Task>>({});
   const { data: planItems = [] } = useQuery<PlanItem[]>({ queryKey: ["/api/plan-items"] });

@@ -3834,11 +3834,13 @@ Return ONLY valid JSON, no other text.`,
 
   app.get("/api/opportunities", requireAdminSession, async (_req, res) => {
     const rows = await db.select().from(schema.opportunities).orderBy(desc(schema.opportunities.updatedAt));
-    // Enrich with lead/assignee names
+    // Enrich with lead/assignee/equipment names
     const leads = await db.select({ id: schema.leads.id, name: schema.leads.name, business: schema.leads.business }).from(schema.leads);
     const team = await db.select({ id: schema.teamMembers.id, name: schema.teamMembers.name }).from(schema.teamMembers);
+    const equip = await db.select({ id: schema.equipment.id, name: schema.equipment.name, serialNumber: schema.equipment.serialNumber }).from(schema.equipment);
     const leadMap = Object.fromEntries(leads.map(l => [l.id, l]));
     const teamMap = Object.fromEntries(team.map(t => [t.id, t]));
+    const equipMap = Object.fromEntries(equip.map(e => [e.id, e]));
 
     const enriched = rows.map(o => ({
       ...o,
@@ -3846,53 +3848,62 @@ Return ONLY valid JSON, no other text.`,
       leadName: leadMap[o.leadId]?.name || "",
       leadBusiness: leadMap[o.leadId]?.business || "",
       assigneeName: teamMap[o.assigneeId]?.name || "",
+      equipmentName: equipMap[o.equipmentId]?.name || "",
+      equipmentSerial: equipMap[o.equipmentId]?.serialNumber || "",
     }));
     res.json(enriched);
   });
 
   app.post("/api/opportunities", requireAdminSession, async (req, res) => {
-    const id = randomUUID();
-    const now = new Date().toISOString();
-    const stageProbMap: Record<string, number> = {
-      prospecting: 10, qualification: 25, proposal: 50, negotiation: 75,
-      "closed-won": 100, "closed-lost": 0,
-    };
-    const stage = req.body.stage || "prospecting";
-    const probability = req.body.probability ?? stageProbMap[stage] ?? 10;
+    try {
+      const id = randomUUID();
+      const now = new Date().toISOString();
+      const stageProbMap: Record<string, number> = {
+        prospecting: 10, qualification: 25, proposal: 50, negotiation: 75,
+        "closed-won": 100, "closed-lost": 0,
+      };
+      const stage = req.body.stage || "prospecting";
+      const probability = req.body.probability ?? stageProbMap[stage] ?? 10;
 
-    const [opp] = await db.insert(schema.opportunities).values({
-      id,
-      title: req.body.title || "",
-      leadId: req.body.leadId || "",
-      clientId: req.body.clientId || "",
-      stage,
-      value: req.body.value || 0,
-      probability,
-      expectedCloseDate: req.body.expectedCloseDate || "",
-      actualCloseDate: "",
-      lossReason: "",
-      notes: req.body.notes || "",
-      assigneeId: req.body.assigneeId || "",
-      stageChangedAt: now,
-      createdAt: now,
-      updatedAt: now,
-    }).returning();
+      const values = {
+        id,
+        title: req.body.title || "",
+        leadId: req.body.leadId || "",
+        clientId: req.body.clientId || "",
+        equipmentId: req.body.equipmentId || "",
+        stage,
+        value: req.body.value || 0,
+        probability,
+        expectedCloseDate: req.body.expectedCloseDate || "",
+        actualCloseDate: "",
+        lossReason: "",
+        notes: req.body.notes || "",
+        assigneeId: req.body.assigneeId || "",
+        stageChangedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.insert(schema.opportunities).values(values);
 
-    // Log activity
-    await db.insert(schema.leadActivities).values({
-      id: randomUUID(),
-      leadId: req.body.leadId || "",
-      opportunityId: id,
-      userId: "",
-      type: "deal-created",
-      title: `Deal created: ${req.body.title}`,
-      description: `Value: $${req.body.value || 0} | Stage: ${stage}`,
-      metadata: "{}",
-      createdAt: now,
-    });
+      // Log activity
+      await db.insert(schema.leadActivities).values({
+        id: randomUUID(),
+        leadId: req.body.leadId || "",
+        opportunityId: id,
+        userId: "",
+        type: "deal-created",
+        title: `Deal created: ${req.body.title}`,
+        description: `Value: $${req.body.value || 0} | Stage: ${stage}`,
+        metadata: "{}",
+        createdAt: now,
+      });
 
-    logActivity("Deal Created", `${req.body.title} — $${req.body.value || 0}`, "deal");
-    res.status(201).json(opp);
+      logActivity("Deal Created", `${req.body.title} — $${req.body.value || 0}`, "deal");
+      res.status(201).json(values);
+    } catch (err: any) {
+      console.error("POST /api/opportunities error:", err);
+      res.status(500).json({ error: err.message || "Failed to create deal" });
+    }
   });
 
   app.patch("/api/opportunities/:id", requireAdminSession, async (req, res) => {
@@ -3991,14 +4002,15 @@ Return ONLY valid JSON, no other text.`,
     }
 
     const updateData = pickColumns(schema.opportunities, body);
-    const [updated] = await db.update(schema.opportunities).set(updateData).where(eq(schema.opportunities.id, req.params.id as string)).returning();
+    await db.update(schema.opportunities).set(updateData).where(eq(schema.opportunities.id, req.params.id as string));
+    const [updated] = await db.select().from(schema.opportunities).where(eq(schema.opportunities.id, req.params.id as string)).limit(1);
     if (updated) logActivity("Deal Updated", `${updated.title} → ${updated.stage}`, "deal");
-    res.json(updated);
+    res.json(updated || { id: req.params.id, ...body });
   });
 
   app.delete("/api/opportunities/:id", requireAdminSession, async (req, res) => {
-    const [deleted] = await db.delete(schema.opportunities).where(eq(schema.opportunities.id, req.params.id as string)).returning();
-    if (deleted) logActivity("Deal Deleted", deleted.title, "deal");
+    await db.delete(schema.opportunities).where(eq(schema.opportunities.id, req.params.id as string));
+    logActivity("Deal Deleted", req.params.id as string, "deal");
     res.json({ success: true });
   });
 
