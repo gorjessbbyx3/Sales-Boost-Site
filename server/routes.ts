@@ -615,6 +615,13 @@ RULES:
         let fileUrl = "";
         if (r2Enabled) {
           fileUrl = await uploadToR2(fileBuffer, req.file.originalname, "statements");
+        } else {
+          // Save locally when R2 is not configured
+          const ext = path.extname(req.file.originalname);
+          const base = path.basename(req.file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+          const localName = `${Date.now()}-${base}${ext}`;
+          fs.writeFileSync(path.join(UPLOADS_DIR, localName), fileBuffer);
+          fileUrl = `/uploads/resources/${localName}`;
         }
         await db.insert(schema.adminFiles).values({
           id: randomUUID(),
@@ -857,9 +864,15 @@ RULES:
       // Save as a file in the admin files system
       const fileName = `Partner Agreement — ${businessName} (${new Date().toISOString().slice(0, 10)}).html`;
       let fileUrl = "";
+      const docBuffer = Buffer.from(docHtml, "utf-8");
       if (r2Enabled) {
-        const buffer = Buffer.from(docHtml, "utf-8");
-        fileUrl = await uploadToR2(buffer, fileName, "partner-agreements");
+        fileUrl = await uploadToR2(docBuffer, fileName, "partner-agreements");
+      } else {
+        // Save locally when R2 is not configured
+        const base = fileName.replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+        const localName = `${Date.now()}-${base}.html`;
+        fs.writeFileSync(path.join(UPLOADS_DIR, localName), docBuffer);
+        fileUrl = `/uploads/resources/${localName}`;
       }
 
       await db.insert(schema.adminFiles).values({

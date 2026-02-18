@@ -2832,7 +2832,7 @@ function FilesManagerTab() {
 
     return (
       <Card key={file.id} className="overflow-hidden border-border/50 hover:border-primary/30 transition-colors group cursor-pointer" onClick={() => {
-        if (!file.url) return;
+        if (!file.url) { toast({ title: "File not available", description: "This file was saved without a download link. Try re-uploading it.", variant: "destructive" }); return; }
         if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
       }}>
         {/* Thumbnail area */}
@@ -2860,6 +2860,7 @@ function FilesManagerTab() {
             {file.size > 0 && <span className="text-[10px] text-muted-foreground">{formatBytes(file.size)}</span>}
             <span className="text-[10px] text-muted-foreground">{new Date(file.uploadedAt).toLocaleDateString()}</span>
             {isResource && <Badge variant="outline" className="text-[9px] border-primary/30 text-primary">Resource</Badge>}
+            {!file.url && <Badge variant="outline" className="text-[9px] border-destructive/30 text-destructive">No link</Badge>}
           </div>
           {search && file.folder && <p className="text-[10px] text-muted-foreground mt-1 truncate">in {file.folder}</p>}
           {/* Bottom actions */}
@@ -2885,7 +2886,7 @@ function FilesManagerTab() {
 
     return (
       <div key={file.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group" onClick={() => {
-        if (!file.url) return;
+        if (!file.url) { toast({ title: "File not available", description: "This file was saved without a download link. Try re-uploading it.", variant: "destructive" }); return; }
         if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
       }}>
         {/* Thumbnail */}
