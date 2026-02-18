@@ -22,6 +22,14 @@ interface Equipment {
   type: string;
   serialNumber: string;
   model: string;
+  brand: string;
+  firmwareVersion: string;
+  partNumber: string;
+  productCode: string;
+  featureCode: string;
+  appCode: string;
+  connectivity: string;
+  manufactureDate: string;
   status: string;
   condition: string;
   clientId: string;
@@ -78,9 +86,11 @@ function TypeIcon({ type }: { type: string }) {
 }
 
 const emptyForm = {
-  name: "", type: "terminal", serialNumber: "", model: "", status: "available",
-  condition: "new", clientId: "", clientName: "", deployedDate: "", purchaseDate: "",
-  purchaseCost: 0, warrantyExpiry: "", notes: "",
+  name: "", type: "terminal", serialNumber: "", model: "", brand: "",
+  firmwareVersion: "", partNumber: "", productCode: "", featureCode: "",
+  appCode: "", connectivity: "", manufactureDate: "",
+  status: "available", condition: "new", clientId: "", clientName: "",
+  deployedDate: "", purchaseDate: "", purchaseCost: 0, warrantyExpiry: "", notes: "",
 };
 
 export default function EquipmentTab() {
@@ -138,6 +148,7 @@ export default function EquipmentTab() {
         e.name.toLowerCase().includes(q) ||
         e.serialNumber.toLowerCase().includes(q) ||
         e.model.toLowerCase().includes(q) ||
+        (e.brand || "").toLowerCase().includes(q) ||
         e.clientName.toLowerCase().includes(q)
       );
     }
@@ -155,6 +166,10 @@ export default function EquipmentTab() {
   function openEdit(item: Equipment) {
     setForm({
       name: item.name, type: item.type, serialNumber: item.serialNumber, model: item.model,
+      brand: item.brand || "", firmwareVersion: item.firmwareVersion || "",
+      partNumber: item.partNumber || "", productCode: item.productCode || "",
+      featureCode: item.featureCode || "", appCode: item.appCode || "",
+      connectivity: item.connectivity || "", manufactureDate: item.manufactureDate || "",
       status: item.status, condition: item.condition, clientId: item.clientId,
       clientName: item.clientName, deployedDate: item.deployedDate, purchaseDate: item.purchaseDate,
       purchaseCost: item.purchaseCost, warrantyExpiry: item.warrantyExpiry, notes: item.notes,
@@ -163,12 +178,13 @@ export default function EquipmentTab() {
   }
 
   function EquipmentForm({ onSubmit, submitLabel }: { onSubmit: () => void; submitLabel: string }) {
+    const [showDetails, setShowDetails] = useState(false);
     return (
-      <div className="grid gap-4 py-2">
+      <div className="grid gap-4 py-2 max-h-[70vh] overflow-y-auto pr-1">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label className="text-xs">Name / Description</Label>
-            <Input placeholder="Valor VL100" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            <Input placeholder="PaybotX VP100" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           </div>
           <div>
             <Label className="text-xs">Type</Label>
@@ -180,14 +196,18 @@ export default function EquipmentTab() {
             </Select>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <Label className="text-xs">Brand</Label>
+            <Input placeholder="PaybotX" value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
+          </div>
           <div>
             <Label className="text-xs">Serial Number</Label>
-            <Input placeholder="SN-12345" value={form.serialNumber} onChange={e => setForm(f => ({ ...f, serialNumber: e.target.value }))} />
+            <Input placeholder="B9CA00229574" value={form.serialNumber} onChange={e => setForm(f => ({ ...f, serialNumber: e.target.value }))} />
           </div>
           <div>
             <Label className="text-xs">Model</Label>
-            <Input placeholder="VL100" value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} />
+            <Input placeholder="SP880" value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} />
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
@@ -224,6 +244,52 @@ export default function EquipmentTab() {
             <Input type="date" value={form.warrantyExpiry} onChange={e => setForm(f => ({ ...f, warrantyExpiry: e.target.value }))} />
           </div>
         </div>
+
+        {/* Collapsible Hardware Details */}
+        <button type="button" onClick={() => setShowDetails(!showDetails)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
+          <span className={`transition-transform ${showDetails ? "rotate-90" : ""}`}>▶</span>
+          Hardware Details (firmware, part number, connectivity)
+        </button>
+        {showDetails && (
+          <div className="space-y-3 pl-2 border-l-2 border-border/50">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Firmware Version</Label>
+                <Input placeholder="8.4.0.1" value={form.firmwareVersion} onChange={e => setForm(f => ({ ...f, firmwareVersion: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Connectivity</Label>
+                <Input placeholder="CST/ETH/WL/RF/SD/BL" value={form.connectivity} onChange={e => setForm(f => ({ ...f, connectivity: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Part Number (PN)</Label>
+                <Input placeholder="B9G-HB76W70000" value={form.partNumber} onChange={e => setForm(f => ({ ...f, partNumber: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Product Code</Label>
+                <Input placeholder="58B9G-HB76W70000000" value={form.productCode} onChange={e => setForm(f => ({ ...f, productCode: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs">Feature Code</Label>
+                <Input placeholder="M024582" value={form.featureCode} onChange={e => setForm(f => ({ ...f, featureCode: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">APP Code</Label>
+                <Input placeholder="AH99" value={form.appCode} onChange={e => setForm(f => ({ ...f, appCode: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Manufacture Date</Label>
+                <Input placeholder="11/2025" value={form.manufactureDate} onChange={e => setForm(f => ({ ...f, manufactureDate: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div>
           <Label className="text-xs">Notes</Label>
           <Textarea placeholder="Any notes..." className="h-16" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
@@ -320,11 +386,11 @@ export default function EquipmentTab() {
                   <TableCell><TypeIcon type={item.type} /></TableCell>
                   <TableCell>
                     <div className="font-medium text-sm">{item.name || "Unnamed"}</div>
-                    <div className="text-[10px] text-muted-foreground">{TYPES.find(t => t.value === item.type)?.label}</div>
+                    <div className="text-[10px] text-muted-foreground">{item.brand ? `${item.brand} · ` : ""}{TYPES.find(t => t.value === item.type)?.label}</div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm font-mono">{item.serialNumber || "—"}</div>
-                    <div className="text-[10px] text-muted-foreground">{item.model}</div>
+                    <div className="text-[10px] text-muted-foreground">{[item.model, item.firmwareVersion ? `FW ${item.firmwareVersion}` : ""].filter(Boolean).join(" · ") || "—"}</div>
                   </TableCell>
                   <TableCell><StatusBadge status={item.status} /></TableCell>
                   <TableCell>

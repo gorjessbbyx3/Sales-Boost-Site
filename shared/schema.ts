@@ -94,10 +94,18 @@ export const clients = pgTable("clients", {
 
 export const equipment = pgTable("equipment", {
   id: text("id").primaryKey(),
-  name: text("name").notNull().default(""),            // e.g. "Valor VL100", "PAX A920"
+  name: text("name").notNull().default(""),            // e.g. "PaybotX VP100", "PAX A920"
   type: text("type").notNull().default("terminal"),     // terminal, pos, gateway, pinpad, printer, other
   serialNumber: text("serial_number").notNull().default(""),
-  model: text("model").notNull().default(""),
+  model: text("model").notNull().default(""),           // internal model e.g. SP880
+  brand: text("brand").notNull().default(""),           // manufacturer e.g. PaybotX, PAX, Valor
+  firmwareVersion: text("firmware_version").notNull().default(""),
+  partNumber: text("part_number").notNull().default(""),       // PN on label
+  productCode: text("product_code").notNull().default(""),     // full product code
+  featureCode: text("feature_code").notNull().default(""),     // feature/config code
+  appCode: text("app_code").notNull().default(""),             // APP code
+  connectivity: text("connectivity").notNull().default(""),    // CST/ETH/WL/RF/SD/BL etc.
+  manufactureDate: text("manufacture_date").notNull().default(""), // MFG date from label
   status: text("status").notNull().default("available"), // available, deployed, maintenance, decommissioned, lost
   condition: text("condition").notNull().default("new"), // new, good, fair, poor
   clientId: text("client_id").notNull().default(""),     // linked client (empty = in inventory)
