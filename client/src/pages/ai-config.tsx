@@ -2852,6 +2852,9 @@ function FilesManagerTab() {
   const [deleteTarget, setDeleteTarget] = useState<AdminFile | null>(null);
 
   // Merge admin files + resources (Classroom) into one view
+  // Collect folder names from marker files BEFORE filtering them out
+  const markerFolders = useMemo(() => files.filter(f => f.name === ".folder-marker").map(f => f.folder).filter(Boolean), [files]);
+
   const allFiles: AdminFile[] = useMemo(() => {
     const resourcesAsFiles: AdminFile[] = resources.map(r => ({
       id: `res-${r.id}`,
@@ -2870,7 +2873,7 @@ function FilesManagerTab() {
 
   // Build folder tree
   const folderTree = useMemo(() => {
-    const usedFolders = Array.from(new Set(allFiles.map(f => f.folder || "").filter(Boolean)));
+    const usedFolders = Array.from(new Set([...allFiles.map(f => f.folder || "").filter(Boolean), ...markerFolders]));
     const allFolders = Array.from(new Set([...DEFAULT_FOLDERS, ...usedFolders])).sort();
     const topLevel: string[] = [];
     const children: Record<string, string[]> = {};
@@ -2885,7 +2888,7 @@ function FilesManagerTab() {
       }
     }
     return { topLevel, children, allFolders };
-  }, [allFiles]);
+  }, [allFiles, markerFolders]);
 
   // Subfolders of current folder
   const subfolders = useMemo(() => {

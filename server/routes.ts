@@ -718,22 +718,22 @@ RULES:
                   <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
                     <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">📋 Top 10 Statement Checklist</h3>
                     <p style="color:#aaa;font-size:13px;margin:0 0 12px;">Spot hidden fees, inflated rates, and junk charges in under 10 minutes.</p>
-                    <a href="https://techsavvyhawaii.com/free/statement-checklist" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+                    <a href="https://assets.techsavvyhawaii.com/website-resources/1771403190912-top-10-statement-check.pdf" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
                   </div>
                   <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
                     <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">📊 Rate Comparison Guide</h3>
                     <p style="color:#aaa;font-size:13px;margin:0 0 12px;">Industry benchmarks for restaurants, retail, salons, medical & more.</p>
-                    <a href="https://techsavvyhawaii.com/free/rate-comparison" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+                    <a href="https://assets.techsavvyhawaii.com/website-resources/1771403189858-rate-comparison-guide.pdf" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
                   </div>
                   <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
                     <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">🔒 Security Checklist</h3>
                     <p style="color:#aaa;font-size:13px;margin:0 0 12px;">PCI compliance, fraud prevention, and breach response checklist.</p>
-                    <a href="https://techsavvyhawaii.com/free/security-checklist" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+                    <a href="https://assets.techsavvyhawaii.com/website-resources/1771403187943-payment-security-checklist.pdf" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
                   </div>
                   <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
                     <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">💰 Cash Discount Guide</h3>
                     <p style="color:#aaa;font-size:13px;margin:0 0 12px;">How to eliminate processing fees entirely — legal in all 50 states.</p>
-                    <a href="https://techsavvyhawaii.com/free/cash-discount-guide" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+                    <a href="https://assets.techsavvyhawaii.com/website-resources/1771403188928-cash-discount-explained.pdf" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
                   </div>
                 </div>
 

@@ -50,7 +50,16 @@ export async function generateAIEmail(lead: {
     "follow-up-1": `Write a gentle first follow-up (3 days after initial). Reference that you reached out before. Add a specific value stat or case study relevant to their vertical. Ask one simple question. Under 100 words.`,
     "follow-up-2": `Write a second follow-up (7 days after initial). Different angle — maybe share a quick insight about their industry or a competitor comparison. Very brief, casual. Under 80 words.`,
     "follow-up-3": `Write a final breakup email (14 days after initial). Let them know this is the last follow-up. Leave the door open. Friendly and no-pressure. Under 60 words.`,
-    "lead-magnet-followup": `This person downloaded "${leadMagnetName}". Write a warm, personalized follow-up email (sent ~24 hours after download). Reference the specific guide they downloaded and connect it to their business type. Offer to do a free statement review that applies the concepts from the guide to THEIR actual numbers. Be helpful, not pushy — they already showed interest by downloading. Keep it under 120 words.`,
+    "lead-magnet-followup": `This person downloaded "${leadMagnetName}". Write a warm, personalized follow-up email (sent ~24 hours after download). Reference the specific guide they downloaded and connect it to their business type. Offer to do a free statement review that applies the concepts from the guide to THEIR actual numbers. Be helpful, not pushy — they already showed interest by downloading. Keep it under 120 words.
+
+Available PDF guides you can link to:
+- Top 10 Statement Checklist: https://assets.techsavvyhawaii.com/website-resources/1771403190912-top-10-statement-check.pdf
+- Rate Comparison Guide: https://assets.techsavvyhawaii.com/website-resources/1771403189858-rate-comparison-guide.pdf
+- Payment Security Checklist: https://assets.techsavvyhawaii.com/website-resources/1771403187943-payment-security-checklist.pdf
+- Cash Discount Explained: https://assets.techsavvyhawaii.com/website-resources/1771403188928-cash-discount-explained.pdf
+- Free AI Statement Review: https://techsavvyhawaii.com/statement-review
+
+Include a link to 1-2 related guides they haven't downloaded yet, plus the AI statement review link.`,
   };
 
   const response = await anthropic.messages.create({
@@ -66,6 +75,13 @@ RULES:
 - Reference SPECIFIC details about their business
 - Sound like someone they'd want to grab coffee with
 - Sign off as "TechSavvy Hawaii" with (808) 767-5460
+
+Free resources you can offer/link in emails:
+- Free AI Statement Review: https://techsavvyhawaii.com/statement-review
+- Top 10 Statement Checklist (PDF): https://assets.techsavvyhawaii.com/website-resources/1771403190912-top-10-statement-check.pdf
+- Rate Comparison Guide (PDF): https://assets.techsavvyhawaii.com/website-resources/1771403189858-rate-comparison-guide.pdf
+- Payment Security Checklist (PDF): https://assets.techsavvyhawaii.com/website-resources/1771403187943-payment-security-checklist.pdf
+- Cash Discount Explained (PDF): https://assets.techsavvyhawaii.com/website-resources/1771403188928-cash-discount-explained.pdf
 
 ${typeInstructions[type]}
 
