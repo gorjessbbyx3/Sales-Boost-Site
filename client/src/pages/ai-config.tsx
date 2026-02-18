@@ -2763,11 +2763,48 @@ function FilesManagerTab() {
     return match ? match[1].toLowerCase() : "";
   };
 
+  // Helper: extract YouTube video ID from URL
+  const getYouTubeId = (url: string): string | null => {
+    if (!url) return null;
+    // youtube.com/watch?v=ID, youtube.com/embed/ID, youtu.be/ID, youtube.com/shorts/ID
+    const patterns = [
+      /(?:youtube\.com\/watch\?.*v=|youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+    ];
+    for (const p of patterns) {
+      const m = url.match(p);
+      if (m) return m[1];
+    }
+    return null;
+  };
+
+  const isYouTube = (file: AdminFile) => !!getYouTubeId(file.url || "");
+
+  // Helper: get YouTube thumbnail URL
+  const getYouTubeThumbnail = (url: string): string | null => {
+    const id = getYouTubeId(url);
+    if (!id) return null;
+    return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  };
+
+  // Helper: get thumbnail URL for any file (for the card preview area)
+  const getThumbnailUrl = (file: AdminFile): string | null => {
+    if (!file.url) return null;
+    // YouTube
+    const ytThumb = getYouTubeThumbnail(file.url);
+    if (ytThumb) return ytThumb;
+    // Images — use the file URL directly
+    if (isImageFile(file)) return file.url;
+    // PDFs — no thumbnail (would need server-side rendering)
+    return null;
+  };
+
   // Helper: is this file actually previewable in browser?
   const isPreviewable = (file: AdminFile) => {
     if (!file.url) return false;
     const ext = getFileExt(file);
     const url = file.url.toLowerCase();
+    // YouTube
+    if (isYouTube(file)) return true;
     // Images
     if (file.type === "image" || ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return true;
     // Video
@@ -2789,6 +2826,7 @@ function FilesManagerTab() {
   // Helper: get file type icon with color
   const getFileIcon = (file: AdminFile): { icon: React.ElementType; color: string; bg: string } => {
     const ext = getFileExt(file);
+    if (isYouTube(file)) return { icon: Video, color: "text-red-500", bg: "bg-red-500/10" };
     if (isImageFile(file)) return { icon: Image, color: "text-emerald-400", bg: "bg-emerald-400/10" };
     if (file.type === "video" || ["mp4", "webm", "mov"].includes(ext)) return { icon: Video, color: "text-purple-400", bg: "bg-purple-400/10" };
     if (file.type === "spreadsheet" || ["xls", "xlsx", "csv"].includes(ext)) return { icon: FileSpreadsheet, color: "text-green-500", bg: "bg-green-500/10" };
@@ -2802,6 +2840,7 @@ function FilesManagerTab() {
 
   // Helper: get human-readable type label
   const getTypeLabel = (file: AdminFile) => {
+    if (isYouTube(file)) return "YouTube";
     const ext = getFileExt(file);
     const labels: Record<string, string> = {
       pdf: "PDF", doc: "Word", docx: "Word", xls: "Excel", xlsx: "Excel",
@@ -2827,8 +2866,9 @@ function FilesManagerTab() {
     const { icon: TypeIcon, color, bg } = getFileIcon(file);
     const isResource = file.id.startsWith("res-");
     const canPreview = isPreviewable(file);
-    const isImg = isImageFile(file);
     const typeLabel = getTypeLabel(file);
+    const thumbUrl = getThumbnailUrl(file);
+    const yt = isYouTube(file);
 
     return (
       <Card key={file.id} className="overflow-hidden border-border/50 hover:border-primary/30 transition-colors group cursor-pointer" onClick={() => {
@@ -2836,17 +2876,16 @@ function FilesManagerTab() {
         if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
       }}>
         {/* Thumbnail area */}
-        <div className={`relative h-32 ${bg} flex items-center justify-center overflow-hidden`}>
-          {isImg && file.url ? (
-            <img src={file.url} alt={file.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden"); }} />
-          ) : null}
-          {isImg && file.url ? (
-            <TypeIcon className={`w-10 h-10 ${color} hidden`} />
+        <div className={`relative h-32 ${thumbUrl ? "bg-black" : bg} flex items-center justify-center overflow-hidden`}>
+          {thumbUrl ? (
+            <img src={thumbUrl} alt={file.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           ) : (
             <TypeIcon className={`w-10 h-10 ${color}`} />
           )}
+          {/* YouTube play button overlay */}
+          {yt && <div className="absolute inset-0 flex items-center justify-center"><div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg"><Video className="w-5 h-5 text-white ml-0.5" /></div></div>}
           {/* Type badge */}
-          <span className={`absolute top-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded ${bg} ${color} border border-current/10`}>{typeLabel}</span>
+          <span className={`absolute top-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded ${yt ? "bg-red-600 text-white" : `${bg} ${color}`} border border-current/10`}>{typeLabel}</span>
           {/* Action buttons overlay */}
           <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
             {canPreview && <Button variant="secondary" size="icon" className="h-6 w-6 bg-background/80 backdrop-blur-sm" onClick={() => setPreviewFile(file)} title="Preview"><Eye className="w-3 h-3" /></Button>}
@@ -2881,8 +2920,8 @@ function FilesManagerTab() {
     const { icon: TypeIcon, color } = getFileIcon(file);
     const isResource = file.id.startsWith("res-");
     const canPreview = isPreviewable(file);
-    const isImg = isImageFile(file);
     const typeLabel = getTypeLabel(file);
+    const thumbUrl = getThumbnailUrl(file);
 
     return (
       <div key={file.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group" onClick={() => {
@@ -2890,12 +2929,13 @@ function FilesManagerTab() {
         if (canPreview) { setPreviewFile(file); } else { window.open(file.url, "_blank", "noopener,noreferrer"); }
       }}>
         {/* Thumbnail */}
-        <div className={`w-10 h-10 rounded-md ${isImg && file.url ? "" : `bg-muted/50`} flex items-center justify-center shrink-0 overflow-hidden`}>
-          {isImg && file.url ? (
-            <img src={file.url} alt="" className="w-full h-full object-cover rounded-md" onError={(e) => { (e.target as HTMLImageElement).replaceWith(Object.assign(document.createElement("div"), { className: "w-10 h-10 rounded-md bg-muted/50 flex items-center justify-center" })); }} />
+        <div className={`w-10 h-10 rounded-md ${thumbUrl ? "bg-black" : "bg-muted/50"} flex items-center justify-center shrink-0 overflow-hidden relative`}>
+          {thumbUrl ? (
+            <img src={thumbUrl} alt="" className="w-full h-full object-cover rounded-md" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           ) : (
             <TypeIcon className={`w-5 h-5 ${color}`} />
           )}
+          {isYouTube(file) && <div className="absolute inset-0 flex items-center justify-center"><div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center"><Video className="w-2.5 h-2.5 text-white" /></div></div>}
         </div>
         {/* Name + meta */}
         <div className="min-w-0 flex-1">
@@ -3094,7 +3134,7 @@ function FilesManagerTab() {
             ) : (
               <>
                 <div className="space-y-1.5"><Label className="text-xs">File Name</Label><Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Statement Review Guide.pdf" /></div>
-                <div className="space-y-1.5"><Label className="text-xs">URL / Link</Label><Input value={form.url} onChange={(e) => setForm((p) => ({ ...p, url: e.target.value }))} placeholder="https://drive.google.com/..." /></div>
+                <div className="space-y-1.5"><Label className="text-xs">URL / Link</Label><Input value={form.url} onChange={(e) => { const v = e.target.value; setForm((p) => ({ ...p, url: v, ...(getYouTubeId(v) ? { type: "video", name: p.name || "YouTube Video" } : {}) })); }} placeholder="https://youtube.com/watch?v=... or https://drive.google.com/..." /></div>
                 <div className="space-y-1.5"><Label className="text-xs">Type</Label><Select value={form.type} onValueChange={(v) => setForm((p) => ({ ...p, type: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="document">Document</SelectItem><SelectItem value="image">Image</SelectItem><SelectItem value="video">Video</SelectItem><SelectItem value="spreadsheet">Spreadsheet</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
               </>
             )}
@@ -3141,7 +3181,11 @@ function FilesManagerTab() {
               const isVid = previewFile.type === "video" || ["mp4", "webm"].includes(ext);
               const isPdf = ext === "pdf" || url.toLowerCase().endsWith(".pdf");
               const isHtml = ext === "html" || ext === "htm";
+              const ytId = getYouTubeId(url);
 
+              if (ytId) {
+                return <iframe src={`https://www.youtube.com/embed/${ytId}?autoplay=1`} title={previewFile.name} className="w-full h-[65vh] border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />;
+              }
               if (isImg) {
                 return <img src={url} alt={previewFile.name} className="max-w-full max-h-[65vh] mx-auto object-contain p-2" />;
               }
