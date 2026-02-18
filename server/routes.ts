@@ -1411,19 +1411,32 @@ RULES:
   // ─── Equipment Tracker ─────────────────────────────────────────────
 
   app.get("/api/equipment", requireAdminSession, async (_req, res) => {
-    const rows = await db.select().from(schema.equipment);
-    res.json(rows);
+    try {
+      const rows = await db.select().from(schema.equipment);
+      res.json(rows);
+    } catch (err: any) {
+      console.error("Equipment fetch error:", err);
+      res.status(500).json({ error: err.message || "Failed to fetch equipment" });
+    }
   });
 
   app.post("/api/equipment", requireAdminSession, async (req, res) => {
     const id = randomUUID();
     const now = new Date().toISOString();
-    const [item] = await db.insert(schema.equipment).values({
+    await db.insert(schema.equipment).values({
       id,
       name: req.body.name || "",
       type: req.body.type || "terminal",
       serialNumber: req.body.serialNumber || "",
       model: req.body.model || "",
+      brand: req.body.brand || "",
+      firmwareVersion: req.body.firmwareVersion || "",
+      partNumber: req.body.partNumber || "",
+      productCode: req.body.productCode || "",
+      featureCode: req.body.featureCode || "",
+      appCode: req.body.appCode || "",
+      connectivity: req.body.connectivity || "",
+      manufactureDate: req.body.manufactureDate || "",
       status: req.body.status || "available",
       condition: req.body.condition || "new",
       clientId: req.body.clientId || "",
@@ -1435,29 +1448,35 @@ RULES:
       notes: req.body.notes || "",
       createdAt: now,
       updatedAt: now,
-    }).returning();
-    logActivity("Equipment Added", `${item.name} (${item.serialNumber || "no S/N"}) — ${item.status}`, "equipment");
-    res.status(201).json(item);
+    });
+    const [item] = await db.select().from(schema.equipment).where(eq(schema.equipment.id, id));
+    logActivity("Equipment Added", `${item?.name || req.body.name} (${item?.serialNumber || "no S/N"}) — ${item?.status || "available"}`, "equipment");
+    res.status(201).json(item || { id });
   });
 
   app.patch("/api/equipment/:id", requireAdminSession, async (req, res) => {
     const body = { ...req.body, updatedAt: new Date().toISOString() };
     const updateData = pickColumns(schema.equipment, body);
-    const [updated] = await db.update(schema.equipment).set(updateData).where(eq(schema.equipment.id, req.params.id as string)).returning();
-    if (!updated) return res.status(404).json({ error: "Equipment not found" });
+    await db.update(schema.equipment).set(updateData).where(eq(schema.equipment.id, req.params.id as string));
 
     // If deploying to a client, auto-update status
-    if (body.clientId && body.clientId !== "" && updated.status === "available") {
-      await db.update(schema.equipment).set({ status: "deployed", deployedDate: new Date().toISOString().split("T")[0] }).where(eq(schema.equipment.id, req.params.id as string));
+    if (body.clientId && body.clientId !== "") {
+      const [check] = await db.select().from(schema.equipment).where(eq(schema.equipment.id, req.params.id as string));
+      if (check?.status === "available") {
+        await db.update(schema.equipment).set({ status: "deployed", deployedDate: new Date().toISOString().split("T")[0] }).where(eq(schema.equipment.id, req.params.id as string));
+      }
     }
 
+    const [updated] = await db.select().from(schema.equipment).where(eq(schema.equipment.id, req.params.id as string));
+    if (!updated) return res.status(404).json({ error: "Equipment not found" });
     logActivity("Equipment Updated", `${updated.name} → ${updated.status}${updated.clientName ? ` (${updated.clientName})` : ""}`, "equipment");
     res.json(updated);
   });
 
   app.delete("/api/equipment/:id", requireAdminSession, async (req, res) => {
-    const [deleted] = await db.delete(schema.equipment).where(eq(schema.equipment.id, req.params.id as string)).returning();
-    if (deleted) logActivity("Equipment Removed", `${deleted.name} (${deleted.serialNumber || "no S/N"})`, "equipment");
+    const [existing] = await db.select().from(schema.equipment).where(eq(schema.equipment.id, req.params.id as string));
+    await db.delete(schema.equipment).where(eq(schema.equipment.id, req.params.id as string));
+    if (existing) logActivity("Equipment Removed", `${existing.name} (${existing.serialNumber || "no S/N"})`, "equipment");
     res.json({ success: true });
   });
 

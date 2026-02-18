@@ -1068,6 +1068,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           weightedValue: (Number(o.value) || 0) * ((Number(o.probability) || 0) / 100),
           expectedCloseDate: o.expected_close_date || "", actualCloseDate: o.actual_close_date || "",
           lossReason: o.loss_reason || "", notes: o.notes || "", assigneeId: o.assignee_id || "",
+          equipmentId: o.equipment_id || "",
           createdAt: o.created_at, updatedAt: o.updated_at, stageChangedAt: o.stage_changed_at || "",
           leadName: leadMap[o.lead_id]?.name || "", leadBusiness: leadMap[o.lead_id]?.business || "",
           assigneeName: teamMap[o.assignee_id]?.name || "",
@@ -1088,8 +1089,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const probability = body.probability ?? stageProbMap[stage] ?? 10;
 
       await env.DB.prepare(
-        "INSERT INTO opportunities (id, title, lead_id, client_id, stage, value, probability, expected_close_date, actual_close_date, loss_reason, notes, assignee_id, created_at, updated_at, stage_changed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?)"
-      ).bind(id, body.title || "", body.leadId || "", body.clientId || "", stage, body.value || 0, probability, body.expectedCloseDate || "", body.notes || "", body.assigneeId || "", ts, ts, ts).run();
+        "INSERT INTO opportunities (id, title, lead_id, client_id, stage, value, probability, expected_close_date, actual_close_date, loss_reason, notes, assignee_id, equipment_id, created_at, updated_at, stage_changed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?, ?)"
+      ).bind(id, body.title || "", body.leadId || "", body.clientId || "", stage, body.value || 0, probability, body.expectedCloseDate || "", body.notes || "", body.assigneeId || "", body.equipmentId || "", ts, ts, ts).run();
       const row = await env.DB.prepare("SELECT * FROM opportunities WHERE id = ?").bind(id).first();
       return json({
         id: row!.id, title: row!.title, leadId: row!.lead_id, clientId: row!.client_id,
@@ -1097,6 +1098,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         weightedValue: Number(row!.value) * (Number(row!.probability) / 100),
         expectedCloseDate: row!.expected_close_date || "", actualCloseDate: row!.actual_close_date || "",
         lossReason: row!.loss_reason || "", notes: row!.notes || "", assigneeId: row!.assignee_id || "",
+        equipmentId: row!.equipment_id || "",
         createdAt: row!.created_at, updatedAt: row!.updated_at, stageChangedAt: row!.stage_changed_at || "",
         leadName: "", leadBusiness: "", assigneeName: "",
       }, 201);
@@ -1110,6 +1112,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         title: "title", leadId: "lead_id", clientId: "client_id", stage: "stage",
         value: "value", probability: "probability", expectedCloseDate: "expected_close_date",
         actualCloseDate: "actual_close_date", lossReason: "loss_reason", notes: "notes", assigneeId: "assignee_id",
+        equipmentId: "equipment_id",
       };
       const updates: string[] = ["updated_at = ?"];
       const values: any[] = [now()];
@@ -1126,6 +1129,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         weightedValue: Number(row.value) * (Number(row.probability) / 100),
         expectedCloseDate: row.expected_close_date || "", actualCloseDate: row.actual_close_date || "",
         lossReason: row.loss_reason || "", notes: row.notes || "", assigneeId: row.assignee_id || "",
+        equipmentId: row.equipment_id || "",
         createdAt: row.created_at, updatedAt: row.updated_at, stageChangedAt: row.stage_changed_at || "",
         leadName: "", leadBusiness: "", assigneeName: "",
       });
@@ -1483,6 +1487,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       if (body.name !== undefined) { updates.push("name = ?"); values.push(body.name); }
       if (body.folder !== undefined) { updates.push("folder = ?"); values.push(body.folder); }
       if (body.category !== undefined) { updates.push("category = ?"); values.push(body.category); }
+      if (body.starred !== undefined) { updates.push("starred = ?"); values.push(body.starred ? 1 : 0); }
       if (updates.length === 0) return err("No updates provided");
       values.push(fileMatch[1]);
       await env.DB.prepare(`UPDATE admin_files SET ${updates.join(", ")} WHERE id = ?`).bind(...values).run();
@@ -1506,6 +1511,90 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         }
       } catch { /* best effort */ }
       await env.DB.prepare("DELETE FROM admin_files WHERE id = ?").bind(fileMatch[1]).run();
+      return json({ success: true });
+    }
+
+    // ─── EQUIPMENT TRACKER ──────────────────────────────────────────────
+
+    if (path === "/api/equipment" && method === "GET") {
+      const { results } = await env.DB.prepare("SELECT * FROM equipment ORDER BY created_at DESC").all();
+      return json((results || []).map(mapEquipment));
+    }
+
+    if (path === "/api/equipment" && method === "POST") {
+      const body: any = await request.json();
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      await env.DB.prepare(
+        `INSERT INTO equipment (id, name, type, serial_number, model, brand, firmware_version, part_number, product_code, feature_code, app_code, connectivity, manufacture_date, status, condition, client_id, client_name, deployed_date, purchase_date, purchase_cost, warranty_expiry, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        id, body.name || "", body.type || "terminal", body.serialNumber || "", body.model || "",
+        body.brand || "", body.firmwareVersion || "", body.partNumber || "", body.productCode || "",
+        body.featureCode || "", body.appCode || "", body.connectivity || "", body.manufactureDate || "",
+        body.status || "available", body.condition || "new", body.clientId || "", body.clientName || "",
+        body.deployedDate || "", body.purchaseDate || "", body.purchaseCost || 0, body.warrantyExpiry || "",
+        body.notes || "", now, now
+      ).run();
+      const row = await env.DB.prepare("SELECT * FROM equipment WHERE id = ?").bind(id).first();
+      return json(mapEquipment(row!), 201);
+    }
+
+    // Bulk assign equipment (must be before wildcard match)
+    if (path === "/api/equipment/assign" && method === "POST") {
+      const { equipmentIds, clientId, clientName } = await request.json() as any;
+      if (!equipmentIds?.length) return err("No equipment selected");
+      const now = new Date().toISOString();
+      for (const eqId of equipmentIds) {
+        await env.DB.prepare(
+          "UPDATE equipment SET client_id = ?, client_name = ?, status = ?, deployed_date = ?, updated_at = ? WHERE id = ?"
+        ).bind(clientId || "", clientName || "", clientId ? "deployed" : "available", clientId ? now.split("T")[0] : "", now, eqId).run();
+      }
+      return json({ success: true });
+    }
+
+    // Equipment for specific client (must be before wildcard match)
+    const eqClientMatch = path.match(/^\/api\/equipment\/client\/([^/]+)$/);
+    if (eqClientMatch && method === "GET") {
+      const { results } = await env.DB.prepare("SELECT * FROM equipment WHERE client_id = ?").bind(eqClientMatch[1]).all();
+      return json((results || []).map(mapEquipment));
+    }
+
+    const eqMatch = path.match(/^\/api\/equipment\/([^/]+)$/);
+
+    if (eqMatch && method === "PATCH") {
+      const body: any = await request.json();
+      const updates: string[] = [];
+      const values: any[] = [];
+      const fieldMap: Record<string, string> = {
+        name: "name", type: "type", serialNumber: "serial_number", model: "model",
+        brand: "brand", firmwareVersion: "firmware_version", partNumber: "part_number",
+        productCode: "product_code", featureCode: "feature_code", appCode: "app_code",
+        connectivity: "connectivity", manufactureDate: "manufacture_date",
+        status: "status", condition: "condition", clientId: "client_id", clientName: "client_name",
+        deployedDate: "deployed_date", purchaseDate: "purchase_date", purchaseCost: "purchase_cost",
+        warrantyExpiry: "warranty_expiry", notes: "notes",
+      };
+      for (const [jsKey, dbCol] of Object.entries(fieldMap)) {
+        if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(body[jsKey]); }
+      }
+      updates.push("updated_at = ?"); values.push(new Date().toISOString());
+      if (updates.length <= 1) return err("No updates provided");
+      values.push(eqMatch[1]);
+      await env.DB.prepare(`UPDATE equipment SET ${updates.join(", ")} WHERE id = ?`).bind(...values).run();
+      // Auto-deploy status when assigning client
+      if (body.clientId && body.clientId !== "") {
+        const current = await env.DB.prepare("SELECT status FROM equipment WHERE id = ?").bind(eqMatch[1]).first();
+        if (current?.status === "available") {
+          await env.DB.prepare("UPDATE equipment SET status = 'deployed', deployed_date = ? WHERE id = ?").bind(new Date().toISOString().split("T")[0], eqMatch[1]).run();
+        }
+      }
+      const row = await env.DB.prepare("SELECT * FROM equipment WHERE id = ?").bind(eqMatch[1]).first();
+      if (!row) return err("Equipment not found", 404);
+      return json(mapEquipment(row));
+    }
+
+    if (eqMatch && method === "DELETE") {
+      await env.DB.prepare("DELETE FROM equipment WHERE id = ?").bind(eqMatch[1]).run();
       return json({ success: true });
     }
 
@@ -2354,7 +2443,22 @@ function mapMaterial(row: Record<string, unknown>) {
 }
 
 function mapFile(row: Record<string, unknown>) {
-  return { id: row.id, name: row.name, size: row.size, type: row.type, category: row.category, folder: row.folder || "", uploadedAt: row.uploaded_at, url: row.url };
+  return { id: row.id, name: row.name, size: row.size, type: row.type, category: row.category, folder: row.folder || "", starred: row.starred ? 1 : 0, uploadedAt: row.uploaded_at, url: row.url };
+}
+
+function mapEquipment(row: Record<string, unknown>) {
+  return {
+    id: row.id, name: row.name, type: row.type, serialNumber: row.serial_number,
+    model: row.model, brand: row.brand || "", firmwareVersion: row.firmware_version || "",
+    partNumber: row.part_number || "", productCode: row.product_code || "",
+    featureCode: row.feature_code || "", appCode: row.app_code || "",
+    connectivity: row.connectivity || "", manufactureDate: row.manufacture_date || "",
+    status: row.status, condition: row.condition,
+    clientId: row.client_id || "", clientName: row.client_name || "",
+    deployedDate: row.deployed_date || "", purchaseDate: row.purchase_date || "",
+    purchaseCost: row.purchase_cost || 0, warrantyExpiry: row.warranty_expiry || "",
+    notes: row.notes || "", createdAt: row.created_at, updatedAt: row.updated_at,
+  };
 }
 
 function mapInvoice(row: Record<string, unknown>) {
