@@ -244,20 +244,20 @@ export default function DealsTab() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Linked Lead</Label>
-                <Select value={form.leadId} onValueChange={(v) => setForm({ ...form, leadId: v })}>
+                <Select value={form.leadId || "none"} onValueChange={(v) => setForm({ ...form, leadId: v === "none" ? "" : v })}>
                   <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select lead..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {leads.map(l => <SelectItem key={l.id} value={l.id}>{l.business || l.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs">Assigned To</Label>
-                <Select value={form.assigneeId} onValueChange={(v) => setForm({ ...form, assigneeId: v })}>
+                <Select value={form.assigneeId || "none"} onValueChange={(v) => setForm({ ...form, assigneeId: v === "none" ? "" : v })}>
                   <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="none">Unassigned</SelectItem>
                     {team.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                   </SelectContent>
                 </Select>

@@ -3937,38 +3937,39 @@ Return ONLY valid JSON, no other text.`,
           const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, old.leadId));
           if (lead) {
             // Check if client already exists for this lead
-            const existingClients = await db.select().from(schema.clients).where(eq(schema.clients.name, lead.business || lead.name)).limit(1);
+            const existingClients = await db.select().from(schema.clients).where(eq(schema.clients.business, lead.business || lead.name)).limit(1);
             
             if (existingClients.length === 0) {
               // Create client from lead data
               const clientId = randomUUID();
+              const vol = parseFloat(lead.monthlyVolume || "0") || 0;
               await db.insert(schema.clients).values({
                 id: clientId,
-                name: lead.business || lead.name,
-                contactName: lead.name,
+                name: lead.name,
+                business: lead.business || lead.name,
                 email: lead.email,
                 phone: lead.phone,
-                address: lead.address || "",
-                vertical: lead.vertical || "other",
-                processor: "TechSavvy Hawaii",
-                equipment: lead.currentEquipment || "",
-                monthlyVolume: lead.monthlyVolume || "",
-                notes: `Converted from lead. Previous processor: ${lead.currentProcessor || "unknown"}. ${old.notes || ""}`,
-                createdAt: now,
-                updatedAt: now,
+                package: lead.package || "terminal",
+                maintenance: "none",
+                websiteUrl: "",
+                websiteStatus: "not-started",
+                terminalId: "",
+                monthlyVolume: vol,
+                startDate: now.split("T")[0],
+                notes: `Contact: ${lead.name}. Vertical: ${lead.vertical || "other"}. Previous processor: ${lead.currentProcessor || "unknown"}. Equipment: ${lead.currentEquipment || "n/a"}. Address: ${lead.address || "n/a"}. ${old.notes || ""}`.trim(),
               });
 
               // Create first revenue entry (estimated monthly value)
               const dealValue = body.value || old.value || 0;
               if (dealValue > 0) {
-                await db.insert(schema.revenue).values({
+                await db.insert(schema.revenueEntries).values({
                   id: randomUUID(),
                   clientId,
                   amount: Math.round(dealValue / 12 * 100) / 100, // Monthly from annual
-                  type: "residual",
+                  type: "other",
                   description: `Monthly residual — ${lead.business || lead.name}`,
                   date: now,
-                  createdAt: now,
+                  recurring: true,
                 });
               }
 
