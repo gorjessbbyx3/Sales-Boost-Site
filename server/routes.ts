@@ -9,6 +9,16 @@ import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import rateLimit from "express-rate-limit";
 import { sendEmail, sendContactFormConfirmation, sendOutreachEmail, generateOutreachEmail, generateCallScript, handleInboundEmail } from "./email";
+import {
+  statementAnalysisEmail,
+  walkInFollowUpEmail,
+  phoneCallFollowUpEmail,
+  initialOutreachEmail,
+  meetingFollowUpEmail,
+  welcomeToTeamEmail,
+  referralFollowUpEmail,
+  referralContractEmail,
+} from "./email-templates";
 import { startAutopilot, stopAutopilot, runAutopilot, generateAIEmail, autoEnrichLead, classifyInboundEmail } from "./autopilot";
 import multer from "multer";
 import path from "path";
@@ -142,7 +152,7 @@ async function seedPlanIfNeeded() {
     { phase: 1, weekRange: "1-2", title: "Build landing page with lead capture form + QR code", description: "Opt-in form for lead magnets with thank-you page", completed: false, completedAt: "", order: 4 },
     { phase: 1, weekRange: "1-2", title: "Draft referral partner agreement", description: "Terms, commission structure, tracking method", completed: false, completedAt: "", order: 5 },
     { phase: 1, weekRange: "1-2", title: "Prepare cold call and walk-in scripts", description: "30-second openers + qualification questions", completed: false, completedAt: "", order: 6 },
-    { phase: 1, weekRange: "1-2", title: "Set up email templates (cold + follow-up + confirm)", description: "Initial outreach, follow-up sequences", completed: false, completedAt: "", order: 7 },
+    { phase: 1, weekRange: "1-2", title: "Set up email templates (cold + follow-up + confirm)", description: "8 branded templates: outreach, walk-in, phone, meeting, referral, contract, welcome, statement analysis", completed: true, completedAt: new Date().toISOString(), order: 7 },
     { phase: 2, weekRange: "3-6", title: "Schedule and complete 10 referral partner meetings", description: "Accountants, bookkeepers, consultants, POS resellers", completed: false, completedAt: "", order: 8 },
     { phase: 2, weekRange: "3-6", title: "Attend 4 networking events", description: "Chamber, BNI, industry events — bring QR codes", completed: false, completedAt: "", order: 9 },
     { phase: 2, weekRange: "3-6", title: "Launch social content calendar + daily engagement", description: "3 posts/week + 10 targeted comments/day", completed: false, completedAt: "", order: 10 },
@@ -170,7 +180,7 @@ async function seedMaterialsIfNeeded() {
     { category: "sales", name: "One-Page Value Prop + Statement Review Offer", description: "Benefits, pricing, QR to landing page — print + PDF", status: "not-started", fileUrl: "", updatedAt: now },
     { category: "sales", name: "Cold Call Script + Objection Handlers", description: "30-60 sec opener, qualification Qs, common objections", status: "not-started", fileUrl: "", updatedAt: now },
     { category: "sales", name: "Walk-In Script + Leave-Behind Card", description: "In-person opener with handoff material", status: "not-started", fileUrl: "", updatedAt: now },
-    { category: "sales", name: "Email Templates (Cold + Follow-Up + Confirm)", description: "Initial outreach, follow-up sequences, appointment confirm", status: "not-started", fileUrl: "", updatedAt: now },
+    { category: "sales", name: "Email Templates (Cold + Follow-Up + Confirm)", description: "Initial outreach, walk-in follow-up, phone follow-up, meeting follow-up, referral follow-up, referral contract, welcome, statement analysis — 8 branded templates", status: "completed", fileUrl: "", updatedAt: now },
     { category: "lead-gen", name: "Lead Magnet PDF: Statement Checklist", description: "Top 10 Things to Check on Your Merchant Statement", status: "not-started", fileUrl: "", updatedAt: now },
     { category: "lead-gen", name: "Lead Magnet PDF: Cash Discount Guide", description: "Cash Discount Program Explained: Is It Right for Your Business?", status: "not-started", fileUrl: "", updatedAt: now },
     { category: "lead-gen", name: "Landing Page with Lead Capture Form", description: "Opt-in page for lead magnets with form + thank-you page", status: "not-started", fileUrl: "", updatedAt: now },
@@ -656,77 +666,33 @@ RULES:
       }
 
       if (type === "report" && analysis) {
-        // Send the analysis report via email
-        const feesHtml = analysis.hiddenFees?.map((f: any) =>
-          `<tr>
-            <td style="padding:8px 12px;border-bottom:1px solid #2a2a2a;color:#e0e0e0;font-size:14px;">${f.name}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #2a2a2a;color:#ff6b6b;font-weight:bold;font-size:14px;">${f.amount}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #2a2a2a;color:#aaa;font-size:13px;">${f.explanation}</td>
-          </tr>`
-        ).join("") || "";
+        // Send the analysis report via branded email template
+        const annualOverpay = analysis.estimatedOverpay
+          ? `$${(parseFloat(analysis.estimatedOverpay.replace(/[$,]/g, "")) * 12).toLocaleString()}`
+          : "N/A";
 
-        const recsHtml = analysis.recommendations?.map((r: string) =>
-          `<li style="margin-bottom:8px;color:#e0e0e0;font-size:14px;">✅ ${r}</li>`
-        ).join("") || "";
+        const emailContent = statementAnalysisEmail({
+          ownerName: name,
+          businessName: business || "Your Business",
+          processorName: analysis.processorName || analysis.currentProcessor || "your processor",
+          effectiveRate: analysis.effectiveRate || "N/A",
+          totalFees: analysis.totalFees || analysis.estimatedOverpay || "N/A",
+          monthlyVolume: analysis.monthlyVolume || "N/A",
+          redFlagCount: Array.isArray(analysis.redFlags) ? analysis.redFlags.length : 0,
+          overallGrade: analysis.overallGrade || "C",
+          hiddenFees: Array.isArray(analysis.hiddenFees) ? analysis.hiddenFees : [],
+          redFlags: Array.isArray(analysis.redFlags) ? analysis.redFlags : [],
+          junkFees: Array.isArray(analysis.junkFees) ? analysis.junkFees : [],
+          recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
+          estimatedOverpay: analysis.estimatedOverpay || "N/A",
+          potentialAnnualSavings: annualOverpay,
+        });
 
         await sendEmail({
           to: email,
-          subject: `Your Statement Analysis Report — Grade: ${analysis.overallGrade} | TechSavvy Hawaii`,
-          html: `
-            <div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;max-width:640px;margin:0 auto;background:#0a0a0a;color:#e0e0e0;">
-              <div style="padding:32px;background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid #4aeaff;">
-                <h1 style="margin:0;font-size:24px;color:#4aeaff;">λechSavvy</h1>
-                <p style="margin:8px 0 0;color:#94a3b8;font-size:14px;">AI Statement Analysis Report</p>
-              </div>
-              <div style="padding:32px;">
-                <p style="font-size:16px;margin-bottom:24px;">Hi ${name},</p>
-                <p style="font-size:14px;color:#aaa;margin-bottom:24px;">${analysis.summary}</p>
-
-                <div style="display:flex;gap:16px;margin-bottom:32px;">
-                  <div style="flex:1;background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;border:1px solid #2a2a4a;">
-                    <p style="color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Grade</p>
-                    <p style="font-size:36px;font-weight:900;margin:0;color:${analysis.overallGrade === 'A' ? '#4ade80' : analysis.overallGrade === 'B' ? '#4aeaff' : analysis.overallGrade === 'C' ? '#fbbf24' : '#ff6b6b'};">${analysis.overallGrade}</p>
-                  </div>
-                  <div style="flex:1;background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;border:1px solid #2a2a4a;">
-                    <p style="color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Your Rate</p>
-                    <p style="font-size:28px;font-weight:700;margin:0;color:#ff6b6b;">${analysis.effectiveRate}</p>
-                    <p style="color:#666;font-size:11px;margin:4px 0 0;">Avg: ${analysis.industryAverage}</p>
-                  </div>
-                  <div style="flex:1;background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;border:1px solid #2a2a4a;">
-                    <p style="color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Monthly Overpay</p>
-                    <p style="font-size:28px;font-weight:700;margin:0;color:#fb923c;">${analysis.estimatedOverpay}</p>
-                  </div>
-                </div>
-
-                ${feesHtml ? `
-                <h2 style="font-size:18px;color:#fbbf24;margin-bottom:12px;">⚠️ Hidden Fees Found</h2>
-                <table style="width:100%;border-collapse:collapse;margin-bottom:32px;background:#111;">
-                  <thead>
-                    <tr style="background:#1a1a2e;">
-                      <th style="padding:10px 12px;text-align:left;color:#4aeaff;font-size:12px;text-transform:uppercase;">Fee</th>
-                      <th style="padding:10px 12px;text-align:left;color:#4aeaff;font-size:12px;text-transform:uppercase;">Amount</th>
-                      <th style="padding:10px 12px;text-align:left;color:#4aeaff;font-size:12px;text-transform:uppercase;">Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>${feesHtml}</tbody>
-                </table>` : ""}
-
-                ${recsHtml ? `
-                <h2 style="font-size:18px;color:#4ade80;margin-bottom:12px;">💡 Recommendations</h2>
-                <ul style="padding-left:0;list-style:none;margin-bottom:32px;">${recsHtml}</ul>` : ""}
-
-                <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid #4aeaff33;border-radius:12px;padding:24px;text-align:center;margin-top:32px;">
-                  <h3 style="color:#4aeaff;margin:0 0 8px;font-size:18px;">Ready to stop overpaying?</h3>
-                  <p style="color:#aaa;font-size:14px;margin:0 0 16px;">Let's get you better rates — no commitment, no pressure.</p>
-                  <a href="tel:+18087675460" style="display:inline-block;background:#4aeaff;color:#000;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">📞 Call (808) 767-5460</a>
-                </div>
-
-                <p style="color:#666;font-size:12px;margin-top:32px;text-align:center;">
-                  TechSavvy Hawaii • techsavvyhawaii.com • contact@techsavvyhawaii.com
-                </p>
-              </div>
-            </div>
-          `,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text,
         });
       } else {
         // Send booklet guides email
@@ -3145,12 +3111,14 @@ Return ONLY valid JSON, no other text.`,
     const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, leadId));
     if (!lead) return res.status(404).json({ error: "Lead not found" });
 
-    const emailContent = generateOutreachEmail({
-      name: lead.name,
-      business: lead.business,
+    // Use new branded template, with fallback to legacy generator
+    const emailContent = initialOutreachEmail({
+      ownerName: lead.name,
+      businessName: lead.business,
+      agentName: "Tech Savvy Hawaii",
+      vertical: lead.vertical,
       currentProcessor: lead.currentProcessor,
       monthlyVolume: lead.monthlyVolume,
-      vertical: lead.vertical,
     });
 
     res.json(emailContent);
@@ -3164,15 +3132,16 @@ Return ONLY valid JSON, no other text.`,
     if (!lead) return res.status(404).json({ error: "Lead not found" });
     if (!lead.email) return res.status(400).json({ error: "Lead has no email address" });
 
-    // Use provided content or generate default
+    // Use provided content or generate branded template
     const content = subject && html
       ? { subject, html, text }
-      : generateOutreachEmail({
-          name: lead.name,
-          business: lead.business,
+      : initialOutreachEmail({
+          ownerName: lead.name,
+          businessName: lead.business,
+          agentName: "Tech Savvy Hawaii",
+          vertical: lead.vertical,
           currentProcessor: lead.currentProcessor,
           monthlyVolume: lead.monthlyVolume,
-          vertical: lead.vertical,
         });
 
     const result = await sendOutreachEmail({
@@ -3283,6 +3252,331 @@ Return ONLY valid JSON, no other text.`,
     const [deleted] = await db.delete(schema.outreachTemplates).where(eq(schema.outreachTemplates.id, req.params.id as string)).returning();
     if (deleted) logActivity("Email Template Deleted", deleted.name, "email");
     res.json({ success: true });
+  });
+
+  // ─── Branded Template Generation ────────────────────────────────────
+  // Generate any of the 8 branded email templates by type
+
+  app.post("/api/email/template/generate", requireAdminSession, async (req, res) => {
+    try {
+      const { type, data } = req.body;
+      if (!type) return res.status(400).json({ error: "Template 'type' is required" });
+
+      let result;
+      switch (type) {
+        case "statement-analysis":
+          result = statementAnalysisEmail(data);
+          break;
+        case "walk-in-follow-up":
+          result = walkInFollowUpEmail(data);
+          break;
+        case "phone-call-follow-up":
+          result = phoneCallFollowUpEmail(data);
+          break;
+        case "initial-outreach":
+          result = initialOutreachEmail(data);
+          break;
+        case "meeting-follow-up":
+          result = meetingFollowUpEmail(data);
+          break;
+        case "welcome-to-team":
+          result = welcomeToTeamEmail(data);
+          break;
+        case "referral-follow-up":
+          result = referralFollowUpEmail(data);
+          break;
+        case "referral-contract":
+          result = referralContractEmail(data);
+          break;
+        default:
+          return res.status(400).json({
+            error: `Unknown template type: ${type}`,
+            availableTypes: [
+              "statement-analysis", "walk-in-follow-up", "phone-call-follow-up",
+              "initial-outreach", "meeting-follow-up", "welcome-to-team",
+              "referral-follow-up", "referral-contract"
+            ]
+          });
+      }
+
+      res.json(result);
+    } catch (err: any) {
+      console.error("Template generate error:", err);
+      res.status(500).json({ error: "Failed to generate template" });
+    }
+  });
+
+  // ─── Branded Template Send (generate + send in one call) ───────────
+  // Generates the template, sends the email, logs activity, updates lead status
+
+  app.post("/api/email/template/send", requireAdminSession, async (req, res) => {
+    try {
+      const { type, to, data, leadId, threadId } = req.body;
+      if (!type || !to) return res.status(400).json({ error: "Template 'type' and 'to' email required" });
+
+      // Generate the template
+      let emailContent;
+      switch (type) {
+        case "statement-analysis":
+          emailContent = statementAnalysisEmail(data);
+          break;
+        case "walk-in-follow-up":
+          emailContent = walkInFollowUpEmail(data);
+          break;
+        case "phone-call-follow-up":
+          emailContent = phoneCallFollowUpEmail(data);
+          break;
+        case "initial-outreach":
+          emailContent = initialOutreachEmail(data);
+          break;
+        case "meeting-follow-up":
+          emailContent = meetingFollowUpEmail(data);
+          break;
+        case "welcome-to-team":
+          emailContent = welcomeToTeamEmail(data);
+          break;
+        case "referral-follow-up":
+          emailContent = referralFollowUpEmail(data);
+          break;
+        case "referral-contract":
+          emailContent = referralContractEmail(data);
+          break;
+        default:
+          return res.status(400).json({ error: `Unknown template type: ${type}` });
+      }
+
+      // Send via Resend
+      const result = await sendEmail({
+        to,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+        threadId,
+        leadId,
+        contactName: data?.ownerName || data?.partnerName || data?.newMemberName || "",
+        source: type,
+      });
+
+      if (!result.success) {
+        return res.status(500).json({ error: result.error });
+      }
+
+      // Update lead status if leadId provided
+      if (leadId) {
+        const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, leadId));
+        if (lead && lead.status === "new") {
+          await db.update(schema.leads).set({
+            status: "contacted",
+            updatedAt: new Date().toISOString(),
+          }).where(eq(schema.leads.id, leadId));
+        }
+      }
+
+      const typeLabels: Record<string, string> = {
+        "statement-analysis": "Statement Analysis",
+        "walk-in-follow-up": "Walk-In Follow Up",
+        "phone-call-follow-up": "Phone Call Follow Up",
+        "initial-outreach": "Initial Outreach",
+        "meeting-follow-up": "Meeting Follow Up",
+        "welcome-to-team": "Welcome to Team",
+        "referral-follow-up": "Referral Follow Up",
+        "referral-contract": "Referral Contract",
+      };
+
+      logActivity(`${typeLabels[type] || type} Email Sent`, `To: ${to}`, "email");
+      sendSlackNotification(`📧 ${typeLabels[type] || type} email sent to ${to}`, "newLead");
+
+      res.json(result);
+    } catch (err: any) {
+      console.error("Template send error:", err);
+      res.status(500).json({ error: "Failed to send template email" });
+    }
+  });
+
+  // ─── Lead Quick-Send (pick a lead, pick a template type) ───────────
+  // Convenience route: pass leadId + template type, auto-populates from lead data
+
+  app.post("/api/email/template/send-to-lead", requireAdminSession, async (req, res) => {
+    try {
+      const { leadId, type, agentName, extra } = req.body;
+      if (!leadId || !type) return res.status(400).json({ error: "leadId and type required" });
+
+      const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, leadId));
+      if (!lead) return res.status(404).json({ error: "Lead not found" });
+      if (!lead.email) return res.status(400).json({ error: "Lead has no email address" });
+
+      const agent = agentName || "Tech Savvy Hawaii";
+      const extraData = extra || {};
+
+      // Build template data from lead fields
+      let templateData: any;
+      switch (type) {
+        case "walk-in-follow-up":
+          templateData = {
+            ownerName: lead.name,
+            businessName: lead.business,
+            agentName: agent,
+            vertical: lead.vertical,
+            notes: extraData.notes || lead.notes || "",
+          };
+          break;
+        case "phone-call-follow-up":
+          templateData = {
+            ownerName: lead.name,
+            businessName: lead.business,
+            agentName: agent,
+            discussed: extraData.discussed || "",
+            nextStep: extraData.nextStep || lead.nextStep || "",
+          };
+          break;
+        case "initial-outreach":
+          templateData = {
+            ownerName: lead.name,
+            businessName: lead.business,
+            agentName: agent,
+            vertical: lead.vertical,
+            currentProcessor: lead.currentProcessor,
+            monthlyVolume: lead.monthlyVolume,
+            personalNote: extraData.personalNote || "",
+          };
+          break;
+        case "meeting-follow-up":
+          templateData = {
+            ownerName: lead.name,
+            businessName: lead.business,
+            agentName: agent,
+            meetingDate: extraData.meetingDate || new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }),
+            discussed: extraData.discussed || "",
+            actionItems: extraData.actionItems || [],
+            savingsEstimate: extraData.savingsEstimate || "",
+            nextMeeting: extraData.nextMeeting || "",
+          };
+          break;
+        case "referral-follow-up":
+          templateData = {
+            ownerName: lead.name,
+            businessName: lead.business,
+            agentName: agent,
+            referrerName: extraData.referrerName || "",
+            referrerBusiness: extraData.referrerBusiness || "",
+            vertical: lead.vertical,
+          };
+          break;
+        default:
+          return res.status(400).json({
+            error: `Type '${type}' not supported for lead quick-send`,
+            supported: ["walk-in-follow-up", "phone-call-follow-up", "initial-outreach", "meeting-follow-up", "referral-follow-up"]
+          });
+      }
+
+      let emailContent;
+      switch (type) {
+        case "walk-in-follow-up": emailContent = walkInFollowUpEmail(templateData); break;
+        case "phone-call-follow-up": emailContent = phoneCallFollowUpEmail(templateData); break;
+        case "initial-outreach": emailContent = initialOutreachEmail(templateData); break;
+        case "meeting-follow-up": emailContent = meetingFollowUpEmail(templateData); break;
+        case "referral-follow-up": emailContent = referralFollowUpEmail(templateData); break;
+        default: return res.status(400).json({ error: "Invalid type" });
+      }
+
+      const result = await sendEmail({
+        to: lead.email,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+        leadId,
+        contactName: lead.name,
+        source: type,
+      });
+
+      if (!result.success) {
+        return res.status(500).json({ error: result.error });
+      }
+
+      // Update lead status
+      if (lead.status === "new") {
+        await db.update(schema.leads).set({
+          status: "contacted",
+          updatedAt: new Date().toISOString(),
+        }).where(eq(schema.leads.id, leadId));
+      }
+
+      const typeLabels: Record<string, string> = {
+        "walk-in-follow-up": "Walk-In Follow Up",
+        "phone-call-follow-up": "Phone Call Follow Up",
+        "initial-outreach": "Initial Outreach",
+        "meeting-follow-up": "Meeting Follow Up",
+        "referral-follow-up": "Referral Follow Up",
+      };
+
+      logActivity(`${typeLabels[type]} Email`, `${lead.business} (${lead.email})`, "email");
+      sendSlackNotification(`📧 ${typeLabels[type]} sent to ${lead.business} (${lead.email})`, "newLead");
+
+      res.json({ ...result, templateType: type, sentTo: lead.email });
+    } catch (err: any) {
+      console.error("Lead template send error:", err);
+      res.status(500).json({ error: "Failed to send template email to lead" });
+    }
+  });
+
+  // ─── Referral Partner Quick-Send ───────────────────────────────────
+
+  app.post("/api/email/template/send-referral-contract", requireAdminSession, async (req, res) => {
+    try {
+      const { partnerId, agentName, commissionRate, agreementUrl } = req.body;
+      if (!partnerId) return res.status(400).json({ error: "partnerId required" });
+
+      const [partner] = await db.select().from(schema.referralPartners).where(eq(schema.referralPartners.id, partnerId));
+      if (!partner) return res.status(404).json({ error: "Partner not found" });
+
+      // Referral partners don't have email in schema — require it in body
+      const partnerEmail = req.body.email;
+      if (!partnerEmail) return res.status(400).json({ error: "Partner email required in body" });
+
+      const emailContent = referralContractEmail({
+        partnerName: partner.name,
+        partnerBusiness: partner.niche || "",
+        agentName: agentName || "Tech Savvy Hawaii",
+        commissionRate: commissionRate || partner.referralTerms || "$50 per signed merchant",
+        agreementUrl: agreementUrl || "",
+      });
+
+      const result = await sendEmail({
+        to: partnerEmail,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+        contactName: partner.name,
+        source: "referral-contract",
+      });
+
+      if (!result.success) {
+        return res.status(500).json({ error: result.error });
+      }
+
+      logActivity("Referral Contract Sent", `${partner.name} (${partnerEmail})`, "email");
+      sendSlackNotification(`📝 Referral contract sent to ${partner.name} (${partnerEmail})`, "newLead");
+
+      res.json({ ...result, sentTo: partnerEmail });
+    } catch (err: any) {
+      console.error("Referral contract send error:", err);
+      res.status(500).json({ error: "Failed to send referral contract email" });
+    }
+  });
+
+  // ─── List available branded template types ──────────────────────────
+
+  app.get("/api/email/template/types", requireAdminSession, async (_req, res) => {
+    res.json([
+      { type: "statement-analysis", label: "Statement Analysis Report", category: "report", description: "AI-powered statement review with grade, fees, red flags, and savings estimate" },
+      { type: "walk-in-follow-up", label: "Walk-In Follow Up", category: "follow-up", description: "After visiting a merchant in person — vertical-specific benefits" },
+      { type: "phone-call-follow-up", label: "Phone Call Follow Up", category: "follow-up", description: "After a phone conversation — recap and next steps" },
+      { type: "initial-outreach", label: "Initial Outreach", category: "cold", description: "Cold/warm first contact with industry-specific hooks" },
+      { type: "meeting-follow-up", label: "Meeting Follow Up", category: "follow-up", description: "Post-meeting recap with action items and savings" },
+      { type: "welcome-to-team", label: "Welcome to Team", category: "internal", description: "New agent onboarding with first-week schedule" },
+      { type: "referral-follow-up", label: "Referral Follow Up", category: "referral", description: "Following up on a referral lead with social proof" },
+      { type: "referral-contract", label: "Referral Contract", category: "referral", description: "Partner agreement email with commission tiers" },
+    ]);
   });
 
   // ─── Inbound Email Webhook (Resend) ───────────────────────────────
