@@ -4,6 +4,7 @@ import * as schema from "@shared/schema";
 import { eq, desc, asc, and, lt, not, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { sendEmail } from "./email";
+import { initialOutreachEmail, walkInFollowUpEmail, phoneCallFollowUpEmail } from "./email-templates";
 
 // ─── Autopilot Engine ────────────────────────────────────────────────
 // Runs on a timer. Handles:
@@ -131,6 +132,10 @@ export async function autoEnrichLead(leadId: string): Promise<void> {
     const updates: Record<string, any> = { updatedAt: new Date().toISOString() };
     if (processors.length > 0 && !lead.currentProcessor) {
       updates.currentProcessor = processors.join(", ");
+    }
+    // Persist detected tech stack to lead
+    if (processors.length > 0) {
+      updates.techStack = JSON.stringify(processors);
     }
 
     // Use Cloudflare Workers AI (Llama 3) for structured data extraction — free tier
@@ -440,12 +445,29 @@ async function processQueue(): Promise<{ generated: number; sent: number }> {
         continue;
       }
 
-      const email = await generateAIEmail({
-        name: lead.name, business: lead.business, email: lead.email,
-        vertical: lead.vertical, currentProcessor: lead.currentProcessor,
-        monthlyVolume: lead.monthlyVolume, painPoints: lead.painPoints,
-        notes: lead.notes,
-      }, item.type as "initial" | "follow-up-1" | "follow-up-2" | "follow-up-3" | "lead-magnet-followup");
+      const emailType = item.type as "initial" | "follow-up-1" | "follow-up-2" | "follow-up-3" | "lead-magnet-followup";
+      let email: { subject: string; body: string; html: string };
+
+      // Use branded template for initial outreach; AI-generated for follow-ups
+      if (emailType === "initial") {
+        const branded = initialOutreachEmail({
+          ownerName: lead.name.split(" ")[0] || "there",
+          businessName: lead.business || "your business",
+          agentName: "TechSavvy Hawaii",
+          vertical: lead.vertical !== "other" ? lead.vertical : undefined,
+          currentProcessor: lead.currentProcessor || undefined,
+          monthlyVolume: lead.monthlyVolume || undefined,
+          personalNote: lead.painPoints || undefined,
+        });
+        email = { subject: branded.subject, body: branded.text, html: branded.html };
+      } else {
+        email = await generateAIEmail({
+          name: lead.name, business: lead.business, email: lead.email,
+          vertical: lead.vertical, currentProcessor: lead.currentProcessor,
+          monthlyVolume: lead.monthlyVolume, painPoints: lead.painPoints,
+          notes: lead.notes,
+        }, emailType);
+      }
 
       await db.update(schema.outreachQueue)
         .set({ status: "ready", subject: email.subject, body: email.body, htmlBody: email.html })

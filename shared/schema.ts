@@ -57,6 +57,17 @@ export const leads = pgTable("leads", {
   nextStepDate: text("next_step_date").notNull().default(""),
   attachments: text("attachments").notNull().default("[]"),
   notes: text("notes").notNull().default(""),
+  // Statement analysis data (saved when lead comes from statement review)
+  statementGrade: text("statement_grade").notNull().default(""),
+  statementOverpay: text("statement_overpay").notNull().default(""),
+  statementData: text("statement_data").notNull().default(""), // JSON blob of full analysis
+  // Referral partner link (for commission tracking)
+  referralPartnerId: text("referral_partner_id").notNull().default(""),
+  // AI lead score (0-100) + reasoning
+  leadScore: integer("lead_score").notNull().default(0),
+  leadScoreReason: text("lead_score_reason").notNull().default(""),
+  // Tech scan results
+  techStack: text("tech_stack").notNull().default(""), // JSON blob
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

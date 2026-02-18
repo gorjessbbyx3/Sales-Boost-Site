@@ -94,8 +94,12 @@ function pickColumns(table: any, data: Record<string, any>): Record<string, any>
 
 function deserializeLead(row: typeof schema.leads.$inferSelect) {
   let attachments: any[] = [];
+  let statementData: any = null;
+  let techStack: any[] = [];
   try { attachments = JSON.parse(row.attachments || "[]"); } catch {}
-  return { ...row, attachments };
+  try { statementData = row.statementData ? JSON.parse(row.statementData) : null; } catch {}
+  try { techStack = row.techStack ? JSON.parse(row.techStack) : []; } catch {}
+  return { ...row, attachments, statementData, techStack };
 }
 
 function deserializeIntegration(row: typeof schema.integrations.$inferSelect) {
@@ -752,17 +756,46 @@ RULES:
       // Save as a lead
       try {
         const now = new Date().toISOString();
+        const leadId = randomUUID();
         await db.insert(schema.leads).values({
-          id: randomUUID(),
+          id: leadId,
           name,
           email,
           business: business || "",
           source: "statement-review",
           status: "new",
           notes: type === "report" ? "AI statement report emailed" : "Requested self-review guides",
+          // Save statement analysis data to the lead so it's visible in CRM
+          statementGrade: analysis?.overallGrade || "",
+          statementOverpay: analysis?.estimatedOverpay || "",
+          statementData: analysis ? JSON.stringify(analysis) : "",
+          currentProcessor: analysis?.processorName || analysis?.currentProcessor || "",
+          monthlyVolume: analysis?.monthlyVolume || "",
+          painPoints: analysis?.redFlags?.join(", ") || "",
+          leadScore: analysis?.overallGrade === "F" ? 90 : analysis?.overallGrade === "D" ? 80 : analysis?.overallGrade === "C" ? 60 : analysis?.overallGrade === "B" ? 40 : 20,
+          leadScoreReason: analysis?.overallGrade ? `Statement grade: ${analysis.overallGrade}, Overpay: ${analysis.estimatedOverpay || "unknown"}` : "",
           createdAt: now,
           updatedAt: now,
         });
+
+        // Auto-create opportunity for statement review leads (they're warm)
+        if (type === "report" && analysis) {
+          try {
+            await db.insert(schema.opportunities).values({
+              id: randomUUID(),
+              title: `${business || name} — Statement Review`,
+              leadId,
+              stage: "qualification",
+              value: analysis.estimatedOverpay ? parseFloat(analysis.estimatedOverpay.replace(/[$,]/g, "")) * 12 : 0,
+              probability: 30,
+              expectedCloseDate: new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
+              notes: `Grade: ${analysis.overallGrade}, Monthly overpay: ${analysis.estimatedOverpay || "N/A"}, ${analysis.redFlags?.length || 0} red flags`,
+              stageChangedAt: now,
+              createdAt: now,
+              updatedAt: now,
+            });
+          } catch (oppErr) { console.error("Failed to create opportunity from statement review:", oppErr); }
+        }
       } catch (leadErr) {
         console.error("Failed to save statement review lead:", leadErr);
       }
@@ -853,10 +886,30 @@ RULES:
         url: fileUrl,
       });
 
-      // Also save as a lead
+      // Also save as a lead + create referral partner record
+      const partnerId = randomUUID();
+      const leadId = randomUUID();
+      const now = new Date().toISOString();
+
+      // Create referral partner record for commission tracking
+      try {
+        await db.insert(schema.referralPartners).values({
+          id: partnerId,
+          name: partnerName,
+          niche: businessType || "",
+          clientTypes: "",
+          referralTerms: "Tier A: first month revenue (up to $25K/mo). Tier B: 10-15% ongoing residual ($25K+/mo).",
+          introMethod: "partner-agreement-form",
+          trackingNotes: `Signed agreement on ${new Date().toLocaleDateString()}. Email: ${email}`,
+          lastCheckIn: now,
+          nextCheckIn: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+          createdAt: now,
+        });
+      } catch (partnerErr) { console.error("Failed to create referral partner:", partnerErr); }
+
       try {
         await db.insert(schema.leads).values({
-          id: randomUUID(),
+          id: leadId,
           name: partnerName,
           email,
           business: businessName,
@@ -866,8 +919,9 @@ RULES:
           status: "new",
           vertical: businessType || "other",
           notes: "Signed partner agreement via website form",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          referralPartnerId: partnerId,
+          createdAt: now,
+          updatedAt: now,
           currentProcessor: "", currentEquipment: "", monthlyVolume: "",
           painPoints: "", nextStep: "review agreement", nextStepDate: "",
           decisionMakerName: partnerName, decisionMakerRole: "owner",
@@ -3755,6 +3809,63 @@ Return ONLY valid JSON, no other text.`,
         metadata: JSON.stringify({ from: old.stage, to: body.stage }),
         createdAt: now,
       });
+
+      // ─── Auto-create client + revenue when closed-won ───────────
+      if (body.stage === "closed-won" && old.leadId) {
+        try {
+          const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.id, old.leadId));
+          if (lead) {
+            // Check if client already exists for this lead
+            const existingClients = await db.select().from(schema.clients).where(eq(schema.clients.name, lead.business || lead.name)).limit(1);
+            
+            if (existingClients.length === 0) {
+              // Create client from lead data
+              const clientId = randomUUID();
+              await db.insert(schema.clients).values({
+                id: clientId,
+                name: lead.business || lead.name,
+                contactName: lead.name,
+                email: lead.email,
+                phone: lead.phone,
+                address: lead.address || "",
+                vertical: lead.vertical || "other",
+                processor: "TechSavvy Hawaii",
+                equipment: lead.currentEquipment || "",
+                monthlyVolume: lead.monthlyVolume || "",
+                notes: `Converted from lead. Previous processor: ${lead.currentProcessor || "unknown"}. ${old.notes || ""}`,
+                createdAt: now,
+                updatedAt: now,
+              });
+
+              // Create first revenue entry (estimated monthly value)
+              const dealValue = body.value || old.value || 0;
+              if (dealValue > 0) {
+                await db.insert(schema.revenue).values({
+                  id: randomUUID(),
+                  clientId,
+                  amount: Math.round(dealValue / 12 * 100) / 100, // Monthly from annual
+                  type: "residual",
+                  description: `Monthly residual — ${lead.business || lead.name}`,
+                  date: now,
+                  createdAt: now,
+                });
+              }
+
+              // Update lead status to won
+              await db.update(schema.leads).set({ status: "won", updatedAt: now }).where(eq(schema.leads.id, lead.id));
+
+              // Check if this lead was referred by a partner → flag for commission
+              if (lead.referralPartnerId) {
+                logActivity("Commission Due", `Partner referral closed: ${lead.business}. Check referral partner for commission payout.`, "deal");
+                sendSlackNotification(`💰 Commission due! Partner-referred deal closed: ${lead.business || lead.name} (Deal: ${old.title})`, "newLead");
+              }
+
+              logActivity("Client Created", `${lead.business || lead.name} auto-converted from closed-won deal`, "client");
+              sendSlackNotification(`🎉 New client! ${lead.business || lead.name} onboarded from deal: ${old.title}`, "newLead");
+            }
+          }
+        } catch (convErr) { console.error("Auto-conversion from closed-won failed:", convErr); }
+      }
     }
 
     const updateData = pickColumns(schema.opportunities, body);
@@ -4196,6 +4307,13 @@ Return ONLY valid JSON, no other text.`,
       clearTimeout(timeout);
       if (!resp.ok) return res.status(resp.status).json({ error: "Scoring failed" });
       const scoreData = await resp.json() as { score: number; grade: string; recommendation: string };
+
+      // Persist score to lead record
+      await db.update(schema.leads).set({
+        leadScore: scoreData.score,
+        leadScoreReason: `${scoreData.grade}: ${scoreData.recommendation}`,
+        updatedAt: new Date().toISOString(),
+      }).where(eq(schema.leads.id, lead.id));
 
       // Log as activity
       await db.insert(schema.leadActivities).values({
