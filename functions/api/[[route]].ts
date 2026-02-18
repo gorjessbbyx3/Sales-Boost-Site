@@ -1458,8 +1458,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           httpMetadata: { contentType: mimeMap[ext] || "application/octet-stream" },
         });
 
-        const publicUrl = (env.R2_PUBLIC_URL || "").replace(/\/$/, "");
-        const fileUrl = publicUrl ? `${publicUrl}/${r2Key}` : r2Key;
+        const publicUrl = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+        const fileUrl = `${publicUrl}/${r2Key}`;
 
         const displayName = customName || file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
         const id = genId();
@@ -1496,8 +1496,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       // Try to delete from R2 if URL looks like an R2 URL
       try {
         const row = await env.DB.prepare("SELECT url FROM admin_files WHERE id = ?").bind(fileMatch[1]).first();
-        if (row?.url && env.FILES_BUCKET && env.R2_PUBLIC_URL) {
-          const publicUrl = (env.R2_PUBLIC_URL as string).replace(/\/$/, "");
+        if (row?.url && env.FILES_BUCKET) {
+          const publicUrl = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
           const url = row.url as string;
           if (url.startsWith(publicUrl)) {
             const key = url.slice(publicUrl.length + 1);

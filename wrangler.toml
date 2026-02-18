@@ -16,4 +16,4 @@ bucket_name = "techsavvy-assets"
 # SESSION_SECRET    - Admin password / auth secret
 # ANTHROPIC_API_KEY - For AI chat features
 # MCP_API_KEY       - API key for MCP server access (falls back to SESSION_SECRET if not set)
-# R2_PUBLIC_URL     - Public URL for the R2 bucket (e.g. https://assets.techsavvyhawaii.com)
+# R2_PUBLIC_URL     - Public URL for the R2 bucket (defaults to https://assets.techsavvyhawaii.com)
