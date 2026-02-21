@@ -137,7 +137,7 @@ ${source ? `Source: ${source}` : ""}`;
 }
 
 export async function handleChat(body, env) {
-  const { message, systemPrompt } = body;
+  const { message, systemPrompt, history } = body;
   if (!message || typeof message !== "string" || message.length > 2000) {
     return jsonResponse({ error: "Message required (max 2000 chars)" }, 400);
   }
@@ -148,6 +148,24 @@ no monthly fees, no contracts, and a free custom website for all processing cust
 Be friendly, concise, and professional. Keep answers under 150 words.
 If asked about specific pricing or contracts, direct them to call (808) 767-5460.`;
 
-  const raw = await runAI(env, systemPrompt || defaultSystem, message, 512);
-  return jsonResponse({ reply: raw });
+  // Build messages array with history support
+  const messages = [{ role: "system", content: systemPrompt || defaultSystem }];
+
+  if (Array.isArray(history)) {
+    for (const h of history.slice(-10)) {
+      if (h.role && h.content && typeof h.content === "string") {
+        messages.push({ role: h.role, content: h.content.slice(0, 2000) });
+      }
+    }
+  }
+
+  messages.push({ role: "user", content: message });
+
+  const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+    messages,
+    max_tokens: 512,
+    temperature: 0.3,
+  });
+
+  return jsonResponse({ reply: response.response || "" });
 }

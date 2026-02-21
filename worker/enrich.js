@@ -71,10 +71,10 @@ export default {
       return jsonResponse({ error: "POST required" }, 405, allowedOrigin);
     }
 
-    // Auth: require shared secret on all POST routes
+    // Auth: require shared secret on all POST routes except /chat (public website)
     const workerKey = env.WORKER_KEY || "";
     const providedKey = request.headers.get("X-Worker-Key") || "";
-    if (workerKey && providedKey !== workerKey) {
+    if (workerKey && providedKey !== workerKey && path !== "/chat") {
       return jsonResponse({ error: "Unauthorized" }, 401, allowedOrigin);
     }
 

@@ -558,53 +558,62 @@ RULES:
       return res.status(503).json({ error: "AI agent is currently disabled." });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "Anthropic API key is not configured." });
-    }
-
     const { message, history } = req.body;
     if (!message || typeof message !== "string" || message.length > 2000) {
       return res.status(400).json({ error: "Message is required and must be under 2000 characters." });
     }
 
-    const messages: { role: "user" | "assistant"; content: string }[] = [];
-
+    // Build trimmed history
+    const trimmedHistory: { role: string; content: string }[] = [];
     if (Array.isArray(history)) {
-      const trimmedHistory = history.slice(-MAX_HISTORY_LENGTH);
-      for (const h of trimmedHistory) {
+      for (const h of history.slice(-10)) {
         if (h.role && h.content && typeof h.content === "string") {
-          messages.push({ role: h.role, content: h.content.slice(0, 2000) });
+          trimmedHistory.push({ role: h.role, content: h.content.slice(0, 2000) });
         }
       }
     }
 
-    messages.push({ role: "user", content: message });
-
-    const safeMaxTokens = Math.min(config.maxTokens, MAX_ALLOWED_TOKENS);
-
     try {
-      const anthropic = new Anthropic({ apiKey });
+      // Try Anthropic first if API key is available
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (apiKey) {
+        const Anthropic = (await import("@anthropic-ai/sdk")).default;
+        const anthropic = new Anthropic({ apiKey });
+        const messages = [...trimmedHistory.map(h => ({ role: h.role as "user" | "assistant", content: h.content })), { role: "user" as const, content: message }];
+        const safeMaxTokens = Math.min(config.maxTokens, 2048);
+        const response = await anthropic.messages.create({
+          model: config.model,
+          max_tokens: safeMaxTokens,
+          system: config.systemPrompt,
+          messages,
+        });
+        const text = response.content
+          .filter((block: any) => block.type === "text")
+          .map((block: any) => block.text)
+          .join("");
+        return res.json({ reply: text });
+      }
 
-      const response = await anthropic.messages.create({
-        model: config.model,
-        max_tokens: safeMaxTokens,
-        system: config.systemPrompt,
-        messages,
+      // Fallback: proxy through AI worker (Cloudflare Workers AI — free, no API key needed)
+      const workerUrl = process.env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+      const workerRes = await fetch(`${workerUrl}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          history: trimmedHistory,
+          systemPrompt: config.systemPrompt,
+        }),
       });
-
-      const text = response.content
-        .filter((block): block is Anthropic.TextBlock => block.type === "text")
-        .map((block) => block.text)
-        .join("");
-
-      res.json({ reply: text });
+      const data = await workerRes.json() as any;
+      if (data.error) {
+        return res.status(500).json({ error: data.error });
+      }
+      return res.json({ reply: data.reply || "" });
     } catch (err: any) {
       const errMsg = err.message || "";
-      console.error("Anthropic API error:", errMsg);
-      // Don't leak internal error details to the client
+      console.error("Chat error:", errMsg);
       const safeError = errMsg.includes("rate_limit") ? "AI service is busy. Please try again in a moment."
-        : errMsg.includes("invalid_api_key") ? "AI service configuration error."
         : "Failed to get AI response. Please try again.";
       res.status(500).json({ error: safeError });
     }
