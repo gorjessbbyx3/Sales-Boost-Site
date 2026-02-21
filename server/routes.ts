@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { updateAiConfigSchema, insertContactLeadSchema } from "@shared/schema";
 import * as schema from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, getTableColumns } from "drizzle-orm";
+import { eq, desc, asc, and, inArray, sql, getTableColumns } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import rateLimit from "express-rate-limit";
@@ -3262,8 +3262,17 @@ Return ONLY valid JSON, no other text.`,
 
   // ─── Email Threads (Inbox) ────────────────────────────────────────
 
-  app.get("/api/email/threads", requireAdminSession, async (_req, res) => {
-    const rows = await db.select().from(schema.emailThreads).orderBy(desc(schema.emailThreads.lastMessageAt));
+  app.get("/api/email/threads", requireAdminSession, async (req, res) => {
+    const folder = (req.query.folder as string) || "";
+    const starred = req.query.starred === "true";
+    
+    let conditions: any[] = [];
+    if (folder) conditions.push(eq(schema.emailThreads.folder, folder));
+    if (starred) conditions.push(eq(schema.emailThreads.starred, true));
+    
+    const rows = conditions.length > 0
+      ? await db.select().from(schema.emailThreads).where(and(...conditions)).orderBy(desc(schema.emailThreads.lastMessageAt))
+      : await db.select().from(schema.emailThreads).orderBy(desc(schema.emailThreads.lastMessageAt));
     res.json(rows);
   });
 
@@ -3292,9 +3301,70 @@ Return ONLY valid JSON, no other text.`,
 
   app.delete("/api/email/threads/:id", requireAdminSession, async (req, res) => {
     const threadId = req.params.id as string;
-    await db.delete(schema.emailMessages).where(eq(schema.emailMessages.threadId, threadId));
-    await db.delete(schema.emailThreads).where(eq(schema.emailThreads.id, threadId));
-    res.json({ success: true });
+    const permanent = req.query.permanent === "true";
+    
+    if (permanent) {
+      // Permanent delete (from trash/spam)
+      await db.delete(schema.emailMessages).where(eq(schema.emailMessages.threadId, threadId));
+      await db.delete(schema.emailThreads).where(eq(schema.emailThreads.id, threadId));
+      res.json({ success: true, action: "deleted" });
+    } else {
+      // Move to trash
+      await db.update(schema.emailThreads).set({ folder: "trash" }).where(eq(schema.emailThreads.id, threadId));
+      res.json({ success: true, action: "trashed" });
+    }
+  });
+
+  // ─── Bulk Thread Operations ───────────────────────────────────────
+
+  app.post("/api/email/threads/bulk", requireAdminSession, async (req, res) => {
+    const { ids, action, folder: targetFolder } = req.body as { ids: string[]; action: string; folder?: string };
+    if (!ids || !ids.length || !action) return res.status(400).json({ error: "ids and action required" });
+
+    switch (action) {
+      case "move": {
+        if (!targetFolder) return res.status(400).json({ error: "folder required for move" });
+        for (const id of ids) {
+          await db.update(schema.emailThreads).set({ folder: targetFolder }).where(eq(schema.emailThreads.id, id));
+        }
+        break;
+      }
+      case "star": {
+        for (const id of ids) {
+          await db.update(schema.emailThreads).set({ starred: true }).where(eq(schema.emailThreads.id, id));
+        }
+        break;
+      }
+      case "unstar": {
+        for (const id of ids) {
+          await db.update(schema.emailThreads).set({ starred: false }).where(eq(schema.emailThreads.id, id));
+        }
+        break;
+      }
+      case "read": {
+        for (const id of ids) {
+          await db.update(schema.emailThreads).set({ unread: false }).where(eq(schema.emailThreads.id, id));
+        }
+        break;
+      }
+      case "unread": {
+        for (const id of ids) {
+          await db.update(schema.emailThreads).set({ unread: true }).where(eq(schema.emailThreads.id, id));
+        }
+        break;
+      }
+      case "delete": {
+        for (const id of ids) {
+          await db.delete(schema.emailMessages).where(eq(schema.emailMessages.threadId, id));
+          await db.delete(schema.emailThreads).where(eq(schema.emailThreads.id, id));
+        }
+        break;
+      }
+      default:
+        return res.status(400).json({ error: "Unknown action" });
+    }
+
+    res.json({ success: true, action, count: ids.length });
   });
 
   // ─── Send Email (Reply from Inbox) ────────────────────────────────
@@ -3852,14 +3922,30 @@ Return ONLY valid JSON, no other text.`,
 
   app.get("/api/email/stats", requireAdminSession, async (_req, res) => {
     const threads = await db.select().from(schema.emailThreads);
-    const unread = threads.filter(t => t.unread).length;
     const total = threads.length;
+    const unread = threads.filter(t => t.unread).length;
+    const starred = threads.filter(t => t.starred).length;
     const outreach = threads.filter(t => t.source === "outreach").length;
     const replies = threads.filter(t => t.source === "outreach-reply").length;
-    const directInbound = threads.filter(t => t.source === "direct").length;
+    const directInbound = threads.filter(t => t.source === "direct" || t.source === "email_inbound").length;
     const contactForm = threads.filter(t => t.source === "contact-form").length;
 
-    res.json({ total, unread, outreach, replies, directInbound, contactForm });
+    // Folder counts
+    const folders: Record<string, { total: number; unread: number }> = {
+      inbox: { total: 0, unread: 0 },
+      sent: { total: 0, unread: 0 },
+      spam: { total: 0, unread: 0 },
+      trash: { total: 0, unread: 0 },
+      archived: { total: 0, unread: 0 },
+    };
+    for (const t of threads) {
+      const f = t.folder || "inbox";
+      if (!folders[f]) folders[f] = { total: 0, unread: 0 };
+      folders[f].total++;
+      if (t.unread) folders[f].unread++;
+    }
+
+    res.json({ total, unread, starred, outreach, replies, directInbound, contactForm, folders });
   });
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

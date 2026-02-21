@@ -352,8 +352,13 @@ export const emailThreads = pgTable("email_threads", {
   leadId: text("lead_id").notNull().default(""),
   contactEmail: text("contact_email").notNull().default(""),
   contactName: text("contact_name").notNull().default(""),
-  source: text("source").notNull().default("direct"), // direct | contact-form | outreach | outreach-reply
+  source: text("source").notNull().default("direct"), // direct | contact-form | outreach | outreach-reply | email_inbound
   status: text("status").notNull().default("open"), // open | replied | closed
+  folder: text("folder").notNull().default("inbox"), // inbox | sent | spam | trash | archived
+  starred: boolean("starred").notNull().default(false),
+  aiIntent: text("ai_intent").notNull().default(""), // new_lead | support_request | billing_question | spam | general_inquiry
+  aiPriority: text("ai_priority").notNull().default("normal"), // urgent | high | normal | low
+  aiSentiment: text("ai_sentiment").notNull().default("neutral"), // positive | neutral | negative | angry
   unread: boolean("unread").notNull().default(true),
   lastMessageAt: text("last_message_at").notNull(),
   createdAt: text("created_at").notNull(),
