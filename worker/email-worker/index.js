@@ -75,32 +75,80 @@ export default {
 
     console.log(`🏷️ Classification: ${classification.intent} | Priority: ${classification.priority} | Sentiment: ${classification.sentiment}`);
 
-    // ── Log to D1 (leads table) if it looks like a new lead ──
+    // ── Log to D1 for admin dashboard inbox ─────────────────
     if (env.DB && classification.intent !== "spam") {
       try {
         // Extract name from email "Name <email>" format
         const nameMatch = from.match(/^([^<]+)</);
         const senderName = nameMatch ? nameMatch[1].trim() : from.split("@")[0];
         const senderEmail = from.match(/<([^>]+)>/) ? from.match(/<([^>]+)>/)[1] : from;
-        const leadId = crypto.randomUUID();
         const now = new Date().toISOString();
+        const threadId = crypto.randomUUID();
+        const messageId = crypto.randomUUID();
 
+        // ── Create email thread (shows in dashboard inbox) ──
         await env.DB.prepare(`
-          INSERT INTO leads (id, name, email, source, status, notes, best_contact_method, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
-          leadId,
-          senderName,
+          threadId,
+          subject,
+          "",
           senderEmail,
+          senderName,
           "email_inbound",
-          classification.intent === "new_lead" ? "new" : "contacted",
-          `[Email] Subject: ${subject}\n\n${bodyPreview.slice(0, 500)}\n\n[AI] ${classification.summary || ""} | Priority: ${classification.priority} | Sentiment: ${classification.sentiment}`,
-          "email",
+          "open",
+          1,
           now,
           now
         ).run();
 
-        console.log(`💾 Logged to D1 leads: ${senderEmail} → ${classification.intent}`);
+        // ── Create email message (the actual content) ──
+        await env.DB.prepare(`
+          INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          messageId,
+          threadId,
+          "inbound",
+          senderEmail,
+          senderName,
+          to,
+          subject,
+          bodyPreview.slice(0, 5000),
+          htmlBody.slice(0, 10000),
+          "",
+          "received",
+          now
+        ).run();
+
+        console.log(`💾 Logged to inbox: thread ${threadId} | ${senderEmail} → ${classification.intent}`);
+
+        // ── Also create a lead if classified as new_lead ──
+        if (classification.intent === "new_lead") {
+          const leadId = crypto.randomUUID();
+          await env.DB.prepare(`
+            INSERT INTO leads (id, name, email, source, status, notes, best_contact_method, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            leadId,
+            senderName,
+            senderEmail,
+            "email_inbound",
+            "new",
+            `[Email] Subject: ${subject}\n\n${bodyPreview.slice(0, 500)}\n\n[AI] ${classification.summary || ""} | Priority: ${classification.priority}`,
+            "email",
+            now,
+            now
+          ).run();
+
+          // Link the thread to the lead
+          await env.DB.prepare(`
+            UPDATE email_threads SET lead_id = ? WHERE id = ?
+          `).bind(leadId, threadId).run();
+
+          console.log(`🎯 New lead created: ${leadId} → linked to thread ${threadId}`);
+        }
       } catch (err) {
         console.error("D1 insert failed (non-blocking):", err);
       }
@@ -134,6 +182,44 @@ export default {
         );
         await env.SEND_EMAIL.send(autoReply);
         console.log(`✅ Auto-reply sent to ${senderEmail}`);
+
+        // Log auto-reply to the same thread so it shows in dashboard
+        if (env.DB) {
+          try {
+            // Find the thread we just created by contact_email + subject
+            const thread = await env.DB.prepare(`
+              SELECT id FROM email_threads WHERE contact_email = ? AND subject = ? ORDER BY created_at DESC LIMIT 1
+            `).bind(senderEmail, subject).first();
+
+            if (thread) {
+              const replyId = crypto.randomUUID();
+              const now = new Date().toISOString();
+              await env.DB.prepare(`
+                INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `).bind(
+                replyId,
+                thread.id,
+                "outbound",
+                "contact@techsavvyhawaii.com",
+                "TechSavvy Hawaii",
+                senderEmail,
+                `Re: ${subject}`,
+                `Auto-reply sent to ${firstName}: Thanks for reaching out, we'll get back to you within a few hours.`,
+                "",
+                "",
+                "sent",
+                now
+              ).run();
+
+              await env.DB.prepare(`
+                UPDATE email_threads SET last_message_at = ? WHERE id = ?
+              `).bind(now, thread.id).run();
+            }
+          } catch (dbErr) {
+            console.error("Failed to log auto-reply to DB (non-blocking):", dbErr);
+          }
+        }
       } catch (err) {
         console.error("Auto-reply failed (non-blocking):", err);
       }
