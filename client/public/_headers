@@ -1,31 +1,113 @@
-# Cloudflare Pages Headers
+# Cloudflare Pages Headers — SEO & Core Web Vitals Optimized
 # https://developers.cloudflare.com/pages/configuration/headers/
 
-# All pages
+# ─── All pages: security + SEO ──────────────────────────────────
 /*
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Content-Security-Policy: upgrade-insecure-requests
 
-# Sitemap & robots - cache short, always fresh for crawlers
+# ─── HTML pages: fresh for crawlers, stale-while-revalidate for speed ─
+/
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow, max-image-preview:large, max-snippet:-1
+
+/index.html
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+
+/pricing
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+/statement-review
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+/how-it-works
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+/our-work
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+/online-processing
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+/free-guides
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+/high-risk
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+/contact
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+/faq
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+/connect
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+/refer
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+  X-Robots-Tag: index, follow
+
+# ─── Admin: block from indexing ──────────────────────────────────
+/admin
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+
+/admin/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+
+# ─── API: never cache, never index ──────────────────────────────
+/api/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex
+
+# ─── Sitemap & robots: fresh for crawlers ────────────────────────
 /sitemap.xml
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=3600, s-maxage=3600
   Content-Type: application/xml
+  X-Robots-Tag: noindex
 
 /robots.txt
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=3600, s-maxage=3600
   Content-Type: text/plain
 
-# Static assets - aggressive caching
+# ─── JS/CSS bundles: immutable (Vite hashed filenames) ───────────
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+# ─── Images: long cache ─────────────────────────────────────────
 /images/*
-  Cache-Control: public, max-age=2592000
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 
-# HTML pages - revalidate frequently
-/
-  Cache-Control: public, max-age=0, must-revalidate
-/index.html
-  Cache-Control: public, max-age=0, must-revalidate
+# ─── Fonts: long cache ──────────────────────────────────────────
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+/*.woff
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+# ─── Favicons: medium cache ─────────────────────────────────────
+/favicon*
+  Cache-Control: public, max-age=604800
+
+# ─── Videos: long cache ─────────────────────────────────────────
+/videos/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800

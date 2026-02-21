@@ -15,7 +15,7 @@
     </image:image>
   </url>
 
-  <!-- Statement Review - AI Analysis Tool -->
+  <!-- Statement Review - AI Analysis Tool (key lead gen page) -->
   <url>
     <loc>https://techsavvyhawaii.com/statement-review</loc>
     <lastmod>2026-02-21</lastmod>
@@ -36,7 +36,7 @@
     <loc>https://techsavvyhawaii.com/how-it-works</loc>
     <lastmod>2026-02-21</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
   </url>
 
   <!-- Our Work / Web Design Portfolio -->
@@ -44,7 +44,7 @@
     <loc>https://techsavvyhawaii.com/our-work</loc>
     <lastmod>2026-02-21</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
     <image:image>
       <image:loc>https://techsavvyhawaii.com/images/website-before-after.jpg</image:loc>
       <image:title>Website Design Portfolio - TechSavvy Hawaii</image:title>
@@ -60,12 +60,25 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- High-Risk Merchants -->
+  <url>
+    <loc>https://techsavvyhawaii.com/high-risk</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- Free Guides Hub -->
   <url>
     <loc>https://techsavvyhawaii.com/free-guides</loc>
     <lastmod>2026-02-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://techsavvyhawaii.com/images/statement-analysis-guides.png</image:loc>
+      <image:title>Free Merchant Statement Review Guides</image:title>
+      <image:caption>Free payment processing guides for Hawaii businesses — rate comparison, statement checklist, security checklist, cash discount guide</image:caption>
+    </image:image>
   </url>
 
   <!-- Contact -->
@@ -81,15 +94,7 @@
     <loc>https://techsavvyhawaii.com/faq</loc>
     <lastmod>2026-02-21</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <!-- High-Risk Merchants -->
-  <url>
-    <loc>https://techsavvyhawaii.com/high-risk</loc>
-    <lastmod>2026-02-21</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.75</priority>
   </url>
 
   <!-- Connect / Get Started -->
@@ -114,6 +119,35 @@
     <lastmod>2026-02-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
+  </url>
+
+  <!-- Free Guide Landing Pages (lead magnets) -->
+  <url>
+    <loc>https://techsavvyhawaii.com/free/statement-checklist</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://techsavvyhawaii.com/free/rate-comparison</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://techsavvyhawaii.com/free/security-checklist</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://techsavvyhawaii.com/free/cash-discount-guide</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 
 </urlset>
