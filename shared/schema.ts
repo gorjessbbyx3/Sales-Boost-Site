@@ -352,7 +352,7 @@ export const emailThreads = pgTable("email_threads", {
   leadId: text("lead_id").notNull().default(""),
   contactEmail: text("contact_email").notNull().default(""),
   contactName: text("contact_name").notNull().default(""),
-  source: text("source").notNull().default("direct"), // direct | contact-form | outreach | outreach-reply | email_inbound
+  source: text("source").notNull().default("direct"), // direct | contact-form | outreach | outreach-reply | email_inbound | statement-review | lead-magnet
   status: text("status").notNull().default("open"), // open | replied | closed
   folder: text("folder").notNull().default("inbox"), // inbox | sent | spam | trash | archived
   starred: boolean("starred").notNull().default(false),

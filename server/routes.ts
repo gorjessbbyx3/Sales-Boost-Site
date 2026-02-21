@@ -141,6 +141,66 @@ async function sendSlackNotification(text: string, eventType?: string) {
   }
 }
 
+// ─── Log to Inbox (creates email thread + message for admin dashboard) ──
+
+async function logToInbox(opts: {
+  contactEmail: string;
+  contactName: string;
+  subject: string;
+  body: string;
+  htmlBody?: string;
+  source: string;
+  folder?: string;
+  direction?: string;
+  aiIntent?: string;
+  aiPriority?: string;
+  leadId?: string;
+}) {
+  try {
+    const now = new Date().toISOString();
+    const threadId = randomUUID();
+    const messageId = randomUUID();
+
+    await db.insert(schema.emailThreads).values({
+      id: threadId,
+      subject: opts.subject,
+      leadId: opts.leadId || "",
+      contactEmail: opts.contactEmail,
+      contactName: opts.contactName,
+      source: opts.source,
+      status: "open",
+      folder: opts.folder || "inbox",
+      starred: false,
+      aiIntent: opts.aiIntent || "",
+      aiPriority: opts.aiPriority || "normal",
+      aiSentiment: "neutral",
+      unread: true,
+      lastMessageAt: now,
+      createdAt: now,
+    });
+
+    await db.insert(schema.emailMessages).values({
+      id: messageId,
+      threadId,
+      direction: opts.direction || "inbound",
+      fromEmail: opts.direction === "outbound" ? "contact@techsavvyhawaii.com" : opts.contactEmail,
+      fromName: opts.direction === "outbound" ? "TechSavvy Hawaii" : opts.contactName,
+      toEmail: opts.direction === "outbound" ? opts.contactEmail : "contact@techsavvyhawaii.com",
+      subject: opts.subject,
+      body: opts.body.slice(0, 5000),
+      htmlBody: (opts.htmlBody || "").slice(0, 10000),
+      resendId: "",
+      status: opts.direction === "outbound" ? "sent" : "received",
+      sentAt: now,
+    });
+
+    return threadId;
+  } catch (err) {
+    console.error("logToInbox failed:", err);
+    return null;
+  }
+}
+
 // ─── Seed Functions (check DB first, insert if empty) ───────────────
 
 let planSeeded = false;
@@ -803,6 +863,31 @@ RULES:
       logActivity("Statement Review Email", `${type === "report" ? "AI report" : "Guide booklets"} sent to ${email}`, "lead");
       sendSlackNotification(`📊 Statement Review: ${name} (${email}) — ${type === "report" ? "AI report sent" : "Guides requested"}`, "newLead");
 
+      // Log to inbox — statement analysis report or DIY guides
+      if (type === "report" && analysis) {
+        logToInbox({
+          contactEmail: email,
+          contactName: name,
+          subject: `Statement Analysis: ${business || name} — Grade ${analysis.overallGrade || "?"}`,
+          body: `AI Statement Report sent to ${name} (${email})\n\nBusiness: ${business || "N/A"}\nGrade: ${analysis.overallGrade || "N/A"}\nEffective Rate: ${analysis.effectiveRate || "N/A"}\nEst. Monthly Overpay: ${analysis.estimatedOverpay || "N/A"}\nRed Flags: ${analysis.redFlags?.length || 0}\nProcessor: ${analysis.processorName || analysis.currentProcessor || "Unknown"}`,
+          source: "statement-review",
+          direction: "outbound",
+          aiIntent: "new_lead",
+          aiPriority: analysis.overallGrade === "F" || analysis.overallGrade === "D" ? "high" : "normal",
+        }).catch(err => console.error("Inbox log failed:", err));
+      } else {
+        logToInbox({
+          contactEmail: email,
+          contactName: name,
+          subject: `DIY Guides Requested: ${name}`,
+          body: `Self-review guide booklets sent to ${name} (${email})\n\nBusiness: ${business || "N/A"}\nGuides: Statement Checklist, Rate Comparison, Security Checklist, Cash Discount Guide`,
+          source: "statement-review",
+          direction: "outbound",
+          aiIntent: "new_lead",
+          aiPriority: "normal",
+        }).catch(err => console.error("Inbox log failed:", err));
+      }
+
       res.json({ success: true });
     } catch (err: any) {
       console.error("Statement email error:", err);
@@ -822,6 +907,18 @@ RULES:
     sendSlackNotification(`New lead from website: ${parsed.data.businessName} (${parsed.data.contactName}) - ${parsed.data.email}`, "newLead");
     // Send auto-confirmation email
     sendContactFormConfirmation(parsed.data.contactName, parsed.data.email, parsed.data.businessName).catch(err => console.error("Auto-confirm failed:", err));
+
+    // Log to inbox so it shows in admin email dashboard
+    logToInbox({
+      contactEmail: parsed.data.email,
+      contactName: parsed.data.contactName,
+      subject: `Contact Form: ${parsed.data.businessName}`,
+      body: `New contact form submission:\n\nBusiness: ${parsed.data.businessName}\nContact: ${parsed.data.contactName}\nEmail: ${parsed.data.email}\nPhone: ${parsed.data.phone}\nPlan: ${parsed.data.plan}\nMonthly Processing: ${parsed.data.monthlyProcessing}\nBest Time to Call: ${parsed.data.bestContactTime}${parsed.data.highRisk ? "\nHigh Risk: Yes" : ""}`,
+      source: "contact-form",
+      aiIntent: "new_lead",
+      aiPriority: "high",
+    }).catch(err => console.error("Inbox log failed:", err));
+
     res.status(201).json(lead);
   });
 
@@ -1051,6 +1148,18 @@ RULES:
     }).returning();
     logActivity("Website Lead", `${lead.business || lead.name} submitted contact form`, "lead");
     sendSlackNotification(`New lead from website: ${lead.business || lead.name} (${lead.email})`, "newLead");
+
+    // Log to inbox — lead magnet download
+    logToInbox({
+      contactEmail: lead.email || "",
+      contactName: lead.name,
+      subject: `Lead Magnet: ${lead.business || lead.name}`,
+      body: `Lead magnet download:\n\nName: ${lead.name}\nBusiness: ${lead.business || "N/A"}\nEmail: ${lead.email || "N/A"}\nPhone: ${lead.phone || "N/A"}\n\n${lead.notes || ""}`,
+      source: "lead-magnet",
+      aiIntent: "new_lead",
+      aiPriority: "normal",
+    }).catch(err => console.error("Inbox log failed:", err));
+
     res.status(201).json({ success: true });
   });
 

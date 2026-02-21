@@ -15,6 +15,7 @@ import ContactPage from "@/pages/contact";
 import ConnectPage from "@/pages/connect";
 import FaqPage from "@/pages/services-faq";
 import LeadMagnetPage from "@/pages/lead-magnet";
+import FreeGuidesPage from "@/pages/free-guides";
 import AiConfigPage from "@/pages/ai-config";
 import StatementReviewPage from "@/pages/statement-review";
 import PartnerAgreementPage from "@/pages/partner-agreement";
@@ -48,6 +49,7 @@ function MainRouter() {
         <Route path="/contact" component={ContactPage} />
         <Route path="/faq" component={FaqPage} />
         <Route path="/connect" component={ConnectPage} />
+        <Route path="/free-guides" component={FreeGuidesPage} />
         <Route path="/free/:slug" component={LeadMagnetPage} />
         <Route path="/statement-review" component={StatementReviewPage} />
         <Route path="/partner-agreement" component={PartnerAgreementPage} />
