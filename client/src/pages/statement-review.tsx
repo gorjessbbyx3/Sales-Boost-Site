@@ -167,6 +167,9 @@ export default function StatementReviewPage() {
       const data = await response.json();
       setResult(data);
       setAnalysisState("complete");
+      // Auto-open email capture — send report to visitor's inbox
+      setEmailMode("report");
+      setEmailSent(false);
     } catch (err: any) {
       setError(err.message || "Something went wrong. Please try again.");
       setAnalysisState("error");
@@ -812,16 +815,36 @@ export default function StatementReviewPage() {
                     <div>
                       <h3 className="text-lg font-bold">
                         {emailMode === "report"
-                          ? "Email Your Analysis Report"
+                          ? "Where should we send your report?"
                           : "Get Free Statement Review Guides"}
                       </h3>
                       <p className="text-sm text-muted-foreground">
                         {emailMode === "report"
-                          ? "We'll send a formatted copy of your savings report."
+                          ? "Enter your info and we'll email a formatted copy with your full savings breakdown."
                           : "4 guides to help you audit your own statement."}
                       </p>
                     </div>
                   </div>
+
+                  {/* Grade teaser for report mode */}
+                  {emailMode === "report" && result && (
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/40 border border-border/50 mb-6">
+                      <div className={`flex items-center justify-center w-14 h-14 rounded-xl text-2xl font-black border-2 ${
+                        result.overallGrade === "A" || result.overallGrade === "B" ? "border-green-500/40 text-green-400 bg-green-500/10"
+                        : result.overallGrade === "C" ? "border-yellow-500/40 text-yellow-400 bg-yellow-500/10"
+                        : "border-red-500/40 text-red-400 bg-red-500/10"
+                      }`}>
+                        {result.overallGrade}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold">Your statement scored a {result.overallGrade}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {result.hiddenFees.length} hidden fee{result.hiddenFees.length !== 1 ? "s" : ""} found
+                          {result.estimatedOverpay && result.estimatedOverpay !== "N/A" ? ` · Est. ${result.estimatedOverpay}/mo overpay` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <form onSubmit={handleEmailSubmit} className="space-y-4">
                     <div>
@@ -863,7 +886,7 @@ export default function StatementReviewPage() {
                       ) : (
                         <>
                           <Send className="w-4 h-4 mr-2" />
-                          {emailMode === "report" ? "Send My Report" : "Send Me the Guides"}
+                          {emailMode === "report" ? "Get My Full Report" : "Send Me the Guides"}
                         </>
                       )}
                     </Button>
