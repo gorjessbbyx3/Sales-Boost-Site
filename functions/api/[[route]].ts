@@ -524,6 +524,63 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json({ success: true });
     }
 
+    // POST /api/leads/:id/recommend — AI next-step recommendation via Workers AI (free)
+    const leadRecommendMatch = path.match(/^\/api\/leads\/([^/]+)\/recommend$/);
+    if (leadRecommendMatch && method === "POST") {
+      const id = leadRecommendMatch[1];
+      const lead: any = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
+      if (!lead) return err("Lead not found", 404);
+      const daysSinceUpdate = lead.updated_at ? Math.floor((Date.now() - new Date(lead.updated_at as string).getTime()) / 86400000) : 0;
+      try {
+        const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+          body: JSON.stringify({
+            name: lead.name, business: lead.business, vertical: lead.vertical,
+            status: lead.status, painPoints: lead.pain_points, notes: lead.notes,
+            lastContact: lead.updated_at, monthlyVolume: lead.monthly_volume,
+            currentProcessor: lead.current_processor, daysSinceUpdate,
+          }),
+        });
+        const data: any = await workerRes.json();
+        if (data.error) return err(data.error, 500);
+        return json({ leadId: id, ...data });
+      } catch (e: any) {
+        return err("AI recommendation failed: " + e.message, 500);
+      }
+    }
+
+    // POST /api/leads/bulk-recommend — AI recommendations for multiple leads
+    if (path === "/api/leads/bulk-recommend" && method === "POST") {
+      const body: any = await request.json();
+      const ids: string[] = body.ids || [];
+      if (!ids.length) return err("No lead IDs provided");
+      const placeholders = ids.map(() => "?").join(",");
+      const { results: leads } = await env.DB.prepare(`SELECT * FROM leads WHERE id IN (${placeholders})`).bind(...ids).all();
+      const recommendations: any[] = [];
+      for (const lead of (leads || [])) {
+        const l: any = lead;
+        const daysSinceUpdate = l.updated_at ? Math.floor((Date.now() - new Date(l.updated_at as string).getTime()) / 86400000) : 0;
+        try {
+          const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/recommend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+            body: JSON.stringify({
+              name: l.name, business: l.business, vertical: l.vertical,
+              status: l.status, painPoints: l.pain_points, notes: l.notes,
+              lastContact: l.updated_at, monthlyVolume: l.monthly_volume,
+              currentProcessor: l.current_processor, daysSinceUpdate,
+            }),
+          });
+          const data: any = await workerRes.json();
+          recommendations.push({ leadId: l.id, ...data });
+        } catch {
+          recommendations.push({ leadId: l.id, error: "Failed to get recommendation" });
+        }
+      }
+      return json({ recommendations });
+    }
+
     // ─── CLIENTS CRUD ────────────────────────────────────────────────
 
     // GET /api/clients

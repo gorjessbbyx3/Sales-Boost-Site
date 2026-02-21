@@ -21,7 +21,7 @@ import {
   Plus, Trash2, Edit3, Check, TrendingUp, CreditCard, Globe,
   AlertTriangle, Calendar, Search, Filter, Copy, MapPin, Paperclip, Target, BookOpen,
   UserPlus, Building, CheckCircle,
-  BarChart3, ArrowUpRight, ArrowDownRight,
+  BarChart3, ArrowUpRight, ArrowDownRight, ArrowRight,
   Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
   Pin, PinOff, Sparkles, Clock, UserCog, Briefcase, Sun, Moon,
   ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu, Eye,
@@ -37,6 +37,7 @@ import ForecastTab from "./admin/ForecastTab";
 import UsersTab from "./admin/UsersTab";
 import AutopilotTab from "./admin/AutopilotTab";
 import EquipmentTab from "./admin/EquipmentTab";
+import FollowUpTab from "./admin/FollowUpTab";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -636,6 +637,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     ]},
     { label: "SALES", tabs: [
       { value: "leads", icon: UserPlus, label: "Pipeline" },
+      { value: "follow-up", icon: ArrowRight, label: "Follow-Up" },
       { value: "deals", icon: DollarSign, label: "Deals" },
       { value: "clients", icon: Users, label: "Clients" },
       { value: "inbox", icon: Mail, label: "Inbox" },
@@ -751,6 +753,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsContent value="overview"><OverviewTab setActiveTab={handleTabChange} /></TabsContent>
               <TabsContent value="leads"><LeadsTab /></TabsContent>
+              <TabsContent value="follow-up"><FollowUpTab /></TabsContent>
               <TabsContent value="deals"><DealsTab /></TabsContent>
               <TabsContent value="inbox"><InboxTab /></TabsContent>
               <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>

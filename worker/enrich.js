@@ -16,6 +16,7 @@
  *   POST /classify           — Classify inbound message by intent
  *   POST /extract-statement  — Parse merchant processing statements
  *   POST /analyze-statement  — Full AI statement analysis (grade, fees, recs)
+ *   POST /recommend          — AI next-step recommendation for a lead
  *   POST /chat               — Public website chat
  *
  * Deploy: cd worker && npx wrangler deploy
@@ -23,7 +24,7 @@
 
 import { getAllowedOrigin, corsHeaders, jsonResponse } from "./helpers.js";
 import { handleEnrich, handleExtractStatement } from "./handlers/leads.js";
-import { handlePitch, handleObjection, handleScore, handleEmail, handleSms } from "./handlers/sales.js";
+import { handlePitch, handleObjection, handleScore, handleEmail, handleSms, handleRecommend } from "./handlers/sales.js";
 import { handleSummarize, handleQuiz, handleRoleplay, handleClassify, handleChat } from "./handlers/content.js";
 import { handleAnalyzeStatement } from "./handlers/statement.js";
 
@@ -62,6 +63,7 @@ export default {
           "POST /classify",
           "POST /extract-statement",
           "POST /analyze-statement",
+          "POST /recommend",
           "POST /chat",
         ],
       }, 200, allowedOrigin);
@@ -98,6 +100,7 @@ export default {
       "/classify": handleClassify,
       "/extract-statement": handleExtractStatement,
       "/analyze-statement": handleAnalyzeStatement,
+      "/recommend": handleRecommend,
       "/chat": handleChat,
     };
 

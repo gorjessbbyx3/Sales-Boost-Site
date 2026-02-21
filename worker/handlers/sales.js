@@ -150,6 +150,44 @@ Tone: ${tone || "friendly and professional"}`;
   return jsonResponse(parsed);
 }
 
+export async function handleRecommend(body, env) {
+  const { name, business, vertical, status, painPoints, notes, lastContact, monthlyVolume, currentProcessor, daysSinceUpdate } = body;
+  if (!business && !name) {
+    return jsonResponse({ error: "Missing 'business' or 'name' field" }, 400);
+  }
+
+  const prompt = `You are an AI sales advisor for Tech Savvy Hawaii, a merchant services company in Hawaii.
+Analyze this lead and recommend the best next action to move them forward in the sales pipeline.
+
+You must return ONLY valid JSON with these fields:
+- nextAction: one of "send_email", "call_now", "send_text", "schedule_meeting", "send_statement_request", "send_proposal", "follow_up_later", "nurture_drip", "close_deal", "drop_lead"
+- priority: "urgent", "high", "medium", "low"
+- reasoning: 1-2 sentence explanation of why this action (string)
+- suggestedMessage: a short ready-to-use message draft for the recommended action (string, under 200 chars)
+- moveToStage: recommended pipeline stage to move this lead to, one of: "new", "contacted", "qualified", "statement-requested", "statement-received", "analysis-delivered", "proposal-sent", "negotiation", "won", "lost", "nurture" (string)
+- timing: when to take this action, e.g. "now", "today", "tomorrow morning", "in 2 days", "next week" (string)
+- confidence: 1-100 confidence score for this recommendation (number)`;
+
+  const input = `Lead: ${name || "Unknown"} at ${business || "Unknown Business"}
+Industry: ${vertical || "unknown"}
+Current stage: ${status || "new"}
+Monthly volume: ${monthlyVolume || "unknown"}
+Current processor: ${currentProcessor || "unknown"}
+Pain points: ${painPoints || "none specified"}
+Notes: ${notes || "none"}
+Last contact: ${lastContact || "unknown"}
+Days since last update: ${daysSinceUpdate || "unknown"}`;
+
+  const raw = await runAI(env, prompt, input, 600);
+  const parsed = parseJSON(raw);
+
+  if (!parsed) {
+    return jsonResponse({ error: "Failed to parse", raw: raw.slice(0, 500) });
+  }
+
+  return jsonResponse(parsed);
+}
+
 export async function handleSms(body, env) {
   const { ownerName, businessName, context, tone } = body;
   if (!businessName) {
