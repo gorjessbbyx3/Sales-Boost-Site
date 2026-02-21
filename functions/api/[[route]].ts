@@ -353,6 +353,34 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         await env.DB.prepare(
           "INSERT INTO contact_leads (id, business_name, contact_name, phone, email, plan, high_risk, monthly_processing, best_contact_time, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         ).bind(id, body.businessName || "", body.contactName || "", body.phone || "", body.email || "", body.plan || "", body.highRisk ? 1 : 0, body.monthlyProcessing || "", body.bestContactTime || "", ts).run();
+
+        // Also log to admin inbox so it shows up in Inbox tab
+        try {
+          const threadId = genId();
+          const msgId = genId();
+          const contactEmail = body.email || "unknown@contact.form";
+          const contactName = body.contactName || body.businessName || "Website Visitor";
+          const subject = `New Contact Form: ${body.businessName || contactName}`;
+          const msgBody = `New contact form submission:\n\nBusiness: ${body.businessName || "N/A"}\nContact: ${body.contactName || "N/A"}\nEmail: ${body.email || "N/A"}\nPhone: ${body.phone || "N/A"}\nPlan: ${body.plan || "N/A"}\nMonthly Processing: ${body.monthlyProcessing || "N/A"}\nBest Time to Call: ${body.bestContactTime || "N/A"}${body.highRisk ? "\nHigh Risk: Yes" : ""}`;
+
+          await env.DB.prepare(
+            "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, '', ?, ?, 'contact-form', 'open', 1, ?, ?)"
+          ).bind(threadId, subject, contactEmail, contactName, ts, ts).run();
+
+          await env.DB.prepare(
+            "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, 'contact@techsavvyhawaii.com', ?, ?, '', '', 'received', ?)"
+          ).bind(msgId, threadId, contactEmail, contactName, subject, msgBody, ts).run();
+        } catch (inboxErr) {
+          console.error("Failed to log contact form to inbox:", inboxErr);
+        }
+
+        // Log activity
+        try {
+          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+            genId(), "New Website Lead", `${body.businessName || body.contactName} submitted contact form`, "lead", ts
+          ).run();
+        } catch { /* non-critical */ }
+
         const row = await env.DB.prepare("SELECT * FROM contact_leads WHERE id = ?").bind(id).first();
         return json(mapContactLead(row!), 201);
       } catch (e: any) {
@@ -416,7 +444,198 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       await env.DB.prepare(
         "INSERT INTO leads (id, name, business, phone, email, package, status, source, notes, attachments, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'new', 'lead-magnet', ?, '[]', ?, ?)"
       ).bind(id, body.name || "", body.business || "", body.phone || "", body.email || "", body.package || "terminal", body.notes || "", ts, ts).run();
+
+      // Log to admin inbox
+      try {
+        const threadId = genId();
+        const msgId = genId();
+        const contactEmail = body.email || "unknown@lead.form";
+        const contactName = body.name || body.business || "Website Lead";
+        const subject = `New Lead: ${body.business || contactName}`;
+        const msgBody = `New lead from website:\n\nName: ${body.name || "N/A"}\nBusiness: ${body.business || "N/A"}\nEmail: ${body.email || "N/A"}\nPhone: ${body.phone || "N/A"}\nPackage: ${body.package || "N/A"}\nNotes: ${body.notes || "N/A"}`;
+        await env.DB.prepare(
+          "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, ?, ?, ?, 'contact-form', 'open', 1, ?, ?)"
+        ).bind(threadId, subject, id, contactEmail, contactName, ts, ts).run();
+        await env.DB.prepare(
+          "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, 'contact@techsavvyhawaii.com', ?, ?, '', '', 'received', ?)"
+        ).bind(msgId, threadId, contactEmail, contactName, subject, msgBody, ts).run();
+      } catch { /* non-critical */ }
+
+      // Log activity
+      try {
+        await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+          genId(), "Website Lead", `${body.business || body.name} submitted contact form`, "lead", ts
+        ).run();
+      } catch { /* non-critical */ }
+
       return json({ success: true }, 201);
+    }
+
+    // POST /api/statement-review/analyze (public — file upload for AI analysis)
+    if (path === "/api/statement-review/analyze" && method === "POST") {
+      try {
+        const contentType = request.headers.get("Content-Type") || "";
+        let fileBuffer: ArrayBuffer;
+        let mimeType = "application/pdf";
+        let fileName = "statement";
+
+        if (contentType.includes("multipart/form-data")) {
+          const formData = await request.formData();
+          const file = formData.get("statement") as File | null;
+          if (!file) return err("No file uploaded. Please attach your merchant statement.");
+          fileBuffer = await file.arrayBuffer();
+          mimeType = file.type || "application/pdf";
+          fileName = file.name || "statement";
+        } else {
+          return err("Expected multipart/form-data with a 'statement' file field.");
+        }
+
+        const isPdf = mimeType.includes("pdf");
+        const workerUrl = "https://mojo-luna-955c.gorjessbbyx3.workers.dev/analyze-statement";
+        const workerHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        if (env.WORKER_KEY) workerHeaders["X-Worker-Key"] = env.WORKER_KEY;
+
+        let requestBody: Record<string, string>;
+
+        if (isPdf) {
+          // Try to extract text from PDF binary (works for digital/text PDFs)
+          const bytes = new Uint8Array(fileBuffer);
+          const textContent = extractPdfText(bytes);
+
+          if (textContent.length > 50) {
+            // Got text — send to text analysis
+            requestBody = { text: textContent };
+          } else {
+            // Scanned PDF or minimal text — send as base64 image for vision model
+            const base64 = arrayBufferToBase64(fileBuffer);
+            requestBody = { imageBase64: base64, imageType: "application/pdf" };
+          }
+        } else {
+          // Image upload — send as base64
+          const base64 = arrayBufferToBase64(fileBuffer);
+          requestBody = { imageBase64: base64, imageType: mimeType };
+        }
+
+        const aiResp = await fetch(workerUrl, {
+          method: "POST",
+          headers: workerHeaders,
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!aiResp.ok) {
+          const errData: any = await aiResp.json().catch(() => ({ error: "Worker error" }));
+          throw new Error(errData.error || "Analysis service returned an error");
+        }
+
+        const analysis: any = await aiResp.json();
+
+        // Log activity
+        try {
+          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+            genId(), "Statement Review", `AI analysis completed — Grade: ${analysis.overallGrade || "?"}, Overpay: ${analysis.estimatedOverpay || "?"}`, "lead", now()
+          ).run();
+        } catch { /* non-critical */ }
+
+        return json(analysis);
+      } catch (e: any) {
+        console.error("Statement analysis error:", e.message || e);
+        const msg = e.message || "";
+        return err(
+          msg.includes("abort") ? "Analysis took too long. Please try a smaller file or call us."
+            : "Analysis failed. Please try again or call us at (808) 767-5460 for a free manual review.",
+          500
+        );
+      }
+    }
+
+    // POST /api/statement-review/email (public — send analysis report or DIY guides)
+    if (path === "/api/statement-review/email" && method === "POST") {
+      try {
+        const body: any = await request.json();
+        const { email, name, business, type, analysis } = body;
+        if (!email || !name) return err("Name and email are required.");
+
+        const apiKey = env.RESEND_API_KEY;
+        if (!apiKey) return err("Email service not configured", 500);
+
+        const ts = now();
+
+        // Get email config
+        let fromEmail = "contact@techsavvyhawaii.com";
+        let fromName = "TechSavvy Hawaii";
+        try {
+          const cfg = await env.DB.prepare("SELECT * FROM resend_config WHERE id = 'default'").first();
+          if (cfg && cfg.enabled) {
+            fromEmail = (cfg.from_email as string) || fromEmail;
+            fromName = (cfg.from_name as string) || fromName;
+          }
+        } catch { /* use defaults */ }
+
+        let emailSubject: string;
+        let emailHtml: string;
+
+        if (type === "report" && analysis) {
+          const annualOverpay = analysis.estimatedOverpay
+            ? `$${(parseFloat(String(analysis.estimatedOverpay).replace(/[$,]/g, "")) * 12).toLocaleString()}`
+            : "N/A";
+          emailSubject = `Your Statement Analysis: Grade ${analysis.overallGrade || "?"} | TechSavvy Hawaii`;
+          emailHtml = buildAnalysisEmailHtml(name, business || "Your Business", analysis, annualOverpay);
+        } else {
+          emailSubject = "Your Free Merchant Statement Review Guides | TechSavvy Hawaii";
+          emailHtml = buildGuidesEmailHtml(name);
+        }
+
+        // Send via Resend
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({ from: `${fromName} <${fromEmail}>`, to: [email], subject: emailSubject, html: emailHtml }),
+        });
+
+        if (!resendRes.ok) {
+          console.error("Resend error:", await resendRes.text());
+          return err("Failed to send email", 500);
+        }
+
+        // Save as lead
+        try {
+          const leadId = genId();
+          const leadNotes = type === "report" ? `AI statement report emailed — Grade: ${analysis?.overallGrade || "?"}` : "Requested self-review guides";
+          await env.DB.prepare(
+            "INSERT INTO leads (id, name, business, email, status, source, notes, attachments, created_at, updated_at) VALUES (?, ?, ?, ?, 'new', 'lead-magnet', ?, '[]', ?, ?)"
+          ).bind(leadId, name, business || "", email, leadNotes, ts, ts).run();
+        } catch { /* lead might already exist, non-critical */ }
+
+        // Log to inbox
+        try {
+          const threadId = genId();
+          const msgId = genId();
+          const inboxSubject = type === "report"
+            ? `Statement Analysis: ${business || name} — Grade ${analysis?.overallGrade || "?"}`
+            : `DIY Guides Requested: ${name}`;
+          const inboxBody = type === "report"
+            ? `AI Statement Report sent to ${name} (${email})\n\nBusiness: ${business || "N/A"}\nGrade: ${analysis?.overallGrade || "N/A"}\nEffective Rate: ${analysis?.effectiveRate || "N/A"}\nEst. Overpay: ${analysis?.estimatedOverpay || "N/A"}\nRed Flags: ${analysis?.redFlags?.length || 0}`
+            : `Self-review guide booklets sent to ${name} (${email})\n\nBusiness: ${business || "N/A"}`;
+
+          await env.DB.prepare(
+            "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, '', ?, ?, 'statement-review', 'open', 1, ?, ?)"
+          ).bind(threadId, inboxSubject, email, name, ts, ts).run();
+          await env.DB.prepare(
+            "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'outbound', ?, ?, ?, ?, ?, '', '', 'sent', ?)"
+          ).bind(msgId, threadId, fromEmail, fromName, email, inboxSubject, inboxBody, ts).run();
+        } catch { /* non-critical */ }
+
+        // Log activity
+        try {
+          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+            genId(), "Statement Review Email", `${type === "report" ? "AI report" : "Guide booklets"} sent to ${email}`, "lead", ts
+          ).run();
+        } catch { /* non-critical */ }
+
+        return json({ success: true });
+      } catch (e: any) {
+        return err("Failed to send email: " + (e.message || "Unknown error"), 500);
+      }
     }
 
     // GET /api/resources (public)
@@ -2548,4 +2767,158 @@ function mapBusinessInfo(row: Record<string, unknown>) {
 
 function mapAutopilotConfig(row: Record<string, unknown>) {
   return { id: row.id, enabled: !!row.enabled, autoProspectEnabled: !!row.auto_prospect_enabled, prospectLocations: row.prospect_locations || "Honolulu, Hawaii", prospectVerticals: row.prospect_verticals || "restaurant,retail,salon", maxProspectsPerRun: row.max_prospects_per_run || 10, autoOutreachEnabled: !!row.auto_outreach_enabled, outreachDelay: row.outreach_delay_hours || 2, maxOutreachPerDay: row.max_outreach_per_day || 15, autoFollowUpEnabled: !!row.auto_follow_up_enabled, followUpAfterDays: row.follow_up_after_days || 3, maxFollowUpsPerLead: row.max_follow_ups_per_lead || 3, autoEnrichEnabled: !!row.auto_enrich_enabled, lastRunAt: row.last_run_at || "", totalProspected: row.total_prospected || 0, totalEmailed: row.total_emailed || 0, totalFollowUps: row.total_follow_ups || 0, updatedAt: row.updated_at || "" };
+}
+
+// ─── PDF text extraction (lightweight, works in Workers runtime) ──────
+
+function extractPdfText(bytes: Uint8Array): string {
+  // Convert to string for regex parsing (latin1 to preserve all bytes)
+  let raw = "";
+  for (let i = 0; i < bytes.length; i++) raw += String.fromCharCode(bytes[i]);
+
+  const textParts: string[] = [];
+
+  // Method 1: Extract text between BT/ET blocks (standard PDF text objects)
+  const btEtRegex = /BT\s([\s\S]*?)ET/g;
+  let match;
+  while ((match = btEtRegex.exec(raw)) !== null) {
+    const block = match[1];
+    // Extract strings in parentheses: (text) Tj or (text) TJ
+    const tjRegex = /\(([^)]*)\)/g;
+    let tjMatch;
+    while ((tjMatch = tjRegex.exec(block)) !== null) {
+      const decoded = tjMatch[1]
+        .replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t")
+        .replace(/\\\\/g, "\\").replace(/\\([()])/g, "$1");
+      if (decoded.trim()) textParts.push(decoded);
+    }
+    // Hex strings: <hex> Tj
+    const hexRegex = /<([0-9A-Fa-f]+)>/g;
+    let hexMatch;
+    while ((hexMatch = hexRegex.exec(block)) !== null) {
+      const hex = hexMatch[1];
+      let decoded = "";
+      for (let i = 0; i < hex.length; i += 2) {
+        const code = parseInt(hex.substring(i, i + 2), 16);
+        if (code >= 32 && code < 127) decoded += String.fromCharCode(code);
+      }
+      if (decoded.trim()) textParts.push(decoded);
+    }
+  }
+
+  // Method 2: Look for stream content with readable text (fallback)
+  if (textParts.length < 5) {
+    const streamRegex = /stream\s*\n([\s\S]*?)\nendstream/g;
+    while ((match = streamRegex.exec(raw)) !== null) {
+      const content = match[1];
+      // Only extract printable ASCII sequences of 4+ chars
+      const readable = content.match(/[\x20-\x7E]{4,}/g);
+      if (readable) textParts.push(...readable);
+    }
+  }
+
+  return textParts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function buildAnalysisEmailHtml(name: string, business: string, analysis: any, annualOverpay: string): string {
+  const grade = analysis.overallGrade || "?";
+  const gradeColor = grade === "A" || grade === "B" ? "#10b981" : grade === "C" ? "#f59e0b" : "#ef4444";
+  const hiddenFees = Array.isArray(analysis.hiddenFees) ? analysis.hiddenFees : [];
+  const redFlags = Array.isArray(analysis.redFlags) ? analysis.redFlags : [];
+  const recs = Array.isArray(analysis.recommendations) ? analysis.recommendations : [];
+
+  return `<div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;max-width:640px;margin:0 auto;background:#0a0a0a;color:#e0e0e0;">
+    <div style="padding:32px;background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid #4aeaff;">
+      <h1 style="margin:0;font-size:24px;color:#4aeaff;">λechSavvy</h1>
+      <p style="margin:8px 0 0;color:#94a3b8;font-size:14px;">Statement Analysis Report</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="font-size:16px;">Hi ${name},</p>
+      <p style="font-size:14px;color:#aaa;">Here's your AI-powered analysis for <strong>${business}</strong>.</p>
+
+      <div style="text-align:center;margin:24px 0;padding:24px;background:#1a1a2e;border-radius:12px;border:1px solid ${gradeColor}33;">
+        <p style="margin:0;font-size:14px;color:#aaa;">Overall Grade</p>
+        <p style="margin:8px 0;font-size:64px;font-weight:900;color:${gradeColor};">${grade}</p>
+        <p style="margin:0;font-size:14px;color:#aaa;">Effective Rate: ${analysis.effectiveRate || "N/A"} • Volume: ${analysis.monthlyVolume || "N/A"}</p>
+      </div>
+
+      <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:16px;">
+        <h3 style="color:#ef4444;margin:0 0 12px;">Est. Monthly Overpay: ${analysis.estimatedOverpay || "N/A"}</h3>
+        <p style="color:#aaa;font-size:13px;margin:0;">That's roughly <strong>${annualOverpay}/year</strong> you could be saving.</p>
+      </div>
+
+      ${hiddenFees.length > 0 ? `<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:16px;">
+        <h3 style="color:#f59e0b;margin:0 0 12px;">Hidden Fees Found (${hiddenFees.length})</h3>
+        ${hiddenFees.map((f: any) => `<p style="color:#ddd;font-size:13px;margin:4px 0;">• <strong>${f.name}</strong>: ${f.amount || ""} — ${f.explanation || ""}</p>`).join("")}
+      </div>` : ""}
+
+      ${redFlags.length > 0 ? `<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:16px;">
+        <h3 style="color:#ef4444;margin:0 0 12px;">🚩 Red Flags (${redFlags.length})</h3>
+        ${redFlags.map((f: any) => `<p style="color:#ddd;font-size:13px;margin:4px 0;">• ${typeof f === "string" ? f : f.description || f.name || ""}</p>`).join("")}
+      </div>` : ""}
+
+      ${recs.length > 0 ? `<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:16px;">
+        <h3 style="color:#4aeaff;margin:0 0 12px;">Recommendations</h3>
+        ${recs.map((r: any) => `<p style="color:#ddd;font-size:13px;margin:4px 0;">✓ ${typeof r === "string" ? r : r.text || ""}</p>`).join("")}
+      </div>` : ""}
+
+      <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid #4aeaff33;border-radius:12px;padding:24px;text-align:center;margin-top:24px;">
+        <h3 style="color:#4aeaff;margin:0 0 8px;">Ready to eliminate these fees?</h3>
+        <p style="color:#aaa;font-size:14px;margin:0 0 16px;">Our zero-fee processing solution means you keep 100% of your revenue.</p>
+        <a href="https://techsavvyhawaii.com/connect" style="display:inline-block;background:#4aeaff;color:#000;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-right:8px;">Get Started</a>
+        <a href="tel:+18087675460" style="display:inline-block;background:transparent;color:#4aeaff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;border:1px solid #4aeaff;">📞 (808) 767-5460</a>
+      </div>
+
+      <p style="color:#666;font-size:12px;margin-top:32px;text-align:center;">TechSavvy Hawaii • techsavvyhawaii.com • contact@techsavvyhawaii.com</p>
+    </div>
+  </div>`;
+}
+
+function buildGuidesEmailHtml(name: string): string {
+  return `<div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;max-width:640px;margin:0 auto;background:#0a0a0a;color:#e0e0e0;">
+    <div style="padding:32px;background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid #4aeaff;">
+      <h1 style="margin:0;font-size:24px;color:#4aeaff;">λechSavvy</h1>
+      <p style="margin:8px 0 0;color:#94a3b8;font-size:14px;">Your Free Statement Review Guides</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="font-size:16px;margin-bottom:8px;">Hi ${name},</p>
+      <p style="font-size:14px;color:#aaa;margin-bottom:24px;">Thanks for your interest! Here are your free guides to help you review your merchant processing statement.</p>
+      <div style="margin-bottom:24px;">
+        <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
+          <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">📋 Top 10 Statement Checklist</h3>
+          <p style="color:#aaa;font-size:13px;margin:0 0 12px;">Spot hidden fees, inflated rates, and junk charges in under 10 minutes.</p>
+          <a href="https://assets.techsavvyhawaii.com/website-resources/1771403190912-top-10-statement-check.pdf" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+        </div>
+        <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
+          <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">📊 Rate Comparison Guide</h3>
+          <p style="color:#aaa;font-size:13px;margin:0 0 12px;">Industry benchmarks for restaurants, retail, salons, medical & more.</p>
+          <a href="https://assets.techsavvyhawaii.com/website-resources/1771403189858-rate-comparison-guide.pdf" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+        </div>
+        <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
+          <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">🔒 Security Checklist</h3>
+          <p style="color:#aaa;font-size:13px;margin:0 0 12px;">PCI compliance, fraud prevention, and breach response checklist.</p>
+          <a href="https://assets.techsavvyhawaii.com/website-resources/1771403187943-payment-security-checklist.pdf" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+        </div>
+        <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:12px;">
+          <h3 style="color:#4aeaff;margin:0 0 4px;font-size:16px;">💰 Cash Discount Guide</h3>
+          <p style="color:#aaa;font-size:13px;margin:0 0 12px;">How to eliminate processing fees entirely — legal in all 50 states.</p>
+          <a href="https://assets.techsavvyhawaii.com/website-resources/1771403188928-cash-discount-explained.pdf" style="color:#4aeaff;font-size:13px;text-decoration:none;font-weight:600;">Download Guide →</a>
+        </div>
+      </div>
+      <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid #4aeaff33;border-radius:12px;padding:24px;text-align:center;">
+        <h3 style="color:#4aeaff;margin:0 0 8px;font-size:18px;">Want us to review it for you?</h3>
+        <p style="color:#aaa;font-size:14px;margin:0 0 16px;">Upload your statement for a free AI-powered analysis, or call us for a personal review.</p>
+        <a href="https://techsavvyhawaii.com/statement-review" style="display:inline-block;background:#4aeaff;color:#000;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-right:8px;">AI Analysis</a>
+        <a href="tel:+18087675460" style="display:inline-block;background:transparent;color:#4aeaff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;border:1px solid #4aeaff;">📞 (808) 767-5460</a>
+      </div>
+      <p style="color:#666;font-size:12px;margin-top:32px;text-align:center;">TechSavvy Hawaii • techsavvyhawaii.com • contact@techsavvyhawaii.com</p>
+    </div>
+  </div>`;
 }
