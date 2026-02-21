@@ -34,7 +34,7 @@ wrangler secret put WORKER_KEY
 3. Enable Email Routing (if not already)
 4. Go to **Routes** → **Create address**
 5. Custom address: `contact`
-6. Destination: Select **Send to a Worker** → pick `techsavvy-email-worker`
+6. Destination: Select **Send to a Worker** → pick `tight-fog-5031`
 7. Save
 
 ### 4. Verify Forwarding Destination

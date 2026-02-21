@@ -2,7 +2,7 @@
 # Handles inbound email to contact@techsavvyhawaii.com
 # Classifies, logs to D1, auto-replies, and forwards
 
-name = "techsavvy-email-worker"
+name = "tight-fog-5031"
 main = "index.js"
 compatibility_date = "2024-12-01"
 account_id = "f21951bf022d439bbd297f510c086480"
