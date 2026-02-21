@@ -4,9 +4,9 @@
  * Receives inbound emails to contact@techsavvyhawaii.com and:
  * 1. Parses sender, subject, and body
  * 2. Classifies intent via AI Worker (/classify)
- * 3. Logs new leads to savvy-admin D1 database
- * 4. Sends branded auto-reply via Cloudflare send-email
- * 5. Forwards original email to personal inbox
+ * 3. Logs to email_threads + email_messages in D1 (admin dashboard inbox)
+ * 4. Creates leads for new_lead classified emails
+ * 5. Sends branded auto-reply to new leads
  * 
  * Cloudflare Email Workers use the email() event handler.
  */
@@ -15,7 +15,6 @@ import PostalMime from "postal-mime";
 
 // ─── Configuration ────────────────────────────────────────────────
 const AI_WORKER_URL = "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
-const FORWARD_TO = "gorjessbbyx3@icloud.com"; // Change to your personal email
 
 // ─── Email Event Handler ──────────────────────────────────────────
 export default {
@@ -152,14 +151,6 @@ export default {
       } catch (err) {
         console.error("D1 insert failed (non-blocking):", err);
       }
-    }
-
-    // ── Forward to personal inbox ─────────────────────────────
-    try {
-      await message.forward(FORWARD_TO);
-      console.log(`📨 Forwarded to ${FORWARD_TO}`);
-    } catch (err) {
-      console.error("Forward failed:", err);
     }
 
     // ── Auto-reply for new leads (via send_email binding) ─────
