@@ -174,57 +174,73 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         return err("AI agent is currently disabled.", 503);
       }
 
-      const apiKey = env.ANTHROPIC_API_KEY;
-      if (!apiKey) return err("Anthropic API key is not configured.", 500);
-
       const body: any = await request.json();
       const { message, history } = body || {};
       if (!message || typeof message !== "string" || message.length > 2000) {
         return err("Message is required and must be under 2000 characters.");
       }
 
-      const messages: { role: "user" | "assistant"; content: string }[] = [];
+      const trimmedHistory: { role: string; content: string }[] = [];
       if (Array.isArray(history)) {
-        const trimmed = history.slice(-MAX_HISTORY_LENGTH);
-        for (const h of trimmed) {
+        for (const h of history.slice(-10)) {
           if (h.role && h.content && typeof h.content === "string") {
-            messages.push({ role: h.role, content: h.content.slice(0, 2000) });
+            trimmedHistory.push({ role: h.role, content: h.content.slice(0, 2000) });
           }
         }
       }
-      messages.push({ role: "user", content: message });
 
-      const safeMaxTokens = Math.min(Number(config.max_tokens) || 1024, MAX_ALLOWED_TOKENS);
+      try {
+        // Try Anthropic first if API key is available
+        const apiKey = env.ANTHROPIC_API_KEY;
+        if (apiKey) {
+          const messages: { role: "user" | "assistant"; content: string }[] = [
+            ...trimmedHistory.map(h => ({ role: h.role as "user" | "assistant", content: h.content })),
+            { role: "user" as const, content: message },
+          ];
+          const safeMaxTokens = Math.min(Number(config.max_tokens) || 1024, MAX_ALLOWED_TOKENS);
 
-      // Use fetch to call Anthropic API directly (no SDK needed in Workers)
-      const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: config.model as string,
-          max_tokens: safeMaxTokens,
-          system: config.system_prompt as string,
-          messages,
-        }),
-      });
+          const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+              model: config.model as string,
+              max_tokens: safeMaxTokens,
+              system: config.system_prompt as string,
+              messages,
+            }),
+          });
 
-      if (!anthropicRes.ok) {
-        const errText = await anthropicRes.text();
-        console.error("Anthropic API error:", errText);
+          if (anthropicRes.ok) {
+            const anthropicData: any = await anthropicRes.json();
+            const text = (anthropicData.content || [])
+              .filter((block: any) => block.type === "text")
+              .map((block: any) => block.text)
+              .join("");
+            return json({ reply: text });
+          }
+        }
+
+        // Fallback: proxy through AI worker (Cloudflare Workers AI — free)
+        const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message,
+            history: trimmedHistory,
+            systemPrompt: config.system_prompt as string,
+          }),
+        });
+        const data: any = await workerRes.json();
+        if (data.error) return err(data.error, 500);
+        return json({ reply: data.reply || "" });
+      } catch (e: any) {
+        console.error("Chat error:", e.message);
         return err("Failed to get AI response. Please try again.", 500);
       }
-
-      const anthropicData: any = await anthropicRes.json();
-      const text = (anthropicData.content || [])
-        .filter((block: any) => block.type === "text")
-        .map((block: any) => block.text)
-        .join("");
-
-      return json({ reply: text });
     }
 
     // GET /api/admin/setup-status
