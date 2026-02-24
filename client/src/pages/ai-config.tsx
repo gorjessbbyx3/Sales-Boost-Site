@@ -42,8 +42,8 @@ import FollowUpTab from "./admin/FollowUpTab";
 // ─── Types ───────────────────────────────────────────────────────────
 
 type PipelineStage = "new" | "contacted" | "qualified" | "statement-requested" | "statement-received" | "analysis-delivered" | "proposal-sent" | "negotiation" | "won" | "lost" | "nurture";
-type LeadSource = "referral" | "networking" | "social" | "direct" | "lead-magnet";
-type PackageType = "terminal" | "trial" | "online";
+type LeadSource = "referral" | "networking" | "social" | "direct" | "lead-magnet" | "prospecting";
+type PackageType = "terminal" | "trial" | "online" | "combo";
 type MaintenancePlan = "none" | "basic" | "pro" | "premium";
 type Vertical = "restaurant" | "retail" | "salon" | "auto" | "medical" | "cbd" | "vape" | "firearms" | "ecommerce" | "services" | "other";
 
@@ -410,6 +410,7 @@ const SOURCE_CONFIG: Record<LeadSource, { label: string; color: string; icon: st
   social:       { label: "Social Outreach", color: "text-pink-400", icon: "S" },
   direct:       { label: "Direct Prospecting", color: "text-orange-400", icon: "D" },
   "lead-magnet":{ label: "Lead Magnet", color: "text-purple-400", icon: "L" },
+  prospecting:  { label: "Prospecting", color: "text-cyan-400", icon: "P" },
 };
 
 const VERTICAL_CONFIG: Record<Vertical, string> = {
@@ -422,6 +423,7 @@ const PACKAGE_CONFIG: Record<PackageType, { label: string; color: string }> = {
   terminal: { label: "Terminal ($399)", color: "text-primary" },
   trial: { label: "30-Day Trial", color: "text-chart-4" },
   online: { label: "Online (Free)", color: "text-chart-2" },
+  combo: { label: "Combo Bundle", color: "text-amber-400" },
 };
 
 const MAINTENANCE_CONFIG: Record<MaintenancePlan, { label: string; price: string }> = {
@@ -1508,9 +1510,9 @@ function LeadsTab() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
                     <span className="font-semibold text-sm">{lead.business || lead.name}</span>
-                    <Badge variant="outline" className={`text-[10px] ${PIPELINE_CONFIG[lead.status].bg} ${PIPELINE_CONFIG[lead.status].color}`}>{PIPELINE_CONFIG[lead.status].short}</Badge>
+                    <Badge variant="outline" className={`text-[10px] ${PIPELINE_CONFIG[lead.status]?.bg || ""} ${PIPELINE_CONFIG[lead.status]?.color || ""}`}>{PIPELINE_CONFIG[lead.status]?.short || lead.status}</Badge>
                     <Badge variant="outline" className={`text-[10px] ${SOURCE_CONFIG[lead.source]?.color || ""}`}>{SOURCE_CONFIG[lead.source]?.label || lead.source}</Badge>
-                    <Badge variant="outline" className={`text-[10px] ${PACKAGE_CONFIG[lead.package].color}`}>{PACKAGE_CONFIG[lead.package].label}</Badge>
+                    <Badge variant="outline" className={`text-[10px] ${PACKAGE_CONFIG[lead.package as PackageType]?.color || ""}`}>{PACKAGE_CONFIG[lead.package as PackageType]?.label || lead.package}</Badge>
                   </div>
                   {lead.business && lead.name && <p className="text-xs text-muted-foreground">{lead.name}{lead.decisionMakerName ? ` — DM: ${lead.decisionMakerName}${lead.decisionMakerRole ? ` (${lead.decisionMakerRole})` : ""}` : ""}</p>}
                   <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
@@ -1589,7 +1591,7 @@ function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClos
             </div>
             <div className="space-y-1.5"><Label className="text-xs">Package</Label>
               <Select value={form.package || "terminal"} onValueChange={(v) => set("package", v)}><SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="terminal">Terminal ($399)</SelectItem><SelectItem value="trial">30-Day Trial</SelectItem><SelectItem value="online">Online (Free)</SelectItem></SelectContent></Select>
+                <SelectContent><SelectItem value="terminal">Terminal ($399)</SelectItem><SelectItem value="trial">30-Day Trial</SelectItem><SelectItem value="online">Online (Free)</SelectItem><SelectItem value="combo">Combo Bundle</SelectItem></SelectContent></Select>
             </div>
             <div className="space-y-1.5"><Label className="text-xs">Pipeline Stage</Label>
               <Select value={form.status || "new"} onValueChange={(v) => set("status", v)}><SelectTrigger><SelectValue /></SelectTrigger>
