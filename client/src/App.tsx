@@ -23,7 +23,10 @@ import ReferralPage from "@/pages/referral";
 import NotFound from "@/pages/not-found";
 import { ChatWidget } from "@/components/chat-widget";
 
+import PartnerProgramPage from "@/pages/partner-program";
+
 const isAdminSubdomain = window.location.hostname.startsWith("admin.");
+const isProgramSubdomain = window.location.hostname.startsWith("program.");
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -69,6 +72,15 @@ function AdminRouter() {
   );
 }
 
+function ProgramRouter() {
+  return (
+    <Switch>
+      <Route path="/" component={PartnerProgramPage} />
+      <Route component={PartnerProgramPage} />
+    </Switch>
+  );
+}
+
 function App() {
   if (isAdminSubdomain) {
     return (
@@ -77,6 +89,19 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <AdminRouter />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    );
+  }
+
+  if (isProgramSubdomain) {
+    return (
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <ProgramRouter />
           </TooltipProvider>
         </QueryClientProvider>
       </ThemeProvider>

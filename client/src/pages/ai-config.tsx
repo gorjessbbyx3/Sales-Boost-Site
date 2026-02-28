@@ -37,6 +37,7 @@ import ForecastTab from "./admin/ForecastTab";
 import UsersTab from "./admin/UsersTab";
 import AutopilotTab from "./admin/AutopilotTab";
 import EquipmentTab from "./admin/EquipmentTab";
+import PartnersTab from "./admin/PartnersTab";
 import FollowUpTab from "./admin/FollowUpTab";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -655,6 +656,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       { value: "ai-tools", icon: Sparkles, label: "AI Tools" },
       { value: "files", icon: FolderOpen, label: "Files" },
       { value: "equipment", icon: Monitor, label: "Equipment" },
+      { value: "partners", icon: GraduationCap, label: "Partners" },
     ]},
     { label: "", tabs: [
       { value: "settings", icon: Settings, label: "Settings" },
@@ -768,6 +770,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsContent value="ai-tools"><AiToolsTab /></TabsContent>
               <TabsContent value="files"><FilesManagerTab /></TabsContent>
               <TabsContent value="equipment"><EquipmentTab /></TabsContent>
+              <TabsContent value="partners"><PartnersTab /></TabsContent>
               <TabsContent value="settings"><SettingsTab /></TabsContent>
             </Tabs>
           </div>

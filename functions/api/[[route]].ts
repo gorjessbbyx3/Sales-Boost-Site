@@ -646,6 +646,149 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       } catch { return json([]); }
     }
 
+    // ─── PARTNER PROGRAM ROUTES (program.techsavvyhawaii.com) ──────
+
+    // POST /api/partner/login
+    if (path === "/api/partner/login" && method === "POST") {
+      const body: any = await request.json();
+      const code = (body.accessCode || "").trim().toUpperCase();
+      if (!code) return err("Access code required");
+      const partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE access_code = ? AND is_active = 1").bind(code).first();
+      if (!partner) return err("Invalid access code", 401);
+      const ts = now();
+      await env.DB.prepare("UPDATE partner_accounts SET last_login = ? WHERE id = ?").bind(ts, partner.id).run();
+      // Set partner session cookie
+      const headers = new Headers();
+      headers.set("Set-Cookie", `partner_session=${partner.id}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000`);
+      return new Response(JSON.stringify(mapPartner(partner)), { status: 200, headers: { ...Object.fromEntries(headers.entries()), "Content-Type": "application/json" } });
+    }
+
+    // GET /api/partner/me
+    if (path === "/api/partner/me" && method === "GET") {
+      const partnerId = getPartnerSession(request);
+      if (!partnerId) return err("Not logged in", 401);
+      const partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE id = ? AND is_active = 1").bind(partnerId).first();
+      if (!partner) return err("Partner not found", 401);
+      return json(mapPartner(partner));
+    }
+
+    // POST /api/partner/logout
+    if (path === "/api/partner/logout" && method === "POST") {
+      const headers = new Headers();
+      headers.set("Set-Cookie", "partner_session=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0");
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...Object.fromEntries(headers.entries()), "Content-Type": "application/json" } });
+    }
+
+    // GET /api/partner/modules
+    if (path === "/api/partner/modules" && method === "GET") {
+      const partnerId = getPartnerSession(request);
+      if (!partnerId) return err("Unauthorized", 401);
+      const { results: modules } = await env.DB.prepare("SELECT * FROM learning_modules WHERE is_published = 1 ORDER BY sort_order ASC").all();
+      const { results: progress } = await env.DB.prepare("SELECT * FROM partner_progress WHERE partner_id = ?").bind(partnerId).all();
+      const progressMap: Record<string, any> = {};
+      for (const p of progress || []) progressMap[p.module_id as string] = p;
+      return json((modules || []).map((m: any) => ({
+        id: m.id, slug: m.slug, title: m.title, description: m.description,
+        category: m.category, difficulty: m.difficulty, durationMinutes: m.duration_minutes,
+        sortOrder: m.sort_order, content: m.content, videoUrl: m.video_url,
+        quizJson: (() => { try { return JSON.parse(m.quiz_json || "[]"); } catch { return []; } })(),
+        points: m.points,
+        progress: progressMap[m.id as string] ? {
+          status: progressMap[m.id as string].status,
+          quizScore: progressMap[m.id as string].quiz_score,
+          completedAt: progressMap[m.id as string].completed_at,
+          startedAt: progressMap[m.id as string].started_at,
+        } : { status: "not_started", quizScore: 0, completedAt: "", startedAt: "" },
+      })));
+    }
+
+    // POST /api/partner/modules/:id/progress
+    const modProgressMatch = path.match(/^\/api\/partner\/modules\/([^/]+)\/progress$/);
+    if (modProgressMatch && method === "POST") {
+      const partnerId = getPartnerSession(request);
+      if (!partnerId) return err("Unauthorized", 401);
+      const moduleId = modProgressMatch[1];
+      const body: any = await request.json();
+      const ts = now();
+      const existing = await env.DB.prepare("SELECT * FROM partner_progress WHERE partner_id = ? AND module_id = ?").bind(partnerId, moduleId).first();
+      if (existing) {
+        const sets: string[] = [];
+        const vals: any[] = [];
+        if (body.status) { sets.push("status = ?"); vals.push(body.status); }
+        if (body.quizScore !== undefined) { sets.push("quiz_score = ?"); vals.push(body.quizScore); }
+        if (body.status === "completed" && !existing.completed_at) { sets.push("completed_at = ?"); vals.push(ts); }
+        if (sets.length > 0) {
+          vals.push(partnerId, moduleId);
+          await env.DB.prepare(`UPDATE partner_progress SET ${sets.join(", ")} WHERE partner_id = ? AND module_id = ?`).bind(...vals).run();
+        }
+      } else {
+        const id = genId();
+        await env.DB.prepare("INSERT INTO partner_progress (id, partner_id, module_id, status, quiz_score, started_at, completed_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(id, partnerId, moduleId, body.status || "in_progress", body.quizScore || 0, ts, body.status === "completed" ? ts : "", ts).run();
+      }
+      return json({ success: true });
+    }
+
+    // GET /api/partner/referrals
+    if (path === "/api/partner/referrals" && method === "GET") {
+      const partnerId = getPartnerSession(request);
+      if (!partnerId) return err("Unauthorized", 401);
+      const { results } = await env.DB.prepare("SELECT * FROM partner_referrals WHERE partner_id = ? ORDER BY created_at DESC").bind(partnerId).all();
+      return json((results || []).map((r: any) => ({
+        id: r.id, businessName: r.business_name, contactName: r.contact_name,
+        contactPhone: r.contact_phone, contactEmail: r.contact_email, notes: r.notes,
+        status: r.status, payoutAmount: r.payout_amount, payoutDate: r.payout_date,
+        createdAt: r.created_at, updatedAt: r.updated_at,
+      })));
+    }
+
+    // POST /api/partner/referrals
+    if (path === "/api/partner/referrals" && method === "POST") {
+      const partnerId = getPartnerSession(request);
+      if (!partnerId) return err("Unauthorized", 401);
+      const body: any = await request.json();
+      const id = genId();
+      const ts = now();
+      await env.DB.prepare("INSERT INTO partner_referrals (id, partner_id, business_name, contact_name, contact_phone, contact_email, notes, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'submitted', ?, ?)").bind(id, partnerId, body.businessName || "", body.contactName || "", body.contactPhone || "", body.contactEmail || "", body.notes || "", ts, ts).run();
+      // Also create a lead from this referral
+      const leadId = genId();
+      await env.DB.prepare("INSERT INTO leads (id, name, business, phone, email, package, status, source, notes, attachments, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'terminal', 'new', 'referral', ?, '[]', ?, ?)").bind(leadId, body.contactName || body.businessName || "", body.businessName || "", body.contactPhone || "", body.contactEmail || "", `Referral from partner. ${body.notes || ""}`.trim(), ts, ts).run();
+      // Update referral with lead_id
+      await env.DB.prepare("UPDATE partner_referrals SET lead_id = ? WHERE id = ?").bind(leadId, id).run();
+      // Increment partner referral count
+      await env.DB.prepare("UPDATE partner_accounts SET total_referrals = total_referrals + 1, updated_at = ? WHERE id = ?").bind(ts, partnerId).run();
+      return json({ success: true, id }, 201);
+    }
+
+    // GET /api/partner/stats
+    if (path === "/api/partner/stats" && method === "GET") {
+      const partnerId = getPartnerSession(request);
+      if (!partnerId) return err("Unauthorized", 401);
+      const partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE id = ?").bind(partnerId).first();
+      const { results: progress } = await env.DB.prepare("SELECT * FROM partner_progress WHERE partner_id = ?").bind(partnerId).all();
+      const { results: modules } = await env.DB.prepare("SELECT id, points FROM learning_modules WHERE is_published = 1").all();
+      const { results: referrals } = await env.DB.prepare("SELECT status FROM partner_referrals WHERE partner_id = ?").bind(partnerId).all();
+      const completedModules = (progress || []).filter((p: any) => p.status === "completed").length;
+      const totalModules = (modules || []).length;
+      const totalPoints = (progress || []).filter((p: any) => p.status === "completed").reduce((sum: number, p: any) => {
+        const mod = (modules || []).find((m: any) => m.id === p.module_id);
+        return sum + ((mod as any)?.points || 0);
+      }, 0);
+      const maxPoints = (modules || []).reduce((sum: number, m: any) => sum + (m.points || 0), 0);
+      return json({
+        completedModules, totalModules, totalPoints, maxPoints,
+        totalReferrals: partner?.total_referrals || 0,
+        successfulReferrals: partner?.successful_referrals || 0,
+        totalEarned: partner?.total_earned || 0,
+        tier: partner?.tier || "bronze",
+        referralBreakdown: {
+          submitted: (referrals || []).filter((r: any) => r.status === "submitted").length,
+          contacted: (referrals || []).filter((r: any) => r.status === "contacted").length,
+          activated: (referrals || []).filter((r: any) => r.status === "activated").length,
+          paid: (referrals || []).filter((r: any) => r.status === "paid").length,
+        },
+      });
+    }
+
     // ─── Protected routes (require auth) ───────────────────────────
 
     const authed = await isAuthenticated(env.DB, request);
@@ -1467,6 +1610,42 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (rpMatch && method === "DELETE") {
       await env.DB.prepare("DELETE FROM referral_partners WHERE id = ?").bind(rpMatch[1]).run();
+      return json({ success: true });
+    }
+
+    // ─── PARTNER ACCOUNTS CRUD (Admin) ──────────────────────────────
+
+    if (path === "/api/partner-accounts" && method === "GET") {
+      const { results } = await env.DB.prepare("SELECT * FROM partner_accounts ORDER BY created_at DESC").all();
+      return json((results || []).map((r: any) => ({ ...mapPartner(r), accessCode: r.access_code })));
+    }
+
+    if (path === "/api/partner-accounts" && method === "POST") {
+      const body: any = await request.json();
+      const id = genId();
+      const ts = now();
+      const code = (body.accessCode || generateAccessCode()).toUpperCase();
+      await env.DB.prepare("INSERT INTO partner_accounts (id, name, email, phone, company, access_code, avatar_color, tier, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'bronze', 1, ?, ?)").bind(id, body.name || "", body.email || "", body.phone || "", body.company || "", code, body.avatarColor || "#6366f1", ts, ts).run();
+      const row = await env.DB.prepare("SELECT * FROM partner_accounts WHERE id = ?").bind(id).first();
+      return json({ ...mapPartner(row!), accessCode: code }, 201);
+    }
+
+    const paMatch = path.match(/^\/api\/partner-accounts\/([^/]+)$/);
+    if (paMatch && method === "PATCH") {
+      const id = paMatch[1];
+      const body: any = await request.json();
+      const fieldMap: Record<string, string> = { name: "name", email: "email", phone: "phone", company: "company", tier: "tier", totalEarned: "total_earned", successfulReferrals: "successful_referrals", isActive: "is_active" };
+      const updates: string[] = []; const values: any[] = [];
+      for (const [jsKey, dbCol] of Object.entries(fieldMap)) { if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(body[jsKey]); } }
+      updates.push("updated_at = ?"); values.push(now());
+      if (updates.length > 0) { await env.DB.prepare(`UPDATE partner_accounts SET ${updates.join(", ")} WHERE id = ?`).bind(...values, id).run(); }
+      const row = await env.DB.prepare("SELECT * FROM partner_accounts WHERE id = ?").bind(id).first();
+      if (!row) return err("Partner not found", 404);
+      return json({ ...mapPartner(row), accessCode: row.access_code });
+    }
+
+    if (paMatch && method === "DELETE") {
+      await env.DB.prepare("DELETE FROM partner_accounts WHERE id = ?").bind(paMatch[1]).run();
       return json({ success: true });
     }
 
@@ -2549,6 +2728,38 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     return err(e.message || "Internal server error", 500);
   }
 };
+
+// ─── Partner Session Helper ─────────────────────────────────────────
+
+function getPartnerSession(request: Request): string | null {
+  const cookie = request.headers.get("Cookie") || "";
+  const match = cookie.match(/partner_session=([^;]+)/);
+  return match ? match[1] : null;
+}
+
+function generateAccessCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function mapPartner(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    company: row.company,
+    avatarColor: row.avatar_color || "#6366f1",
+    tier: row.tier || "bronze",
+    totalReferrals: row.total_referrals || 0,
+    successfulReferrals: row.successful_referrals || 0,
+    totalEarned: row.total_earned || 0,
+    lastLogin: row.last_login || "",
+    createdAt: row.created_at,
+  };
+}
 
 // ─── Row mappers (snake_case DB → camelCase API) ─────────────────────
 
