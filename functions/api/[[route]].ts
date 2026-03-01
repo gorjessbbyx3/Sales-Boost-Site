@@ -536,6 +536,28 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           ).run();
         } catch { /* non-critical */ }
 
+        // Save the uploaded statement to R2 + admin_files ("Uploaded Statements" folder)
+        try {
+          if (env.FILES_BUCKET) {
+            const ext = fileName.includes(".") ? fileName.substring(fileName.lastIndexOf(".")) : (mimeType.includes("pdf") ? ".pdf" : ".png");
+            const baseName = fileName.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+            const r2Key = `uploaded-statements/${Date.now()}-${baseName}${ext}`;
+            await env.FILES_BUCKET.put(r2Key, fileBuffer, {
+              httpMetadata: { contentType: mimeType },
+            });
+            const publicUrl = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+            const fileUrl = `${publicUrl}/${r2Key}`;
+            const displayName = fileName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+            const fileSize = fileBuffer.byteLength;
+            const fileType = mimeType.includes("pdf") ? "document" : "image";
+            const fileId = genId();
+            const ts = now();
+            await env.DB.prepare(
+              "INSERT INTO admin_files (id, name, size, type, category, folder, uploaded_at, url) VALUES (?, ?, ?, ?, 'statement', 'Uploaded Statements', ?, ?)"
+            ).bind(fileId, displayName, fileSize, fileType, ts, fileUrl).run();
+          }
+        } catch { /* non-critical — don't block analysis result */ }
+
         return json(analysis);
       } catch (e: any) {
         console.error("Statement analysis error:", e.message || e);
