@@ -15,7 +15,8 @@ import {
   ChevronRight, CheckCircle, Circle, Play, Lock, ArrowLeft,
   Send, Building, Phone, Mail, User, Star, Trophy, Zap,
   Clock, Target, Gift, LogOut, Menu, X, Sparkles, Shield,
-  BarChart3, Heart,
+  BarChart3, Heart, Video, CalendarDays, MapPin, Globe, FileText,
+  CreditCard, ChevronDown, ChevronUp,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -79,6 +80,29 @@ interface Stats {
   totalEarned: number;
   tier: string;
   referralBreakdown: { submitted: number; contacted: number; activated: number; paid: number };
+}
+
+interface Meeting {
+  id: string;
+  merchantName: string;
+  merchantPhone: string;
+  merchantEmail: string;
+  businessName: string;
+  meetingType: string;
+  preferredDate: string;
+  preferredTime: string;
+  location: string;
+  notes: string;
+  status: string;
+  createdAt: string;
+}
+
+interface ClassroomVideo {
+  id: string;
+  name: string;
+  url: string;
+  size: number;
+  uploadedAt: string;
 }
 
 // ─── Config ──────────────────────────────────────────────────────────
@@ -306,6 +330,8 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
   const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/partner/modules"] });
   const { data: referrals = [] } = useQuery<Referral[]>({ queryKey: ["/api/partner/referrals"] });
   const { data: stats } = useQuery<Stats>({ queryKey: ["/api/partner/stats"] });
+  const { data: meetings = [] } = useQuery<Meeting[]>({ queryKey: ["/api/partner/meetings"] });
+  const { data: classroomVideos = [] } = useQuery<ClassroomVideo[]>({ queryKey: ["/api/partner/classroom-videos"] });
 
   const tierCfg = TIER_CONFIG[partner.tier] || TIER_CONFIG.bronze;
   const TierIcon = tierCfg.icon;
@@ -321,17 +347,58 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
     return cats;
   }, [modules]);
 
-  // Referral form
-  const [refForm, setRefForm] = useState({ businessName: "", contactName: "", contactPhone: "", contactEmail: "", notes: "" });
+  // Merchant Application form
+  const emptyApp = {
+    businessName: "", dbaName: "", contactName: "", contactPhone: "", contactEmail: "",
+    address: "", city: "", state: "HI", zip: "", businessPhone: "", businessEmail: "",
+    website: "", productsServices: "", yearsInBusiness: "", monthlyVolume: "", avgTransaction: "",
+    cardPresent: "80", keyed: "10", ecommerce: "10", currentProcessor: "", reasonLeaving: "",
+    cardTypes: ["visa", "mastercard", "discover"] as string[], businessType: "retail", notes: "",
+  };
+  const [refForm, setRefForm] = useState(emptyApp);
+  const [appStep, setAppStep] = useState(0);
   const submitReferral = useMutation({
-    mutationFn: async (data: typeof refForm) => { await apiRequest("POST", "/api/partner/referrals", data); },
+    mutationFn: async (data: typeof refForm) => {
+      await apiRequest("POST", "/api/partner/referrals", {
+        businessName: data.businessName || data.dbaName,
+        contactName: data.contactName,
+        contactPhone: data.contactPhone || data.businessPhone,
+        contactEmail: data.contactEmail || data.businessEmail,
+        notes: data.notes,
+        applicationData: {
+          dbaName: data.dbaName, address: data.address, city: data.city, state: data.state, zip: data.zip,
+          businessPhone: data.businessPhone, businessEmail: data.businessEmail, website: data.website,
+          productsServices: data.productsServices, yearsInBusiness: data.yearsInBusiness,
+          monthlyVolume: data.monthlyVolume, avgTransaction: data.avgTransaction,
+          cardPresent: data.cardPresent, keyed: data.keyed, ecommerce: data.ecommerce,
+          currentProcessor: data.currentProcessor, reasonLeaving: data.reasonLeaving,
+          cardTypes: data.cardTypes, businessType: data.businessType,
+        },
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/referrals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partner/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partner/me"] });
-      toast({ title: "Referral submitted!", description: "We'll reach out to them within 24 hours." });
+      toast({ title: "Application submitted!", description: "TechSavvy will reach out within 24 hours." });
       setShowReferralForm(false);
-      setRefForm({ businessName: "", contactName: "", contactPhone: "", contactEmail: "", notes: "" });
+      setRefForm(emptyApp);
+      setAppStep(0);
+    },
+    onError: () => toast({ title: "Failed to submit", variant: "destructive" }),
+  });
+
+  // Meeting form
+  const emptyMeeting = { merchantName: "", merchantPhone: "", merchantEmail: "", businessName: "", meetingType: "video", preferredDate: "", preferredTime: "", location: "", notes: "" };
+  const [meetingForm, setMeetingForm] = useState(emptyMeeting);
+  const [showMeetingForm, setShowMeetingForm] = useState(false);
+  const submitMeeting = useMutation({
+    mutationFn: async (data: typeof meetingForm) => { await apiRequest("POST", "/api/partner/meetings", data); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/meetings"] });
+      toast({ title: "Meeting requested!", description: "A TechSavvy team member will confirm shortly." });
+      setShowMeetingForm(false);
+      setMeetingForm(emptyMeeting);
     },
     onError: () => toast({ title: "Failed to submit", variant: "destructive" }),
   });
@@ -347,7 +414,8 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
   const navItems = [
     { value: "overview", icon: BarChart3, label: "Dashboard" },
     { value: "learn", icon: GraduationCap, label: "Learn" },
-    { value: "referrals", icon: Gift, label: "Referrals" },
+    { value: "referrals", icon: FileText, label: "Apply" },
+    { value: "meetings", icon: CalendarDays, label: "Meetings" },
   ];
 
   return (
@@ -509,7 +577,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               </button>
               <button onClick={() => setShowReferralForm(true)} className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-5 text-left hover:border-emerald-500/30 transition-all group">
                 <Send className="w-6 h-6 text-emerald-400 mb-3" />
-                <div className="text-sm font-semibold text-white">Submit Referral</div>
+                <div className="text-sm font-semibold text-white">Submit Application</div>
                 <p className="text-[10px] text-zinc-500 mt-1">Refer a business and earn commission</p>
               </button>
             </div>
@@ -537,6 +605,32 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               <Progress value={completionPct} className="h-2 bg-zinc-800" />
               <p className="text-[10px] text-zinc-500 mt-2">{stats?.completedModules || 0} of {stats?.totalModules || 0} modules completed</p>
             </div>
+
+            {/* Training Videos from Classroom */}
+            {classroomVideos.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Video className="w-4 h-4 text-red-400" />
+                  <h2 className="text-sm font-semibold text-white">Training Videos</h2>
+                  <Badge variant="outline" className="text-[9px] text-zinc-500">{classroomVideos.length}</Badge>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {classroomVideos.map((vid) => (
+                    <a key={vid.id} href={vid.url} target="_blank" rel="noopener noreferrer" className="block bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 hover:border-red-500/30 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0 group-hover:bg-red-500/20 transition-colors">
+                          <Play className="w-5 h-5 text-red-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-white truncate">{vid.name.replace(/\.[^.]+$/, "")}</div>
+                          <div className="text-[10px] text-zinc-500 mt-0.5">{(vid.size / 1024 / 1024).toFixed(1)} MB</div>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {Object.entries(categories).map(([cat, mods]) => {
               const catCfg = CATEGORY_CONFIG[cat] || { label: cat, icon: BookOpen, color: "text-zinc-400" };
@@ -587,16 +681,16 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
           </>
         )}
 
-        {/* ─── Referrals Tab ─── */}
+        {/* ─── Referral Merchant Application Tab ─── */}
         {activeTab === "referrals" && (
           <>
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl font-bold text-white">My Referrals</h1>
-                <p className="text-sm text-zinc-500 mt-0.5">Track your submitted referrals and earnings.</p>
+                <h1 className="text-xl font-bold text-white">Referral Merchant Application</h1>
+                <p className="text-sm text-zinc-500 mt-0.5">Submit a merchant for processing — the more detail, the faster we move.</p>
               </div>
-              <Button onClick={() => setShowReferralForm(true)} className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white">
-                <Send className="w-3.5 h-3.5 mr-1.5" />Refer a Business
+              <Button onClick={() => { setShowReferralForm(true); setAppStep(0); }} className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white">
+                <FileText className="w-3.5 h-3.5 mr-1.5" />New Application
               </Button>
             </div>
 
@@ -620,10 +714,10 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               <Card className="bg-zinc-900/60 border-zinc-800/60 border-dashed">
                 <CardContent className="py-12 text-center">
                   <Gift className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                  <p className="text-sm text-zinc-500">No referrals yet</p>
-                  <p className="text-xs text-zinc-600 mt-1">Submit your first referral to start earning</p>
+                  <p className="text-sm text-zinc-500">No applications yet</p>
+                  <p className="text-xs text-zinc-600 mt-1">Submit your first merchant application to start earning</p>
                   <Button onClick={() => setShowReferralForm(true)} variant="outline" className="mt-4 text-xs">
-                    <Send className="w-3.5 h-3.5 mr-1.5" />Submit Referral
+                    <Send className="w-3.5 h-3.5 mr-1.5" />Submit Application
                   </Button>
                 </CardContent>
               </Card>
@@ -663,46 +757,368 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
         )}
       </main>
 
-      {/* Referral Form Dialog */}
-      <Dialog open={showReferralForm} onOpenChange={setShowReferralForm}>
+      {/* ─── Meetings Tab ─── */}
+      {activeTab === "meetings" && (
+        <main className="max-w-6xl mx-auto px-4 py-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-white">Schedule a Meeting</h1>
+              <p className="text-sm text-zinc-500 mt-0.5">Set up a video call or in-person meeting with a TechSavvy team member and merchant.</p>
+            </div>
+            <Button onClick={() => setShowMeetingForm(true)} className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white">
+              <CalendarDays className="w-3.5 h-3.5 mr-1.5" />New Meeting
+            </Button>
+          </div>
+
+          {/* Meeting type cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button onClick={() => { setShowMeetingForm(true); setMeetingForm(f => ({ ...f, meetingType: "video" })); }} className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-5 text-left hover:border-indigo-500/30 transition-all group">
+              <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center mb-3 group-hover:bg-indigo-500/20 transition-colors">
+                <Video className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div className="text-sm font-semibold text-white">Video Meeting</div>
+              <p className="text-xs text-zinc-500 mt-1">Schedule a Zoom or Google Meet call with the merchant and a TechSavvy rep.</p>
+            </button>
+            <button onClick={() => { setShowMeetingForm(true); setMeetingForm(f => ({ ...f, meetingType: "in-person" })); }} className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-5 text-left hover:border-emerald-500/30 transition-all group">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-3 group-hover:bg-emerald-500/20 transition-colors">
+                <MapPin className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div className="text-sm font-semibold text-white">In-Person Meeting</div>
+              <p className="text-xs text-zinc-500 mt-1">Meet face-to-face at the merchant's location. We'll send a TechSavvy rep.</p>
+            </button>
+          </div>
+
+          {/* Scheduled meetings list */}
+          {meetings.length === 0 ? (
+            <Card className="bg-zinc-900/60 border-zinc-800/60 border-dashed">
+              <CardContent className="py-12 text-center">
+                <CalendarDays className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                <p className="text-sm text-zinc-500">No meetings scheduled yet</p>
+                <p className="text-xs text-zinc-600 mt-1">Request a meeting and we'll coordinate with the merchant</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {meetings.map((m) => {
+                const isVideo = m.meetingType === "video";
+                return (
+                  <Card key={m.id} className="bg-zinc-900/60 border-zinc-800/60">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isVideo ? "bg-indigo-500/10" : "bg-emerald-500/10"}`}>
+                          {isVideo ? <Video className="w-4 h-4 text-indigo-400" /> : <MapPin className="w-4 h-4 text-emerald-400" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-white">{m.businessName || m.merchantName}</span>
+                            <Badge variant="outline" className={`text-[10px] ${m.status === "confirmed" ? "text-green-400" : m.status === "cancelled" ? "text-red-400" : "text-yellow-400"}`}>
+                              {m.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-[10px] text-zinc-500">
+                            <span className="flex items-center gap-1"><User className="w-2.5 h-2.5" />{m.merchantName}</span>
+                            {m.preferredDate && <span className="flex items-center gap-1"><CalendarDays className="w-2.5 h-2.5" />{m.preferredDate}</span>}
+                            {m.preferredTime && <span>{m.preferredTime}</span>}
+                            <span className="capitalize">{m.meetingType}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </main>
+      )}
+
+      {/* ─── Merchant Application Dialog ─── */}
+      <Dialog open={showReferralForm} onOpenChange={(open) => { setShowReferralForm(open); if (!open) { setAppStep(0); setRefForm(emptyApp); } }}>
+        <DialogContent className="sm:max-w-2xl bg-zinc-900 border-zinc-800 max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <FileText className="w-5 h-5 text-indigo-400" />
+              Referral Merchant Application
+            </DialogTitle>
+            <DialogDescription>The more info you provide, the faster TechSavvy can close the deal — and the sooner you get paid.</DialogDescription>
+          </DialogHeader>
+
+          {/* Step indicators */}
+          <div className="flex items-center gap-2 pb-2">
+            {["Business Info", "Owner / Contact", "Processing Details", "Additional"].map((label, i) => (
+              <button key={i} onClick={() => setAppStep(i)} className={`flex-1 text-center py-2 rounded-lg text-[10px] font-medium transition-all ${appStep === i ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30" : appStep > i ? "bg-emerald-500/10 text-emerald-400" : "bg-zinc-800/40 text-zinc-500"}`}>
+                {appStep > i ? <CheckCircle className="w-3 h-3 inline mr-1" /> : null}{label}
+              </button>
+            ))}
+          </div>
+
+          {/* Step 0: Business Information */}
+          {appStep === 0 && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Legal Business Name *</Label>
+                <Input value={refForm.businessName} onChange={(e) => setRefForm(p => ({ ...p, businessName: e.target.value }))} placeholder="ABC Enterprises LLC" className="bg-zinc-800/50 border-zinc-700/50" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">DBA Name (Doing Business As)</Label>
+                <Input value={refForm.dbaName} onChange={(e) => setRefForm(p => ({ ...p, dbaName: e.target.value }))} placeholder="Aloha Cafe" className="bg-zinc-800/50 border-zinc-700/50" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Business Address</Label>
+                <Input value={refForm.address} onChange={(e) => setRefForm(p => ({ ...p, address: e.target.value }))} placeholder="123 Kalakaua Ave" className="bg-zinc-800/50 border-zinc-700/50" />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">City</Label>
+                  <Input value={refForm.city} onChange={(e) => setRefForm(p => ({ ...p, city: e.target.value }))} placeholder="Honolulu" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">State</Label>
+                  <Input value={refForm.state} onChange={(e) => setRefForm(p => ({ ...p, state: e.target.value }))} placeholder="HI" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Zip</Label>
+                  <Input value={refForm.zip} onChange={(e) => setRefForm(p => ({ ...p, zip: e.target.value }))} placeholder="96815" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Business Phone</Label>
+                  <Input value={refForm.businessPhone} onChange={(e) => setRefForm(p => ({ ...p, businessPhone: e.target.value }))} placeholder="808-555-1234" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Business Email</Label>
+                  <Input value={refForm.businessEmail} onChange={(e) => setRefForm(p => ({ ...p, businessEmail: e.target.value }))} placeholder="info@alohacafe.com" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Website</Label>
+                  <Input value={refForm.website} onChange={(e) => setRefForm(p => ({ ...p, website: e.target.value }))} placeholder="www.alohacafe.com" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Years in Business</Label>
+                  <Input value={refForm.yearsInBusiness} onChange={(e) => setRefForm(p => ({ ...p, yearsInBusiness: e.target.value }))} placeholder="5" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Products / Services Sold</Label>
+                <Input value={refForm.productsServices} onChange={(e) => setRefForm(p => ({ ...p, productsServices: e.target.value }))} placeholder="Coffee, pastries, lunch service" className="bg-zinc-800/50 border-zinc-700/50" />
+              </div>
+            </div>
+          )}
+
+          {/* Step 1: Owner / Contact */}
+          {appStep === 1 && (
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+                <p className="text-xs text-indigo-300">Contact info for the owner or decision-maker. TechSavvy will reach out directly.</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Contact / Owner Name *</Label>
+                <Input value={refForm.contactName} onChange={(e) => setRefForm(p => ({ ...p, contactName: e.target.value }))} placeholder="John Smith" className="bg-zinc-800/50 border-zinc-700/50" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Contact Phone *</Label>
+                  <Input value={refForm.contactPhone} onChange={(e) => setRefForm(p => ({ ...p, contactPhone: e.target.value }))} placeholder="808-555-5678" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Contact Email</Label>
+                  <Input value={refForm.contactEmail} onChange={(e) => setRefForm(p => ({ ...p, contactEmail: e.target.value }))} placeholder="john@email.com" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Business Type</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "restaurant", label: "Restaurant / Food" },
+                    { value: "retail", label: "Retail / Shop" },
+                    { value: "salon", label: "Salon / Beauty" },
+                    { value: "auto", label: "Auto / Repair" },
+                    { value: "medical", label: "Medical / Dental" },
+                    { value: "other", label: "Other" },
+                  ].map((t) => (
+                    <button key={t.value} onClick={() => setRefForm(p => ({ ...p, businessType: t.value }))} className={`p-2.5 rounded-lg text-xs font-medium border transition-all ${refForm.businessType === t.value ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-400" : "bg-zinc-800/40 border-zinc-700/30 text-zinc-400 hover:border-zinc-600"}`}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Processing Details */}
+          {appStep === 2 && (
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                <p className="text-xs text-emerald-300">Don't worry if you don't know exact numbers — estimates are fine. We'll do a full analysis.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Average Transaction Amount</Label>
+                  <Input value={refForm.avgTransaction} onChange={(e) => setRefForm(p => ({ ...p, avgTransaction: e.target.value }))} placeholder="$45" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Monthly Card Volume</Label>
+                  <Input value={refForm.monthlyVolume} onChange={(e) => setRefForm(p => ({ ...p, monthlyVolume: e.target.value }))} placeholder="$25,000" className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Processing Breakdown (% — should total ~100%)</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-zinc-500">Card Present / Swiped</span>
+                    <Input value={refForm.cardPresent} onChange={(e) => setRefForm(p => ({ ...p, cardPresent: e.target.value }))} placeholder="80" className="bg-zinc-800/50 border-zinc-700/50 text-center" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-zinc-500">Manually Keyed</span>
+                    <Input value={refForm.keyed} onChange={(e) => setRefForm(p => ({ ...p, keyed: e.target.value }))} placeholder="10" className="bg-zinc-800/50 border-zinc-700/50 text-center" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-zinc-500">eCommerce / Online</span>
+                    <Input value={refForm.ecommerce} onChange={(e) => setRefForm(p => ({ ...p, ecommerce: e.target.value }))} placeholder="10" className="bg-zinc-800/50 border-zinc-700/50 text-center" />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Card Types Accepted</Label>
+                <div className="flex flex-wrap gap-2">
+                  {["visa", "mastercard", "discover", "amex", "pin-debit", "ebt"].map((ct) => (
+                    <button key={ct} onClick={() => setRefForm(p => ({ ...p, cardTypes: p.cardTypes.includes(ct) ? p.cardTypes.filter(c => c !== ct) : [...p.cardTypes, ct] }))} className={`px-3 py-1.5 rounded-lg text-[10px] font-medium border transition-all ${refForm.cardTypes.includes(ct) ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-400" : "bg-zinc-800/40 border-zinc-700/30 text-zinc-500"}`}>
+                      {ct === "amex" ? "AMEX" : ct === "pin-debit" ? "PIN Debit" : ct === "ebt" ? "EBT" : ct.charAt(0).toUpperCase() + ct.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Current Processor</Label>
+                  <Input value={refForm.currentProcessor} onChange={(e) => setRefForm(p => ({ ...p, currentProcessor: e.target.value }))} placeholder="Square, Clover, etc." className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Reason for Leaving</Label>
+                  <Input value={refForm.reasonLeaving} onChange={(e) => setRefForm(p => ({ ...p, reasonLeaving: e.target.value }))} placeholder="High fees, poor service..." className="bg-zinc-800/50 border-zinc-700/50" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Additional Info */}
+          {appStep === 3 && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Additional Notes</Label>
+                <Textarea value={refForm.notes} onChange={(e) => setRefForm(p => ({ ...p, notes: e.target.value }))} placeholder="How do you know this business? Best time to reach them? Any details that help us close the deal faster..." className="bg-zinc-800/50 border-zinc-700/50 h-28" />
+              </div>
+              {/* Summary */}
+              <div className="p-4 rounded-xl bg-zinc-800/30 border border-zinc-700/30 space-y-2">
+                <h4 className="text-xs font-semibold text-white">Application Summary</h4>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[11px]">
+                  {refForm.businessName && <div><span className="text-zinc-500">Business:</span> <span className="text-white">{refForm.businessName}</span></div>}
+                  {refForm.dbaName && <div><span className="text-zinc-500">DBA:</span> <span className="text-white">{refForm.dbaName}</span></div>}
+                  {refForm.contactName && <div><span className="text-zinc-500">Contact:</span> <span className="text-white">{refForm.contactName}</span></div>}
+                  {refForm.contactPhone && <div><span className="text-zinc-500">Phone:</span> <span className="text-white">{refForm.contactPhone}</span></div>}
+                  {refForm.monthlyVolume && <div><span className="text-zinc-500">Volume:</span> <span className="text-white">{refForm.monthlyVolume}</span></div>}
+                  {refForm.currentProcessor && <div><span className="text-zinc-500">Current:</span> <span className="text-white">{refForm.currentProcessor}</span></div>}
+                  {refForm.businessType && <div><span className="text-zinc-500">Type:</span> <span className="text-white capitalize">{refForm.businessType}</span></div>}
+                  {(refForm.city || refForm.state) && <div><span className="text-zinc-500">Location:</span> <span className="text-white">{[refForm.city, refForm.state].filter(Boolean).join(", ")}</span></div>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex-row justify-between sm:justify-between">
+            <Button variant="ghost" onClick={() => appStep > 0 ? setAppStep(appStep - 1) : setShowReferralForm(false)} className="text-zinc-400">
+              {appStep > 0 ? "Back" : "Cancel"}
+            </Button>
+            {appStep < 3 ? (
+              <Button onClick={() => setAppStep(appStep + 1)} className="bg-zinc-800 hover:bg-zinc-700 text-white">
+                Next <ChevronRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            ) : (
+              <Button
+                onClick={() => submitReferral.mutate(refForm)}
+                disabled={!refForm.businessName || submitReferral.isPending}
+                className="bg-gradient-to-r from-emerald-600 to-green-600 text-white"
+              >
+                <Send className="w-3.5 h-3.5 mr-1.5" />
+                {submitReferral.isPending ? "Submitting..." : "Submit Application"}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Schedule Meeting Dialog ─── */}
+      <Dialog open={showMeetingForm} onOpenChange={(open) => { setShowMeetingForm(open); if (!open) setMeetingForm(emptyMeeting); }}>
         <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-800">
           <DialogHeader>
-            <DialogTitle className="text-white">Submit a Referral</DialogTitle>
-            <DialogDescription>We'll reach out to this business within 24 hours.</DialogDescription>
+            <DialogTitle className="text-white flex items-center gap-2">
+              {meetingForm.meetingType === "video" ? <Video className="w-5 h-5 text-indigo-400" /> : <MapPin className="w-5 h-5 text-emerald-400" />}
+              Schedule {meetingForm.meetingType === "video" ? "Video" : "In-Person"} Meeting
+            </DialogTitle>
+            <DialogDescription>We'll coordinate with the merchant and confirm the details.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-zinc-400">Business Name *</Label>
-              <Input value={refForm.businessName} onChange={(e) => setRefForm(p => ({ ...p, businessName: e.target.value }))} placeholder="Aloha Cafe" className="bg-zinc-800/50 border-zinc-700/50" />
+            <div className="flex gap-2">
+              <button onClick={() => setMeetingForm(f => ({ ...f, meetingType: "video" }))} className={`flex-1 p-3 rounded-lg text-xs font-medium border transition-all flex items-center justify-center gap-2 ${meetingForm.meetingType === "video" ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-400" : "bg-zinc-800/40 border-zinc-700/30 text-zinc-400"}`}>
+                <Video className="w-3.5 h-3.5" />Video Call
+              </button>
+              <button onClick={() => setMeetingForm(f => ({ ...f, meetingType: "in-person" }))} className={`flex-1 p-3 rounded-lg text-xs font-medium border transition-all flex items-center justify-center gap-2 ${meetingForm.meetingType === "in-person" ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : "bg-zinc-800/40 border-zinc-700/30 text-zinc-400"}`}>
+                <MapPin className="w-3.5 h-3.5" />In-Person
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-zinc-400">Contact Name</Label>
-                <Input value={refForm.contactName} onChange={(e) => setRefForm(p => ({ ...p, contactName: e.target.value }))} placeholder="John Doe" className="bg-zinc-800/50 border-zinc-700/50" />
+                <Label className="text-xs text-zinc-400">Merchant Name *</Label>
+                <Input value={meetingForm.merchantName} onChange={(e) => setMeetingForm(p => ({ ...p, merchantName: e.target.value }))} placeholder="John Smith" className="bg-zinc-800/50 border-zinc-700/50" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-zinc-400">Phone</Label>
-                <Input value={refForm.contactPhone} onChange={(e) => setRefForm(p => ({ ...p, contactPhone: e.target.value }))} placeholder="808-555-1234" className="bg-zinc-800/50 border-zinc-700/50" />
+                <Label className="text-xs text-zinc-400">Business Name</Label>
+                <Input value={meetingForm.businessName} onChange={(e) => setMeetingForm(p => ({ ...p, businessName: e.target.value }))} placeholder="Aloha Cafe" className="bg-zinc-800/50 border-zinc-700/50" />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-zinc-400">Email</Label>
-              <Input value={refForm.contactEmail} onChange={(e) => setRefForm(p => ({ ...p, contactEmail: e.target.value }))} placeholder="john@aloha.com" className="bg-zinc-800/50 border-zinc-700/50" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Phone</Label>
+                <Input value={meetingForm.merchantPhone} onChange={(e) => setMeetingForm(p => ({ ...p, merchantPhone: e.target.value }))} placeholder="808-555-1234" className="bg-zinc-800/50 border-zinc-700/50" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Email</Label>
+                <Input value={meetingForm.merchantEmail} onChange={(e) => setMeetingForm(p => ({ ...p, merchantEmail: e.target.value }))} placeholder="john@email.com" className="bg-zinc-800/50 border-zinc-700/50" />
+              </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Preferred Date</Label>
+                <Input type="date" value={meetingForm.preferredDate} onChange={(e) => setMeetingForm(p => ({ ...p, preferredDate: e.target.value }))} className="bg-zinc-800/50 border-zinc-700/50" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Preferred Time</Label>
+                <Input type="time" value={meetingForm.preferredTime} onChange={(e) => setMeetingForm(p => ({ ...p, preferredTime: e.target.value }))} className="bg-zinc-800/50 border-zinc-700/50" />
+              </div>
+            </div>
+            {meetingForm.meetingType === "in-person" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Meeting Location / Address</Label>
+                <Input value={meetingForm.location} onChange={(e) => setMeetingForm(p => ({ ...p, location: e.target.value }))} placeholder="Merchant's business address" className="bg-zinc-800/50 border-zinc-700/50" />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs text-zinc-400">Notes</Label>
-              <Textarea value={refForm.notes} onChange={(e) => setRefForm(p => ({ ...p, notes: e.target.value }))} placeholder="How do you know this business? Any details that help..." className="bg-zinc-800/50 border-zinc-700/50 h-20" />
+              <Textarea value={meetingForm.notes} onChange={(e) => setMeetingForm(p => ({ ...p, notes: e.target.value }))} placeholder="Any context for the meeting..." className="bg-zinc-800/50 border-zinc-700/50 h-20" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowReferralForm(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setShowMeetingForm(false)}>Cancel</Button>
             <Button
-              onClick={() => submitReferral.mutate(refForm)}
-              disabled={!refForm.businessName || submitReferral.isPending}
-              className="bg-gradient-to-r from-emerald-600 to-green-600 text-white"
+              onClick={() => submitMeeting.mutate(meetingForm)}
+              disabled={!meetingForm.merchantName || submitMeeting.isPending}
+              className={meetingForm.meetingType === "video" ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white" : "bg-gradient-to-r from-emerald-600 to-green-600 text-white"}
             >
-              <Send className="w-3.5 h-3.5 mr-1.5" />
-              {submitReferral.isPending ? "Submitting..." : "Submit Referral"}
+              <CalendarDays className="w-3.5 h-3.5 mr-1.5" />
+              {submitMeeting.isPending ? "Requesting..." : "Request Meeting"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -59,10 +59,29 @@ CREATE TABLE IF NOT EXISTS partner_referrals (
   contact_phone TEXT NOT NULL DEFAULT '',
   contact_email TEXT NOT NULL DEFAULT '',
   notes TEXT NOT NULL DEFAULT '',
+  application_data TEXT NOT NULL DEFAULT '{}',
   status TEXT NOT NULL DEFAULT 'submitted',
   payout_amount REAL NOT NULL DEFAULT 0,
   payout_date TEXT NOT NULL DEFAULT '',
   lead_id TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- Partner meeting requests
+CREATE TABLE IF NOT EXISTS partner_meetings (
+  id TEXT PRIMARY KEY,
+  partner_id TEXT NOT NULL,
+  merchant_name TEXT NOT NULL DEFAULT '',
+  merchant_phone TEXT NOT NULL DEFAULT '',
+  merchant_email TEXT NOT NULL DEFAULT '',
+  business_name TEXT NOT NULL DEFAULT '',
+  meeting_type TEXT NOT NULL DEFAULT 'video',
+  preferred_date TEXT NOT NULL DEFAULT '',
+  preferred_time TEXT NOT NULL DEFAULT '',
+  location TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

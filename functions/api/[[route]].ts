@@ -748,10 +748,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const body: any = await request.json();
       const id = genId();
       const ts = now();
-      await env.DB.prepare("INSERT INTO partner_referrals (id, partner_id, business_name, contact_name, contact_phone, contact_email, notes, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'submitted', ?, ?)").bind(id, partnerId, body.businessName || "", body.contactName || "", body.contactPhone || "", body.contactEmail || "", body.notes || "", ts, ts).run();
+      const appData = body.applicationData ? JSON.stringify(body.applicationData) : "{}";
+      await env.DB.prepare("INSERT INTO partner_referrals (id, partner_id, business_name, contact_name, contact_phone, contact_email, notes, application_data, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'submitted', ?, ?)").bind(id, partnerId, body.businessName || "", body.contactName || "", body.contactPhone || "", body.contactEmail || "", body.notes || "", appData, ts, ts).run();
       // Also create a lead from this referral
       const leadId = genId();
-      await env.DB.prepare("INSERT INTO leads (id, name, business, phone, email, package, status, source, notes, attachments, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'terminal', 'new', 'referral', ?, '[]', ?, ?)").bind(leadId, body.contactName || body.businessName || "", body.businessName || "", body.contactPhone || "", body.contactEmail || "", `Referral from partner. ${body.notes || ""}`.trim(), ts, ts).run();
+      const leadNotes = `Referral from partner. ${body.notes || ""}`.trim() + (body.applicationData ? `\n\nApplication data: DBA: ${body.applicationData.dbaName || ""}, Address: ${body.applicationData.address || ""}, Volume: ${body.applicationData.monthlyVolume || ""}, Avg Ticket: ${body.applicationData.avgTransaction || ""}` : "");
+      await env.DB.prepare("INSERT INTO leads (id, name, business, phone, email, package, status, source, notes, attachments, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'terminal', 'new', 'referral', ?, '[]', ?, ?)").bind(leadId, body.contactName || body.businessName || "", body.businessName || "", body.contactPhone || "", body.contactEmail || "", leadNotes, ts, ts).run();
       // Update referral with lead_id
       await env.DB.prepare("UPDATE partner_referrals SET lead_id = ? WHERE id = ?").bind(leadId, id).run();
       // Increment partner referral count
@@ -787,6 +789,37 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           paid: (referrals || []).filter((r: any) => r.status === "paid").length,
         },
       });
+    }
+
+    // GET /api/partner/classroom-videos — return video files from Classroom folder
+    if (path === "/api/partner/classroom-videos" && method === "GET") {
+      const { results } = await env.DB.prepare("SELECT * FROM admin_files WHERE folder = 'Classroom' AND type = 'video' ORDER BY uploaded_at DESC").all();
+      return json((results || []).map((r: any) => ({ id: r.id, name: r.name, url: r.url, size: r.size, uploadedAt: r.uploaded_at })));
+    }
+
+    // GET /api/partner/meetings
+    if (path === "/api/partner/meetings" && method === "GET") {
+      const partnerId = getPartnerSession(request);
+      if (!partnerId) return err("Unauthorized", 401);
+      const { results } = await env.DB.prepare("SELECT * FROM partner_meetings WHERE partner_id = ? ORDER BY created_at DESC").all(partnerId);
+      return json((results || []).map((r: any) => ({
+        id: r.id, merchantName: r.merchant_name, merchantPhone: r.merchant_phone, merchantEmail: r.merchant_email,
+        businessName: r.business_name, meetingType: r.meeting_type, preferredDate: r.preferred_date,
+        preferredTime: r.preferred_time, location: r.location, notes: r.notes, status: r.status, createdAt: r.created_at,
+      })));
+    }
+
+    // POST /api/partner/meetings
+    if (path === "/api/partner/meetings" && method === "POST") {
+      const partnerId = getPartnerSession(request);
+      if (!partnerId) return err("Unauthorized", 401);
+      const body: any = await request.json();
+      const id = genId();
+      const ts = now();
+      await env.DB.prepare(
+        "INSERT INTO partner_meetings (id, partner_id, merchant_name, merchant_phone, merchant_email, business_name, meeting_type, preferred_date, preferred_time, location, notes, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)"
+      ).bind(id, partnerId, body.merchantName || "", body.merchantPhone || "", body.merchantEmail || "", body.businessName || "", body.meetingType || "video", body.preferredDate || "", body.preferredTime || "", body.location || "", body.notes || "", ts, ts).run();
+      return json({ success: true, id }, 201);
     }
 
     // ─── Protected routes (require auth) ───────────────────────────
