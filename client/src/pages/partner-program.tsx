@@ -178,8 +178,8 @@ function PartnerLogin({ onLogin }: { onLogin: () => void }) {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg shadow-indigo-500/20">
             <GraduationCap className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Partner Program</h1>
-          <p className="text-sm text-zinc-500 mt-1">TechSavvy Hawaii — Learning Dashboard</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Referral Partner Academy</h1>
+          <p className="text-sm text-zinc-500 mt-1">TechSavvy Hawaii — Your path to passive income</p>
         </div>
 
         {/* Login card */}
@@ -599,7 +599,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
           <>
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl font-bold text-white">Learning Center</h1>
+                <h1 className="text-xl font-bold text-white">Partner Academy</h1>
                 <p className="text-sm text-zinc-500 mt-0.5">Master payment processing to maximize your referrals.</p>
               </div>
               <Badge variant="outline" className="text-yellow-400 border-yellow-400/20 bg-yellow-400/5">
@@ -616,7 +616,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               <p className="text-[10px] text-zinc-500 mt-2">{stats?.completedModules || 0} of {stats?.totalModules || 0} modules completed</p>
             </div>
 
-            {/* Training Videos from Classroom */}
+            {/* Training Videos from Partner Training */}
             {classroomVideos.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
@@ -642,7 +642,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               </div>
             )}
 
-            {/* Training Documents from Classroom */}
+            {/* Training Documents from Partner Training */}
             {classroomDocs.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
