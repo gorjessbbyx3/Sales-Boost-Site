@@ -523,7 +523,7 @@ function OnlinePresenceSection() {
       title: "Free Business Website",
       description: "Online-only processing merchants get a custom-built website at no cost. Mobile-optimized, SEO-ready, and designed to match your brand.",
       link: "/online-processing",
-      linkText: "Learn More",
+      linkText: "See Free Website Details",
     },
     {
       icon: Palette,
@@ -558,7 +558,7 @@ function OnlinePresenceSection() {
       title: "SEO & Digital Marketing",
       description: "Get found on Google. We optimize your site for local Hawai'i searches so customers find you first.",
       link: "/contact",
-      linkText: "Learn More",
+      linkText: "Request SEO Consultation",
     },
   ];
 

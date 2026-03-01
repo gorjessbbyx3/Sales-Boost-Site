@@ -41,7 +41,7 @@ function OnlineHero() {
               <Link href="/contact">Get Started Free</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/faq">Learn More</Link>
+              <Link href="/faq">Read Processing FAQs</Link>
             </Button>
           </div>
 
