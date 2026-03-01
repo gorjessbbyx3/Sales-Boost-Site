@@ -819,6 +819,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json((results || []).map((r: any) => ({ id: r.id, name: r.name, url: r.url, size: r.size, uploadedAt: r.uploaded_at })));
     }
 
+    // GET /api/partner/classroom-docs — return document/PDF files from Classroom folder
+    if (path === "/api/partner/classroom-docs" && method === "GET") {
+      const { results } = await env.DB.prepare("SELECT * FROM admin_files WHERE folder = 'Classroom' AND type = 'document' ORDER BY uploaded_at DESC").all();
+      return json((results || []).map((r: any) => ({ id: r.id, name: r.name, url: r.url, size: r.size, type: r.type, uploadedAt: r.uploaded_at })));
+    }
+
     // GET /api/partner/meetings
     if (path === "/api/partner/meetings" && method === "GET") {
       const partnerId = getPartnerSession(request);

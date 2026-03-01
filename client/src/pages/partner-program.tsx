@@ -105,6 +105,15 @@ interface ClassroomVideo {
   uploadedAt: string;
 }
 
+interface ClassroomDoc {
+  id: string;
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
+}
+
 // ─── Config ──────────────────────────────────────────────────────────
 
 const TIER_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Star; min: number; payout: string }> = {
@@ -332,6 +341,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
   const { data: stats } = useQuery<Stats>({ queryKey: ["/api/partner/stats"] });
   const { data: meetings = [] } = useQuery<Meeting[]>({ queryKey: ["/api/partner/meetings"] });
   const { data: classroomVideos = [] } = useQuery<ClassroomVideo[]>({ queryKey: ["/api/partner/classroom-videos"] });
+  const { data: classroomDocs = [] } = useQuery<ClassroomDoc[]>({ queryKey: ["/api/partner/classroom-docs"] });
 
   const tierCfg = TIER_CONFIG[partner.tier] || TIER_CONFIG.bronze;
   const TierIcon = tierCfg.icon;
@@ -624,6 +634,32 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium text-white truncate">{vid.name.replace(/\.[^.]+$/, "")}</div>
                           <div className="text-[10px] text-zinc-500 mt-0.5">{(vid.size / 1024 / 1024).toFixed(1)} MB</div>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Training Documents from Classroom */}
+            {classroomDocs.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="w-4 h-4 text-emerald-400" />
+                  <h2 className="text-sm font-semibold text-white">Training Documents</h2>
+                  <Badge variant="outline" className="text-[9px] text-zinc-500">{classroomDocs.length}</Badge>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {classroomDocs.map((doc) => (
+                    <a key={doc.id} href={doc.url} target="_blank" rel="noopener noreferrer" className="block bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 hover:border-emerald-500/30 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition-colors">
+                          <FileText className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-white truncate">{doc.name}</div>
+                          <div className="text-[10px] text-zinc-500 mt-0.5">{(doc.size / 1024 / 1024).toFixed(1)} MB · PDF</div>
                         </div>
                       </div>
                     </a>
