@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
-pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -332,6 +332,193 @@ function ModuleViewer({ module, onBack, onComplete }: { module: Module; onBack: 
 }
 
 // ─── Main Dashboard ─────────────────────────────────────────────────
+
+// ─── PDF Page-by-Page Viewer ────────────────────────────────────────────────
+function PdfViewerOverlay({ url, name, initialPage, onClose }: {
+  url: string;
+  name: string;
+  initialPage: number;
+  onClose: () => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [page, setPage] = useState(initialPage);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const renderTaskRef = useRef<any>(null);
+
+  // Load PDF document
+  useEffect(() => {
+    setLoading(true);
+    setError("");
+    const proxyUrl = `/api/partner/pdf-proxy?url=${encodeURIComponent(url)}`;
+    pdfjsLib.getDocument({ url: proxyUrl, withCredentials: false })
+      .promise
+      .then((doc: any) => {
+        setPdfDoc(doc);
+        setTotalPages(doc.numPages);
+        setLoading(false);
+      })
+      .catch((err: any) => {
+        console.error("PDF load error:", err);
+        setError("Unable to load PDF. Try downloading directly.");
+        setLoading(false);
+      });
+  }, [url]);
+
+  // Render current page
+  useEffect(() => {
+    if (!pdfDoc || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Cancel any in-progress render
+    if (renderTaskRef.current) {
+      renderTaskRef.current.cancel();
+      renderTaskRef.current = null;
+    }
+
+    pdfDoc.getPage(page).then((pdfPage: any) => {
+      const container = canvas.parentElement;
+      const containerWidth = container ? container.clientWidth - 32 : 800;
+      const viewport = pdfPage.getViewport({ scale: 1 });
+      const scale = Math.min(containerWidth / viewport.width, 1.8);
+      const scaled = pdfPage.getViewport({ scale });
+
+      canvas.width = scaled.width;
+      canvas.height = scaled.height;
+
+      const task = pdfPage.render({ canvasContext: ctx, viewport: scaled });
+      renderTaskRef.current = task;
+      task.promise.catch((e: any) => {
+        if (e?.name !== "RenderingCancelledException") console.error(e);
+      });
+    });
+  }, [pdfDoc, page]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") setPage(p => Math.min(totalPages, p + 1));
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") setPage(p => Math.max(1, p - 1));
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [totalPages, onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/60 bg-zinc-900/90 shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="text-sm font-medium text-white truncate max-w-[200px] sm:max-w-none">{name}</span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0 ml-3">
+          {/* Prev */}
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronDown className="w-4 h-4 rotate-90" />
+          </button>
+          {/* Page counter */}
+          <span className="text-xs text-zinc-300 bg-zinc-800/60 rounded-lg px-3 py-1.5 min-w-[80px] text-center tabular-nums">
+            {totalPages ? `${page} / ${totalPages}` : "…"}
+          </span>
+          {/* Next */}
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={!totalPages || page >= totalPages}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronDown className="w-4 h-4 -rotate-90" />
+          </button>
+          {/* Page pills — desktop */}
+          {totalPages > 0 && (
+            <div className="hidden md:flex items-center gap-1 ml-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-6 h-6 rounded-md text-[10px] font-semibold transition-colors ${
+                    p === page
+                      ? "bg-emerald-500/25 text-emerald-400 ring-1 ring-emerald-500/40"
+                      : "text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Download */}
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 transition-colors ml-1"
+          >
+            <Globe className="w-3.5 h-3.5" /> Download
+          </a>
+          {/* Close */}
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors ml-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Canvas area */}
+      <div className="flex-1 overflow-auto bg-zinc-950 flex items-start justify-center p-4">
+        {loading && (
+          <div className="flex flex-col items-center justify-center gap-3 mt-20">
+            <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
+            <p className="text-sm text-zinc-500">Loading PDF…</p>
+          </div>
+        )}
+        {error && (
+          <div className="flex flex-col items-center gap-4 mt-20 text-center">
+            <p className="text-sm text-red-400">{error}</p>
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-400 hover:underline">
+              Open PDF directly
+            </a>
+          </div>
+        )}
+        {!loading && !error && (
+          <div className="bg-white rounded-lg shadow-2xl overflow-hidden">
+            <canvas ref={canvasRef} className="block" />
+          </div>
+        )}
+      </div>
+
+      {/* Mobile bottom bar */}
+      <div className="sm:hidden flex items-center justify-between px-5 py-3 border-t border-zinc-800/60 bg-zinc-900/90">
+        <button
+          onClick={() => setPage(p => Math.max(1, p - 1))}
+          disabled={page <= 1}
+          className="flex items-center gap-1.5 text-sm text-zinc-300 disabled:opacity-30"
+        >
+          <ChevronDown className="w-4 h-4 rotate-90" /> Prev
+        </button>
+        <span className="text-xs text-zinc-500">{totalPages ? `${page} of ${totalPages}` : "Loading…"}</span>
+        <button
+          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          disabled={!totalPages || page >= totalPages}
+          className="flex items-center gap-1.5 text-sm text-zinc-300 disabled:opacity-30"
+        >
+          Next <ChevronDown className="w-4 h-4 -rotate-90" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState("overview");

@@ -850,6 +850,25 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json({ success: true, id }, 201);
     }
 
+    // GET /api/partner/pdf-proxy — proxy R2 PDFs to avoid CORS issues
+    if (path === "/api/partner/pdf-proxy" && method === "GET") {
+      const pdfUrl = url.searchParams.get("url");
+      if (!pdfUrl || !pdfUrl.startsWith("https://assets.techsavvyhawaii.com/")) {
+        return err("Invalid URL", 400);
+      }
+      const resp = await fetch(pdfUrl);
+      if (!resp.ok) return err("Failed to fetch PDF", 502);
+      const bytes = await resp.arrayBuffer();
+      return new Response(bytes, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    }
+
     // POST /api/partner/acknowledge-agreement
     if (path === "/api/partner/acknowledge-agreement" && method === "POST") {
       const partnerId = getPartnerSession(request);
