@@ -118,11 +118,10 @@ interface ClassroomDoc {
 
 // ─── Config ──────────────────────────────────────────────────────────
 
-const TIER_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Star; min: number; payout: string }> = {
-  bronze: { label: "Bronze", color: "text-amber-600", bg: "bg-amber-500/10 border-amber-500/20", icon: Star, min: 0, payout: "$50/referral" },
-  silver: { label: "Silver", color: "text-slate-400", bg: "bg-slate-400/10 border-slate-400/20", icon: Award, min: 5, payout: "$75/referral" },
-  gold: { label: "Gold", color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20", icon: Trophy, min: 10, payout: "$100 + residuals" },
-  platinum: { label: "Platinum", color: "text-cyan-300", bg: "bg-cyan-300/10 border-cyan-300/20", icon: Zap, min: 20, payout: "$150 + residuals" },
+const TIER_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Star; min: number; payout: string; volume: string }> = {
+  starter:   { label: "Starter",   color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Star,   min: 0, payout: "$50 flat fee",             volume: "Accounts < $10K/mo" },
+  connector: { label: "Connector", color: "text-indigo-400",  bg: "bg-indigo-500/10 border-indigo-500/20",  icon: Award,  min: 3, payout: "$100 flat fee",            volume: "Accounts $10K–$50K/mo" },
+  pro:       { label: "Pro",       color: "text-yellow-400",  bg: "bg-yellow-400/10 border-yellow-400/20",  icon: Trophy, min: 7, payout: "100% first month revenue", volume: "Accounts > $50K/mo" },
 };
 
 const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof BookOpen; color: string }> = {
@@ -556,32 +555,75 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               </Card>
             </div>
 
-            {/* Tier progress */}
+            {/* Tier progress + compensation */}
             <Card className="bg-zinc-900/60 border-zinc-800/60">
               <CardContent className="p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-10 h-10 rounded-xl ${tierCfg.bg} flex items-center justify-center`}>
-                    <TierIcon className={`w-5 h-5 ${tierCfg.color}`} />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl ${tierCfg.bg} flex items-center justify-center`}>
+                      <TierIcon className={`w-5 h-5 ${tierCfg.color}`} />
+                    </div>
+                    <div>
+                      <div className={`text-sm font-semibold ${tierCfg.color}`}>{tierCfg.label} Partner</div>
+                      <div className="text-[10px] text-zinc-500">Current rate: {tierCfg.payout}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className={`text-sm font-semibold ${tierCfg.color}`}>{tierCfg.label} Partner</div>
-                    <div className="text-[10px] text-zinc-500">Commission: {tierCfg.payout}</div>
-                  </div>
+                  <button onClick={() => setActiveTab("agreement")} className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors">View Agreement →</button>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+
+                {/* 3-tier progress track */}
+                <div className="grid grid-cols-3 gap-2 mb-5">
                   {Object.entries(TIER_CONFIG).map(([key, cfg]) => {
                     const isActive = key === partner.tier;
-                    const isReached = (stats?.totalReferrals || 0) >= cfg.min;
+                    const isReached = (stats?.successfulReferrals || 0) >= cfg.min;
                     const TIcon = cfg.icon;
                     return (
-                      <div key={key} className={`p-3 rounded-xl border text-center transition-all ${isActive ? cfg.bg + " scale-105" : isReached ? "border-zinc-700/50 bg-zinc-800/30" : "border-zinc-800/30 opacity-40"}`}>
-                        <TIcon className={`w-5 h-5 mx-auto mb-1 ${isActive ? cfg.color : "text-zinc-600"}`} />
-                        <div className={`text-[10px] font-semibold ${isActive ? cfg.color : "text-zinc-500"}`}>{cfg.label}</div>
-                        <div className="text-[9px] text-zinc-600 mt-0.5">{cfg.min}+ referrals</div>
+                      <div key={key} className={`p-3 rounded-xl border text-center transition-all ${isActive ? cfg.bg + " ring-1 ring-inset " + cfg.color.replace("text-","ring-") : isReached ? "border-zinc-700/50 bg-zinc-800/30" : "border-zinc-800/30 opacity-50"}`}>
+                        <TIcon className={`w-4 h-4 mx-auto mb-1.5 ${isActive ? cfg.color : isReached ? "text-zinc-400" : "text-zinc-600"}`} />
+                        <div className={`text-[11px] font-bold ${isActive ? cfg.color : isReached ? "text-zinc-300" : "text-zinc-500"}`}>{cfg.label}</div>
+                        <div className="text-[9px] text-zinc-500 mt-0.5">{cfg.min === 0 ? "Starting tier" : `${cfg.min}+ activated`}</div>
                       </div>
                     );
                   })}
                 </div>
+
+                {/* Compensation table */}
+                <div className="rounded-xl overflow-hidden border border-zinc-800/60">
+                  <div className="px-3 py-2 bg-zinc-800/50 border-b border-zinc-800/60">
+                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Compensation Structure</span>
+                  </div>
+                  <table className="w-full text-xs">
+                    <thead className="bg-zinc-900/40">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-[10px] text-zinc-500 font-medium">Tier</th>
+                        <th className="px-3 py-2 text-left text-[10px] text-zinc-500 font-medium">Account Volume</th>
+                        <th className="px-3 py-2 text-left text-[10px] text-zinc-500 font-medium">Your Earnings</th>
+                        <th className="px-3 py-2 text-left text-[10px] text-zinc-500 font-medium">Paid</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/40">
+                      <tr className={partner.tier === "starter" ? "bg-emerald-500/5" : ""}>
+                        <td className="px-3 py-2.5 text-emerald-400 font-medium flex items-center gap-1.5"><Star className="w-3 h-3" />Starter</td>
+                        <td className="px-3 py-2.5 text-zinc-400">&lt; $10K/mo</td>
+                        <td className="px-3 py-2.5 text-white font-semibold">$50 flat</td>
+                        <td className="px-3 py-2.5 text-zinc-500">Within 30 days of 1st statement</td>
+                      </tr>
+                      <tr className={partner.tier === "connector" ? "bg-indigo-500/5" : ""}>
+                        <td className="px-3 py-2.5 text-indigo-400 font-medium"><span className="flex items-center gap-1.5"><Award className="w-3 h-3" />Connector</span></td>
+                        <td className="px-3 py-2.5 text-zinc-400">$10K–$50K/mo</td>
+                        <td className="px-3 py-2.5 text-white font-semibold">$100 flat</td>
+                        <td className="px-3 py-2.5 text-zinc-500">Within 30 days of 1st statement</td>
+                      </tr>
+                      <tr className={partner.tier === "pro" ? "bg-yellow-400/5" : ""}>
+                        <td className="px-3 py-2.5 text-yellow-400 font-medium"><span className="flex items-center gap-1.5"><Trophy className="w-3 h-3" />Pro</span></td>
+                        <td className="px-3 py-2.5 text-zinc-400">&gt; $50K/mo</td>
+                        <td className="px-3 py-2.5 text-yellow-400 font-semibold">100% first month</td>
+                        <td className="px-3 py-2.5 text-zinc-500">OR 10% monthly residual for life</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[10px] text-zinc-600 mt-2">Residual option available for Pro tier — elected before first batch settles.</p>
               </CardContent>
             </Card>
 
@@ -971,13 +1013,13 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-800/40">
-                        <tr><td className="px-3 py-2 text-zinc-300">Starter</td><td className="px-3 py-2 text-zinc-400">&lt; $10K/mo</td><td className="px-3 py-2 text-emerald-400 font-medium">$50 flat</td></tr>
-                        <tr><td className="px-3 py-2 text-zinc-300">Connector</td><td className="px-3 py-2 text-zinc-400">$10K – $50K/mo</td><td className="px-3 py-2 text-emerald-400 font-medium">$100 flat</td></tr>
-                        <tr><td className="px-3 py-2 text-zinc-300">Pro Partner</td><td className="px-3 py-2 text-zinc-400">&gt; $50K/mo</td><td className="px-3 py-2 text-emerald-400 font-medium">100% first month or 10% residual</td></tr>
+                        <tr><td className="px-3 py-2 text-emerald-400 font-medium">Starter</td><td className="px-3 py-2 text-zinc-400">&lt; $10K/mo</td><td className="px-3 py-2 text-white font-semibold">$50 flat</td></tr>
+                        <tr><td className="px-3 py-2 text-indigo-400 font-medium">Connector</td><td className="px-3 py-2 text-zinc-400">$10K – $50K/mo</td><td className="px-3 py-2 text-white font-semibold">$100 flat</td></tr>
+                        <tr><td className="px-3 py-2 text-yellow-400 font-medium">Pro</td><td className="px-3 py-2 text-zinc-400">&gt; $50K/mo</td><td className="px-3 py-2 text-yellow-400 font-semibold">100% first month revenue</td></tr>
                       </tbody>
                     </table>
                   </div>
-                  <p className="text-xs text-zinc-500 mt-2">Flat fees paid within 30 days of first merchant statement. Residuals paid monthly, 30 days in arrears.</p>
+                  <p className="text-xs text-zinc-500 mt-2">Flat fees paid within 30 days of first merchant statement. Pro tier may elect 10% monthly residual instead — election must be made before merchant's first batch settles.</p>
                 </div>
 
                 {/* Section 5 */}
