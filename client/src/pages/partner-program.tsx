@@ -1,4 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import * as pdfjsLib from "pdfjs-dist";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -114,6 +116,7 @@ interface ClassroomDoc {
   size: number;
   type: string;
   uploadedAt: string;
+  pageCount: number;
 }
 
 // ─── Config ──────────────────────────────────────────────────────────
@@ -339,6 +342,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
   const [agreeSig, setAgreeSig] = useState("");
   const [agreeLoading, setAgreeLoading] = useState(false);
   const [agreeSuccess, setAgreeSuccess] = useState(false);
+  const [pdfViewer, setPdfViewer] = useState<{ url: string; name: string; page: number } | null>(null);
   const { toast } = useToast();
 
   const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/partner/modules"] });
@@ -691,7 +695,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               </div>
             )}
 
-            {/* Training Documents from Partner Training */}
+            {/* Training Documents from Partner Training — inline viewer */}
             {classroomDocs.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
@@ -701,17 +705,18 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {classroomDocs.map((doc) => (
-                    <a key={doc.id} href={doc.url} target="_blank" rel="noopener noreferrer" className="block bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 hover:border-emerald-500/30 transition-all group">
+                    <button key={doc.id} onClick={() => setPdfViewer({ url: doc.url, name: doc.name, page: 1 })} className="block w-full text-left bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 hover:border-emerald-500/30 transition-all group">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition-colors">
                           <FileText className="w-5 h-5 text-emerald-400" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium text-white truncate">{doc.name}</div>
-                          <div className="text-[10px] text-zinc-500 mt-0.5">{(doc.size / 1024 / 1024).toFixed(1)} MB · PDF</div>
+                          <div className="text-[10px] text-zinc-500 mt-0.5">Click to view · PDF</div>
                         </div>
+                        <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-emerald-400 transition-colors shrink-0" />
                       </div>
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1115,7 +1120,17 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
         </main>
       )}
 
-      {/* ─── Merchant Application Dialog ─── */}
+      {/* ─── PDF Viewer Overlay ─── */}
+      {pdfViewer && (
+        <PdfViewerOverlay
+          url={pdfViewer.url}
+          name={pdfViewer.name}
+          initialPage={pdfViewer.page}
+          onClose={() => setPdfViewer(null)}
+        />
+      )}
+
+      {/* ─── Merchant Application Dialog ─── */}}
       <Dialog open={showReferralForm} onOpenChange={(open) => { setShowReferralForm(open); if (!open) { setAppStep(0); setRefForm(emptyApp); } }}>
         <DialogContent className="sm:max-w-2xl bg-zinc-900 border-zinc-800 max-h-[85vh] overflow-y-auto">
           <DialogHeader>
