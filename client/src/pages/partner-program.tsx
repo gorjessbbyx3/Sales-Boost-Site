@@ -872,7 +872,12 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               })}
             </div>
           )}
-        {activeTab === "agreement" && (
+        </main>
+      )}
+
+      {/* ─── Agreement Tab ─── */}
+      {activeTab === "agreement" && (
+        <main className="max-w-6xl mx-auto px-4 py-6">
           <div className="space-y-5">
             <div>
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -1065,7 +1070,6 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               </div>
             )}
           </div>
-        )}
         </main>
       )}
 
