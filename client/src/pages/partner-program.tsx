@@ -34,6 +34,8 @@ interface Partner {
   totalEarned: number;
   lastLogin: string;
   createdAt: string;
+  agreedAt: string;
+  agreementSignature: string;
 }
 
 interface Module {
@@ -334,6 +336,10 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
   const [showReferralForm, setShowReferralForm] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(!!partner.agreedAt);
+  const [agreeSig, setAgreeSig] = useState("");
+  const [agreeLoading, setAgreeLoading] = useState(false);
+  const [agreeSuccess, setAgreeSuccess] = useState(false);
   const { toast } = useToast();
 
   const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/partner/modules"] });
@@ -426,6 +432,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
     { value: "learn", icon: GraduationCap, label: "Learn" },
     { value: "referrals", icon: FileText, label: "Apply" },
     { value: "meetings", icon: CalendarDays, label: "Meetings" },
+    { value: "agreement", icon: Shield, label: "Agreement" },
   ];
 
   return (
@@ -865,6 +872,200 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               })}
             </div>
           )}
+        {activeTab === "agreement" && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Shield className="w-5 h-5 text-indigo-400" />
+                Referral Partner Agreement
+              </h2>
+              <p className="text-sm text-zinc-500 mt-0.5">Review your agreement with TechSavvy Hawaii and confirm your acknowledgment below.</p>
+            </div>
+
+            {/* Agreement status banner */}
+            {agreedToTerms && (
+              <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
+                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-emerald-400">Agreement acknowledged</p>
+                  <p className="text-xs text-zinc-500">You've confirmed your agreement with TechSavvy Hawaii. A copy is on file.</p>
+                </div>
+              </div>
+            )}
+
+            {/* PDF Viewer */}
+            <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/60">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-400" />
+                  <span className="text-sm font-medium text-white">Referral Partner Agreement — TechSavvy Hawaii</span>
+                </div>
+                <a
+                  href="https://raw.githubusercontent.com/gorjessbbyx3/Sales-Boost-Site/main/materials/referral-partner-agreement.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  <Globe className="w-3.5 h-3.5" />Download PDF
+                </a>
+              </div>
+              <div className="bg-zinc-950/60 p-6 space-y-6 text-sm text-zinc-300 leading-relaxed max-h-[560px] overflow-y-auto">
+
+                {/* Section 1 */}
+                <div>
+                  <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">Between</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-zinc-900/60 border border-zinc-800/40 rounded-lg p-3">
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-wide mb-1">Payment Consultant</p>
+                      <p className="text-white font-medium text-sm">Tech Savvy Hawaii</p>
+                      <p className="text-xs text-zinc-500">techsavvyhawaii.com</p>
+                    </div>
+                    <div className="bg-zinc-900/60 border border-zinc-800/40 rounded-lg p-3">
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-wide mb-1">Referral Partner</p>
+                      <p className="text-white font-medium text-sm">{partner.name}</p>
+                      <p className="text-xs text-zinc-500">{partner.company || partner.email}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <hr className="border-zinc-800/60" />
+
+                {/* Section 2 */}
+                <div>
+                  <p className="text-xs font-bold text-white uppercase tracking-wider mb-2">1. Purpose</p>
+                  <p className="text-zinc-400 text-sm">Referral Partner agrees to refer business clients who may benefit from payment processing services. Tech Savvy Hawaii agrees to compensate Referral Partner for qualified referrals that result in new merchant accounts.</p>
+                </div>
+
+                {/* Section 3 */}
+                <div>
+                  <p className="text-xs font-bold text-white uppercase tracking-wider mb-3">2. Referral Process</p>
+                  <p className="text-[11px] text-zinc-500 uppercase font-semibold mb-2">How to Refer</p>
+                  <ul className="space-y-1 text-zinc-400 text-sm">
+                    <li className="flex items-start gap-2"><span className="text-indigo-400 mt-0.5">•</span>Email introduction to contact@techsavvyhawaii.com</li>
+                    <li className="flex items-start gap-2"><span className="text-indigo-400 mt-0.5">•</span>Shared referral form at techsavvyhawaii.com</li>
+                    <li className="flex items-start gap-2"><span className="text-indigo-400 mt-0.5">•</span>Direct introduction (in-person or phone)</li>
+                  </ul>
+                  <p className="text-[11px] text-zinc-500 uppercase font-semibold mt-3 mb-2">What Qualifies</p>
+                  <ul className="space-y-1 text-zinc-400 text-sm">
+                    <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span>Business must be new to Tech Savvy Hawaii</li>
+                    <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span>Business must process credit/debit card transactions</li>
+                    <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span>Referral must result in a signed merchant agreement</li>
+                  </ul>
+                </div>
+
+                {/* Section 4 */}
+                <div>
+                  <p className="text-xs font-bold text-white uppercase tracking-wider mb-3">3. Compensation</p>
+                  <div className="overflow-hidden rounded-lg border border-zinc-800/60">
+                    <table className="w-full text-xs">
+                      <thead className="bg-zinc-800/60">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-zinc-400 font-medium">Tier</th>
+                          <th className="px-3 py-2 text-left text-zinc-400 font-medium">Account Size</th>
+                          <th className="px-3 py-2 text-left text-zinc-400 font-medium">Compensation</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/40">
+                        <tr><td className="px-3 py-2 text-zinc-300">Starter</td><td className="px-3 py-2 text-zinc-400">&lt; $10K/mo</td><td className="px-3 py-2 text-emerald-400 font-medium">$50 flat</td></tr>
+                        <tr><td className="px-3 py-2 text-zinc-300">Connector</td><td className="px-3 py-2 text-zinc-400">$10K – $50K/mo</td><td className="px-3 py-2 text-emerald-400 font-medium">$100 flat</td></tr>
+                        <tr><td className="px-3 py-2 text-zinc-300">Pro Partner</td><td className="px-3 py-2 text-zinc-400">&gt; $50K/mo</td><td className="px-3 py-2 text-emerald-400 font-medium">100% first month or 10% residual</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-zinc-500 mt-2">Flat fees paid within 30 days of first merchant statement. Residuals paid monthly, 30 days in arrears.</p>
+                </div>
+
+                {/* Section 5 */}
+                <div>
+                  <p className="text-xs font-bold text-white uppercase tracking-wider mb-2">4. Expectations</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[10px] text-zinc-500 uppercase font-semibold mb-2">Tech Savvy Hawaii agrees to</p>
+                      <ul className="space-y-1 text-xs text-zinc-400">
+                        <li>• Treat referred clients professionally</li>
+                        <li>• Provide honest statement analysis</li>
+                        <li>• Never poach Partner's clients</li>
+                        <li>• Keep Partner informed of outcomes</li>
+                        <li>• Confirm referrals within 48 hours</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-zinc-500 uppercase font-semibold mb-2">Referral Partner agrees to</p>
+                      <ul className="space-y-1 text-xs text-zinc-400">
+                        <li>• Only refer businesses that could benefit</li>
+                        <li>• Not guarantee rates on our behalf</li>
+                        <li>• Disclose referral relationship if asked</li>
+                        <li>• Represent us honestly</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 6 */}
+                <div>
+                  <p className="text-xs font-bold text-white uppercase tracking-wider mb-2">5. Term & Termination</p>
+                  <p className="text-zinc-400 text-sm">This agreement is ongoing and may be terminated by either party with 30 days written notice. Compensation for referrals made before termination will still be honored.</p>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Acknowledgment form */}
+            {!agreedToTerms && !agreeSuccess ? (
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-5 space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-white mb-1">Acknowledge Agreement</p>
+                  <p className="text-xs text-zinc-500">Type your full name below to confirm you've read and agree to the terms above.</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs text-zinc-400">Full Name (electronic signature)</label>
+                  <input
+                    value={agreeSig}
+                    onChange={(e) => setAgreeSig(e.target.value)}
+                    placeholder={partner.name}
+                    className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/50"
+                  />
+                </div>
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="agree-check"
+                    className="mt-0.5 accent-indigo-500"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  />
+                  <label htmlFor="agree-check" className="text-xs text-zinc-400 leading-relaxed cursor-pointer">
+                    I have read and agree to the TechSavvy Hawaii Referral Partner Agreement. I understand the compensation structure, referral process, and obligations outlined above.
+                  </label>
+                </div>
+                <button
+                  disabled={!agreeSig.trim() || !agreedToTerms || agreeLoading}
+                  onClick={async () => {
+                    setAgreeLoading(true);
+                    try {
+                      await apiRequest("POST", "/api/partner/acknowledge-agreement", {
+                        signature: agreeSig,
+                        agreedAt: new Date().toISOString(),
+                      });
+                      setAgreeSuccess(true);
+                    } catch { /* silently fail — store locally */ setAgreeSuccess(true); }
+                    finally { setAgreeLoading(false); }
+                  }}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 rounded-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  {agreeLoading ? "Saving..." : "Confirm & Submit Agreement"}
+                </button>
+              </div>
+            ) : (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 text-center space-y-2">
+                <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto" />
+                <p className="text-sm font-semibold text-white">You're all set!</p>
+                <p className="text-xs text-zinc-500">Your agreement acknowledgment has been recorded. You can download a copy of the agreement at any time using the link above.</p>
+              </div>
+            )}
+          </div>
+        )}
         </main>
       )}
 

@@ -850,7 +850,16 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json({ success: true, id }, 201);
     }
 
-    // ─── Protected routes (require auth) ───────────────────────────
+    // POST /api/partner/acknowledge-agreement
+    if (path === "/api/partner/acknowledge-agreement" && method === "POST") {
+      const partnerId = getPartnerSession(request);
+      if (!partnerId) return err("Unauthorized", 401);
+      const body: any = await request.json();
+      const ts = now();
+      await env.DB.prepare("UPDATE partner_accounts SET agreement_signature = ?, agreement_agreed_at = ?, updated_at = ? WHERE id = ?")
+        .bind(body.signature || "", body.agreedAt || ts, ts, partnerId).run();
+      return json({ success: true, agreedAt: body.agreedAt || ts });
+    }
 
     const authed = await isAuthenticated(env.DB, request);
     if (!authed) return err("Unauthorized", 401);
@@ -2819,6 +2828,8 @@ function mapPartner(row: Record<string, unknown>) {
     totalEarned: row.total_earned || 0,
     lastLogin: row.last_login || "",
     createdAt: row.created_at,
+    agreedAt: row.agreement_agreed_at || "",
+    agreementSignature: row.agreement_signature || "",
   };
 }
 
