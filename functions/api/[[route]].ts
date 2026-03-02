@@ -821,7 +821,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // GET /api/partner/classroom-docs — return document/PDF files from Partner Training folder
     if (path === "/api/partner/classroom-docs" && method === "GET") {
-      const { results } = await env.DB.prepare("SELECT * FROM admin_files WHERE folder = 'Partner Training' AND type = 'document' ORDER BY uploaded_at DESC").all();
+      const { results } = await env.DB.prepare("SELECT * FROM admin_files WHERE folder = 'Partner Training' AND type = 'document' ORDER BY name ASC").all();
       return json((results || []).map((r: any) => ({ id: r.id, name: r.name, url: r.url, size: r.size, type: r.type, uploadedAt: r.uploaded_at })));
     }
 
