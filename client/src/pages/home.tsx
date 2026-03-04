@@ -504,16 +504,6 @@ function ServicesOverview() {
       accent: "from-chart-2/10 to-transparent",
     },
     {
-      icon: Globe,
-      title: "Free Custom Website",
-      description: "We build you a professional, mobile-optimized website — included at no cost. Because we'd rather earn your loyalty than nickel-and-dime you.",
-      href: "/online-processing",
-      cta: "See Examples",
-      color: "text-chart-3",
-      border: "border-chart-3/20",
-      accent: "from-chart-3/10 to-transparent",
-    },
-    {
       icon: ShieldCheck,
       title: "High-Risk Merchants",
       description: "CBD, vape, firearms, gaming — industries other processors won't touch. We get you approved fast with the same honest pricing.",
@@ -623,7 +613,7 @@ function QuickPricingPreview() {
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -631,31 +621,22 @@ function QuickPricingPreview() {
         >
           {[
             {
-              title: "Buy Outright",
-              price: "$399",
-              note: "One-time · No monthly fees ever",
-              icon: CreditCard,
-              color: "text-primary",
-              border: "border-primary/20",
-              features: ["Own it from day one", "Same-day setup included", "Lowest long-term cost"],
-            },
-            {
               title: "Free 30-Day Trial",
               price: "FREE",
-              note: "Love it? Keep it for $599. Don't? Send it back.",
+              note: "Love it? Keep it. Don't? Send it back.",
               icon: Clock,
-              color: "text-chart-4",
-              border: "border-chart-4/20",
+              color: "text-primary",
+              border: "border-primary/20",
               features: ["No upfront cost", "Real transactions, real savings", "Return it — no questions asked"],
             },
             {
               title: "Online-Only",
               price: "FREE",
-              note: "We build your website too",
+              note: "Accept payments online with zero fees",
               icon: Globe,
               color: "text-chart-2",
               border: "border-chart-2/20",
-              features: ["Custom website included", "No terminal needed", "Zero processing fees"],
+              features: ["No terminal needed", "Zero processing fees", "Same-day setup"],
             },
           ].map((plan, i) => (
             <motion.div key={i} variants={scaleIn}>
