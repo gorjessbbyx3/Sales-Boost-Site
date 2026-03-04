@@ -88,11 +88,15 @@ function HeroSection() {
             animate="visible"
             data-testid="text-hero-title"
           >
-            Accept Payments.{" "}
+            We Won't Lie —{" "}
             <span className="relative inline-block">
               <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-                Keep Every Dollar.
+                Nothing Is "Completely Free."
               </span>
+            </span>
+            <br />
+            <span className="text-xl sm:text-3xl lg:text-4xl text-white/90">
+              But We're So Confident You'll Love Us, Your First Month Is On Us.
             </span>
           </motion.h1>
         </div>
@@ -109,11 +113,11 @@ function HeroSection() {
             <motion.div className="flex flex-wrap items-center justify-center gap-2" variants={fadeUp}>
               <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
                 <MapPin className="w-3 h-3 mr-1" />
-                Proudly Serving Hawai'i
+                Hawai'i's Most Honest Payment Processor
               </Badge>
               <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
                 <CircleDollarSign className="w-3 h-3 mr-1" />
-                Save $3,600+ Per Year
+                30-Day Free Trial — No Strings
               </Badge>
             </motion.div>
 
@@ -122,9 +126,10 @@ function HeroSection() {
               variants={fadeUp}
               data-testid="text-hero-subtitle"
             >
-              Tap, swipe, or insert — your terminal is ready to go from day one.{" "}
-              <span className="text-primary font-semibold">Zero processing fees</span>, no monthly charges, and{" "}
-              <span className="text-primary font-semibold">100% of every sale</span> deposited next business day.
+              Other companies promise "free everything" — then hit you with hidden fees.{" "}
+              We're different. <span className="text-primary font-semibold">Try our terminal free for 30 days</span>.{" "}
+              Pay for the equipment with the money you save — or{" "}
+              <span className="text-primary font-semibold">give it back, no questions asked</span>.
             </motion.p>
 
             <motion.div
@@ -133,7 +138,7 @@ function HeroSection() {
             >
               <Button size="lg" className="w-full sm:w-auto" asChild>
                 <Link href="/contact" data-testid="link-hero-get-terminal">
-                  Get Your Terminal
+                  Try It Free for 30 Days
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
@@ -151,19 +156,19 @@ function HeroSection() {
             >
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                <span>PCI Compliant</span>
+                <span>No Contracts</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-primary" />
-                <span>Same-Day Setup</span>
+                <span>30-Day Free Trial</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-primary" />
-                <span>Zero Monthly Fees</span>
+                <span>No Hidden Fees</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-primary" />
-                <span>Free Website</span>
+                <Check className="w-3.5 h-3.5 text-primary" />
+                <span>Return Anytime — No Questions</span>
               </div>
             </motion.div>
           </motion.div>
@@ -238,14 +243,14 @@ function SavingsCalculator() {
               Savings Calculator
             </Badge>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              See How Much You're{" "}
+              Here's the Math.{" "}
               <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
-                Losing
-              </span>{" "}
-              to Processing Fees
+                You Decide.
+              </span>
             </h2>
             <p className="text-muted-foreground text-sm sm:text-lg max-w-2xl mx-auto">
-              Enter your monthly card processing volume to see your potential savings with zero-fee processing.
+              No sales tricks — just real numbers. Enter your monthly volume and see what processing fees
+              are actually costing your business.
             </p>
           </motion.div>
 
@@ -349,13 +354,20 @@ function SavingsCalculator() {
                   </Card>
                 </div>
 
-                <div className="mt-6 text-center">
-                  <Button size="lg" asChild>
-                    <Link href="/contact">
-                      Start Saving Today
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </Button>
+                <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/15">
+                  <p className="text-sm text-foreground/80 text-center mb-4">
+                    That's{" "}
+                    <span className="font-bold text-primary">{formatCurrency(yearlySavings)}/year</span>{" "}
+                    walking out the door. Try us free for 30 days — if we're wrong, send the terminal back. No fees, no hassle, no hard feelings.
+                  </p>
+                  <div className="text-center">
+                    <Button size="lg" asChild>
+                      <Link href="/contact">
+                        Try It Free — See for Yourself
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -371,20 +383,20 @@ function HowItWorksPreview() {
     {
       number: "01",
       icon: CreditCard,
-      title: "Choose Your Terminal",
-      description: "Pick the plan that fits — buy outright at $399 or try free for 30 days. Online-only merchants get started at no cost.",
+      title: "We Ship You a Terminal — Free",
+      description: "No upfront cost. We send you a fully programmed terminal and set up your account the same day. You're processing within hours.",
     },
     {
       number: "02",
       icon: Zap,
-      title: "We Set Everything Up",
-      description: "Same-day setup. We program your terminal, configure your account, and get you processing in hours — not weeks.",
+      title: "Run Your Business for 30 Days",
+      description: "Use the terminal on real transactions. Watch the savings add up. See the difference on your next bank statement — not in a sales pitch.",
     },
     {
       number: "03",
       icon: BadgeDollarSign,
-      title: "Keep Every Dollar",
-      description: "A small service fee is passed to card-paying customers. You keep 100% of every sale with zero monthly fees, ever.",
+      title: "Keep It or Send It Back",
+      description: "Love it? Pay for the equipment with the money you saved. Not for you? Ship it back — no fees, no penalties, no awkward phone calls.",
     },
   ];
 
@@ -408,14 +420,14 @@ function HowItWorksPreview() {
             className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
             variants={fadeUp}
           >
-            Zero Fees. Zero Catch. Here's How.
+            No Risk. No Catch. Here's the Deal.
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg"
             variants={fadeUp}
           >
-            Our cash discount program lets you accept cards without paying processing fees.
-            Customers who pay with card see a small service fee — you keep every dollar.
+            Other processors make big promises upfront — then lock you into contracts with hidden fees.
+            We'd rather let our service speak for itself. Try it. If we're not the best, walk away.
           </motion.p>
         </motion.div>
 
@@ -474,7 +486,7 @@ function ServicesOverview() {
     {
       icon: CreditCard,
       title: "Payment Processing",
-      description: "Zero-fee terminals starting at $399. Keep 100% of every sale with no monthly fees and no contracts.",
+      description: "Try a terminal free for 30 days. If the savings don't speak for themselves, send it back. No contracts, no monthly fees, no gimmicks.",
       href: "/pricing",
       cta: "See Pricing",
       color: "text-primary",
@@ -484,9 +496,9 @@ function ServicesOverview() {
     {
       icon: Zap,
       title: "How It Works",
-      description: "Three simple steps: choose your plan, we set everything up same-day, and you keep every dollar.",
+      description: "We ship you a programmed terminal. You run your business. You see real savings on your statement. Then you decide. That's it.",
       href: "/how-it-works",
-      cta: "See How Zero-Fee Processing Works",
+      cta: "See How It Works",
       color: "text-chart-2",
       border: "border-chart-2/20",
       accent: "from-chart-2/10 to-transparent",
@@ -494,7 +506,7 @@ function ServicesOverview() {
     {
       icon: Globe,
       title: "Free Custom Website",
-      description: "Online-only merchants get a professional business website — mobile-optimized, SEO-ready, and included at no cost.",
+      description: "We build you a professional, mobile-optimized website — included at no cost. Because we'd rather earn your loyalty than nickel-and-dime you.",
       href: "/online-processing",
       cta: "See Examples",
       color: "text-chart-3",
@@ -504,7 +516,7 @@ function ServicesOverview() {
     {
       icon: ShieldCheck,
       title: "High-Risk Merchants",
-      description: "CBD, vape, firearms, gaming & more — same zero-fee processing with fast approvals.",
+      description: "CBD, vape, firearms, gaming — industries other processors won't touch. We get you approved fast with the same honest pricing.",
       href: "/high-risk",
       cta: "Explore High-Risk Solutions",
       color: "text-chart-4",
@@ -536,13 +548,13 @@ function ServicesOverview() {
             className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
             variants={fadeUp}
           >
-            Everything Your Business Needs
+            What We Actually Do (No Buzzwords)
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg"
             variants={fadeUp}
           >
-            Payment processing, websites, and support — all from one trusted Hawai'i company.
+            We're a Hawai'i company that saves local businesses real money. Here's exactly what we offer.
           </motion.p>
         </motion.div>
 
@@ -606,7 +618,7 @@ function QuickPricingPreview() {
             className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
             variants={fadeUp}
           >
-            Simple, Transparent Pricing
+            Honest Pricing — No Surprises
           </motion.h2>
         </motion.div>
 
@@ -619,31 +631,31 @@ function QuickPricingPreview() {
         >
           {[
             {
-              title: "In-Store Terminal",
+              title: "Buy Outright",
               price: "$399",
-              note: "One-time · Best Value",
+              note: "One-time · No monthly fees ever",
               icon: CreditCard,
               color: "text-primary",
               border: "border-primary/20",
-              features: ["Own it from day one", "Full setup included", "Zero fees forever"],
+              features: ["Own it from day one", "Same-day setup included", "Lowest long-term cost"],
             },
             {
-              title: "30-Day Trial",
+              title: "Free 30-Day Trial",
               price: "FREE",
-              note: "Then $599 if you keep it",
+              note: "Love it? Keep it for $599. Don't? Send it back.",
               icon: Clock,
               color: "text-chart-4",
               border: "border-chart-4/20",
-              features: ["Try before you buy", "Real transactions", "Return anytime"],
+              features: ["No upfront cost", "Real transactions, real savings", "Return it — no questions asked"],
             },
             {
               title: "Online-Only",
               price: "FREE",
-              note: "With Cash Discount Processing",
+              note: "We build your website too",
               icon: Globe,
               color: "text-chart-2",
               border: "border-chart-2/20",
-              features: ["Free website built for you", "Optional maintenance plans", "Host your own site"],
+              features: ["Custom website included", "No terminal needed", "Zero processing fees"],
             },
           ].map((plan, i) => (
             <motion.div key={i} variants={scaleIn}>
@@ -851,13 +863,13 @@ function ContactFormSection() {
               Get Started Today
             </Badge>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Eliminate{" "}
+              Ready to{" "}
               <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-                Processing Fees
+                See It for Yourself?
               </span>
             </h2>
             <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
-              Fill out the form below and we'll get back to you with a personalized savings quote.
+              No commitment. No pressure. We'll send you a terminal, you try it for 30 days, and the savings do the talking.
             </p>
           </div>
 
