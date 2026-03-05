@@ -76,8 +76,8 @@ function HeroSection() {
               </a>
             </Button>
             <Button variant="outline" size="lg" className="text-base px-6 py-6 w-full sm:w-auto" asChild>
-              <a href="#calculator">
-                See How Much You're Losing
+              <a href="/contact">
+                Talk to Our Team
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
@@ -179,8 +179,8 @@ function HowItWorks() {
 
           <motion.div className="text-center mt-8" variants={fadeUp}>
             <Button size="lg" asChild>
-              <a href="/statement-review">
-                Start Your Free AI Analysis
+              <a href="/apply">
+                Apply Now — Takes 3 Minutes
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
@@ -509,8 +509,8 @@ function SavingsCalculator() {
                     </div>
                     <div className="mt-4 text-center space-y-3">
                       <Button size="lg" asChild>
-                        <a href="/statement-review">
-                          Get Your Free AI Analysis
+                        <a href="/contact">
+                          Connect With Us
                           <ArrowRight className="w-4 h-4" />
                         </a>
                       </Button>
