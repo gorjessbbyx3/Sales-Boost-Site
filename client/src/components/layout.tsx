@@ -4,12 +4,13 @@ import {
   ArrowRight,
   Menu,
   XIcon,
+  X,
   MapPin,
   Phone,
   Mail,
   Clock,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 
 function Navbar() {
@@ -163,7 +164,7 @@ function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5 text-primary" />
-                <span>Honolulu, Hawai'i</span>
+                <span>1917 S King St, Honolulu, HI 96826</span>
               </div>
             </div>
           </div>
@@ -241,7 +242,23 @@ function Footer() {
           </div>
         </div>
 
+        {/* Google Map */}
+        <div className="mt-10 rounded-xl overflow-hidden border border-white/10">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3717.2!2d-157.8275!3d21.2942!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x7c006dfa9353113f%3A0x0!2s1917+S+King+St%2C+Honolulu%2C+HI+96826!5e0!3m2!1sen!2sus!4v1"
+            width="100%"
+            height="200"
+            style={{ border: 0 }}
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="TechSavvy Hawaii Location"
+            className="opacity-80 hover:opacity-100 transition-opacity"
+          />
+        </div>
+
         <div className="border-t border-white/10 mt-10 pt-8 text-center text-xs text-white/50">
+          <p className="mb-2 text-white/70 text-sm">Mahalo for visiting TechSavvy Hawaii 🤙</p>
           &copy; {new Date().getFullYear()} TechSavvy Hawaii. All rights reserved.
         </div>
       </div>
@@ -250,11 +267,49 @@ function Footer() {
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const [showExit, setShowExit] = useState(false);
+  const exitShown = useRef(false);
+
+  useEffect(() => {
+    const handleMouseLeave = (e: MouseEvent) => {
+      if (e.clientY <= 0 && !exitShown.current) {
+        exitShown.current = true;
+        setShowExit(true);
+      }
+    };
+    document.addEventListener("mouseleave", handleMouseLeave);
+    return () => document.removeEventListener("mouseleave", handleMouseLeave);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       <main>{children}</main>
       <Footer />
+
+      {/* Exit-intent popup */}
+      {showExit && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowExit(false)}>
+          <div className="bg-card border border-border rounded-2xl shadow-2xl max-w-md w-full p-8 text-center relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowExit(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="text-4xl mb-3">🤙</div>
+            <h3 className="text-2xl font-extrabold mb-2 font-heading">Wait — before you go!</h3>
+            <p className="text-muted-foreground text-sm mb-5">
+              Find out exactly how much you're losing to processing fees. Our AI analyzes your statement in under 60 seconds.
+            </p>
+            <a
+              href="/statement-review"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-semibold px-6 py-3 text-sm hover:bg-primary/90 transition-colors w-full"
+            >
+              Get My Free AI Analysis
+              <ArrowRight className="w-4 h-4" />
+            </a>
+            <p className="text-[10px] text-muted-foreground mt-3">Free. No commitment. Takes 60 seconds.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -48,15 +48,16 @@ function HeroSection() {
           <motion.div variants={fadeUp}>
             <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
               <MapPin className="w-3 h-3 mr-1" />
-              Built for Hawaii Small Businesses
+              Built for Hawai'i.Small Businesses
             </Badge>
           </motion.div>
 
           <motion.h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6" variants={fadeUp}>
-            Credit Card Fees Are{" "}
+            The Average Hawaii Restaurant Loses{" "}
             <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-              Eating Your Profits.
-            </span>
+              $14,400/Year
+            </span>{" "}
+            to Processing Fees.
           </motion.h1>
 
           <motion.p className="text-lg sm:text-2xl text-muted-foreground leading-relaxed mb-4 max-w-2xl mx-auto" variants={fadeUp}>
@@ -250,8 +251,8 @@ function QualifySection() {
               <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-5">
                 <Check className="w-10 h-10 text-primary" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold mb-2 text-primary">You Qualify!</h2>
-              <p className="text-lg font-semibold text-foreground mb-3">Your business qualifies for a free equipment upgrade.</p>
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-2 text-primary">You Qualify! 🤙</h2>
+              <p className="text-lg font-semibold text-foreground mb-3">Mahalo! Your business qualifies for a free equipment upgrade.</p>
               <p className="text-muted-foreground mb-6">
                 One of our local team members will reach out within 24 hours to get your new POS system set up — at no cost.
               </p>
@@ -325,6 +326,14 @@ function QualifySection() {
             </div>
 
             <CardContent className="p-6 sm:p-8">
+              {/* Step indicator */}
+              {step < 4 && result === null && (
+                <div className="flex items-center justify-between mb-5">
+                  <span className="text-xs font-medium text-muted-foreground">Step {step + 1} of 4</span>
+                  <span className="text-xs text-muted-foreground">{["Business Type", "Monthly Volume", "Current Processor", "Contact Info"][step]}</span>
+                </div>
+              )}
+
               {step === 0 && (
                 <div>
                   <p className="text-sm font-semibold text-foreground mb-4">What type of business do you run?</p>
@@ -614,7 +623,7 @@ function WhoWeWorkWith() {
   );
 }
 
-// ─── 8. Trust — Built for Hawaii ────────────────────────────────────────────
+// ─── 8. Trust — Built for Hawai'i.────────────────────────────────────────────
 
 function TrustSection() {
   return (
@@ -623,8 +632,8 @@ function TrustSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-5">
-              Built for Hawaii.{" "}
-              <span className="text-primary">Run by Hawaii.</span>
+              Built for Hawai'i.{" "}
+              <span className="text-primary">Run by Hawai'i.</span>
             </h2>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-6">
               We're not a mainland company with a 1-800 number. We're local. When you call, a real person from Hawaii picks up. When you need help, someone comes to your business — not an email bot.
@@ -762,7 +771,7 @@ function FAQSection() {
 
 export default function Home() {
   useSEO({
-    title: "Credit Card Fees Are Eating Your Profits | TechSavvy Hawaii",
+    title: "Hawaii Restaurants Lose $14,400/Year to Processing Fees | TechSavvy Hawaii",
     description: "TechSavvy Hawaii helps local businesses eliminate processing fees with a compliant cash discount program. Apply online, get approved in 24 hours, start saving immediately. No contracts.",
     keywords: "stop paying credit card fees Hawaii, save money processing fees Honolulu, zero fee payment processing, Hawaii small business payment processor, no contract merchant services, TechSavvy Hawaii",
     canonical: "https://techsavvyhawaii.com/",

@@ -197,10 +197,15 @@ function ContactForm() {
   const [formData, setFormData] = useState({ businessName: "", contactName: "", phone: "", email: "", plan: "savings-estimate", highRisk: false, monthlyProcessing: "", bestContactTime: "" });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!expanded && formData.contactName && formData.phone) {
+      setExpanded(true);
+      return;
+    }
     setError("");
     setSubmitting(true);
     try {
@@ -218,14 +223,14 @@ function ContactForm() {
           <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-4">
             <Check className="w-7 h-7 text-primary" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">We'll Be In Touch!</h2>
-          <p className="text-muted-foreground">We'll review your info and reach out with your savings estimate. Usually within a few hours. Mahalo!</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">Mahalo! We're On It 🤙</h2>
+          <p className="text-muted-foreground">We'll review your info and reach out with your savings estimate. Usually within a few hours.</p>
         </CardContent>
       </Card>
     );
   }
 
-  const inputClass = "flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary";
+  const inputClass = "flex h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30";
 
   return (
     <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
@@ -235,17 +240,13 @@ function ContactForm() {
           <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">you're losing.</span>
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Free. No commitment. We just show you the number.
+          Free. No commitment. Just your name and number to start.
         </p>
       </div>
 
       <Card className="border-primary/15">
         <CardContent className="p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Business Name *</label>
-              <input required value={formData.businessName} onChange={(e) => set("businessName", e.target.value)} placeholder="Your Business Name" className={inputClass} />
-            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Your Name *</label>
@@ -256,15 +257,24 @@ function ContactForm() {
                 <input type="tel" required value={formData.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(808) 555-1234" className={inputClass} />
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Email *</label>
-              <input type="email" required value={formData.email} onChange={(e) => set("email", e.target.value)} placeholder="you@business.com" className={inputClass} />
-            </div>
+
+            {expanded && (
+              <>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Email</label>
+                  <input type="email" value={formData.email} onChange={(e) => set("email", e.target.value)} placeholder="you@business.com (optional)" className={inputClass} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Business Name</label>
+                  <input value={formData.businessName} onChange={(e) => set("businessName", e.target.value)} placeholder="Your business name (optional)" className={inputClass} />
+                </div>
+              </>
+            )}
 
             {error && <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm text-destructive">{error}</div>}
 
             <Button type="submit" size="lg" className="w-full text-base" disabled={submitting}>
-              {submitting ? "Submitting..." : "Get My Free AI Analysis"}
+              {submitting ? "Submitting..." : expanded ? "Get My Free Analysis" : "Next — Almost Done"}
               {!submitting && <ArrowRight className="w-4 h-4" />}
             </Button>
 
