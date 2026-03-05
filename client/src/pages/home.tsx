@@ -154,11 +154,106 @@ function ProblemSection() {
 // ─── 3. How It Works — Remove uncertainty ───────────────────────────────────
 
 function HowItWorks() {
+  const StepApply = () => (
+    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
+      {/* Phone */}
+      <rect x="60" y="15" width="80" height="130" rx="14" fill="hsl(var(--primary) / 0.08)" stroke="hsl(var(--primary) / 0.3)" strokeWidth="2"/>
+      <rect x="70" y="30" width="60" height="90" rx="4" fill="hsl(var(--primary) / 0.05)"/>
+      {/* Form lines */}
+      <rect x="78" y="42" width="44" height="6" rx="3" fill="hsl(var(--primary) / 0.2)"/>
+      <rect x="78" y="56" width="44" height="6" rx="3" fill="hsl(var(--primary) / 0.15)"/>
+      <rect x="78" y="70" width="44" height="6" rx="3" fill="hsl(var(--primary) / 0.15)"/>
+      {/* Submit button */}
+      <rect x="78" y="86" width="44" height="14" rx="7" fill="hsl(var(--primary))"/>
+      <text x="100" y="96" textAnchor="middle" fill="white" fontSize="7" fontWeight="700">APPLY</text>
+      {/* Checkmarks floating */}
+      <circle cx="150" cy="40" r="10" fill="hsl(var(--primary) / 0.15)"/>
+      <path d="M145 40l3 3 7-7" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="45" cy="60" r="8" fill="hsl(var(--primary) / 0.1)"/>
+      <path d="M41 60l2.5 2.5 5.5-5.5" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Clock */}
+      <circle cx="155" cy="110" r="14" fill="hsl(var(--primary) / 0.1)" stroke="hsl(var(--primary) / 0.25)" strokeWidth="1.5"/>
+      <text x="155" y="114" textAnchor="middle" fill="hsl(var(--primary))" fontSize="9" fontWeight="700">3m</text>
+    </svg>
+  );
+
+  const StepApproved = () => (
+    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
+      {/* Document */}
+      <rect x="50" y="20" width="100" height="120" rx="10" fill="hsl(var(--primary) / 0.06)" stroke="hsl(var(--primary) / 0.2)" strokeWidth="2"/>
+      {/* Header */}
+      <rect x="65" y="35" width="70" height="8" rx="4" fill="hsl(var(--primary) / 0.15)"/>
+      {/* Lines */}
+      <rect x="65" y="52" width="55" height="5" rx="2.5" fill="hsl(var(--primary) / 0.1)"/>
+      <rect x="65" y="63" width="70" height="5" rx="2.5" fill="hsl(var(--primary) / 0.1)"/>
+      <rect x="65" y="74" width="45" height="5" rx="2.5" fill="hsl(var(--primary) / 0.1)"/>
+      {/* Savings highlight */}
+      <rect x="65" y="90" width="70" height="22" rx="6" fill="hsl(var(--primary) / 0.12)" stroke="hsl(var(--primary) / 0.25)" strokeWidth="1"/>
+      <text x="100" y="104" textAnchor="middle" fill="hsl(var(--primary))" fontSize="11" fontWeight="800">-$1,200/mo</text>
+      {/* Big approval stamp */}
+      <circle cx="155" cy="45" r="22" fill="hsl(var(--primary) / 0.12)" stroke="hsl(var(--primary))" strokeWidth="2.5"/>
+      <path d="M145 45l5 5 13-13" stroke="hsl(var(--primary))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* 24h badge */}
+      <rect x="30" y="95" width="28" height="22" rx="11" fill="hsl(var(--primary) / 0.15)"/>
+      <text x="44" y="109" textAnchor="middle" fill="hsl(var(--primary))" fontSize="8" fontWeight="700">24h</text>
+    </svg>
+  );
+
+  const StepSetup = () => (
+    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
+      {/* Terminal */}
+      <rect x="60" y="30" width="80" height="95" rx="10" fill="hsl(var(--primary) / 0.08)" stroke="hsl(var(--primary) / 0.3)" strokeWidth="2"/>
+      {/* Screen */}
+      <rect x="70" y="40" width="60" height="45" rx="5" fill="hsl(var(--primary) / 0.05)" stroke="hsl(var(--primary) / 0.15)" strokeWidth="1"/>
+      {/* Screen content - card icon */}
+      <rect x="88" y="52" width="24" height="16" rx="3" fill="hsl(var(--primary) / 0.2)"/>
+      <circle cx="95" cy="60" r="3" fill="hsl(var(--primary) / 0.3)"/>
+      {/* Keypad dots */}
+      {[0,1,2].map(r => [0,1,2].map(c => (
+        <circle key={`${r}${c}`} cx={82 + c * 18} cy={96 + r * 10} r="3" fill="hsl(var(--primary) / 0.15)"/>
+      )))}
+      {/* Person silhouette */}
+      <circle cx="35" cy="55" r="10" fill="hsl(var(--primary) / 0.12)"/>
+      <path d="M20 90 Q35 75 50 90" fill="hsl(var(--primary) / 0.08)"/>
+      {/* Arrow from person to terminal */}
+      <path d="M48 72 L60 65" stroke="hsl(var(--primary) / 0.3)" strokeWidth="1.5" strokeDasharray="3 3"/>
+      {/* Wrench */}
+      <circle cx="168" cy="50" r="16" fill="hsl(var(--primary) / 0.1)"/>
+      <text x="168" y="55" textAnchor="middle" fontSize="16">🔧</text>
+      {/* Signage */}
+      <rect x="155" y="100" width="30" height="20" rx="4" fill="hsl(var(--primary) / 0.15)" stroke="hsl(var(--primary) / 0.25)" strokeWidth="1"/>
+      <text x="170" y="113" textAnchor="middle" fill="hsl(var(--primary))" fontSize="6" fontWeight="700">SIGNAGE</text>
+    </svg>
+  );
+
+  const StepSave = () => (
+    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
+      {/* Rising bar chart */}
+      <rect x="35" y="100" width="22" height="40" rx="4" fill="hsl(var(--primary) / 0.15)"/>
+      <rect x="65" y="75" width="22" height="65" rx="4" fill="hsl(var(--primary) / 0.2)"/>
+      <rect x="95" y="50" width="22" height="90" rx="4" fill="hsl(var(--primary) / 0.3)"/>
+      <rect x="125" y="25" width="22" height="115" rx="4" fill="hsl(var(--primary))"/>
+      {/* Arrow going up */}
+      <path d="M40 95 L135 20" stroke="hsl(var(--primary))" strokeWidth="2" strokeDasharray="4 3" opacity="0.4"/>
+      <polygon points="135,15 140,25 130,25" fill="hsl(var(--primary) / 0.4)"/>
+      {/* $0 fee badge */}
+      <circle cx="165" cy="45" r="22" fill="hsl(var(--primary) / 0.12)" stroke="hsl(var(--primary))" strokeWidth="2"/>
+      <text x="165" y="43" textAnchor="middle" fill="hsl(var(--primary))" fontSize="14" fontWeight="800">$0</text>
+      <text x="165" y="54" textAnchor="middle" fill="hsl(var(--primary))" fontSize="6" fontWeight="600">FEES</text>
+      {/* Money symbols floating */}
+      <text x="160" y="100" fill="hsl(var(--primary) / 0.3)" fontSize="18" fontWeight="700">$</text>
+      <text x="175" y="120" fill="hsl(var(--primary) / 0.2)" fontSize="14" fontWeight="700">$</text>
+      <text x="25" y="80" fill="hsl(var(--primary) / 0.15)" fontSize="12" fontWeight="700">$</text>
+    </svg>
+  );
+
+  const illustrations = [StepApply, StepApproved, StepSetup, StepSave];
+
   const steps = [
-    { num: "01", title: "Apply in 3 minutes", desc: "Quick online application. No paperwork, no fax machines. Just a few questions about your business.", icon: "📝" },
-    { num: "02", title: "Get approved", desc: "Usually within 24 hours. We review your info and show you exactly how much you'll save.", icon: "✅" },
-    { num: "03", title: "We set up your POS", desc: "Our local team configures your terminal, installs signage, and trains your staff. You don't touch a thing.", icon: "🔧" },
-    { num: "04", title: "Start saving immediately", desc: "Accept payments with $0 processing fees from day one. Keep 100% of every sale.", icon: "💰" },
+    { num: "01", title: "Apply in 3 minutes", desc: "Quick online application. No paperwork, no fax machines. Just a few questions about your business." },
+    { num: "02", title: "Get approved", desc: "Usually within 24 hours. We review your info and show you exactly how much you'll save." },
+    { num: "03", title: "We set up your POS", desc: "Our local team configures your terminal, installs signage, and trains your staff. You don't touch a thing." },
+    { num: "04", title: "Start saving immediately", desc: "Accept payments with $0 processing fees from day one. Keep 100% of every sale." },
   ];
 
   return (
@@ -171,28 +266,30 @@ function HowItWorks() {
             </h2>
           </motion.div>
 
-          {/* Timeline layout */}
           <div className="relative">
             {/* Connecting line */}
-            <div className="hidden lg:block absolute top-16 left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-[2px] bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+            <div className="hidden lg:block absolute top-[100px] left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-[2px] bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-              {steps.map((step, i) => (
-                <motion.div key={step.num} variants={fadeUp}>
-                  <div className="relative group text-center">
-                    {/* Number circle */}
-                    <div className="relative mx-auto w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center mb-5 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform z-10">
-                      <span className="text-lg font-extrabold text-primary-foreground">{step.num}</span>
+              {steps.map((step, i) => {
+                const Illustration = illustrations[i];
+                return (
+                  <motion.div key={step.num} variants={fadeUp}>
+                    <div className="relative group text-center">
+                      {/* Illustration */}
+                      <div className="mx-auto w-full max-w-[180px] mb-4">
+                        <Illustration />
+                      </div>
+                      {/* Card body */}
+                      <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-5 sm:p-6 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
+                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-bold mb-3">{step.num}</div>
+                        <h3 className="font-bold text-base mb-2">{step.title}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                      </div>
                     </div>
-                    {/* Card body */}
-                    <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-5 sm:p-6 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
-                      <div className="text-2xl mb-3">{step.icon}</div>
-                      <h3 className="font-bold text-base mb-2">{step.title}</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 
