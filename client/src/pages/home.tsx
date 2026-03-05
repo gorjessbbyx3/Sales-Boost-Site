@@ -22,6 +22,13 @@ import {
   AlertTriangle,
   ShoppingCart,
   Sparkles,
+  Calculator,
+  PiggyBank,
+  BadgeDollarSign,
+  Receipt,
+  Banknote,
+  Rocket,
+  FileText,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
@@ -83,11 +90,15 @@ function HeroSection() {
             animate="visible"
             data-testid="text-hero-title"
           >
-            Accept Payments.{" "}
+            We Won't Lie —{" "}
             <span className="relative inline-block">
               <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-                Keep Every Dollar.
+                Nothing Is "Completely Free."
               </span>
+            </span>
+            <br />
+            <span className="text-xl sm:text-3xl lg:text-4xl text-white/90">
+              But We're So Confident You'll Love Us, Your First Month Is On Us.
             </span>
           </motion.h1>
         </div>
@@ -104,11 +115,11 @@ function HeroSection() {
             <motion.div className="flex flex-wrap items-center justify-center gap-2" variants={fadeUp}>
               <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
                 <MapPin className="w-3 h-3 mr-1" />
-                Proudly Serving Hawai'i
+                Hawai'i's Most Honest Payment Processor
               </Badge>
               <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
                 <CircleDollarSign className="w-3 h-3 mr-1" />
-                Save $3,600+ Per Year
+                30-Day Free Trial — No Strings
               </Badge>
             </motion.div>
 
@@ -117,9 +128,10 @@ function HeroSection() {
               variants={fadeUp}
               data-testid="text-hero-subtitle"
             >
-              Tap, swipe, or insert — your terminal is ready to go from day one.{" "}
-              <span className="text-primary font-semibold">Zero processing fees</span>, no monthly charges, and{" "}
-              <span className="text-primary font-semibold">100% of every sale</span> deposited next business day.
+              Other companies promise "free everything" — then hit you with hidden fees.{" "}
+              We're different. <span className="text-primary font-semibold">Try our terminal free for 30 days</span>.{" "}
+              Pay for the equipment with the money you save — or{" "}
+              <span className="text-primary font-semibold">give it back, no questions asked</span>.
             </motion.p>
 
             <motion.div
@@ -128,7 +140,7 @@ function HeroSection() {
             >
               <Button size="lg" className="w-full sm:w-auto" asChild>
                 <Link href="/contact" data-testid="link-hero-get-terminal">
-                  Get Your Terminal
+                  Try It Free for 30 Days
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
@@ -146,19 +158,19 @@ function HeroSection() {
             >
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                <span>PCI Compliant</span>
+                <span>No Contracts</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-primary" />
-                <span>Same-Day Setup</span>
+                <span>30-Day Free Trial</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-primary" />
-                <span>Zero Monthly Fees</span>
+                <span>No Hidden Fees</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-primary" />
-                <span>Free Website</span>
+                <Check className="w-3.5 h-3.5 text-primary" />
+                <span>Return Anytime — No Questions</span>
               </div>
             </motion.div>
           </motion.div>
@@ -203,12 +215,280 @@ function SocialProofBar() {
   return null;
 }
 
+function SavingsCalculator() {
+  const [monthlyVolume, setMonthlyVolume] = useState(15000);
+  const avgRate = 0.03; // 3% average processing fee
+  const monthlySavings = monthlyVolume * avgRate;
+  const yearlySavings = monthlySavings * 12;
+
+  const formatCurrency = (n: number) =>
+    n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
+  const sliderPercent = ((monthlyVolume - 1000) / (99000)) * 100;
+
+  return (
+    <section className="py-12 sm:py-20 relative" data-testid="section-savings-calculator">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px]" />
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.div className="text-center mb-8 sm:mb-12" variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+              <Calculator className="w-3 h-3 mr-1.5" />
+              Savings Calculator
+            </Badge>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+              Here's the Math.{" "}
+              <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+                You Decide.
+              </span>
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-lg max-w-2xl mx-auto">
+              No sales tricks — just real numbers. Enter your monthly volume and see what processing fees
+              are actually costing your business.
+            </p>
+          </motion.div>
+
+          <motion.div variants={fadeUp}>
+            <Card className="overflow-visible border-primary/15">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
+              <CardContent className="p-6 sm:p-10 relative">
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-sm font-semibold text-foreground">
+                      Monthly Card Processing Volume
+                    </label>
+                    <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5">
+                      <DollarSign className="w-4 h-4 text-primary" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={monthlyVolume.toLocaleString()}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value.replace(/[^0-9]/g, "")) || 0;
+                          setMonthlyVolume(Math.min(Math.max(val, 1000), 100000));
+                        }}
+                        className="w-24 bg-transparent text-lg font-bold text-primary outline-none text-right"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative mt-2">
+                    <input
+                      type="range"
+                      min="1000"
+                      max="100000"
+                      step="500"
+                      value={monthlyVolume}
+                      onChange={(e) => setMonthlyVolume(parseInt(e.target.value))}
+                      className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${sliderPercent}%, hsl(var(--muted)) ${sliderPercent}%, hsl(var(--muted)) 100%)`,
+                      }}
+                    />
+                    <div className="flex justify-between mt-2 text-[10px] sm:text-xs text-muted-foreground">
+                      <span>$1,000</span>
+                      <span>$25,000</span>
+                      <span>$50,000</span>
+                      <span>$75,000</span>
+                      <span>$100,000</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Card className="border-red-500/20 bg-red-500/5">
+                    <CardContent className="p-4 sm:p-5 text-center">
+                      <div className="w-9 h-9 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-2">
+                        <Receipt className="w-4 h-4 text-red-500" />
+                      </div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
+                        You're Paying Monthly
+                      </div>
+                      <div className="text-xl sm:text-2xl font-extrabold text-red-500">
+                        {formatCurrency(monthlySavings)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        at avg. 3% rate
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-primary/20 bg-primary/5">
+                    <CardContent className="p-4 sm:p-5 text-center">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                        <PiggyBank className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
+                        You Save Monthly
+                      </div>
+                      <div className="text-xl sm:text-2xl font-extrabold text-primary">
+                        {formatCurrency(monthlySavings)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        with zero-fee processing
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-primary/20 bg-primary/5 ring-1 ring-primary/20">
+                    <CardContent className="p-4 sm:p-5 text-center">
+                      <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-2">
+                        <Banknote className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
+                        You Save Yearly
+                      </div>
+                      <div className="text-xl sm:text-2xl font-extrabold text-primary">
+                        {formatCurrency(yearlySavings)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        back in your pocket
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/15">
+                  <p className="text-sm text-foreground/80 text-center mb-4">
+                    That's{" "}
+                    <span className="font-bold text-primary">{formatCurrency(yearlySavings)}/year</span>{" "}
+                    walking out the door. Try us free for 30 days — if we're wrong, send the terminal back. No fees, no hassle, no hard feelings.
+                  </p>
+                  <div className="text-center">
+                    <Button size="lg" asChild>
+                      <Link href="/contact">
+                        Try It Free — See for Yourself
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function HowItWorksPreview() {
+  const steps = [
+    {
+      number: "01",
+      icon: CreditCard,
+      title: "We Ship You a Terminal — Free",
+      description: "No upfront cost. We send you a fully programmed terminal and set up your account the same day. You're processing within hours.",
+    },
+    {
+      number: "02",
+      icon: Zap,
+      title: "Run Your Business for 30 Days",
+      description: "Use the terminal on real transactions. Watch the savings add up. See the difference on your next bank statement — not in a sales pitch.",
+    },
+    {
+      number: "03",
+      icon: BadgeDollarSign,
+      title: "Keep It or Send It Back",
+      description: "Love it? Pay for the equipment with the money you saved. Not for you? Ship it back — no fees, no penalties, no awkward phone calls.",
+    },
+  ];
+
+  return (
+    <section className="py-12 sm:py-20 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-10 sm:mb-14"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-chart-2 border-chart-2/30 bg-chart-2/5">
+              <Zap className="w-3 h-3 mr-1.5" />
+              How It Works
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
+            variants={fadeUp}
+          >
+            No Risk. No Catch. Here's the Deal.
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg"
+            variants={fadeUp}
+          >
+            Other processors make big promises upfront — then lock you into contracts with hidden fees.
+            We'd rather let our service speak for itself. Try it. If we're not the best, walk away.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          {steps.map((step, i) => (
+            <motion.div key={i} variants={fadeUp} className="relative">
+              {i < steps.length - 1 && (
+                <div className="hidden sm:block absolute top-12 left-[60%] w-[80%] border-t-2 border-dashed border-primary/20" />
+              )}
+              <Card className="h-full overflow-visible border-primary/10 text-center">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="text-4xl sm:text-5xl font-extrabold text-primary/10 mb-2">
+                    {step.number}
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <step.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {step.description}
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.div
+          className="text-center mt-8"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+        >
+          <Button variant="outline" size="lg" asChild>
+            <Link href="/how-it-works">
+              Learn More
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </Button>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function ServicesOverview() {
   const services = [
     {
       icon: CreditCard,
       title: "Payment Processing",
-      description: "Zero-fee terminals starting at $399. Keep 100% of every sale with no monthly fees and no contracts.",
+      description: "Try a terminal free for 30 days. If the savings don't speak for themselves, send it back. No contracts, no monthly fees, no gimmicks.",
       href: "/pricing",
       cta: "See Pricing",
       color: "text-primary",
@@ -218,27 +498,17 @@ function ServicesOverview() {
     {
       icon: Zap,
       title: "How It Works",
-      description: "Three simple steps: choose your plan, we set everything up same-day, and you keep every dollar.",
+      description: "We ship you a programmed terminal. You run your business. You see real savings on your statement. Then you decide. That's it.",
       href: "/how-it-works",
-      cta: "See How Zero-Fee Processing Works",
+      cta: "See How It Works",
       color: "text-chart-2",
       border: "border-chart-2/20",
       accent: "from-chart-2/10 to-transparent",
     },
     {
-      icon: Globe,
-      title: "Free Custom Website",
-      description: "Online-only merchants get a professional business website — mobile-optimized, SEO-ready, and included at no cost.",
-      href: "/online-processing",
-      cta: "See Examples",
-      color: "text-chart-3",
-      border: "border-chart-3/20",
-      accent: "from-chart-3/10 to-transparent",
-    },
-    {
       icon: ShieldCheck,
       title: "High-Risk Merchants",
-      description: "CBD, vape, firearms, gaming & more — same zero-fee processing with fast approvals.",
+      description: "CBD, vape, firearms, gaming — industries other processors won't touch. We get you approved fast with the same honest pricing.",
       href: "/high-risk",
       cta: "Explore High-Risk Solutions",
       color: "text-chart-4",
@@ -270,13 +540,13 @@ function ServicesOverview() {
             className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
             variants={fadeUp}
           >
-            Everything Your Business Needs
+            What We Actually Do (No Buzzwords)
           </motion.h2>
           <motion.p
             className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg"
             variants={fadeUp}
           >
-            Payment processing, websites, and support — all from one trusted Hawai'i company.
+            We're a Hawai'i company that saves local businesses real money. Here's exactly what we offer.
           </motion.p>
         </motion.div>
 
@@ -340,12 +610,12 @@ function QuickPricingPreview() {
             className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
             variants={fadeUp}
           >
-            Simple, Transparent Pricing
+            Honest Pricing — No Surprises
           </motion.h2>
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -353,31 +623,22 @@ function QuickPricingPreview() {
         >
           {[
             {
-              title: "In-Store Terminal",
-              price: "$399",
-              note: "One-time · Best Value",
-              icon: CreditCard,
+              title: "Free 30-Day Trial",
+              price: "FREE",
+              note: "Love it? Keep it. Don't? Send it back.",
+              icon: Clock,
               color: "text-primary",
               border: "border-primary/20",
-              features: ["Own it from day one", "Full setup included", "Zero fees forever"],
-            },
-            {
-              title: "30-Day Trial",
-              price: "FREE",
-              note: "Then $599 if you keep it",
-              icon: Clock,
-              color: "text-chart-4",
-              border: "border-chart-4/20",
-              features: ["Try before you buy", "Real transactions", "Return anytime"],
+              features: ["No upfront cost", "Real transactions, real savings", "Return it — no questions asked"],
             },
             {
               title: "Online-Only",
               price: "FREE",
-              note: "With Cash Discount Processing",
+              note: "Accept payments online with zero fees",
               icon: Globe,
               color: "text-chart-2",
               border: "border-chart-2/20",
-              features: ["Free website built for you", "Optional maintenance plans", "Host your own site"],
+              features: ["No terminal needed", "Zero processing fees", "Same-day setup"],
             },
           ].map((plan, i) => (
             <motion.div key={i} variants={scaleIn}>
@@ -500,6 +761,59 @@ function TestimonialSection() {
   );
 }
 
+function ApplyTeaser() {
+  return (
+    <section className="py-12 sm:py-20 relative">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <Card className="overflow-visible border-primary/20">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent" />
+            <CardContent className="p-6 sm:p-10 relative">
+              <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+                <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
+                  <Rocket className="w-8 h-8 text-primary" />
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight mb-2">
+                    Ready to Get Started Right Now?
+                  </h2>
+                  <p className="text-muted-foreground text-sm sm:text-base mb-4">
+                    Skip the back-and-forth. Our quick application takes about 3 minutes —
+                    no paperwork, no fax machines. Just a few questions and we'll get you set up.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <Button size="lg" asChild>
+                      <Link href="/apply">
+                        <FileText className="w-4 h-4" />
+                        Apply Now — Takes 3 Min
+                      </Link>
+                    </Button>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3 text-primary" />
+                        No SSN required
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-primary" />
+                        1-day response
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function ContactFormSection() {
   const [formData, setFormData] = useState({
     businessName: "",
@@ -582,16 +896,16 @@ function ContactFormSection() {
           <div className="text-center mb-8">
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
               <Sparkles className="w-3 h-3 mr-1.5" />
-              Get Started Today
+              Just Browsing?
             </Badge>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Eliminate{" "}
+              Not Ready Yet?{" "}
               <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-                Processing Fees
+                No Problem.
               </span>
             </h2>
             <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
-              Fill out the form below and we'll get back to you with a personalized savings quote.
+              Drop your info and we'll reach out when it's convenient — zero pressure, zero obligation.
             </p>
           </div>
 
@@ -798,10 +1112,13 @@ export default function Home() {
   return (
     <Layout>
       <HeroSection />
+      <SavingsCalculator />
       <SocialProofBar />
+      <HowItWorksPreview />
       <ServicesOverview />
       <QuickPricingPreview />
       <TestimonialSection />
+      <ApplyTeaser />
       <ContactFormSection />
     </Layout>
   );

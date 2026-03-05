@@ -33,6 +33,49 @@ export const contactLeads = pgTable("contact_leads", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ─── Merchant Applications (gamified form) ────────────────────────────
+
+export const merchantApplications = pgTable("merchant_applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Step 1: Business basics
+  businessLegalName: text("business_legal_name").notNull(),
+  dba: text("dba"),
+  businessPhone: text("business_phone").notNull(),
+  businessEmail: text("business_email").notNull(),
+  // Step 2: Location
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zip: text("zip").notNull(),
+  // Step 3: Structure
+  businessStructure: text("business_structure").notNull(),
+  businessStartDate: text("business_start_date"),
+  federalTaxId: text("federal_tax_id"),
+  // Step 4: Owner
+  ownerName: text("owner_name").notNull(),
+  ownerTitle: text("owner_title"),
+  ownershipPercent: text("ownership_percent"),
+  ownerPhone: text("owner_phone"),
+  ownerEmail: text("owner_email"),
+  // Step 5: Sales info
+  productsSold: text("products_sold"),
+  avgMonthlyVolume: text("avg_monthly_volume"),
+  avgTicket: text("avg_ticket"),
+  percentCardPresent: text("percent_card_present"),
+  // Step 6: Signature
+  signatureName: text("signature_name").notNull(),
+  agreedToTerms: boolean("agreed_to_terms").notNull().default(false),
+  // Meta
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertMerchantApplicationSchema = createInsertSchema(merchantApplications).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
 // ─── Admin Dashboard Leads ───────────────────────────────────────────
 
 export const leads = pgTable("leads", {
@@ -563,6 +606,8 @@ export type InsertAiConfig = z.infer<typeof insertAiConfigSchema>;
 export type UpdateAiConfig = z.infer<typeof updateAiConfigSchema>;
 export type ContactLead = typeof contactLeads.$inferSelect;
 export type InsertContactLead = z.infer<typeof insertContactLeadSchema>;
+export type MerchantApplication = typeof merchantApplications.$inferSelect;
+export type InsertMerchantApplication = z.infer<typeof insertMerchantApplicationSchema>;
 export type EmailThread = typeof emailThreads.$inferSelect;
 export type EmailMessage = typeof emailMessages.$inferSelect;
 export type OutreachTemplate = typeof outreachTemplates.$inferSelect;
