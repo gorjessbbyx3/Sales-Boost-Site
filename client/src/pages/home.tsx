@@ -49,9 +49,9 @@ function HeroSection() {
           src="/videos/hero-bg-v2.mp4"
           className="w-full h-auto block"
         />
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
-        <div className="absolute inset-0 flex items-center justify-center px-4">
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-40% to-black/70" />
+        <div className="absolute inset-0 flex items-end justify-center px-4 pb-16 sm:pb-24">
           <motion.div className="max-w-3xl mx-auto text-center" variants={staggerContainer} initial="hidden" animate="visible">
             <motion.h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-4 text-white drop-shadow-lg" variants={fadeUp}>
               The Average Hawaii Restaurant Loses{" "}
