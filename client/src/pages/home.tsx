@@ -758,99 +758,6 @@ function FAQSection() {
 
 // ─── 11. Contact Form ───────────────────────────────────────────────────────
 
-function ContactFormSection() {
-  const [formData, setFormData] = useState({ businessName: "", contactName: "", phone: "", email: "", plan: "savings-estimate", highRisk: false, monthlyProcessing: "", bestContactTime: "" });
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/contact-leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) });
-      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed to submit"); }
-      setSubmitted(true);
-    } catch (err: any) { setError(err.message || "Something went wrong."); } finally { setSubmitting(false); }
-  };
-  const set = (field: string, value: string | boolean) => setFormData((prev) => ({ ...prev, [field]: value }));
-
-  if (submitted) {
-    return (
-      <section className="py-16 sm:py-24" id="contact-form">
-        <div className="max-w-xl mx-auto px-4">
-          <Card className="border-primary/20">
-            <CardContent className="p-8 sm:p-12 text-center">
-              <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-4">
-                <Check className="w-7 h-7 text-primary" />
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">We'll Be In Touch!</h2>
-              <p className="text-muted-foreground">We'll review your info and reach out with your savings estimate. Usually within a few hours. Mahalo!</p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-    );
-  }
-
-  const inputClass = "flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary";
-
-  return (
-    <section className="py-16 sm:py-24 relative" id="contact-form">
-      <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Find out how much{" "}
-              <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">you're losing.</span>
-            </h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Free. No commitment. We just show you the number.
-            </p>
-          </div>
-
-          <Card className="border-primary/15">
-            <CardContent className="p-6 sm:p-8">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">Business Name *</label>
-                  <input required value={formData.businessName} onChange={(e) => set("businessName", e.target.value)} placeholder="Your Business Name" className={inputClass} />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-1.5 block">Your Name *</label>
-                    <input required value={formData.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="First & Last Name" className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1.5 block">Phone *</label>
-                    <input type="tel" required value={formData.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(808) 555-1234" className={inputClass} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">Email *</label>
-                  <input type="email" required value={formData.email} onChange={(e) => set("email", e.target.value)} placeholder="you@business.com" className={inputClass} />
-                </div>
-
-                {error && <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm text-destructive">{error}</div>}
-
-                <Button type="submit" size="lg" className="w-full text-base" disabled={submitting}>
-                  {submitting ? "Submitting..." : "Get My Free AI Analysis"}
-                  {!submitting && <ArrowRight className="w-4 h-4" />}
-                </Button>
-
-                <p className="text-[10px] text-muted-foreground text-center">
-                  No spam. No pressure. We'll reach out with your personalized savings number.
-                </p>
-              </form>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
 // ─── Page Export ─────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -874,7 +781,6 @@ export default function Home() {
       <TrustSection />
       <TestimonialSection />
       <FAQSection />
-      <ContactFormSection />
     </Layout>
   );
 }
