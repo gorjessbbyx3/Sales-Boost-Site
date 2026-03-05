@@ -270,7 +270,7 @@ function HowItWorks() {
 function QualifySection() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({ businessType: "", volume: "", currentProcessor: "", name: "", phone: "", email: "", businessName: "" });
-  const [result, setResult] = useState<"qualified" | "contact" | null>(null);
+  const [result, setResult] = useState<"bundle" | "custom" | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const businessTypes = [
@@ -279,45 +279,45 @@ function QualifySection() {
   ];
 
   const volumes = [
-    { label: "Under $5K/month", value: "under-5k", qualifies: false },
-    { label: "$5K – $10K/month", value: "5k-10k", qualifies: false },
-    { label: "$10K – $25K/month", value: "10k-25k", qualifies: true },
-    { label: "$25K – $50K/month", value: "25k-50k", qualifies: true },
-    { label: "$50K – $100K/month", value: "50k-100k", qualifies: true },
-    { label: "$100K+/month", value: "100k-plus", qualifies: true },
+    { label: "Under $5K/month", value: "under-5k", bundle: false },
+    { label: "$5K – $10K/month", value: "5k-10k", bundle: false },
+    { label: "$10K – $25K/month", value: "10k-25k", bundle: true },
+    { label: "$25K – $50K/month", value: "25k-50k", bundle: true },
+    { label: "$50K – $100K/month", value: "50k-100k", bundle: true },
+    { label: "$100K+/month", value: "100k-plus", bundle: true },
   ];
 
   const processors = [
     "Square", "Clover", "Toast", "Heartland", "Bank Processor", "Not sure", "Other",
   ];
 
-  const submitForm = async (qualified: boolean) => {
+  const submitForm = async (isBundle: boolean) => {
     setSubmitting(true);
     try {
       await fetch("/api/contact-leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          businessName: answers.businessName || `${answers.businessType} - Equipment Qualification`,
+          businessName: answers.businessName || `${answers.businessType} - Equipment Setup`,
           contactName: answers.name,
           phone: answers.phone,
           email: answers.email,
-          plan: qualified ? "free-equipment-qualified" : "free-equipment-under-volume",
+          plan: isBundle ? "full-bundle-setup" : "starter-setup",
           monthlyProcessing: answers.volume,
           bestContactTime: "anytime",
           highRisk: false,
         }),
       });
     } catch (e) {}
-    setResult(qualified ? "qualified" : "contact");
+    setResult(isBundle ? "bundle" : "custom");
     setSubmitting(false);
   };
 
   const progressPercent = Math.min((step / 4) * 100, 100);
 
-  if (result === "qualified") {
+  if (result === "bundle") {
     return (
-      <section className="py-16 sm:py-24" id="qualify">
+      <section className="py-16 sm:py-24" id="equipment">
         <div className="max-w-xl mx-auto px-4">
           <Card className="border-primary/30 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
@@ -325,15 +325,15 @@ function QualifySection() {
               <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-5">
                 <Check className="w-10 h-10 text-primary" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold mb-2 text-primary">You Qualify! 🤙</h2>
-              <p className="text-lg font-semibold text-foreground mb-3">Mahalo! Your business qualifies for a free equipment upgrade.</p>
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-2 text-primary">Your Setup Is Ready! 🤙</h2>
+              <p className="text-lg font-semibold text-foreground mb-3">Mahalo! You're all set for a full equipment bundle — on us.</p>
               <p className="text-muted-foreground mb-6">
-                One of our local team members will reach out within 24 hours to get your new POS system set up — at no cost.
+                One of our local team members will reach out within 24 hours to get your terminal, signage, and training scheduled.
               </p>
               <div className="grid grid-cols-3 gap-3 mb-6">
                 {[
-                  { label: "Equipment", value: "FREE" },
-                  { label: "Setup", value: "FREE" },
+                  { label: "Terminal", value: "FREE" },
+                  { label: "Setup & Training", value: "FREE" },
                   { label: "Monthly Fees", value: "$0" },
                 ].map((item) => (
                   <div key={item.label} className="bg-primary/5 rounded-lg p-3">
@@ -342,7 +342,7 @@ function QualifySection() {
                   </div>
                 ))}
               </div>
-              <img src="/images/pos-equipment.jpeg" alt="Free POS equipment" className="w-full max-w-xs mx-auto rounded-xl mb-4" />
+              <img src="/images/pos-equipment.jpeg" alt="POS terminal bundle" className="w-full max-w-xs mx-auto rounded-xl mb-4" />
             </CardContent>
           </Card>
         </div>
@@ -350,21 +350,21 @@ function QualifySection() {
     );
   }
 
-  if (result === "contact") {
+  if (result === "custom") {
     return (
-      <section className="py-16 sm:py-24" id="qualify">
+      <section className="py-16 sm:py-24" id="equipment">
         <div className="max-w-xl mx-auto px-4">
-          <Card className="border-chart-4/30 overflow-hidden">
+          <Card className="border-primary/20 overflow-hidden">
             <CardContent className="p-8 sm:p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-chart-4/15 flex items-center justify-center mx-auto mb-5">
-                <Phone className="w-8 h-8 text-chart-4" />
+              <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-5">
+                <Phone className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">We'll Be In Touch!</h2>
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">We'll Build Your Setup! 🤙</h2>
               <p className="text-muted-foreground mb-4">
-                Your business may still qualify for reduced-cost equipment or special pricing. One of our Hawaii team members will contact you within 24 hours to discuss your options.
+                Every business is different — our local team will put together the right equipment package and pricing for your volume. We'll be in touch within 24 hours.
               </p>
               <p className="text-sm text-foreground font-medium">
-                We work with businesses of all sizes — there's a plan for everyone.
+                We work with businesses of all sizes. There's always a setup that fits.
               </p>
             </CardContent>
           </Card>
@@ -376,20 +376,20 @@ function QualifySection() {
   const inputClass = "flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary";
 
   return (
-    <section className="py-16 sm:py-24 relative" id="qualify">
+    <section className="py-16 sm:py-24 relative" id="equipment">
       <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <div className="text-center mb-8">
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
               <Sparkles className="w-3 h-3 mr-1" />
-              Free Equipment Upgrade
+              Equipment & Setup
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Does your business qualify for{" "}
-              <span className="text-primary">free equipment?</span>
+              Find the right setup{" "}
+              <span className="text-primary">for your business.</span>
             </h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Answer 4 quick questions to find out. Takes about 30 seconds.
+              Tell us a little about your business and we'll recommend the best terminal and bundle. Takes 30 seconds.
             </p>
           </div>
 
@@ -465,7 +465,7 @@ function QualifySection() {
 
               {step === 3 && (
                 <div>
-                  <p className="text-sm font-semibold text-foreground mb-4">Almost done — where should we send your results?</p>
+                  <p className="text-sm font-semibold text-foreground mb-4">Last step — where should we send your recommendation?</p>
                   <div className="space-y-3">
                     <div>
                       <label className="text-sm font-medium mb-1.5 block">Business Name</label>
@@ -491,13 +491,13 @@ function QualifySection() {
                       disabled={!answers.name || !answers.phone || !answers.email || submitting}
                       onClick={() => {
                         const vol = volumes.find(v => v.value === answers.volume);
-                        submitForm(vol?.qualifies ?? false);
+                        submitForm(vol?.bundle ?? false);
                       }}
                     >
-                      {submitting ? "Checking..." : "See If I Qualify"}
+                      {submitting ? "Building your setup..." : "Get My Recommendation"}
                       {!submitting && <ArrowRight className="w-4 h-4" />}
                     </Button>
-                    <p className="text-[10px] text-muted-foreground text-center">No spam. We'll only contact you about your equipment qualification.</p>
+                    <p className="text-[10px] text-muted-foreground text-center">No spam. We'll reach out with your personalized equipment recommendation.</p>
                   </div>
                 </div>
               )}
@@ -742,7 +742,7 @@ function WhoWeWorkWith() {
           </div>
           <motion.p className="text-center text-muted-foreground text-sm mt-6" variants={fadeUp}>
             Plus hotels, gas stations, contractors, nonprofits, and more.{" "}
-            <a href="#qualify" className="text-primary font-medium underline underline-offset-2">See if you qualify for free equipment →</a>
+            <a href="#equipment" className="text-primary font-medium underline underline-offset-2">Find your perfect setup →</a>
           </motion.p>
         </motion.div>
       </div>
