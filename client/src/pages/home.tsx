@@ -69,8 +69,8 @@ function HeroSection() {
 
           <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
             <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
-              <a href="#contact-form">
-                Get a Free Savings Estimate
+              <a href="/statement-review">
+                Free AI Statement Analysis
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
@@ -143,7 +143,7 @@ function ProblemSection() {
 function HowItWorks() {
   const steps = [
     { num: "1", title: "Apply in 3 minutes", desc: "Quick online application. No paperwork, no fax machines. Just a few questions about your business." },
-    { num: "2", title: "Get approved", desc: "Usually within 24 hours. We review your info and confirm your savings estimate." },
+    { num: "2", title: "Get approved", desc: "Usually within 24 hours. We review your info and show you exactly how much you'll save." },
     { num: "3", title: "We set up your POS", desc: "Our local team configures your terminal, installs signage, and trains your staff. You don't touch a thing." },
     { num: "4", title: "Start saving immediately", desc: "Accept payments with $0 processing fees from day one. Keep 100% of every sale." },
   ];
@@ -178,8 +178,8 @@ function HowItWorks() {
 
           <motion.div className="text-center mt-8" variants={fadeUp}>
             <Button size="lg" asChild>
-              <a href="#contact-form">
-                Apply Now — Takes 3 Minutes
+              <a href="/statement-review">
+                Start Your Free AI Analysis
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
@@ -190,44 +190,250 @@ function HowItWorks() {
   );
 }
 
-// ─── 4. Equipment — You don't pay for it ────────────────────────────────────
+// ─── 4. Qualify for Free Equipment ──────────────────────────────────────────
 
-function EquipmentSection() {
-  return (
-    <section className="py-16 sm:py-24 relative">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="order-2 lg:order-1">
-            <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-muted/30 to-muted/10 border border-border/50 p-6 sm:p-10">
-              <img src="/images/pos-equipment.jpeg" alt="TechSavvy POS system and payment terminals" className="w-full max-w-md mx-auto object-contain" />
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="order-1 lg:order-2">
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-5">
-              New equipment.{" "}
-              <span className="text-primary">No cost to you.</span>
-            </h2>
-            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-4">
-              Still using an old terminal? We replace it — for free. No lease payments, no rental fees, no catches.
-            </p>
-            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-6">
-              We ship it, program it, install the signage, and train your staff. You don't spend a dime and you don't figure anything out.
-            </p>
-            <ul className="space-y-3">
-              {[
-                "Free terminal for qualifying businesses",
-                "We handle setup and training",
-                "Accepts chip, tap, swipe, Apple Pay, Google Pay",
-                "Works for countertop or on-the-go",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-foreground/90">
-                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+function QualifySection() {
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState({ businessType: "", volume: "", currentProcessor: "", name: "", phone: "", email: "", businessName: "" });
+  const [result, setResult] = useState<"qualified" | "contact" | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const businessTypes = [
+    "Restaurant / Bar", "Retail Store", "Salon / Spa", "Auto Repair",
+    "Medical / Dental", "Food Truck", "Vape / CBD Shop", "Other",
+  ];
+
+  const volumes = [
+    { label: "Under $5K/month", value: "under-5k", qualifies: false },
+    { label: "$5K – $10K/month", value: "5k-10k", qualifies: false },
+    { label: "$10K – $25K/month", value: "10k-25k", qualifies: true },
+    { label: "$25K – $50K/month", value: "25k-50k", qualifies: true },
+    { label: "$50K – $100K/month", value: "50k-100k", qualifies: true },
+    { label: "$100K+/month", value: "100k-plus", qualifies: true },
+  ];
+
+  const processors = [
+    "Square", "Clover", "Toast", "Heartland", "Bank Processor", "Not sure", "Other",
+  ];
+
+  const submitForm = async (qualified: boolean) => {
+    setSubmitting(true);
+    try {
+      await fetch("/api/contact-leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessName: answers.businessName || `${answers.businessType} - Equipment Qualification`,
+          contactName: answers.name,
+          phone: answers.phone,
+          email: answers.email,
+          plan: qualified ? "free-equipment-qualified" : "free-equipment-under-volume",
+          monthlyProcessing: answers.volume,
+          bestContactTime: "anytime",
+          highRisk: false,
+        }),
+      });
+    } catch (e) {}
+    setResult(qualified ? "qualified" : "contact");
+    setSubmitting(false);
+  };
+
+  const progressPercent = Math.min((step / 4) * 100, 100);
+
+  if (result === "qualified") {
+    return (
+      <section className="py-16 sm:py-24" id="qualify">
+        <div className="max-w-xl mx-auto px-4">
+          <Card className="border-primary/30 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
+            <CardContent className="p-8 sm:p-12 text-center relative">
+              <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-5">
+                <Check className="w-10 h-10 text-primary" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-2 text-primary">You Qualify!</h2>
+              <p className="text-lg font-semibold text-foreground mb-3">Your business qualifies for a free equipment upgrade.</p>
+              <p className="text-muted-foreground mb-6">
+                One of our local team members will reach out within 24 hours to get your new POS system set up — at no cost.
+              </p>
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                {[
+                  { label: "Equipment", value: "FREE" },
+                  { label: "Setup", value: "FREE" },
+                  { label: "Monthly Fees", value: "$0" },
+                ].map((item) => (
+                  <div key={item.label} className="bg-primary/5 rounded-lg p-3">
+                    <div className="text-lg font-extrabold text-primary">{item.value}</div>
+                    <div className="text-[10px] text-muted-foreground">{item.label}</div>
+                  </div>
+                ))}
+              </div>
+              <img src="/images/pos-equipment.jpeg" alt="Free POS equipment" className="w-full max-w-xs mx-auto rounded-xl mb-4" />
+            </CardContent>
+          </Card>
         </div>
+      </section>
+    );
+  }
+
+  if (result === "contact") {
+    return (
+      <section className="py-16 sm:py-24" id="qualify">
+        <div className="max-w-xl mx-auto px-4">
+          <Card className="border-chart-4/30 overflow-hidden">
+            <CardContent className="p-8 sm:p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-chart-4/15 flex items-center justify-center mx-auto mb-5">
+                <Phone className="w-8 h-8 text-chart-4" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">We'll Be In Touch!</h2>
+              <p className="text-muted-foreground mb-4">
+                Your business may still qualify for reduced-cost equipment or special pricing. One of our Hawaii team members will contact you within 24 hours to discuss your options.
+              </p>
+              <p className="text-sm text-foreground font-medium">
+                We work with businesses of all sizes — there's a plan for everyone.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    );
+  }
+
+  const inputClass = "flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary";
+
+  return (
+    <section className="py-16 sm:py-24 relative" id="qualify">
+      <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <div className="text-center mb-8">
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+              <Sparkles className="w-3 h-3 mr-1" />
+              Free Equipment Upgrade
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
+              Does your business qualify for{" "}
+              <span className="text-primary">free equipment?</span>
+            </h2>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Answer 4 quick questions to find out. Takes about 30 seconds.
+            </p>
+          </div>
+
+          <Card className="border-primary/15 overflow-hidden">
+            {/* Progress bar */}
+            <div className="h-1.5 bg-muted">
+              <div className="h-full bg-primary transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
+            </div>
+
+            <CardContent className="p-6 sm:p-8">
+              {step === 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-4">What type of business do you run?</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {businessTypes.map((biz) => (
+                      <button
+                        key={biz}
+                        type="button"
+                        onClick={() => { setAnswers(a => ({ ...a, businessType: biz })); setStep(1); }}
+                        className="rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 p-3 text-sm font-medium text-foreground transition-all text-left"
+                      >
+                        {biz}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step === 1 && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-1">How much do you process in card payments monthly?</p>
+                  <p className="text-xs text-muted-foreground mb-4">Your best estimate is fine.</p>
+                  <div className="space-y-2.5">
+                    {volumes.map((vol) => (
+                      <button
+                        key={vol.value}
+                        type="button"
+                        onClick={() => { setAnswers(a => ({ ...a, volume: vol.value })); setStep(2); }}
+                        className="w-full rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 p-3 text-sm font-medium text-foreground transition-all text-left flex items-center justify-between"
+                      >
+                        {vol.label}
+                        {vol.qualifies && <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">Likely qualifies</Badge>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-4">Who processes your payments now?</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {processors.map((proc) => (
+                      <button
+                        key={proc}
+                        type="button"
+                        onClick={() => { setAnswers(a => ({ ...a, currentProcessor: proc })); setStep(3); }}
+                        className="rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 p-3 text-sm font-medium text-foreground transition-all text-left"
+                      >
+                        {proc}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-4">Almost done — where should we send your results?</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium mb-1.5 block">Business Name</label>
+                      <input value={answers.businessName} onChange={(e) => setAnswers(a => ({ ...a, businessName: e.target.value }))} placeholder="Your Business Name" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1.5 block">Your Name *</label>
+                      <input required value={answers.name} onChange={(e) => setAnswers(a => ({ ...a, name: e.target.value }))} placeholder="Full Name" className={inputClass} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-sm font-medium mb-1.5 block">Phone *</label>
+                        <input type="tel" required value={answers.phone} onChange={(e) => setAnswers(a => ({ ...a, phone: e.target.value }))} placeholder="(808) 555-1234" className={inputClass} />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-1.5 block">Email *</label>
+                        <input type="email" required value={answers.email} onChange={(e) => setAnswers(a => ({ ...a, email: e.target.value }))} placeholder="you@email.com" className={inputClass} />
+                      </div>
+                    </div>
+                    <Button
+                      size="lg"
+                      className="w-full"
+                      disabled={!answers.name || !answers.phone || !answers.email || submitting}
+                      onClick={() => {
+                        const vol = volumes.find(v => v.value === answers.volume);
+                        submitForm(vol?.qualifies ?? false);
+                      }}
+                    >
+                      {submitting ? "Checking..." : "See If I Qualify"}
+                      {!submitting && <ArrowRight className="w-4 h-4" />}
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground text-center">No spam. We'll only contact you about your equipment qualification.</p>
+                  </div>
+                </div>
+              )}
+
+              {step > 0 && step < 4 && result === null && (
+                <button onClick={() => setStep(s => s - 1)} className="mt-4 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  ← Go back
+                </button>
+              )}
+            </CardContent>
+          </Card>
+
+          {step < 3 && (
+            <div className="mt-6 text-center">
+              <img src="/images/pos-equipment.jpeg" alt="Free POS equipment upgrade" className="w-full max-w-sm mx-auto rounded-xl opacity-80" />
+            </div>
+          )}
+        </motion.div>
       </div>
     </section>
   );
@@ -295,8 +501,8 @@ function SavingsCalculator() {
                     </div>
                     <div className="mt-4 text-center">
                       <Button size="lg" asChild>
-                        <a href="#contact-form">
-                          Get My Free Savings Estimate
+                        <a href="/statement-review">
+                          Get Your Free AI Analysis
                           <ArrowRight className="w-4 h-4" />
                         </a>
                       </Button>
@@ -401,7 +607,7 @@ function WhoWeWorkWith() {
           </div>
           <motion.p className="text-center text-muted-foreground text-sm mt-6" variants={fadeUp}>
             Plus hotels, gas stations, contractors, nonprofits, and more.{" "}
-            <a href="#contact-form" className="text-primary font-medium underline underline-offset-2">Ask us about your business →</a>
+            <a href="#qualify" className="text-primary font-medium underline underline-offset-2">See if you qualify for free equipment →</a>
           </motion.p>
         </motion.div>
       </div>
@@ -630,7 +836,7 @@ function ContactFormSection() {
                 {error && <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm text-destructive">{error}</div>}
 
                 <Button type="submit" size="lg" className="w-full text-base" disabled={submitting}>
-                  {submitting ? "Submitting..." : "Get My Free Savings Estimate"}
+                  {submitting ? "Submitting..." : "Get My Free AI Analysis"}
                   {!submitting && <ArrowRight className="w-4 h-4" />}
                 </Button>
 
@@ -663,7 +869,7 @@ export default function Home() {
       <HowItWorks />
       <SavingsCalculator />
       <ProblemSection />
-      <EquipmentSection />
+      <QualifySection />
       <CompareSection />
       <WhoWeWorkWith />
       <TrustSection />
