@@ -46,7 +46,7 @@ function HeroSection() {
           muted
           playsInline
           preload="auto"
-          src="/videos/hero-bg.mp4"
+          src="/videos/hero-bg-v2.mp4"
           className="w-full h-auto block"
         />
         <div className="absolute inset-0 bg-black/50" />
