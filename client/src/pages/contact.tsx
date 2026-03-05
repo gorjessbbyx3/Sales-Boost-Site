@@ -52,7 +52,7 @@ const faqs: FAQ[] = [
   },
   {
     q: "What are the pricing options?",
-    a: "Start with a free 30-day trial — we ship you a terminal, you process real payments with zero fees. If you love it, keep it. If not, return it and we cover shipping. No contracts, no monthly fees, no hidden costs.",
+    a: "It's simple: $0 processing fees, $0 monthly fees, no contracts. Qualifying businesses ($10K+/month) get a free terminal. We set everything up at no cost. Your ongoing cost with TechSavvy is $0.",
     category: "pricing",
   },
   {
@@ -81,8 +81,8 @@ const faqs: FAQ[] = [
     category: "surcharge",
   },
   {
-    q: "How does the 30-day trial work?",
-    a: "We loan you a terminal for 30 days with live processing \u2014 real transactions, real deposits. If you love it (most do), your terminal auto-purchases at $599 on day 31. If not, return it \u2014 we cover return shipping or you can drop it off locally in Honolulu. Only 4 trial spots available per month.",
+    q: "How does the cash discount program work?",
+    a: "We set up your terminal to show two prices: a cash price and a card price. Card-paying customers see a small surcharge (3-4%) shown clearly before they confirm. Cash customers pay the listed price. You keep 100% of every sale either way. It's fully legal and compliant with Visa, Mastercard, and FTC rules. We handle all signage and compliance.",
     category: "pricing",
   },
   {
@@ -804,7 +804,6 @@ function ContactSection() {
                       data-testid="select-contact-interest"
                     >
                       <option value="bundle-terminal">Zero-Fee Processing</option>
-                      <option value="bundle-trial">30-Day Free Trial</option>
                       <option value="high-risk">High-Risk Merchant Account</option>
                       <option value="online-store">Online Payment Gateway</option>
                       <option value="questions">Just Have Questions</option>
