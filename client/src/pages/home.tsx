@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { motion, useInView, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import {
   CreditCard, Globe, ShieldCheck, Check, ArrowRight, ChevronRight, ChevronDown,
   Zap, Clock, DollarSign, TrendingUp, Star, Users, Phone, Headphones,
@@ -21,10 +21,18 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
   const inView = useInView(ref, { once: true });
   useEffect(() => {
     if (!inView || !ref.current) return;
-    const mv = useMotionValue(0);
-    const unsub = mv.on("change", (v) => { if (ref.current) ref.current.textContent = `${prefix}${Math.round(v).toLocaleString()}${suffix}`; });
-    animate(mv, target, { duration });
-    return unsub;
+    let startTime: number;
+    let animationId: number;
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * target);
+      if (ref.current) ref.current.textContent = `${prefix}${current.toLocaleString()}${suffix}`;
+      if (progress < 1) animationId = requestAnimationFrame(step);
+    };
+    animationId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animationId);
   }, [inView]);
   return <span ref={ref}>{prefix}0{suffix}</span>;
 }
