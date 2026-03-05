@@ -104,48 +104,43 @@ function HeroSection() {
 
 function ProblemSection() {
   return (
-    <section className="py-16 sm:py-24 relative">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-5">
-              Every time a customer swipes a card,{" "}
-              <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">your processor takes a cut.</span>
-            </h2>
-            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-4">
-              Most Hawaii business owners are paying 2–4% on every credit card transaction. That's $500–$3,000+ walking out the door every single month — money that should be going back into your business, your employees, and your family.
-            </p>
-            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-6">
-              And the worst part? Most don't even realize how much they're losing because the fees are buried in confusing statements.
-            </p>
-            <p className="text-foreground font-bold text-lg">
-              We fix that. Simply and permanently.
-            </p>
-          </motion.div>
+    <section className="py-10 sm:py-16 relative">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-center mb-2">
+            Every swipe costs you.{" "}
+            <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">We make it $0.</span>
+          </h2>
+          <p className="text-sm text-muted-foreground text-center mb-8 max-w-lg mx-auto">
+            Most businesses lose 2–4% on every card transaction. Here's what that looks like — and what TechSavvy changes.
+          </p>
 
-          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-            <div className="grid grid-cols-1 gap-4">
-              {[
-                { amount: "$800", label: "Average monthly fees for a small restaurant" },
-                { amount: "$1,500", label: "Average monthly fees for an auto shop" },
-                { amount: "$2,400", label: "Average monthly fees for a medical office" },
-              ].map((item) => (
-                <Card key={item.label} className="border-red-500/15">
-                  <CardContent className="p-4 sm:p-5 flex items-center gap-4">
-                    <div className="text-2xl sm:text-3xl font-extrabold text-red-400 min-w-[80px]">-{item.amount}</div>
-                    <div className="text-sm text-muted-foreground">{item.label}</div>
-                  </CardContent>
-                </Card>
-              ))}
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="p-4 sm:p-5 flex items-center gap-4">
-                  <div className="text-2xl sm:text-3xl font-extrabold text-primary min-w-[80px]">$0</div>
-                  <div className="text-sm text-foreground font-medium">What you pay with TechSavvy</div>
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-        </div>
+          <div className="grid grid-cols-3 gap-3 sm:gap-5">
+            {/* Restaurant - loss */}
+            <Card className="border-red-500/15 text-center">
+              <CardContent className="p-3 sm:p-5">
+                <div className="text-xl sm:text-3xl font-extrabold text-red-400 mb-1">-$800</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Avg restaurant<br/>per month</div>
+              </CardContent>
+            </Card>
+
+            {/* TechSavvy - center */}
+            <Card className="border-primary/30 bg-primary/5 text-center ring-2 ring-primary/20">
+              <CardContent className="p-3 sm:p-5">
+                <div className="text-xl sm:text-3xl font-extrabold text-primary mb-1">$0</div>
+                <div className="text-[10px] sm:text-xs text-foreground font-semibold leading-tight">With TechSavvy<br/>every month</div>
+              </CardContent>
+            </Card>
+
+            {/* Auto shop - loss */}
+            <Card className="border-red-500/15 text-center">
+              <CardContent className="p-3 sm:p-5">
+                <div className="text-xl sm:text-3xl font-extrabold text-red-400 mb-1">-$1,500</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Avg auto shop<br/>per month</div>
+              </CardContent>
+            </Card>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -990,9 +985,9 @@ export default function Home() {
   return (
     <Layout>
       <HeroSection />
+      <ProblemSection />
       <HowItWorks />
       <SavingsCalculator />
-      <ProblemSection />
       <QualifySection />
       <CompareSection />
       <WhoWeWorkWith />
