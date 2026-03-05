@@ -190,6 +190,15 @@
   box-shadow: 0 8px 24px -8px hsl(152 76% 36% / 0.12);
 }
 
+/* Slow bounce for chat bubble */
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
 /**
  * Using the elevate system.
  * Automatic contrast adjustment.

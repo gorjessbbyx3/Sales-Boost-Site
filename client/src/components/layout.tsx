@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
+import { Breadcrumb } from "@/components/breadcrumb";
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -284,6 +285,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
+      <Breadcrumb />
       <main>{children}</main>
       <Footer />
 

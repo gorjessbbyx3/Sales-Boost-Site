@@ -79,13 +79,19 @@ export function ChatWidget() {
   return (
     <>
       {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/25 transition-transform hover:scale-105 active:scale-95"
-          data-testid="button-chat-open"
-        >
-          <MessageSquare className="w-6 h-6" />
-        </button>
+        <div className="fixed bottom-6 right-6 z-50 flex items-end gap-3">
+          <div className="bg-card border border-border rounded-xl shadow-lg px-4 py-2.5 text-sm font-medium text-foreground animate-bounce-slow max-w-[180px] hidden sm:block">
+            <div className="text-xs text-muted-foreground">🤙 Got questions?</div>
+            <div className="font-semibold text-foreground">Chat with us!</div>
+          </div>
+          <button
+            onClick={() => setIsOpen(true)}
+            className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/30 transition-transform hover:scale-110 active:scale-95 ring-4 ring-primary/20"
+            data-testid="button-chat-open"
+          >
+            <MessageSquare className="w-7 h-7" />
+          </button>
+        </div>
       )}
 
       {isOpen && (
@@ -127,10 +133,10 @@ export function ChatWidget() {
               {messages.length === 0 && (
                 <div className="flex flex-wrap gap-2 pl-9" data-testid="chat-quick-options">
                   {[
-                    "How does zero-fee processing work?",
-                    "What are your terminal options?",
-                    "Do you support high-risk merchants?",
-                    "I'd like a free savings analysis",
+                    "How much am I losing to fees?",
+                    "How does the cash discount work?",
+                    "Do I qualify for free equipment?",
+                    "Is this legal in Hawaii?",
                   ].map((option) => (
                     <button
                       key={option}
