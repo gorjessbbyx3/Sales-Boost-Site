@@ -339,112 +339,6 @@ function PricingCardsSection() {
   );
 }
 
-function SavingsCalculator() {
-  const [monthly, setMonthly] = useState(10000);
-  const rate = 0.03;
-  const monthlyFee = 50;
-  const annualLoss = Math.round((monthly * rate + monthlyFee) * 12);
-
-  return (
-    <section className="py-12 sm:py-24 relative">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/8 blur-[120px]" />
-      </div>
-
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-8 sm:mb-14"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              <TrendingUp className="w-3 h-3 mr-1.5" />
-              Savings Calculator
-            </Badge>
-          </motion.div>
-          <motion.h2
-            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
-            variants={fadeUp}
-          >
-            You're{" "}
-            <span className="text-destructive">Losing Money</span>{" "}
-            Every Month
-          </motion.h2>
-          <motion.p
-            className="text-muted-foreground text-sm sm:text-lg max-w-2xl mx-auto"
-            variants={fadeUp}
-          >
-            Slide the bar to see how much your current processor is taking.
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <Card className="overflow-visible border-primary/10">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
-            <CardContent className="p-5 sm:p-10 relative">
-              <div className="mb-6">
-                <label className="text-sm font-semibold mb-2 block text-foreground">
-                  Monthly Sales Volume
-                </label>
-                <div className="text-3xl sm:text-5xl font-extrabold text-primary mb-3">
-                  ${monthly.toLocaleString()}
-                </div>
-                <input
-                  type="range"
-                  min={2000}
-                  max={100000}
-                  step={1000}
-                  value={monthly}
-                  onChange={(e) => setMonthly(Number(e.target.value))}
-                  className="w-full accent-primary cursor-pointer h-2"
-                />
-                <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground mt-1">
-                  <span>$2K</span>
-                  <span>$100K</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Card className="overflow-visible border-destructive/20">
-                  <CardContent className="p-3 sm:p-5 text-center">
-                    <div className="text-[10px] sm:text-sm text-muted-foreground mb-1">
-                      Giving Away
-                    </div>
-                    <div className="text-xl sm:text-3xl font-extrabold text-destructive">
-                      -${annualLoss.toLocaleString()}
-                    </div>
-                    <div className="text-[9px] sm:text-xs text-muted-foreground mt-1">per year</div>
-                  </CardContent>
-                </Card>
-
-                <Card className="overflow-visible border-primary/20">
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
-                  <CardContent className="p-3 sm:p-5 text-center relative">
-                    <div className="text-[10px] sm:text-sm text-muted-foreground mb-1">
-                      Keep With TechSavvy
-                    </div>
-                    <div className="text-xl sm:text-3xl font-extrabold text-primary">
-                      +${annualLoss.toLocaleString()}
-                    </div>
-                    <div className="text-[9px] sm:text-xs text-muted-foreground mt-1">back in your pocket</div>
-                  </CardContent>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
 function PricingCTA() {
   return (
     <section className="py-12 sm:py-24 relative">
@@ -504,7 +398,6 @@ export default function PricingPage() {
     <Layout>
       <PricingHero />
       <PricingCardsSection />
-      <SavingsCalculator />
       <PricingCTA />
     </Layout>
   );

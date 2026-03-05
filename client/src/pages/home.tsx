@@ -29,6 +29,8 @@ import {
   Banknote,
   Rocket,
   FileText,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
@@ -216,159 +218,265 @@ function SocialProofBar() {
 }
 
 function SavingsCalculator() {
-  const [monthlyVolume, setMonthlyVolume] = useState(15000);
-  const avgRate = 0.03; // 3% average processing fee
-  const monthlySavings = monthlyVolume * avgRate;
-  const yearlySavings = monthlySavings * 12;
+  const [monthlyVolume, setMonthlyVolume] = useState(25000);
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
-  const formatCurrency = (n: number) =>
+  // Typical processor costs
+  const effectiveRate = 0.035; // 3.5% effective rate (industry average after all hidden fees)
+  const monthlyProcessorFees = 89; // avg statement + PCI + gateway fees
+  const processingCost = monthlyVolume * effectiveRate;
+  const totalCurrentCost = processingCost + monthlyProcessorFees;
+  const yearlyCost = totalCurrentCost * 12;
+
+  // TechSavvy cost
+  const techSavvyMonthly = 0; // zero monthly
+  const techSavvyYearly = 0;
+  const terminalCost = 399; // one-time
+
+  // Savings
+  const monthlySavings = totalCurrentCost;
+  const yearlySavings = yearlyCost;
+  const paybackDays = Math.ceil(terminalCost / (totalCurrentCost / 30));
+
+  const fmt = (n: number) =>
     n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
-  const sliderPercent = ((monthlyVolume - 1000) / (99000)) * 100;
+  const sliderPct = ((monthlyVolume - 5000) / 95000) * 100;
+
+  // Fee breakdown items
+  const hiddenFees = [
+    { label: "Processing fees (3.5% effective)", amount: processingCost },
+    { label: "Monthly statement fee", amount: 15 },
+    { label: "PCI compliance fee", amount: 12 },
+    { label: "Gateway / batch fee", amount: 25 },
+    { label: "Regulatory & misc fees", amount: 37 },
+  ];
 
   return (
-    <section className="py-12 sm:py-20 relative" data-testid="section-savings-calculator">
+    <section className="py-14 sm:py-24 relative overflow-hidden" data-testid="section-savings-calculator">
+      {/* Background effects */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px]" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-red-500/3 blur-[140px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[140px]" />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
+          viewport={{ once: true, margin: "-80px" }}
         >
-          <motion.div className="text-center mb-8 sm:mb-12" variants={fadeUp}>
+          {/* Header */}
+          <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
               <Calculator className="w-3 h-3 mr-1.5" />
               Savings Calculator
             </Badge>
-            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Here's the Math.{" "}
-              <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
-                You Decide.
+            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4">
+              See What You're{" "}
+              <span className="relative inline-block">
+                <span className="bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">Really Paying</span>
+                <svg className="absolute -bottom-1 left-0 w-full" height="6" viewBox="0 0 200 6" preserveAspectRatio="none">
+                  <path d="M0,3 Q50,0 100,3 Q150,6 200,3" stroke="hsl(var(--primary))" strokeWidth="2" fill="none" opacity="0.4" />
+                </svg>
               </span>
             </h2>
             <p className="text-muted-foreground text-sm sm:text-lg max-w-2xl mx-auto">
-              No sales tricks — just real numbers. Enter your monthly volume and see what processing fees
-              are actually costing your business.
+              Drag the slider. Watch the math. Then decide if your current processor deserves your money.
             </p>
           </motion.div>
 
-          <motion.div variants={fadeUp}>
-            <Card className="overflow-visible border-primary/15">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
-              <CardContent className="p-6 sm:p-10 relative">
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-semibold text-foreground">
-                      Monthly Card Processing Volume
-                    </label>
-                    <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5">
-                      <DollarSign className="w-4 h-4 text-primary" />
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={monthlyVolume.toLocaleString()}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value.replace(/[^0-9]/g, "")) || 0;
-                          setMonthlyVolume(Math.min(Math.max(val, 1000), 100000));
-                        }}
-                        className="w-24 bg-transparent text-lg font-bold text-primary outline-none text-right"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="relative mt-2">
+          {/* Slider control */}
+          <motion.div variants={fadeUp} className="mb-8">
+            <Card className="border-border/50 overflow-visible">
+              <CardContent className="p-5 sm:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                  <label className="text-sm font-semibold text-foreground">
+                    Your Monthly Card Sales
+                  </label>
+                  <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-xl px-4 py-2">
+                    <DollarSign className="w-4 h-4 text-primary" />
                     <input
-                      type="range"
-                      min="1000"
-                      max="100000"
-                      step="500"
-                      value={monthlyVolume}
-                      onChange={(e) => setMonthlyVolume(parseInt(e.target.value))}
-                      className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
-                      style={{
-                        background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${sliderPercent}%, hsl(var(--muted)) ${sliderPercent}%, hsl(var(--muted)) 100%)`,
+                      type="text"
+                      inputMode="numeric"
+                      value={monthlyVolume.toLocaleString()}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value.replace(/[^0-9]/g, "")) || 0;
+                        setMonthlyVolume(Math.min(Math.max(val, 5000), 100000));
                       }}
+                      className="w-28 bg-transparent text-xl font-bold text-primary outline-none text-right"
                     />
-                    <div className="flex justify-between mt-2 text-[10px] sm:text-xs text-muted-foreground">
-                      <span>$1,000</span>
-                      <span>$25,000</span>
-                      <span>$50,000</span>
-                      <span>$75,000</span>
-                      <span>$100,000</span>
-                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <Card className="border-red-500/20 bg-red-500/5">
-                    <CardContent className="p-4 sm:p-5 text-center">
-                      <div className="w-9 h-9 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-2">
-                        <Receipt className="w-4 h-4 text-red-500" />
-                      </div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
-                        You're Paying Monthly
-                      </div>
-                      <div className="text-xl sm:text-2xl font-extrabold text-red-500">
-                        {formatCurrency(monthlySavings)}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground mt-1">
-                        at avg. 3% rate
-                      </div>
-                    </CardContent>
-                  </Card>
+                <div className="relative">
+                  <input
+                    type="range"
+                    min="5000"
+                    max="100000"
+                    step="1000"
+                    value={monthlyVolume}
+                    onChange={(e) => setMonthlyVolume(parseInt(e.target.value))}
+                    className="w-full h-3 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-primary/30 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20 [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white/20 [&::-moz-range-thumb]:shadow-lg [&::-moz-range-thumb]:cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${sliderPct}%, hsl(var(--muted)) ${sliderPct}%, hsl(var(--muted)) 100%)`,
+                    }}
+                  />
+                  <div className="flex justify-between mt-2 text-[10px] sm:text-xs text-muted-foreground">
+                    <span>$5K</span>
+                    <span>$25K</span>
+                    <span>$50K</span>
+                    <span>$75K</span>
+                    <span>$100K</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-                  <Card className="border-primary/20 bg-primary/5">
-                    <CardContent className="p-4 sm:p-5 text-center">
-                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
-                        <PiggyBank className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
-                        You Save Monthly
-                      </div>
-                      <div className="text-xl sm:text-2xl font-extrabold text-primary">
-                        {formatCurrency(monthlySavings)}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground mt-1">
-                        with zero-fee processing
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-primary/20 bg-primary/5 ring-1 ring-primary/20">
-                    <CardContent className="p-4 sm:p-5 text-center">
-                      <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-2">
-                        <Banknote className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
-                        You Save Yearly
-                      </div>
-                      <div className="text-xl sm:text-2xl font-extrabold text-primary">
-                        {formatCurrency(yearlySavings)}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground mt-1">
-                        back in your pocket
-                      </div>
-                    </CardContent>
-                  </Card>
+          {/* Comparison cards — side by side */}
+          <motion.div variants={fadeUp} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 mb-6">
+            {/* Their processor */}
+            <Card className="border-red-500/20 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent" />
+              <CardContent className="p-5 sm:p-7 relative">
+                <div className="flex items-center gap-2 mb-5">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                  </div>
+                  <span className="text-sm font-bold text-red-400 uppercase tracking-wider">Your Current Processor</span>
                 </div>
 
-                <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/15">
-                  <p className="text-sm text-foreground/80 text-center mb-4">
-                    That's{" "}
-                    <span className="font-bold text-primary">{formatCurrency(yearlySavings)}/year</span>{" "}
-                    walking out the door. Try us free for 30 days — if we're wrong, send the terminal back. No fees, no hassle, no hard feelings.
-                  </p>
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Monthly cost</div>
+                    <div className="text-3xl sm:text-4xl font-extrabold text-red-500">
+                      -{fmt(totalCurrentCost)}
+                    </div>
+                  </div>
+                  <div className="h-px bg-red-500/10" />
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Yearly cost</div>
+                    <div className="text-xl sm:text-2xl font-bold text-red-400">
+                      -{fmt(yearlyCost)}
+                    </div>
+                  </div>
+
+                  {/* Expandable breakdown */}
+                  <button
+                    onClick={() => setShowBreakdown(!showBreakdown)}
+                    className="flex items-center gap-1.5 text-xs text-red-400/80 hover:text-red-400 transition-colors"
+                  >
+                    <Receipt className="w-3 h-3" />
+                    {showBreakdown ? "Hide" : "See"} fee breakdown
+                    {showBreakdown
+                      ? <ChevronUp className="w-3 h-3" />
+                      : <ChevronDown className="w-3 h-3" />
+                    }
+                  </button>
+
+                  {showBreakdown && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="space-y-2 pt-1"
+                    >
+                      {hiddenFees.map((fee) => (
+                        <div key={fee.label} className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">{fee.label}</span>
+                          <span className="text-red-400 font-semibold">-{fmt(fee.amount)}</span>
+                        </div>
+                      ))}
+                      <div className="pt-1 border-t border-red-500/10 flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground font-semibold">Plus: contract lock-in</span>
+                        <span className="text-red-400">2–3 years</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* TechSavvy */}
+            <Card className="border-primary/30 relative overflow-hidden ring-1 ring-primary/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+              <div className="absolute top-3 right-3">
+                <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px]">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Recommended
+                </Badge>
+              </div>
+              <CardContent className="p-5 sm:p-7 relative">
+                <div className="flex items-center gap-2 mb-5">
+                  <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-sm font-bold text-primary uppercase tracking-wider">TechSavvy Hawaii</span>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Monthly cost</div>
+                    <div className="text-3xl sm:text-4xl font-extrabold text-primary">
+                      $0
+                    </div>
+                  </div>
+                  <div className="h-px bg-primary/10" />
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Yearly cost</div>
+                    <div className="text-xl sm:text-2xl font-bold text-primary">
+                      $0
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    {[
+                      "Zero processing fees — ever",
+                      "Zero monthly fees",
+                      "Zero contracts or cancellation fees",
+                      "Free custom website included",
+                      "$399 one-time terminal (you own it)",
+                    ].map((item) => (
+                      <div key={item} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Bottom savings summary */}
+          <motion.div variants={fadeUp}>
+            <Card className="border-primary/20 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/3 to-primary/5" />
+              <CardContent className="p-5 sm:p-8 relative">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-center">
+                  <div className="text-center sm:text-left">
+                    <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">You keep every year</div>
+                    <div className="text-3xl sm:text-4xl font-extrabold text-primary">
+                      +{fmt(yearlySavings)}
+                    </div>
+                  </div>
                   <div className="text-center">
-                    <Button size="lg" asChild>
+                    <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Terminal pays for itself in</div>
+                    <div className="text-3xl sm:text-4xl font-extrabold text-foreground">
+                      {paybackDays} <span className="text-lg text-muted-foreground font-medium">days</span>
+                    </div>
+                  </div>
+                  <div className="text-center sm:text-right">
+                    <Button size="lg" className="w-full sm:w-auto" asChild>
                       <Link href="/contact">
-                        Try It Free — See for Yourself
+                        Get Your Free Analysis
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </Button>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      30-day free trial · Return anytime
+                    </p>
                   </div>
                 </div>
               </CardContent>
