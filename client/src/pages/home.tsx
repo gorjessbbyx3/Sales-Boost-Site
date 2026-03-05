@@ -50,22 +50,41 @@ function HeroSection() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div className="max-w-4xl mx-auto text-center" variants={staggerContainer} initial="hidden" animate="visible">
           <motion.h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6" variants={fadeUp}>
-            <span className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">Eliminate</span>{" "}
-            Unnecessary Processing Fees
-            <br />
-            <span className="text-2xl sm:text-3xl lg:text-4xl text-muted-foreground font-bold mt-2 block">
-              With <span className="text-primary">TechSavvy.</span>
-            </span>
+            Stop Paying{" "}
+            <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">Credit Card Fees.</span>
           </motion.h1>
 
-          <motion.p className="text-base sm:text-xl text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto" variants={fadeUp}>
-            TechSavvy helps local Hawaii business owners keep more of what they earn with simple, transparent payment solutions customized for small businesses.
+          <motion.p className="text-lg sm:text-2xl text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto font-medium" variants={fadeUp}>
+            Hawaii businesses save{" "}
+            <span className="text-primary font-bold">$500–$3,000+ per month</span>{" "}
+            with our zero-fee payment system.
           </motion.p>
 
-          <motion.div variants={fadeUp}>
-            <Button size="lg" className="text-base px-8 py-6" asChild>
+          <motion.div className="flex flex-col items-center gap-4 mb-10" variants={fadeUp}>
+            <ul className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-6 text-sm sm:text-base text-foreground/80">
+              {[
+                "Accept cards without paying processing fees",
+                "Restaurants, salons, auto shops, food trucks & more",
+                "30-day risk-free trial",
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
+            <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
+              <a href="#calculator">
+                See How Much You'll Save
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </Button>
+            <Button variant="outline" size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
               <a href="#contact-form">
-                Discover the TechSavvy Difference
+                Get Free Savings Estimate
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
@@ -672,8 +691,8 @@ function ContactFormSection() {
 
 export default function Home() {
   useSEO({
-    title: "TechSavvy Hawaii | Eliminate Processing Fees | Hawaii's Payment Processor",
-    description: "TechSavvy helps local Hawaii business owners keep more of what they earn with simple, transparent payment solutions. No contracts, no hidden fees. Cash Back, free terminals, local support.",
+    title: "Stop Paying Credit Card Fees | TechSavvy Hawaii | Zero-Fee Processing",
+    description: "Hawaii businesses save $500–$3,000+ per month with TechSavvy's zero-fee payment system. No contracts, no monthly fees. Restaurants, salons, auto shops, food trucks & more. 30-day risk-free trial.",
     keywords: "payment processing Hawaii, zero-fee processing Honolulu, Cash Back Hawaii, eliminate processing fees, merchant services Hawaii, POS terminal Hawaii, TechSavvy Hawaii",
     canonical: "https://techsavvyhawaii.com/",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
