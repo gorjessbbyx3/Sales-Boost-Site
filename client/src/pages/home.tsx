@@ -507,13 +507,43 @@ function SavingsCalculator() {
                       <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">You'd keep with TechSavvy</div>
                       <div className="text-4xl sm:text-5xl font-extrabold text-primary">{fmt(annualFees)}</div>
                     </div>
-                    <div className="mt-4 text-center">
+                    <div className="mt-4 text-center space-y-3">
                       <Button size="lg" asChild>
                         <a href="/statement-review">
                           Get Your Free AI Analysis
                           <ArrowRight className="w-4 h-4" />
                         </a>
                       </Button>
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-xs text-muted-foreground">Share:</span>
+                        <button
+                          onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://techsavvyhawaii.com")}&quote=${encodeURIComponent(`I just found out I'm losing ${fmt(annualFees)}/year to credit card fees! Check yours:`)}`, "_blank", "width=600,height=400")}
+                          className="w-8 h-8 rounded-full bg-muted hover:bg-primary/10 flex items-center justify-center transition-colors text-muted-foreground hover:text-primary"
+                          title="Share on Facebook"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                        </button>
+                        <button
+                          onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just found out my business is losing ${fmt(annualFees)}/year to credit card fees! 😱 Check yours free:`)}&url=${encodeURIComponent("https://techsavvyhawaii.com")}`, "_blank", "width=600,height=400")}
+                          className="w-8 h-8 rounded-full bg-muted hover:bg-primary/10 flex items-center justify-center transition-colors text-muted-foreground hover:text-primary"
+                          title="Share on X"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (navigator.share) {
+                              navigator.share({ title: "How much are you losing?", text: `I just found out I'm losing ${fmt(annualFees)}/year to credit card fees!`, url: "https://techsavvyhawaii.com" });
+                            } else {
+                              navigator.clipboard.writeText(`I'm losing ${fmt(annualFees)}/year to credit card fees! Check yours: https://techsavvyhawaii.com`);
+                            }
+                          }}
+                          className="w-8 h-8 rounded-full bg-muted hover:bg-primary/10 flex items-center justify-center transition-colors text-muted-foreground hover:text-primary"
+                          title="Share"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -601,15 +631,32 @@ function WhoWeWorkWith() {
           </motion.div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {[
-              "Restaurants & Bars", "Food Trucks", "Salons & Spas", "Auto Repair Shops",
-              "Retail Stores", "Medical & Dental", "Vape & CBD Shops", "Convenience Stores",
+              { name: "Restaurants & Bars", link: "/industries/restaurants" },
+              { name: "Food Trucks", link: null },
+              { name: "Salons & Spas", link: "/industries/salons" },
+              { name: "Auto Repair Shops", link: "/industries/auto-shops" },
+              { name: "Retail Stores", link: null },
+              { name: "Medical & Dental", link: null },
+              { name: "Vape & CBD Shops", link: null },
+              { name: "Convenience Stores", link: null },
             ].map((biz) => (
-              <motion.div key={biz} variants={fadeUp}>
-                <Card className="border-border/50 hover:border-primary/30 transition-colors">
-                  <CardContent className="p-4 sm:p-5 text-center">
-                    <div className="text-sm font-semibold text-foreground/90">{biz}</div>
-                  </CardContent>
-                </Card>
+              <motion.div key={biz.name} variants={fadeUp}>
+                {biz.link ? (
+                  <a href={biz.link}>
+                    <Card className="border-border/50 hover:border-primary/30 transition-colors cursor-pointer card-warm">
+                      <CardContent className="p-4 sm:p-5 text-center">
+                        <div className="text-sm font-semibold text-foreground/90">{biz.name}</div>
+                        <div className="text-[10px] text-primary mt-1">Learn more →</div>
+                      </CardContent>
+                    </Card>
+                  </a>
+                ) : (
+                  <Card className="border-border/50 hover:border-primary/30 transition-colors">
+                    <CardContent className="p-4 sm:p-5 text-center">
+                      <div className="text-sm font-semibold text-foreground/90">{biz.name}</div>
+                    </CardContent>
+                  </Card>
+                )}
               </motion.div>
             ))}
           </div>

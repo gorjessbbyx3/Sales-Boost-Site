@@ -24,6 +24,8 @@ const PartnerAgreementPage = lazy(() => import("@/pages/partner-agreement"));
 const ReferralPage = lazy(() => import("@/pages/referral"));
 const ApplyPage = lazy(() => import("@/pages/apply"));
 const PartnerProgramPage = lazy(() => import("@/pages/partner-program"));
+const IndustryPage = lazy(() => import("@/pages/industry"));
+const IslandPage = lazy(() => import("@/pages/island"));
 
 const isAdminSubdomain = window.location.hostname.startsWith("admin.");
 const isProgramSubdomain = window.location.hostname.startsWith("program.");
@@ -57,6 +59,8 @@ function MainRouter() {
           <Route path="/partner-agreement" component={PartnerAgreementPage} />
           <Route path="/refer" component={ReferralPage} />
           <Route path="/apply" component={ApplyPage} />
+          <Route path="/industries/:industry" component={IndustryPage} />
+          <Route path="/locations/:island" component={IslandPage} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

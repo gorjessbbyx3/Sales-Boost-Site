@@ -11,6 +11,13 @@ const routeNames: Record<string, string> = {
   "/statement-review": "Statement Analysis",
   "/refer": "Refer a Business",
   "/apply": "Apply",
+  "/industries/restaurants": "Restaurants",
+  "/industries/auto-shops": "Auto Shops",
+  "/industries/salons": "Salons & Spas",
+  "/locations/oahu": "O'ahu",
+  "/locations/maui": "Maui",
+  "/locations/big-island": "Big Island",
+  "/locations/kauai": "Kaua'i",
 };
 
 export function Breadcrumb() {

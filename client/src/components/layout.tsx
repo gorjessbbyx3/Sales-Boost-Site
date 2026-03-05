@@ -235,10 +235,10 @@ function Footer() {
           <div>
             <h4 className="font-semibold text-sm mb-4 text-white">Serving Hawai'i</h4>
             <ul className="space-y-3 text-sm text-white/60">
-              <li>Honolulu & O'ahu</li>
-              <li>Maui</li>
-              <li>Big Island (Kona & Hilo)</li>
-              <li>Kaua'i & Neighbor Islands</li>
+              <li><a href="/locations/oahu" className="transition-colors hover:text-white">Honolulu & O'ahu</a></li>
+              <li><a href="/locations/maui" className="transition-colors hover:text-white">Maui</a></li>
+              <li><a href="/locations/big-island" className="transition-colors hover:text-white">Big Island (Kona & Hilo)</a></li>
+              <li><a href="/locations/kauai" className="transition-colors hover:text-white">Kaua'i & Neighbor Islands</a></li>
             </ul>
           </div>
         </div>
