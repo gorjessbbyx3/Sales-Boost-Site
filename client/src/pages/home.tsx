@@ -27,6 +27,8 @@ import {
   BadgeDollarSign,
   Receipt,
   Banknote,
+  Rocket,
+  FileText,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
@@ -759,6 +761,59 @@ function TestimonialSection() {
   );
 }
 
+function ApplyTeaser() {
+  return (
+    <section className="py-12 sm:py-20 relative">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <Card className="overflow-visible border-primary/20">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent" />
+            <CardContent className="p-6 sm:p-10 relative">
+              <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+                <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
+                  <Rocket className="w-8 h-8 text-primary" />
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight mb-2">
+                    Ready to Get Started Right Now?
+                  </h2>
+                  <p className="text-muted-foreground text-sm sm:text-base mb-4">
+                    Skip the back-and-forth. Our quick application takes about 3 minutes —
+                    no paperwork, no fax machines. Just a few questions and we'll get you set up.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <Button size="lg" asChild>
+                      <Link href="/apply">
+                        <FileText className="w-4 h-4" />
+                        Apply Now — Takes 3 Min
+                      </Link>
+                    </Button>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3 text-primary" />
+                        No SSN required
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-primary" />
+                        1-day response
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function ContactFormSection() {
   const [formData, setFormData] = useState({
     businessName: "",
@@ -841,16 +896,16 @@ function ContactFormSection() {
           <div className="text-center mb-8">
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
               <Sparkles className="w-3 h-3 mr-1.5" />
-              Get Started Today
+              Just Browsing?
             </Badge>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Ready to{" "}
+              Not Ready Yet?{" "}
               <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-                See It for Yourself?
+                No Problem.
               </span>
             </h2>
             <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
-              No commitment. No pressure. We'll send you a terminal, you try it for 30 days, and the savings do the talking.
+              Drop your info and we'll reach out when it's convenient — zero pressure, zero obligation.
             </p>
           </div>
 
@@ -1063,6 +1118,7 @@ export default function Home() {
       <ServicesOverview />
       <QuickPricingPreview />
       <TestimonialSection />
+      <ApplyTeaser />
       <ContactFormSection />
     </Layout>
   );

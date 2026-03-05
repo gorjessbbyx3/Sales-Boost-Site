@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type AiConfig, type InsertAiConfig, type UpdateAiConfig, type ContactLead, type InsertContactLead, contactLeads } from "@shared/schema";
+import { type User, type InsertUser, type AiConfig, type InsertAiConfig, type UpdateAiConfig, type ContactLead, type InsertContactLead, contactLeads, type MerchantApplication, type InsertMerchantApplication, merchantApplications } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { desc } from "drizzle-orm";
@@ -11,6 +11,7 @@ export interface IStorage {
   updateAiConfig(config: UpdateAiConfig): Promise<AiConfig>;
   createContactLead(lead: InsertContactLead): Promise<ContactLead>;
   getContactLeads(): Promise<ContactLead[]>;
+  createMerchantApplication(app: InsertMerchantApplication): Promise<MerchantApplication>;
 }
 
 const DEFAULT_AI_CONFIG: AiConfig = {
@@ -64,6 +65,11 @@ export class MemStorage implements IStorage {
 
   async getContactLeads(): Promise<ContactLead[]> {
     return db.select().from(contactLeads).orderBy(desc(contactLeads.createdAt));
+  }
+
+  async createMerchantApplication(app: InsertMerchantApplication): Promise<MerchantApplication> {
+    const [application] = await db.insert(merchantApplications).values(app).returning();
+    return application;
   }
 }
 

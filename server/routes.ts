@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
-import { updateAiConfigSchema, insertContactLeadSchema } from "@shared/schema";
+import { updateAiConfigSchema, insertContactLeadSchema, insertMerchantApplicationSchema } from "@shared/schema";
 import * as schema from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, inArray, sql, getTableColumns } from "drizzle-orm";
@@ -934,6 +934,31 @@ RULES:
   app.get("/api/contact-leads", requireAdminSession, async (_req: Request, res: Response) => {
     const contactLeadRows = await storage.getContactLeads();
     res.json(contactLeadRows);
+  });
+
+  // ─── Merchant Applications (gamified form) ──────────────────────
+
+  app.post("/api/merchant-applications", publicLeadLimiter, async (req: Request, res: Response) => {
+    const parsed = insertMerchantApplicationSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.message });
+    }
+    const application = await storage.createMerchantApplication(parsed.data);
+    logActivity("New Merchant Application", `${parsed.data.businessLegalName} submitted application`, "lead");
+    sendSlackNotification(`New merchant application: ${parsed.data.businessLegalName} (${parsed.data.ownerName}) - ${parsed.data.businessEmail}`, "newLead");
+    // Send auto-confirmation email
+    sendContactFormConfirmation(parsed.data.ownerName, parsed.data.businessEmail, parsed.data.businessLegalName).catch(err => console.error("Auto-confirm failed:", err));
+    // Log to admin inbox
+    logToInbox({
+      contactEmail: parsed.data.businessEmail,
+      contactName: parsed.data.ownerName,
+      subject: `Merchant Application: ${parsed.data.businessLegalName}`,
+      body: `New merchant application:\n\nBusiness: ${parsed.data.businessLegalName}${parsed.data.dba ? `\nDBA: ${parsed.data.dba}` : ""}\nOwner: ${parsed.data.ownerName}${parsed.data.ownerTitle ? ` (${parsed.data.ownerTitle})` : ""}\nEmail: ${parsed.data.businessEmail}\nPhone: ${parsed.data.businessPhone}\nAddress: ${parsed.data.address}, ${parsed.data.city}, ${parsed.data.state} ${parsed.data.zip}\nStructure: ${parsed.data.businessStructure}\nProducts: ${parsed.data.productsSold || "Not specified"}\nMonthly Volume: ${parsed.data.avgMonthlyVolume || "Not specified"}\nAvg Ticket: ${parsed.data.avgTicket || "Not specified"}\n% In-Person: ${parsed.data.percentCardPresent || "Not specified"}`,
+      source: "merchant-application",
+      aiIntent: "new_lead",
+      aiPriority: "high",
+    }).catch(err => console.error("Inbox log failed:", err));
+    res.status(201).json(application);
   });
 
   // ─── Partner Agreement (Public form → saved to admin files) ─────
