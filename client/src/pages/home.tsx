@@ -46,14 +46,14 @@ function HeroSection() {
           muted
           playsInline
           preload="auto"
-          src="/videos/hero-bg-v3.mp4"
+          src="/videos/hero-bg-v3.mp4?v=20260305"
           className="w-full h-auto block"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       </div>
 
-      {/* Text + CTAs below video */}
-      <div className="py-10 sm:py-16 -mt-8 sm:-mt-12 relative z-10">
+      {/* Text + CTAs directly below — minimal gap */}
+      <div className="pb-10 sm:pb-14 -mt-16 sm:-mt-24 relative z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div variants={staggerContainer} initial="hidden" animate="visible">
             <motion.h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-5" variants={fadeUp}>
