@@ -8,6 +8,7 @@ interface Env {
   ANTHROPIC_API_KEY: string;
   RESEND_API_KEY: string;
   R2_PUBLIC_URL: string;
+  ENRICH_WORKER_URL: string;
 }
 
 type Ctx = EventContext<Env, string, unknown>;
@@ -56,6 +57,117 @@ function genId() {
 
 function now() {
   return new Date().toISOString();
+}
+
+// ─── Branded Email Templates ────────────────────────────────────────
+
+const BRAND = { name: "Tech Savvy Hawaii", phone: "(808) 767-5460", email: "contact@techsavvyhawaii.com", url: "https://techsavvyhawaii.com" };
+
+function emailWrap(content: string): string {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/></head><body style="margin:0;padding:0;background:#f1f5f9;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;"><tr><td align="center" style="padding:24px 16px;"><table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);"><tr><td>${content}</td></tr></table></td></tr></table></body></html>`;
+}
+
+function emailHeader(title?: string): string {
+  return `<div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:36px 40px 28px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:26px;font-weight:800;color:#fff;letter-spacing:-0.5px;">TECH SAVVY HAWAII</div><div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">${title || "Smart Solutions for Local Business"}</div></div>`;
+}
+
+function emailFooter(): string {
+  return `<div style="border-top:1px solid #e2e8f0;padding-top:24px;margin-top:28px;text-align:center;"><div style="font-size:14px;font-weight:700;color:#0f172a;">Tech Savvy Hawaii</div><div style="font-size:12px;color:#94a3b8;margin-top:4px;"><a href="${BRAND.url}" style="color:#94a3b8;text-decoration:none;">${BRAND.url}</a> | <a href="mailto:${BRAND.email}" style="color:#94a3b8;text-decoration:none;">${BRAND.email}</a> | ${BRAND.phone}</div><div style="font-size:11px;color:#cbd5e1;margin-top:12px;">Zero-Fee Payment Processing &bull; No Contracts &bull; No Monthly Fees</div></div>`;
+}
+
+function emailCta(text: string, href: string, color = "#0f172a"): string {
+  return `<div style="text-align:center;margin:24px 0;"><a href="${href}" style="display:inline-block;background:${color};color:#fff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:8px;">${text}</a></div>`;
+}
+
+function emailBody(inner: string): string {
+  return `<div style="padding:32px 40px 8px;">${inner}</div><div style="padding:0 40px 32px;">${emailFooter()}</div>`;
+}
+
+function ep(text: string): string { return `<p style="margin:0 0 16px;font-size:16px;color:#334155;line-height:1.6;">${text}</p>`; }
+function eBullet(items: string[]): string { return `<ul style="margin:0 0 16px;padding-left:20px;">${items.map(i => `<li style="font-size:15px;color:#334155;line-height:1.8;margin-bottom:4px;">${i}</li>`).join("")}</ul>`; }
+function eHighlight(label: string, value: string, color = "#059669"): string { return `<div style="background:#f8fafc;border-left:4px solid ${color};border-radius:0 8px 8px 0;padding:16px 20px;margin:16px 0;"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:4px;">${label}</div><div style="font-size:20px;font-weight:800;color:#0f172a;">${value}</div></div>`; }
+
+function generateBrandedEmail(type: string, data: any): { subject: string; html: string; text: string } | null {
+  switch (type) {
+    case "statement-analysis": {
+      const firstName = data.ownerName?.split(" ")[0] || "there";
+      const gradeColors: Record<string, string> = { A: "#16a34a", B: "#65a30d", C: "#ca8a04", D: "#ea580c", F: "#dc2626" };
+      const gc = gradeColors[data.overallGrade] || "#64748b";
+      const hiddenHtml = (data.hiddenFees || []).length > 0 ? (data.hiddenFees as any[]).map((f: any) => `<tr><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-weight:600;">${f.name}</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:700;color:#dc2626;">${f.amount}</td></tr><tr><td colspan="2" style="padding:2px 12px 10px;font-size:13px;color:#64748b;border-bottom:1px solid #e2e8f0;">${f.explanation || ""}</td></tr>`).join("") : `<tr><td colspan="2" style="padding:12px;color:#16a34a;">No hidden fees found</td></tr>`;
+      const rfHtml = (data.redFlags || []).length > 0 ? (data.redFlags as string[]).map((f: string) => `<div style="padding:6px 0;font-size:14px;color:#991b1b;">⚠️ ${f}</div>`).join("") : `<div style="padding:12px;background:#f0fdf4;border-radius:8px;color:#16a34a;">No red flags</div>`;
+      const jfHtml = (data.junkFees || []).length > 0 ? (data.junkFees as any[]).map((f: any) => `<div style="padding:6px 0;font-size:14px;color:#ea580c;"><strong>${f.name}</strong> (${f.amount}) — ${f.why || ""}</div>`).join("") : `<div style="color:#16a34a;">No junk fees detected</div>`;
+      const recsHtml = (data.recommendations || []).map((r: string) => `<li style="font-size:14px;color:#334155;line-height:1.8;">${r}</li>`).join("");
+      return {
+        subject: `Your Statement Analysis is Ready — Grade: ${data.overallGrade} | ${data.businessName}`,
+        html: emailWrap(`${emailHeader("Statement Analysis Results")}${emailBody(`${ep(`Hi ${firstName},`)}${ep(`We've analyzed your <strong>${data.processorName || "current"}</strong> statement for <strong>${data.businessName}</strong>.`)}<div style="background:${gc};border-radius:10px;padding:20px 24px;text-align:center;margin:20px 0;"><div style="font-size:12px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.85);">Overall Grade</div><div style="font-size:48px;font-weight:800;color:#fff;">${data.overallGrade}</div></div><table width="100%" style="margin:20px 0;"><tr><td width="33%" style="text-align:center;padding:8px;"><div style="background:#f8fafc;border-radius:8px;padding:16px 8px;"><div style="font-size:11px;text-transform:uppercase;color:#64748b;">Volume</div><div style="font-size:20px;font-weight:800;">${data.monthlyVolume || "N/A"}</div></div></td><td width="33%" style="text-align:center;padding:8px;"><div style="background:#f8fafc;border-radius:8px;padding:16px 8px;"><div style="font-size:11px;text-transform:uppercase;color:#64748b;">Total Fees</div><div style="font-size:20px;font-weight:800;color:#dc2626;">${data.totalFees || "N/A"}</div></div></td><td width="33%" style="text-align:center;padding:8px;"><div style="background:#f8fafc;border-radius:8px;padding:16px 8px;"><div style="font-size:11px;text-transform:uppercase;color:#64748b;">Eff. Rate</div><div style="font-size:20px;font-weight:800;color:${gc};">${data.effectiveRate || "N/A"}</div></div></td></tr></table><div style="font-size:17px;font-weight:700;margin:24px 0 12px;border-bottom:2px solid #e2e8f0;padding-bottom:8px;">Hidden Fees</div><table width="100%" style="font-size:14px;">${hiddenHtml}</table><div style="font-size:17px;font-weight:700;margin:24px 0 12px;border-bottom:2px solid #e2e8f0;padding-bottom:8px;">Red Flags</div>${rfHtml}<div style="font-size:17px;font-weight:700;margin:24px 0 12px;border-bottom:2px solid #e2e8f0;padding-bottom:8px;">Junk Fees</div>${jfHtml}<div style="background:linear-gradient(135deg,#065f46,#059669);border-radius:12px;padding:24px;text-align:center;margin:24px 0;"><div style="font-size:12px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.8);">Estimated Overpay</div><div style="font-size:36px;font-weight:800;color:#fff;">${data.estimatedOverpay || "N/A"}/mo</div><div style="font-size:14px;color:rgba(255,255,255,0.8);margin-top:4px;">Annual savings: ${data.potentialAnnualSavings || "N/A"}</div></div><div style="font-size:17px;font-weight:700;margin:24px 0 12px;border-bottom:2px solid #e2e8f0;padding-bottom:8px;">Recommendations</div><ul style="padding-left:20px;">${recsHtml}</ul>${ep("Ready to stop overpaying? Let's set up a quick call.")}${emailCta("Call (808) 767-5460", "tel:8087675460", "#059669")}`)}}`),
+        text: `Hi ${firstName},\n\nYour statement analysis for ${data.businessName} is ready.\nGrade: ${data.overallGrade}\nEffective Rate: ${data.effectiveRate || "N/A"}\nOverpay: ${data.estimatedOverpay || "N/A"}/mo\n\nCall (808) 767-5460\nTech Savvy Hawaii`,
+      };
+    }
+    case "walk-in-follow-up": {
+      const firstName = data.ownerName?.split(" ")[0] || "there";
+      const vb: Record<string, string> = { restaurant: "Restaurants save $800-2,000/month", retail: "Retail shops save $500-1,500/month", salon: "Salons save $400-1,200/month", auto_repair: "Auto shops save $600-1,800/month" };
+      const benefit = vb[data.vertical || ""] || "Local businesses save hundreds to thousands per month";
+      return {
+        subject: `Great meeting you today — ${data.businessName}`,
+        html: emailWrap(`${emailHeader()}${emailBody(`${ep(`Hi ${firstName},`)}${ep(`It was great stopping by <strong>${data.businessName}</strong> today!`)}${ep(`We help local Hawaii businesses eliminate processing fees entirely — no monthly fees, no hidden charges, no contracts.`)}${eHighlight("Typical Savings", benefit)}${eBullet(["<strong>Free statement review</strong> — send me a recent statement and I'll show you exactly what you're paying", "<strong>No-pressure comparison</strong> — side-by-side savings analysis", "<strong>Your call</strong> — if savings aren't significant, I'll tell you straight up"])}${ep("Just reply with a photo or PDF of your latest statement.")}${emailCta("Call Me: (808) 767-5460", "tel:8087675460")}${ep(`Talk soon,<br/><strong>${data.agentName || "Tech Savvy Hawaii"}</strong>`)}`)}}`),
+        text: `Hi ${firstName},\n\nGreat meeting you at ${data.businessName} today! ${benefit}.\n\nJust reply with a statement and I'll show you the savings.\n\n${data.agentName || "Tech Savvy Hawaii"}\n(808) 767-5460`,
+      };
+    }
+    case "phone-call-follow-up": {
+      const firstName = data.ownerName?.split(" ")[0] || "there";
+      return {
+        subject: `Following up on our call — ${data.businessName}`,
+        html: emailWrap(`${emailHeader()}${emailBody(`${ep(`Hi ${firstName},`)}${ep("Thanks for chatting today! Here's a quick recap:")}${data.discussed ? `<div style="background:#f0f9ff;border-left:4px solid #0284c7;border-radius:0 8px 8px 0;padding:16px 20px;margin:16px 0;"><div style="font-size:12px;text-transform:uppercase;color:#0284c7;font-weight:700;margin-bottom:6px;">What We Discussed</div><div style="font-size:14px;color:#0c4a6e;">${data.discussed}</div></div>` : ""}${eBullet(["<strong>Zero processing fees</strong> — customers pay a small surcharge, you keep 100%", "<strong>No monthly fees</strong> — no PCI, gateway, statement, or maintenance fees", "<strong>One-time terminal ($399)</strong> — you own it", "<strong>Free custom website</strong> — included for processing customers", "<strong>No contracts</strong> — month-to-month"])}${data.nextStep ? eHighlight("Next Step", data.nextStep, "#0284c7") : ""}${ep("Send me a recent statement and I'll show you the savings.")}${emailCta("Upload Your Statement", `${BRAND.url}/statement-review`, "#059669")}${ep(`${data.agentName || "Tech Savvy Hawaii"}<br/>Tech Savvy Hawaii`)}`)}}`),
+        text: `Hi ${firstName},\n\nThanks for chatting! We offer zero processing fees, no monthly fees, and no contracts.\n\n${data.nextStep ? `Next step: ${data.nextStep}\n\n` : ""}${data.agentName || "Tech Savvy Hawaii"}\n(808) 767-5460`,
+      };
+    }
+    case "initial-outreach": {
+      const firstName = data.ownerName?.split(" ")[0] || "there";
+      const vh: Record<string, string> = { restaurant: "I work with several restaurants in Hawaii overpaying $800-2,000/month in hidden fees", retail: "I work with local retail shops paying 30-50% more than they should" };
+      const hook = vh[data.vertical || ""] || "I work with local businesses in Hawaii and most are overpaying on processing fees";
+      return {
+        subject: `Quick question about ${data.businessName}'s processing fees`,
+        html: emailWrap(`${emailHeader()}${emailBody(`${ep(`Hi ${firstName},`)}${data.personalNote ? ep(data.personalNote) : ""}${ep(`${hook}.`)}${ep(`I'd love to take a quick look at ${data.businessName}'s processing statement. Most merchants are surprised by what they find.`)}${eHighlight("What We Offer", "Zero processing fees — you keep 100% of every sale")}${eBullet(["<strong>Free statement analysis</strong> — I'll show you exactly what you're paying", "<strong>No obligation</strong> — if I can't save you money, I'll tell you", "<strong>5 minutes</strong> — just send me a recent statement"])}${ep("Reply with a photo of your latest statement — takes 30 seconds.")}${emailCta("Get Your Free Analysis", `${BRAND.url}/statement-review`, "#059669")}${ep(`${data.agentName || "Tech Savvy Hawaii"}`)}`)}}`),
+        text: `Hi ${firstName},\n\n${hook}.\n\nI'd love to look at ${data.businessName}'s statement. Reply with a photo.\n\n${data.agentName || "Tech Savvy Hawaii"}\n(808) 767-5460`,
+      };
+    }
+    case "meeting-follow-up": {
+      const firstName = data.ownerName?.split(" ")[0] || "there";
+      const aiHtml = (data.actionItems || []).length > 0 ? `<div style="background:#f0fdf4;border-radius:8px;padding:16px 20px;margin:16px 0;"><div style="font-size:13px;text-transform:uppercase;color:#059669;font-weight:700;margin-bottom:10px;">Action Items</div>${(data.actionItems as string[]).map((a: string, i: number) => `<div style="padding:6px 0;font-size:14px;color:#065f46;"><strong>${i + 1}.</strong> ${a}</div>`).join("")}</div>` : "";
+      return {
+        subject: `Recap: Our meeting about ${data.businessName}'s processing`,
+        html: emailWrap(`${emailHeader()}${emailBody(`${ep(`Hi ${firstName},`)}${ep(`Thank you for sitting down with me${data.meetingDate ? ` on ${data.meetingDate}` : ""}. I enjoyed learning about <strong>${data.businessName}</strong>.`)}${data.discussed ? `<div style="background:#f0f9ff;border-left:4px solid #0284c7;border-radius:0 8px 8px 0;padding:16px 20px;margin:16px 0;"><div style="font-size:12px;text-transform:uppercase;color:#0284c7;font-weight:700;margin-bottom:6px;">Meeting Summary</div><div style="font-size:14px;color:#0c4a6e;">${data.discussed}</div></div>` : ""}${data.savingsEstimate ? eHighlight("Estimated Monthly Savings", data.savingsEstimate) : ""}${aiHtml}${data.nextMeeting ? `<div style="background:#faf5ff;border-left:4px solid #7c3aed;border-radius:0 8px 8px 0;padding:16px 20px;margin:16px 0;"><div style="font-size:12px;text-transform:uppercase;color:#7c3aed;font-weight:700;">Next Meeting</div><div style="font-size:16px;font-weight:700;color:#4c1d95;">${data.nextMeeting}</div></div>` : ""}${emailCta("Call Me Anytime", "tel:8087675460")}${ep(`Best,<br/><strong>${data.agentName || "Tech Savvy Hawaii"}</strong>`)}`)}}`),
+        text: `Hi ${firstName},\n\nThank you for meeting${data.meetingDate ? ` on ${data.meetingDate}` : ""}.\n\n${data.discussed ? `Summary: ${data.discussed}\n\n` : ""}${data.agentName || "Tech Savvy Hawaii"}\n(808) 767-5460`,
+      };
+    }
+    case "welcome-to-team": {
+      const firstName = data.newMemberName?.split(" ")[0] || "there";
+      return {
+        subject: `Welcome to Tech Savvy Hawaii, ${firstName}!`,
+        html: emailWrap(`${emailHeader("Welcome to the Team")}${emailBody(`${ep(`Aloha ${firstName}!`)}${ep(`Welcome to <strong>Tech Savvy Hawaii</strong>!${data.role ? ` You're joining as our new <strong>${data.role}</strong>.` : ""}`)}${data.startDate ? eHighlight("Start Date", data.startDate, "#7c3aed") : ""}${ep("Your toolkit:")}${eBullet(["<strong>CashSwipe Classroom</strong> — AI-powered training", "<strong>Statement Analyzer</strong> — finds hidden fees", "<strong>CRM Dashboard</strong> — track leads and pipeline", "<strong>Pitch Generator</strong> — AI scripts per business type", "<strong>Objection Handler</strong> — instant rebuttals"])}${ep("Your first week:")}${eBullet(["<strong>Day 1:</strong> Complete training modules", "<strong>Day 2:</strong> Shadow an experienced agent", "<strong>Day 3:</strong> Practice with AI roleplay", "<strong>Day 4:</strong> First solo walk-ins", "<strong>Day 5:</strong> Review and set goals"])}${data.loginUrl ? emailCta("Access Dashboard", data.loginUrl) : ""}${ep("— The Tech Savvy Hawaii Team")}`)}}`),
+        text: `Aloha ${firstName}!\n\nWelcome to Tech Savvy Hawaii!${data.role ? ` You're our new ${data.role}.` : ""}\n\n— The Tech Savvy Hawaii Team\n(808) 767-5460`,
+      };
+    }
+    case "referral-follow-up": {
+      const firstName = data.ownerName?.split(" ")[0] || "there";
+      return {
+        subject: `${data.referrerName} suggested I reach out — ${data.businessName}`,
+        html: emailWrap(`${emailHeader()}${emailBody(`${ep(`Hi ${firstName},`)}${ep(`<strong>${data.referrerName}</strong>${data.referrerBusiness ? ` from <strong>${data.referrerBusiness}</strong>` : ""} suggested I reach out. They thought you'd be interested in seeing how much you could save on payment processing.`)}${eHighlight("Why They Referred You", `${data.referrerName} is saving hundreds per month with our zero-fee program`)}${eBullet(["<strong>Zero processing fees</strong> — you keep 100%", "<strong>No monthly fees</strong> — no hidden charges", "<strong>No contracts</strong> — month-to-month", "<strong>Free custom website</strong> — included"])}${ep("Reply with a photo of your latest statement — takes 30 seconds.")}${emailCta("Get Your Free Analysis", `${BRAND.url}/statement-review`, "#059669")}${ep(`${data.agentName || "Tech Savvy Hawaii"}`)}`)}}`),
+        text: `Hi ${firstName},\n\n${data.referrerName} suggested I reach out. They're saving hundreds/month with our zero-fee program.\n\nReply with a statement photo.\n\n${data.agentName || "Tech Savvy Hawaii"}\n(808) 767-5460`,
+      };
+    }
+    case "referral-contract": {
+      const firstName = data.partnerName?.split(" ")[0] || "there";
+      const commission = data.commissionRate || "$50 per signed merchant";
+      return {
+        subject: "Your Referral Partner Agreement — Tech Savvy Hawaii",
+        html: emailWrap(`${emailHeader("Referral Partner Program")}${emailBody(`${ep(`Hi ${firstName},`)}${ep(`Thank you for your interest in becoming a <strong>Tech Savvy Hawaii Referral Partner</strong>!${data.partnerBusiness ? ` We're excited to work with <strong>${data.partnerBusiness}</strong>.` : ""}`)}${eBullet(["<strong>Refer a business</strong> — share our info", "<strong>We handle the rest</strong> — statement review, setup, installation", "<strong>You get paid</strong> — commission for every signed merchant"])}${eHighlight("Your Commission", commission, "#7c3aed")}<table width="100%" style="font-size:14px;margin-bottom:16px;"><tr style="background:#f8fafc;"><td style="padding:12px;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Referrals</td><td style="padding:12px;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Per Merchant</td><td style="padding:12px;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Bonus</td></tr><tr><td style="padding:12px;border-bottom:1px solid #f1f5f9;">1–5</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;color:#059669;font-weight:700;">$50</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;">—</td></tr><tr style="background:#f8fafc;"><td style="padding:12px;border-bottom:1px solid #f1f5f9;">6–15</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;color:#059669;font-weight:700;">$75</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;color:#7c3aed;">$100 at 10</td></tr><tr><td style="padding:12px;">16+</td><td style="padding:12px;color:#059669;font-weight:700;">$100</td><td style="padding:12px;color:#7c3aed;">$250 at 20</td></tr></table>${data.agreementUrl ? emailCta("Review & Sign Agreement", data.agreementUrl, "#7c3aed") : ""}${emailCta("Call (808) 767-5460", "tel:8087675460")}${ep(`${data.agentName || "Tech Savvy Hawaii"}<br/>Referral Partner Program`)}`)}}`),
+        text: `Hi ${firstName},\n\nThanks for your interest in our Referral Partner Program!\n\nCommission: ${commission}\nTiers: 1-5 ($50/ea), 6-15 ($75/ea), 16+ ($100/ea)\n\n${data.agentName || "Tech Savvy Hawaii"}\n(808) 767-5460`,
+      };
+    }
+    default:
+      return null;
+  }
 }
 
 // ─── Auth helpers ────────────────────────────────────────────────────
@@ -136,6 +248,40 @@ const ALLOWED_MODELS = [
 ];
 const MAX_HISTORY_LENGTH = 20;
 const MAX_ALLOWED_TOKENS = 4096;
+
+// ─── Tech Stack Detection (simplified for Workers) ──────────────────
+
+function detectTechStackSimple(html: string): { name: string; category: string; confidence: string }[] {
+  const results: { name: string; category: string; confidence: string }[] = [];
+  const lower = html.toLowerCase();
+  const checks: [string, string, string[]][] = [
+    ["Shopify", "ECOMMERCE", ["cdn.shopify.com", "shopify.com/s/"]],
+    ["WooCommerce", "ECOMMERCE", ["woocommerce", "wc-blocks"]],
+    ["BigCommerce", "ECOMMERCE", ["bigcommerce.com"]],
+    ["Magento", "ECOMMERCE", ["magento", "mage/"]],
+    ["Square", "PAYMENTS", ["squareup.com", "square.com"]],
+    ["Stripe", "PAYMENTS", ["stripe.com", "js.stripe.com"]],
+    ["PayPal", "PAYMENTS", ["paypal.com", "paypalobjects.com"]],
+    ["Clover", "PAYMENTS", ["clover.com"]],
+    ["Toast", "PAYMENTS", ["toasttab.com"]],
+    ["WordPress", "CMS", ["wp-content", "wp-includes"]],
+    ["Wix", "CMS", ["wix.com", "parastorage.com"]],
+    ["Squarespace", "CMS", ["squarespace.com", "sqsp.com"]],
+    ["React", "FRAMEWORK", ["react", "reactdom", "_next/"]],
+    ["Google Analytics", "ANALYTICS", ["google-analytics.com", "gtag/", "googletagmanager.com"]],
+    ["Yelp", "LISTINGS", ["yelp.com/biz"]],
+    ["OpenTable", "INDUSTRY", ["opentable.com"]],
+    ["DoorDash", "INDUSTRY", ["doordash.com"]],
+    ["UberEats", "INDUSTRY", ["ubereats.com"]],
+  ];
+  for (const [name, category, patterns] of checks) {
+    const matched = patterns.filter(p => lower.includes(p));
+    if (matched.length > 0) {
+      results.push({ name, category, confidence: matched.length >= 2 ? "high" : "medium" });
+    }
+  }
+  return results;
+}
 
 // ─── Main handler ────────────────────────────────────────────────────
 
@@ -2647,11 +2793,691 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json({ id, leadId: body.leadId || "", opportunityId: body.opportunityId || "", userId: body.userId || "", type: body.type || "note", title: body.title || "", description: body.description || "", metadata: body.metadata || "{}", createdAt: ts }, 201);
     }
 
-    // ─── MISSING ROUTES ─────────────────────────────────────────────
+    // ─── DASHBOARD STATS ──────────────────────────────────────────────
+
+    if (path === "/api/dashboard/stats" && method === "GET") {
+      try {
+        const [leadRes, clientRes, revRes, taskRes, fileRes] = await Promise.all([
+          env.DB.prepare("SELECT * FROM leads").all(),
+          env.DB.prepare("SELECT * FROM clients").all(),
+          env.DB.prepare("SELECT * FROM revenue").all(),
+          env.DB.prepare("SELECT * FROM tasks").all(),
+          env.DB.prepare("SELECT COUNT(*) as cnt FROM admin_files").first(),
+        ]);
+        let contactCount = 0;
+        try { const c = await env.DB.prepare("SELECT COUNT(*) as cnt FROM contact_leads").first(); contactCount = (c?.cnt as number) || 0; } catch {}
+        let intCount = 0;
+        try { const i = await env.DB.prepare("SELECT COUNT(*) as cnt FROM integrations").first(); intCount = (i?.cnt as number) || 0; } catch {}
+        let slackEnabled = false;
+        try { const s = await env.DB.prepare("SELECT enabled FROM slack_config WHERE id = 'default'").first(); slackEnabled = !!s?.enabled; } catch {}
+
+        const leads = leadRes.results || [];
+        const clients = clientRes.results || [];
+        const revenue = revRes.results || [];
+        const tasks = taskRes.results || [];
+        const nowDate = new Date();
+        const thisMonthRevenue = revenue.filter((r: any) => { const d = new Date(r.date as string); return d.getMonth() === nowDate.getMonth() && d.getFullYear() === nowDate.getFullYear(); }).reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+        const prices: Record<string, number> = { none: 0, basic: 99, pro: 199, premium: 399 };
+        const mrr = clients.reduce((s: number, c: any) => s + (prices[c.maintenance as string] || 0), 0);
+
+        return json({
+          totalLeads: leads.length,
+          activeLeads: leads.filter((l: any) => !["won", "lost"].includes(l.status as string)).length,
+          totalClients: clients.length,
+          websitesLive: clients.filter((c: any) => c.website_status === "live").length,
+          thisMonthRevenue, mrr,
+          pendingTasks: tasks.filter((t: any) => !t.completed).length,
+          overdueTasks: tasks.filter((t: any) => !t.completed && t.due_date && (t.due_date as string) < nowDate.toISOString().split("T")[0]).length,
+          contactFormLeads: contactCount,
+          totalFiles: (fileRes?.cnt as number) || 0,
+          slackEnabled,
+          integrationsCount: intCount,
+        });
+      } catch { return json({ totalLeads: 0, activeLeads: 0, totalClients: 0, websitesLive: 0, thisMonthRevenue: 0, mrr: 0, pendingTasks: 0, overdueTasks: 0, contactFormLeads: 0, totalFiles: 0, slackEnabled: false, integrationsCount: 0 }); }
+    }
+
+    // ─── INTEGRATIONS CRUD ────────────────────────────────────────────
+
+    if (path === "/api/integrations" && method === "GET") {
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM integrations").all();
+        return json((results || []).map((r: any) => ({ id: r.id, name: r.name, type: r.type, enabled: !!r.enabled, config: (() => { try { return JSON.parse(r.config || "{}"); } catch { return {}; } })(), lastSync: r.last_sync || "" })));
+      } catch { return json([]); }
+    }
+
+    if (path === "/api/integrations" && method === "POST") {
+      const body: any = await request.json();
+      const id = genId();
+      const ts = now();
+      await env.DB.prepare(
+        "INSERT INTO integrations (id, name, type, enabled, config, last_sync) VALUES (?, ?, ?, ?, ?, ?)"
+      ).bind(id, body.name || "", body.type || "webhook", body.enabled ? 1 : 0, JSON.stringify(body.config || {}), ts).run();
+      const row = await env.DB.prepare("SELECT * FROM integrations WHERE id = ?").bind(id).first();
+      return json({ id: row!.id, name: row!.name, type: row!.type, enabled: !!row!.enabled, config: JSON.parse((row!.config as string) || "{}"), lastSync: row!.last_sync || "" }, 201);
+    }
+
+    const intMatch = path.match(/^\/api\/integrations\/([^/]+)$/);
+    if (intMatch && method === "PATCH") {
+      const id = intMatch[1];
+      const body: any = await request.json();
+      const updates: string[] = ["last_sync = ?"];
+      const values: any[] = [now()];
+      if (body.name !== undefined) { updates.push("name = ?"); values.push(body.name); }
+      if (body.type !== undefined) { updates.push("type = ?"); values.push(body.type); }
+      if (body.enabled !== undefined) { updates.push("enabled = ?"); values.push(body.enabled ? 1 : 0); }
+      if (body.config !== undefined) { updates.push("config = ?"); values.push(JSON.stringify(body.config)); }
+      await env.DB.prepare(`UPDATE integrations SET ${updates.join(", ")} WHERE id = ?`).bind(...values, id).run();
+      const row = await env.DB.prepare("SELECT * FROM integrations WHERE id = ?").bind(id).first();
+      if (!row) return err("Integration not found", 404);
+      return json({ id: row.id, name: row.name, type: row.type, enabled: !!row.enabled, config: JSON.parse((row.config as string) || "{}"), lastSync: row.last_sync || "" });
+    }
+
+    if (intMatch && method === "DELETE") {
+      await env.DB.prepare("DELETE FROM integrations WHERE id = ?").bind(intMatch[1]).run();
+      return json({ success: true });
+    }
+
+    // ─── CLIENTS ASSIGN ───────────────────────────────────────────────
+
+    const clientAssignMatch = path.match(/^\/api\/clients\/([^/]+)\/assign$/);
+    if (clientAssignMatch && method === "PATCH") {
+      const id = clientAssignMatch[1];
+      const body: any = await request.json();
+      const { assigneeId } = body;
+      await env.DB.prepare("UPDATE clients SET notes = ? WHERE id = ?").bind(`[ASSIGNED:${assigneeId}] `, id).run();
+      const row = await env.DB.prepare("SELECT * FROM clients WHERE id = ?").bind(id).first();
+      if (!row) return err("Client not found", 404);
+      return json(mapClient(row));
+    }
+
+    // ─── INVOICE FILE UPLOAD ──────────────────────────────────────────
+
+    const invUploadMatch = path.match(/^\/api\/invoices\/([^/]+)\/upload$/);
+    if (invUploadMatch && method === "POST") {
+      try {
+        const id = invUploadMatch[1];
+        const formData = await request.formData();
+        const file = formData.get("file") as File | null;
+        if (!file) return err("No file uploaded");
+
+        const ext = file.name.includes(".") ? file.name.substring(file.name.lastIndexOf(".")).toLowerCase() : "";
+        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+        const r2Key = `invoices/${Date.now()}-${baseName}${ext}`;
+        const arrayBuf = await file.arrayBuffer();
+
+        await env.FILES_BUCKET.put(r2Key, arrayBuf, {
+          httpMetadata: { contentType: file.type || "application/octet-stream" },
+        });
+
+        const publicUrl = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+        const fileUrl = `${publicUrl}/${r2Key}`;
+        const ts = now();
+
+        await env.DB.prepare("UPDATE invoices SET file_url = ?, file_name = ?, updated_at = ? WHERE id = ?").bind(fileUrl, file.name, ts, id).run();
+        const row = await env.DB.prepare("SELECT * FROM invoices WHERE id = ?").bind(id).first();
+        if (!row) return err("Invoice not found", 404);
+        return json(mapInvoice(row));
+      } catch (e: any) {
+        return err(e.message || "Upload failed", 500);
+      }
+    }
+
+    // ─── EMAIL CALL SCRIPTS ───────────────────────────────────────────
+
+    const callScriptMatch = path.match(/^\/api\/email\/call-scripts\/([^/]+)$/);
+    if (callScriptMatch && method === "GET") {
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM call_scripts WHERE lead_id = ? ORDER BY generated_at DESC").bind(callScriptMatch[1]).all();
+        return json((results || []).map((s: any) => ({
+          id: s.id, leadId: s.lead_id, generatedAt: s.generated_at, script: s.script,
+          talkingPoints: (() => { try { return JSON.parse(s.talking_points || "[]"); } catch { return []; } })(),
+          objections: (() => { try { return JSON.parse(s.objections || "[]"); } catch { return []; } })(),
+        })));
+      } catch { return json([]); }
+    }
+
+    // ─── EMAIL TEMPLATES CRUD ─────────────────────────────────────────
+
+    if (path === "/api/email/templates" && method === "GET") {
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM outreach_templates").all();
+        return json((results || []).map((r: any) => ({
+          id: r.id, name: r.name, subject: r.subject, body: r.body,
+          category: r.category, isDefault: !!r.is_default,
+          createdAt: r.created_at, updatedAt: r.updated_at,
+        })));
+      } catch { return json([]); }
+    }
+
+    if (path === "/api/email/templates" && method === "POST") {
+      const body: any = await request.json();
+      const id = genId();
+      const ts = now();
+      await env.DB.prepare(
+        "INSERT INTO outreach_templates (id, name, subject, body, category, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      ).bind(id, body.name || "", body.subject || "", body.body || "", body.category || "cold", body.isDefault ? 1 : 0, ts, ts).run();
+      const row = await env.DB.prepare("SELECT * FROM outreach_templates WHERE id = ?").bind(id).first();
+      return json({ id: row!.id, name: row!.name, subject: row!.subject, body: row!.body, category: row!.category, isDefault: !!row!.is_default, createdAt: row!.created_at, updatedAt: row!.updated_at }, 201);
+    }
+
+    const etMatch = path.match(/^\/api\/email\/templates\/([^/]+)$/);
+    if (etMatch && method === "PATCH") {
+      const id = etMatch[1];
+      const body: any = await request.json();
+      const fieldMap: Record<string, string> = { name: "name", subject: "subject", body: "body", category: "category" };
+      const updates: string[] = ["updated_at = ?"];
+      const values: any[] = [now()];
+      for (const [jsKey, dbCol] of Object.entries(fieldMap)) {
+        if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(body[jsKey]); }
+      }
+      if (body.isDefault !== undefined) { updates.push("is_default = ?"); values.push(body.isDefault ? 1 : 0); }
+      await env.DB.prepare(`UPDATE outreach_templates SET ${updates.join(", ")} WHERE id = ?`).bind(...values, id).run();
+      const row = await env.DB.prepare("SELECT * FROM outreach_templates WHERE id = ?").bind(id).first();
+      if (!row) return err("Template not found", 404);
+      return json({ id: row.id, name: row.name, subject: row.subject, body: row.body, category: row.category, isDefault: !!row.is_default, createdAt: row.created_at, updatedAt: row.updated_at });
+    }
+
+    if (etMatch && method === "DELETE") {
+      await env.DB.prepare("DELETE FROM outreach_templates WHERE id = ?").bind(etMatch[1]).run();
+      return json({ success: true });
+    }
+
+    // ─── EMAIL TEMPLATE TYPES ─────────────────────────────────────────
+
+    if (path === "/api/email/template/types" && method === "GET") {
+      return json([
+        { type: "statement-analysis", label: "Statement Analysis Report", category: "report", description: "AI-powered statement review with grade, fees, red flags, and savings estimate" },
+        { type: "walk-in-follow-up", label: "Walk-In Follow Up", category: "follow-up", description: "After visiting a merchant in person — vertical-specific benefits" },
+        { type: "phone-call-follow-up", label: "Phone Call Follow Up", category: "follow-up", description: "After a phone conversation — recap and next steps" },
+        { type: "initial-outreach", label: "Initial Outreach", category: "cold", description: "Cold/warm first contact with industry-specific hooks" },
+        { type: "meeting-follow-up", label: "Meeting Follow Up", category: "follow-up", description: "Post-meeting recap with action items and savings" },
+        { type: "welcome-to-team", label: "Welcome to Team", category: "internal", description: "New agent onboarding with first-week schedule" },
+        { type: "referral-follow-up", label: "Referral Follow Up", category: "referral", description: "Following up on a referral lead with social proof" },
+        { type: "referral-contract", label: "Referral Contract", category: "referral", description: "Partner agreement email with commission tiers" },
+      ]);
+    }
+
+    // ─── EMAIL TEMPLATE GENERATE ──────────────────────────────────────
+
+    if (path === "/api/email/template/generate" && method === "POST") {
+      try {
+        const body: any = await request.json();
+        const { type, data } = body;
+        if (!type) return err("Template 'type' is required");
+        const result = generateBrandedEmail(type, data || {});
+        if (!result) return err(`Unknown template type: ${type}`, 400);
+        return json(result);
+      } catch { return err("Failed to generate template", 500); }
+    }
+
+    // ─── EMAIL TEMPLATE SEND ──────────────────────────────────────────
+
+    if (path === "/api/email/template/send" && method === "POST") {
+      try {
+        const body: any = await request.json();
+        const { type, to, data, leadId, threadId } = body;
+        if (!type || !to) return err("Template 'type' and 'to' email required");
+
+        const emailContent = generateBrandedEmail(type, data || {});
+        if (!emailContent) return err(`Unknown template type: ${type}`, 400);
+
+        const apiKey = env.RESEND_API_KEY;
+        if (!apiKey) return err("RESEND_API_KEY not configured", 500);
+
+        let fromEmail = "contact@techsavvyhawaii.com";
+        let fromName = "TechSavvy Hawaii";
+        try {
+          const cfg = await env.DB.prepare("SELECT * FROM resend_config WHERE id = 'default'").first();
+          if (cfg?.enabled) { fromEmail = (cfg.from_email as string) || fromEmail; fromName = (cfg.from_name as string) || fromName; }
+        } catch {}
+
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({ from: `${fromName} <${fromEmail}>`, to: [to], subject: emailContent.subject, html: emailContent.html, text: emailContent.text || "" }),
+        });
+        if (!resendRes.ok) return err("Failed to send email", 500);
+
+        const ts = now();
+        let tid = threadId;
+        if (!tid) {
+          tid = genId();
+          await env.DB.prepare(
+            "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, ?, ?, ?, ?, 'open', 0, ?, ?)"
+          ).bind(tid, emailContent.subject, leadId || "", to, data?.ownerName || to, type, ts, ts).run();
+        } else {
+          await env.DB.prepare("UPDATE email_threads SET last_message_at = ?, status = 'replied' WHERE id = ?").bind(ts, tid).run();
+        }
+
+        if (leadId) {
+          try {
+            const lead = await env.DB.prepare("SELECT status FROM leads WHERE id = ?").bind(leadId).first();
+            if (lead && lead.status === "new") {
+              await env.DB.prepare("UPDATE leads SET status = 'contacted', updated_at = ? WHERE id = ?").bind(ts, leadId).run();
+            }
+          } catch {}
+        }
+
+        return json({ success: true, threadId: tid });
+      } catch { return err("Failed to send template email", 500); }
+    }
+
+    // ─── EMAIL TEMPLATE SEND TO LEAD ──────────────────────────────────
+
+    if (path === "/api/email/template/send-to-lead" && method === "POST") {
+      try {
+        const body: any = await request.json();
+        const { leadId, type, agentName, extra } = body;
+        if (!leadId || !type) return err("leadId and type required");
+
+        const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(leadId).first();
+        if (!lead) return err("Lead not found", 404);
+        if (!lead.email) return err("Lead has no email address");
+
+        const agent = agentName || "Tech Savvy Hawaii";
+        const extraData = extra || {};
+        let templateData: any;
+        switch (type) {
+          case "walk-in-follow-up":
+            templateData = { ownerName: lead.name, businessName: lead.business, agentName: agent, vertical: lead.vertical, notes: extraData.notes || lead.notes || "" };
+            break;
+          case "phone-call-follow-up":
+            templateData = { ownerName: lead.name, businessName: lead.business, agentName: agent, discussed: extraData.discussed || "", nextStep: extraData.nextStep || lead.next_step || "" };
+            break;
+          case "initial-outreach":
+            templateData = { ownerName: lead.name, businessName: lead.business, agentName: agent, vertical: lead.vertical, currentProcessor: lead.current_processor, monthlyVolume: lead.monthly_volume, personalNote: extraData.personalNote || "" };
+            break;
+          case "meeting-follow-up":
+            templateData = { ownerName: lead.name, businessName: lead.business, agentName: agent, meetingDate: extraData.meetingDate || new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }), discussed: extraData.discussed || "", actionItems: extraData.actionItems || [], savingsEstimate: extraData.savingsEstimate || "", nextMeeting: extraData.nextMeeting || "" };
+            break;
+          case "referral-follow-up":
+            templateData = { ownerName: lead.name, businessName: lead.business, agentName: agent, referrerName: extraData.referrerName || "", referrerBusiness: extraData.referrerBusiness || "", vertical: lead.vertical };
+            break;
+          default:
+            return err(`Type '${type}' not supported for lead quick-send`, 400);
+        }
+
+        const emailContent = generateBrandedEmail(type, templateData);
+        if (!emailContent) return err("Failed to generate email", 500);
+
+        const apiKey = env.RESEND_API_KEY;
+        if (!apiKey) return err("RESEND_API_KEY not configured", 500);
+        let fromEmail = "contact@techsavvyhawaii.com";
+        let fromName = "TechSavvy Hawaii";
+        try { const cfg = await env.DB.prepare("SELECT * FROM resend_config WHERE id = 'default'").first(); if (cfg?.enabled) { fromEmail = (cfg.from_email as string) || fromEmail; fromName = (cfg.from_name as string) || fromName; } } catch {}
+
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({ from: `${fromName} <${fromEmail}>`, to: [lead.email as string], subject: emailContent.subject, html: emailContent.html, text: emailContent.text || "" }),
+        });
+        if (!resendRes.ok) return err("Failed to send email", 500);
+
+        const ts = now();
+        if (lead.status === "new") {
+          await env.DB.prepare("UPDATE leads SET status = 'contacted', updated_at = ? WHERE id = ?").bind(ts, leadId).run();
+        }
+
+        const tid = genId();
+        await env.DB.prepare(
+          "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, ?, ?, ?, ?, 'open', 0, ?, ?)"
+        ).bind(tid, emailContent.subject, leadId, lead.email, lead.name, type, ts, ts).run();
+
+        return json({ success: true, threadId: tid, templateType: type, sentTo: lead.email });
+      } catch { return err("Failed to send template email to lead", 500); }
+    }
+
+    // ─── EMAIL TEMPLATE SEND REFERRAL CONTRACT ────────────────────────
+
+    if (path === "/api/email/template/send-referral-contract" && method === "POST") {
+      try {
+        const body: any = await request.json();
+        const { partnerId, agentName, commissionRate, agreementUrl, email: partnerEmail } = body;
+        if (!partnerId) return err("partnerId required");
+        if (!partnerEmail) return err("Partner email required in body");
+
+        const partner = await env.DB.prepare("SELECT * FROM referral_partners WHERE id = ?").bind(partnerId).first();
+        if (!partner) return err("Partner not found", 404);
+
+        const emailContent = generateBrandedEmail("referral-contract", {
+          partnerName: partner.name, partnerBusiness: partner.niche || "",
+          agentName: agentName || "Tech Savvy Hawaii",
+          commissionRate: commissionRate || partner.referral_terms || "$50 per signed merchant",
+          agreementUrl: agreementUrl || "",
+        });
+        if (!emailContent) return err("Failed to generate email", 500);
+
+        const apiKey = env.RESEND_API_KEY;
+        if (!apiKey) return err("RESEND_API_KEY not configured", 500);
+        let fromEmail = "contact@techsavvyhawaii.com";
+        let fromName = "TechSavvy Hawaii";
+        try { const cfg = await env.DB.prepare("SELECT * FROM resend_config WHERE id = 'default'").first(); if (cfg?.enabled) { fromEmail = (cfg.from_email as string) || fromEmail; fromName = (cfg.from_name as string) || fromName; } } catch {}
+
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({ from: `${fromName} <${fromEmail}>`, to: [partnerEmail], subject: emailContent.subject, html: emailContent.html, text: emailContent.text || "" }),
+        });
+        if (!resendRes.ok) return err("Failed to send email", 500);
+
+        return json({ success: true, sentTo: partnerEmail });
+      } catch { return err("Failed to send referral contract email", 500); }
+    }
+
+    // ─── STATEMENT REVIEW (Public) ────────────────────────────────────
+
+    if (path === "/api/statement-review/analyze" && method === "POST") {
+      try {
+        const formData = await request.formData();
+        const file = formData.get("statement") as File | null;
+        if (!file) return err("No file uploaded. Please attach your merchant statement.");
+
+        const workerUrl = env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+        const arrayBuf = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuf);
+        let base64 = "";
+        for (let i = 0; i < bytes.length; i += 32768) {
+          base64 += String.fromCharCode(...bytes.slice(i, i + 32768));
+        }
+        base64 = btoa(base64);
+        const mimeType = file.type || "application/pdf";
+
+        const workerRes = await fetch(`${workerUrl}/analyze-statement`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageBase64: base64, imageType: mimeType }),
+          signal: AbortSignal.timeout(60000),
+        });
+
+        if (!workerRes.ok) {
+          const errData: any = await workerRes.json().catch(() => ({ error: "Worker error" }));
+          return err(errData.error || "Analysis service error", 500);
+        }
+
+        const analysis: any = await workerRes.json();
+
+        // Save uploaded file to R2
+        try {
+          const ext = file.name.includes(".") ? file.name.substring(file.name.lastIndexOf(".")).toLowerCase() : "";
+          const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 60);
+          const r2Key = `statements/${Date.now()}-${baseName}${ext}`;
+          await env.FILES_BUCKET.put(r2Key, arrayBuf, { httpMetadata: { contentType: mimeType } });
+          const publicUrl = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+          await env.DB.prepare(
+            "INSERT INTO admin_files (id, name, size, type, category, folder, uploaded_at, url) VALUES (?, ?, ?, ?, 'statements', 'Uploaded Statements', ?, ?)"
+          ).bind(genId(), file.name, file.size, mimeType.includes("pdf") ? "document" : "image", now(), `${publicUrl}/${r2Key}`).run();
+        } catch {}
+
+        return json(analysis);
+      } catch (e: any) {
+        const msg = e.message || "";
+        return err(msg.includes("abort") ? "Analysis took too long. Please try a smaller file." : "Analysis failed. Please try again or call (808) 767-5460.", 500);
+      }
+    }
+
+    if (path === "/api/statement-review/email" && method === "POST") {
+      try {
+        const body: any = await request.json();
+        const { email, name, business, type, analysis } = body;
+        if (!email || !name) return err("Name and email are required.");
+
+        const apiKey = env.RESEND_API_KEY;
+        if (!apiKey) return err("RESEND_API_KEY not configured", 500);
+        let fromEmail = "contact@techsavvyhawaii.com";
+        let fromName = "TechSavvy Hawaii";
+        try { const cfg = await env.DB.prepare("SELECT * FROM resend_config WHERE id = 'default'").first(); if (cfg?.enabled) { fromEmail = (cfg.from_email as string) || fromEmail; fromName = (cfg.from_name as string) || fromName; } } catch {}
+
+        let subject: string;
+        let html: string;
+
+        if (type === "report" && analysis) {
+          const emailContent = generateBrandedEmail("statement-analysis", {
+            ownerName: name, businessName: business || "Your Business",
+            processorName: analysis.processorName || analysis.currentProcessor || "your processor",
+            effectiveRate: analysis.effectiveRate || "N/A",
+            totalFees: analysis.totalFees || analysis.estimatedOverpay || "N/A",
+            monthlyVolume: analysis.monthlyVolume || "N/A",
+            overallGrade: analysis.overallGrade || "C",
+            hiddenFees: analysis.hiddenFees || [], redFlags: analysis.redFlags || [],
+            junkFees: analysis.junkFees || [], recommendations: analysis.recommendations || [],
+            estimatedOverpay: analysis.estimatedOverpay || "N/A",
+            potentialAnnualSavings: analysis.estimatedOverpay ? `$${(parseFloat(analysis.estimatedOverpay.replace(/[$,]/g, "")) * 12).toLocaleString()}` : "N/A",
+          });
+          subject = emailContent!.subject;
+          html = emailContent!.html;
+        } else {
+          subject = "Your Free Merchant Statement Review Guides | TechSavvy Hawaii";
+          html = `<div style="font-family:'Segoe UI',sans-serif;max-width:640px;margin:0 auto;background:#0a0a0a;color:#e0e0e0;"><div style="padding:32px;background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid #4aeaff;"><h1 style="margin:0;font-size:24px;color:#4aeaff;">TechSavvy</h1></div><div style="padding:32px;"><p>Hi ${name},</p><p style="color:#aaa;">Here are your free statement review guides.</p><div style="text-align:center;margin:24px 0;"><a href="https://techsavvyhawaii.com/statement-review" style="background:#4aeaff;color:#000;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;">Get AI Analysis</a></div></div></div>`;
+        }
+
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({ from: `${fromName} <${fromEmail}>`, to: [email], subject, html }),
+        });
+
+        // Save as lead
+        try {
+          const ts = now();
+          await env.DB.prepare(
+            "INSERT INTO leads (id, name, business, phone, email, package, status, source, notes, attachments, created_at, updated_at) VALUES (?, ?, ?, '', ?, 'terminal', 'new', 'statement-review', ?, '[]', ?, ?)"
+          ).bind(genId(), name, business || "", email, type === "report" ? "AI statement report emailed" : "Requested self-review guides", ts, ts).run();
+        } catch {}
+
+        return json({ success: true });
+      } catch { return err("Failed to send email.", 500); }
+    }
+
+    // ─── PARTNER AGREEMENT (Public) ───────────────────────────────────
+
+    if (path === "/api/partner-agreement" && method === "POST") {
+      try {
+        const body: any = await request.json();
+        const { partnerName, businessName, email, phone, address, businessType, agreeTerms, signature, date } = body;
+        if (!partnerName || !businessName || !email || !agreeTerms || !signature) {
+          return err("Required fields: partnerName, businessName, email, agreeTerms, signature");
+        }
+
+        const docHtml = `<!DOCTYPE html><html><head><title>Partner Agreement — ${businessName}</title></head><body style="font-family:Arial,sans-serif;max-width:700px;margin:40px auto"><h1 style="border-bottom:2px solid #4aeaff;padding-bottom:8px">TechSavvy Hawaii — Partner Agreement</h1><p>Submitted: ${date || new Date().toLocaleDateString()}</p><table style="width:100%;border-collapse:collapse"><tr><td style="font-weight:bold;padding:8px;border-bottom:1px solid #eee">Partner</td><td style="padding:8px;border-bottom:1px solid #eee">${partnerName}</td></tr><tr><td style="font-weight:bold;padding:8px;border-bottom:1px solid #eee">Business</td><td style="padding:8px;border-bottom:1px solid #eee">${businessName}</td></tr><tr><td style="font-weight:bold;padding:8px;border-bottom:1px solid #eee">Email</td><td style="padding:8px;border-bottom:1px solid #eee">${email}</td></tr><tr><td style="font-weight:bold;padding:8px;border-bottom:1px solid #eee">Phone</td><td style="padding:8px;border-bottom:1px solid #eee">${phone || "—"}</td></tr></table><p><strong>Signature:</strong> ${signature}</p></body></html>`;
+
+        const ts = now();
+        const fileName = `Partner-Agreement-${businessName.replace(/[^a-zA-Z0-9]/g, "_")}.html`;
+        const r2Key = `partner-agreements/${Date.now()}-${fileName}`;
+        await env.FILES_BUCKET.put(r2Key, docHtml, { httpMetadata: { contentType: "text/html" } });
+        const publicUrl = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+
+        await env.DB.prepare(
+          "INSERT INTO admin_files (id, name, size, type, category, folder, uploaded_at, url) VALUES (?, ?, ?, 'document', 'contracts', 'Partner Agreements', ?, ?)"
+        ).bind(genId(), fileName, docHtml.length, ts, `${publicUrl}/${r2Key}`).run();
+
+        try {
+          await env.DB.prepare(
+            "INSERT INTO referral_partners (id, name, niche, client_types, referral_terms, intro_method, tracking_notes, last_check_in, next_check_in, created_at) VALUES (?, ?, ?, '', 'Tier A: first month revenue. Tier B: 10-15% ongoing residual.', 'partner-agreement-form', ?, ?, ?, ?)"
+          ).bind(genId(), partnerName, businessType || "", `Signed agreement. Email: ${email}`, ts, new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0], ts).run();
+        } catch {}
+
+        try {
+          await env.DB.prepare(
+            "INSERT INTO leads (id, name, business, phone, email, package, status, source, vertical, notes, attachments, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'terminal', 'new', 'partner-agreement', ?, 'Signed partner agreement via website', '[]', ?, ?)"
+          ).bind(genId(), partnerName, businessName, phone || "", email, businessType || "other", ts, ts).run();
+        } catch {}
+
+        return json({ success: true });
+      } catch { return err("Failed to save agreement.", 500); }
+    }
+
+    // ─── PUBLIC REFERRAL SUBMISSION ───────────────────────────────────
+
+    if (path === "/api/referrals/public" && method === "POST") {
+      try {
+        const body: any = await request.json();
+        const { referrerName, referrerEmail, referrerPhone, businessName, businessOwner, businessPhone, businessEmail, businessType, notes } = body;
+        if (!referrerName || !businessName) return err("Your name and the business name are required.");
+
+        const ts = now();
+        await env.DB.prepare(
+          "INSERT INTO leads (id, name, business, phone, email, package, status, source, vertical, notes, next_step, next_step_date, attachments, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'terminal', 'new', 'referral', ?, ?, 'Contact referred business', ?, '[]', ?, ?)"
+        ).bind(genId(), businessOwner || businessName, businessName, businessPhone || "", businessEmail || "", businessType || "other", `Referred by: ${referrerName} (${referrerEmail || referrerPhone || "no contact"}). ${notes || ""}`.trim(), new Date(Date.now() + 2 * 86400000).toISOString().split("T")[0], ts, ts).run();
+
+        return json({ success: true });
+      } catch { return err("Failed to submit referral.", 500); }
+    }
+
+    // ─── ADMIN SEED CONTENT ───────────────────────────────────────────
+
+    if (path === "/api/admin/seed-content" && method === "POST") {
+      const ts = now();
+      let resourcesAdded = 0;
+      let materialsAdded = 0;
+
+      const resources = [
+        { title: "Top 10 Things to Check on Your Merchant Statement", description: "Spot hidden fees, inflated rates, and junk charges.", category: "classroom", type: "pdf", url: "/free/statement-checklist", order: 1 },
+        { title: "Cash Discount Programs Explained", description: "Complete guide to cash discount programs.", category: "classroom", type: "pdf", url: "/free/cash-discount-guide", order: 2 },
+        { title: "Payment Security Checklist", description: "PCI compliance and fraud prevention.", category: "classroom", type: "pdf", url: "/free/security-checklist", order: 3 },
+        { title: "Industry-Specific Rate Comparison Guide", description: "Rate benchmarks by industry.", category: "classroom", type: "pdf", url: "/free/rate-comparison", order: 4 },
+      ];
+      for (const r of resources) {
+        try {
+          const existing = await env.DB.prepare("SELECT id FROM resources WHERE title = ?").bind(r.title).first();
+          if (!existing) {
+            await env.DB.prepare("INSERT INTO resources (id, title, description, category, type, url, thumbnail_url, sort_order, featured, published, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, '', ?, 1, 1, ?, ?)").bind(genId(), r.title, r.description, r.category, r.type, r.url, r.order, ts, ts).run();
+            resourcesAdded++;
+          }
+        } catch {}
+      }
+
+      const materials = [
+        { category: "sales", name: "One-Pager Value Proposition", description: "Print double-sided for walk-ins.", status: "completed" },
+        { category: "sales", name: "Leave-Behind Card", description: "Business card with QR code.", status: "completed" },
+        { category: "partner", name: "Referral Partner Agreement", description: "One-page partnership template.", status: "completed" },
+      ];
+      for (const m of materials) {
+        try {
+          const existing = await env.DB.prepare("SELECT id FROM materials WHERE name = ?").bind(m.name).first();
+          if (!existing) {
+            await env.DB.prepare("INSERT INTO materials (id, category, name, description, status, file_url, updated_at) VALUES (?, ?, ?, ?, ?, '', ?)").bind(genId(), m.category, m.name, m.description, m.status, ts).run();
+            materialsAdded++;
+          }
+        } catch {}
+      }
+
+      return json({ resources: resourcesAdded, materials: materialsAdded, aiUpdated: false });
+    }
+
+    // ─── AI WORKER PROXY ROUTES ───────────────────────────────────────
+
+    const WORKER_BASE = env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+
+    const aiProxyEndpoints: Record<string, string> = {
+      "/api/ai/enrich": "/enrich", "/api/ai/pitch": "/pitch",
+      "/api/ai/objection": "/objection", "/api/ai/score": "/score",
+      "/api/ai/email": "/email", "/api/ai/sms": "/sms",
+      "/api/ai/summarize": "/summarize", "/api/ai/quiz": "/quiz",
+      "/api/ai/roleplay": "/roleplay", "/api/ai/classify": "/classify",
+      "/api/ai/extract-statement": "/extract-statement",
+    };
+
+    if (method === "POST" && aiProxyEndpoints[path]) {
+      try {
+        const body = await request.json();
+        const resp = await fetch(`${WORKER_BASE}${aiProxyEndpoints[path]}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(20000),
+        });
+        const data = await resp.json();
+        return json(data, resp.status);
+      } catch (e: any) { return json({ error: `Worker unreachable: ${e.message}` }, 502); }
+    }
+
+    // ─── LEAD-SPECIFIC AI ROUTES ──────────────────────────────────────
+
+    const leadEnrichMatch = path.match(/^\/api\/leads\/([^/]+)\/enrich$/);
+    if (leadEnrichMatch && method === "POST") {
+      const leadId = leadEnrichMatch[1];
+      try {
+        const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(leadId).first();
+        if (!lead) return err("Lead not found", 404);
+        const resp = await fetch(`${WORKER_BASE}/enrich`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: lead.name, business: lead.business, email: lead.email, phone: lead.phone }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (resp.ok) {
+          const enrichData: any = await resp.json();
+          const updates: string[] = ["updated_at = ?"];
+          const values: any[] = [now()];
+          if (enrichData.vertical) { updates.push("vertical = ?"); values.push(enrichData.vertical); }
+          if (enrichData.currentProcessor) { updates.push("current_processor = ?"); values.push(enrichData.currentProcessor); }
+          if (enrichData.monthlyVolume) { updates.push("monthly_volume = ?"); values.push(enrichData.monthlyVolume); }
+          if (updates.length > 1) {
+            await env.DB.prepare(`UPDATE leads SET ${updates.join(", ")} WHERE id = ?`).bind(...values, leadId).run();
+          }
+        }
+        const updated = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(leadId).first();
+        return json(mapLead(updated!));
+      } catch (e: any) { return json({ error: `Enrich failed: ${e.message}` }, 502); }
+    }
+
+    const leadGenEmailMatch = path.match(/^\/api\/leads\/([^/]+)\/generate-email$/);
+    if (leadGenEmailMatch && method === "POST") {
+      const leadId = leadGenEmailMatch[1];
+      const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(leadId).first();
+      if (!lead) return err("Lead not found", 404);
+      const body: any = await request.json().catch(() => ({}));
+      try {
+        const resp = await fetch(`${WORKER_BASE}/email`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: lead.name, business: lead.business, email: lead.email, vertical: lead.vertical, currentProcessor: lead.current_processor, monthlyVolume: lead.monthly_volume, painPoints: lead.pain_points, notes: lead.notes, type: body.type || "initial" }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!resp.ok) return err("Email generation failed", resp.status);
+        return json(await resp.json());
+      } catch (e: any) { return json({ error: `Worker unreachable: ${e.message}` }, 502); }
+    }
+
+    const leadScoreMatch = path.match(/^\/api\/leads\/([^/]+)\/score$/);
+    if (leadScoreMatch && method === "POST") {
+      const leadId = leadScoreMatch[1];
+      const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(leadId).first();
+      if (!lead) return err("Lead not found", 404);
+      try {
+        const resp = await fetch(`${WORKER_BASE}/score`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ business: lead.business, vertical: lead.vertical, currentProcessor: lead.current_processor, monthlyVolume: lead.monthly_volume, painPoints: lead.pain_points, hasEmail: !!(lead.email), hasPhone: !!(lead.phone), hasWebsite: ((lead.notes as string) || "").includes("http"), source: lead.source }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!resp.ok) return err("Scoring failed", resp.status);
+        const scoreData: any = await resp.json();
+        await env.DB.prepare("UPDATE leads SET lead_score = ?, lead_score_reason = ?, updated_at = ? WHERE id = ?").bind(scoreData.score || 0, `${scoreData.grade || ""}: ${scoreData.recommendation || ""}`, now(), leadId).run();
+        try {
+          await env.DB.prepare("INSERT INTO lead_activities (id, lead_id, opportunity_id, user_id, type, title, description, metadata, created_at) VALUES (?, ?, '', 'admin', 'note', ?, ?, ?, ?)").bind(genId(), leadId, `Lead Score: ${scoreData.score}/100 (${scoreData.grade})`, scoreData.recommendation || "", JSON.stringify(scoreData), now()).run();
+        } catch {}
+        return json(scoreData);
+      } catch (e: any) { return json({ error: `Worker unreachable: ${e.message}` }, 502); }
+    }
+
+    const leadPitchMatch = path.match(/^\/api\/leads\/([^/]+)\/pitch$/);
+    if (leadPitchMatch && method === "POST") {
+      const leadId = leadPitchMatch[1];
+      const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(leadId).first();
+      if (!lead) return err("Lead not found", 404);
+      try {
+        const resp = await fetch(`${WORKER_BASE}/pitch`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ business: lead.business, vertical: lead.vertical, currentProcessor: lead.current_processor, monthlyVolume: lead.monthly_volume, painPoints: lead.pain_points }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!resp.ok) return err("Pitch generation failed", resp.status);
+        return json(await resp.json());
+      } catch (e: any) { return json({ error: `Worker unreachable: ${e.message}` }, 502); }
+    }
+
+    // ─── PREVIOUSLY ADDED ROUTES ────────────────────────────────────
 
     // GET /api/ai-config/full (admin settings page)
     if (path === "/api/ai-config/full" && method === "GET") {
-      if (!session) return err("Unauthorized", 401);
       const config = await env.DB.prepare("SELECT * FROM ai_config WHERE id = 'default'").first();
       if (!config) return json({ id: "default", enabled: false, model: "claude-sonnet-4-20250514", systemPrompt: "", welcomeMessage: "", maxTokens: 1024 });
       return json({
@@ -2668,8 +3494,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // POST /api/ai-ops/import-prospects
     if (path === "/api/ai-ops/import-prospects" && method === "POST") {
-      if (!session) return err("Unauthorized", 401);
-      const body = await ctx.request.json() as Record<string, unknown>;
+      const body: any = await request.json();
       const prospects = body.prospects as any[];
       const sourceLabel = (body.sourceLabel as string) || "Web scrape";
       if (!Array.isArray(prospects) || prospects.length === 0) return err("No prospects to import.");
@@ -2690,8 +3515,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // POST /api/ai-ops/tech-scan (simplified tech detection)
     if (path === "/api/ai-ops/tech-scan" && method === "POST") {
-      if (!session) return err("Unauthorized", 401);
-      const body = await ctx.request.json() as Record<string, unknown>;
+      const body: any = await request.json();
       const rawUrl = body.url;
       if (!rawUrl) return err("URL is required.");
 
@@ -2718,11 +3542,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // POST /api/ai-ops/scrape-prospects
     if (path === "/api/ai-ops/scrape-prospects" && method === "POST") {
-      if (!session) return err("Unauthorized", 401);
       const apiKey = env.ANTHROPIC_API_KEY;
       if (!apiKey) return err("Anthropic API key not configured.", 500);
 
-      const body = await ctx.request.json() as Record<string, unknown>;
+      const body: any = await request.json();
       const rawUrl = body.url;
       if (!rawUrl) return err("URL is required.");
 
@@ -2767,9 +3590,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // POST /api/ai-ops/google-dork
     if (path === "/api/ai-ops/google-dork" && method === "POST") {
-      if (!session) return err("Unauthorized", 401);
       const apiKey = env.ANTHROPIC_API_KEY;
-      const body = await ctx.request.json() as Record<string, unknown>;
+      const body: any = await request.json();
       const query = body.query as string;
       const location = body.location as string;
       if (!query) return err("Query is required.");
@@ -2800,13 +3622,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // POST /api/resources/upload
     if (path === "/api/resources/upload" && method === "POST") {
-      if (!session) return err("Unauthorized", 401);
-      const body = await ctx.request.json() as Record<string, unknown>;
-      const id = crypto.randomUUID();
-      const now = new Date().toISOString();
-      await env.DB.prepare(`INSERT INTO admin_resources (id, title, description, category, type, url, thumbnail_url, sort_order, featured, published, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?, ?)`)
-        .bind(id, body.title || "", body.description || "", body.category || "guide", body.type || "link", body.url || "", body.thumbnailUrl || "", now, now).run();
-      return json({ id, title: body.title, url: body.url, createdAt: now }, 201);
+      const body: any = await request.json();
+      const id = genId();
+      const ts = now();
+      await env.DB.prepare(`INSERT INTO resources (id, title, description, category, type, url, thumbnail_url, sort_order, featured, published, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?, ?)`)
+        .bind(id, body.title || "", body.description || "", body.category || "guide", body.type || "link", body.url || "", body.thumbnailUrl || "", ts, ts).run();
+      return json({ id, title: body.title, url: body.url, createdAt: ts }, 201);
     }
 
     // ─── CATCH-ALL ──────────────────────────────────────────────────────
