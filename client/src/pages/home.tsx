@@ -37,7 +37,7 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
 
 function HeroSection() {
   return (
-    <section className="relative pt-24 pb-16 sm:pt-36 sm:pb-24 overflow-hidden">
+    <section className="relative pt-24 pb-16 sm:pt-36 sm:pb-24 overflow-hidden pattern-dots">
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />
         <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] rounded-full bg-primary/8 blur-[150px]" />
@@ -163,7 +163,7 @@ function HowItWorks() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {steps.map((step, i) => (
               <motion.div key={step.num} variants={fadeUp}>
-                <Card className="h-full border-primary/10 relative overflow-hidden">
+                <Card className="h-full border-primary/10 relative overflow-hidden card-warm">
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/60 to-primary/20" />
                   <CardContent className="p-5 sm:p-6">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -560,25 +560,37 @@ function SavingsCalculator() {
 
 function CompareSection() {
   return (
-    <section className="py-16 sm:py-24 relative">
+    <section className="py-16 sm:py-24 relative bg-foreground text-background">
+      {/* Wave top */}
+      <div className="absolute top-0 left-0 right-0 overflow-hidden leading-none">
+        <svg viewBox="0 0 1200 60" preserveAspectRatio="none" className="w-full h-8 sm:h-12">
+          <path d="M0,60 C300,10 600,50 900,20 C1050,5 1150,30 1200,15 L1200,0 L0,0 Z" fill="hsl(var(--background))" />
+        </svg>
+      </div>
+      {/* Wave bottom */}
+      <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none rotate-180">
+        <svg viewBox="0 0 1200 60" preserveAspectRatio="none" className="w-full h-8 sm:h-12">
+          <path d="M0,60 C300,10 600,50 900,20 C1050,5 1150,30 1200,15 L1200,0 L0,0 Z" fill="hsl(var(--background))" />
+        </svg>
+      </div>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
           <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 text-background">
               Why local businesses are switching.
             </h2>
           </motion.div>
 
           <motion.div variants={fadeUp}>
-            <Card className="overflow-hidden border-border/50">
+            <Card className="overflow-hidden border-background/20 bg-background/10 backdrop-blur">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border/50">
-                      <th className="text-left p-4 font-semibold text-muted-foreground w-[28%]"></th>
-                      <th className="text-center p-4 w-[24%] text-muted-foreground font-semibold">Square</th>
-                      <th className="text-center p-4 w-[24%] text-muted-foreground font-semibold">Clover</th>
-                      <th className="text-center p-4 w-[24%] bg-primary/5">
+                    <tr className="border-b border-background/10">
+                      <th className="text-left p-4 font-semibold text-background/60 w-[28%]"></th>
+                      <th className="text-center p-4 w-[24%] text-background/60 font-semibold">Square</th>
+                      <th className="text-center p-4 w-[24%] text-background/60 font-semibold">Clover</th>
+                      <th className="text-center p-4 w-[24%] bg-primary/20 rounded-t-lg">
                         <span className="font-bold text-primary">TechSavvy</span>
                       </th>
                     </tr>
@@ -592,17 +604,17 @@ function CompareSection() {
                       { f: "Hardware Cost", sq: "$$$", cl: "$$$", ts: "Free*", big: false },
                       { f: "Local Hawaii Support", sq: "No", cl: "No", ts: "Yes", big: true },
                     ].map((r, i) => (
-                      <tr key={r.f} className={`border-b border-border/30 ${i % 2 ? "bg-muted/10" : ""}`}>
-                        <td className="p-3 sm:p-4 font-medium text-foreground/80">{r.f}</td>
-                        <td className="p-3 sm:p-4 text-center text-red-400/80">{r.sq}</td>
-                        <td className="p-3 sm:p-4 text-center text-red-400/80">{r.cl}</td>
-                        <td className={`p-3 sm:p-4 text-center bg-primary/5 ${r.big ? "text-primary font-bold text-base sm:text-lg" : "text-primary font-semibold"}`}>{r.ts}</td>
+                      <tr key={r.f} className={`border-b border-background/10 ${i % 2 ? "bg-background/5" : ""}`}>
+                        <td className="p-3 sm:p-4 font-medium text-background/70">{r.f}</td>
+                        <td className="p-3 sm:p-4 text-center text-red-300/80">{r.sq}</td>
+                        <td className="p-3 sm:p-4 text-center text-red-300/80">{r.cl}</td>
+                        <td className={`p-3 sm:p-4 text-center bg-primary/20 ${r.big ? "text-primary font-bold text-base sm:text-lg" : "text-primary font-semibold"}`}>{r.ts}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div className="px-4 py-2 text-[10px] text-muted-foreground border-t border-border/30">
+              <div className="px-4 py-2 text-[10px] text-background/40 border-t border-background/10">
                 *Free terminal for businesses processing $5K+/month
               </div>
             </Card>
@@ -723,6 +735,40 @@ function TrustSection() {
   );
 }
 
+// ─── 8b. Local Trust Badges ─────────────────────────────────────────────────
+
+function LocalTrustBadges() {
+  return (
+    <section className="py-10 sm:py-14 relative overflow-hidden">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground mb-6">Trusted by Hawai'i businesses · Compliant with all major card networks</p>
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 opacity-60">
+            {[
+              { name: "Visa", svg: <svg className="h-8 sm:h-10" viewBox="0 0 100 32" fill="none"><text x="5" y="25" fontFamily="var(--font-heading)" fontWeight="800" fontSize="28" fill="currentColor">VISA</text></svg> },
+              { name: "Mastercard", svg: <svg className="h-8 sm:h-10" viewBox="0 0 140 32"><circle cx="52" cy="16" r="14" fill="#EB001B" opacity="0.7"/><circle cx="82" cy="16" r="14" fill="#F79E1B" opacity="0.7"/><text x="50" y="38" fontFamily="var(--font-heading)" fontSize="8" fill="currentColor" opacity="0.6"></text></svg> },
+              { name: "Amex", svg: <svg className="h-8 sm:h-10" viewBox="0 0 100 32"><text x="5" y="24" fontFamily="var(--font-heading)" fontWeight="800" fontSize="22" fill="currentColor">AMEX</text></svg> },
+              { name: "Discover", svg: <svg className="h-8 sm:h-10" viewBox="0 0 130 32"><text x="5" y="24" fontFamily="var(--font-heading)" fontWeight="700" fontSize="22" fill="currentColor">Discover</text></svg> },
+              { name: "Apple Pay", svg: <svg className="h-8 sm:h-10" viewBox="0 0 120 32"><text x="5" y="24" fontFamily="var(--font-heading)" fontWeight="600" fontSize="20" fill="currentColor"> Pay</text></svg> },
+              { name: "Google Pay", svg: <svg className="h-8 sm:h-10" viewBox="0 0 130 32"><text x="5" y="24" fontFamily="var(--font-heading)" fontWeight="600" fontSize="20" fill="currentColor">G Pay</text></svg> },
+            ].map((brand) => (
+              <div key={brand.name} className="flex items-center text-muted-foreground" title={brand.name}>
+                {brand.svg}
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" />PCI DSS Compliant</span>
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" />FTC Compliant</span>
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" />BBB Accredited</span>
+            <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary" />Honolulu, HI</span>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 // ─── 9. Testimonials ────────────────────────────────────────────────────────
 
 function TestimonialSection() {
@@ -746,7 +792,7 @@ function TestimonialSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {testimonials.map((t, i) => (
               <motion.div key={i} variants={fadeUp}>
-                <Card className="h-full border-border/50">
+                <Card className="h-full border-border/50 card-warm">
                   <CardContent className="p-5 sm:p-7">
                     <div className="flex items-center gap-0.5 mb-3">
                       {Array.from({ length: 5 }).map((_, j) => (
@@ -835,6 +881,7 @@ export default function Home() {
       <CompareSection />
       <WhoWeWorkWith />
       <TrustSection />
+      <LocalTrustBadges />
       <TestimonialSection />
       <FAQSection />
     </Layout>

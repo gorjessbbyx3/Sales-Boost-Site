@@ -199,6 +199,18 @@
   animation: bounce-slow 3s ease-in-out infinite;
 }
 
+/* Subtle dot pattern for texture */
+.pattern-dots {
+  background-image: radial-gradient(circle, hsl(var(--primary) / 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Dark section inverted text helpers */
+.section-dark {
+  --card: var(--foreground);
+  --card-foreground: var(--background);
+}
+
 /**
  * Using the elevate system.
  * Automatic contrast adjustment.
