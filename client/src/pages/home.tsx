@@ -37,52 +37,67 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
 
 function HeroSection() {
   return (
-    <section className="relative pt-24 pb-16 sm:pt-36 sm:pb-24 overflow-hidden pattern-dots">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />
-        <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] rounded-full bg-primary/8 blur-[150px]" />
+    <section className="relative overflow-hidden">
+      {/* Video background */}
+      <div className="relative w-full">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          src="/videos/hero-bg.mp4"
+          className="w-full h-auto block"
+        />
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+        <div className="absolute inset-0 flex items-center justify-center px-4">
+          <motion.div className="max-w-3xl mx-auto text-center" variants={staggerContainer} initial="hidden" animate="visible">
+            <motion.h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-4 text-white drop-shadow-lg" variants={fadeUp}>
+              The Average Hawaii Restaurant Loses{" "}
+              <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+                $14,400/Year
+              </span>{" "}
+              to Processing Fees.
+            </motion.h1>
+            <motion.p className="text-base sm:text-xl text-white/80 leading-relaxed mb-6 max-w-2xl mx-auto" variants={fadeUp}>
+              TechSavvy Hawaii helps local businesses eliminate processing fees with a compliant cash discount program.
+            </motion.p>
+          </motion.div>
+        </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div className="max-w-3xl mx-auto text-center" variants={staggerContainer} initial="hidden" animate="visible">
-          <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-5 text-primary border-primary/30 bg-primary/5">
-              <MapPin className="w-3 h-3 mr-1" />
-              Built for Hawai'i.Small Businesses
-            </Badge>
+      {/* Below video — CTA area */}
+      <div className="py-10 sm:py-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+            <motion.p className="text-sm text-muted-foreground mb-8" variants={fadeUp}>
+              Apply online. Once approved, we configure your POS and help you start saving.
+            </motion.p>
+
+            <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8" variants={fadeUp}>
+              <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
+                <a href="/statement-review">
+                  Free AI Statement Analysis
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </Button>
+              <Button variant="outline" size="lg" className="text-base px-6 py-6 w-full sm:w-auto" asChild>
+                <a href="/contact">
+                  Talk to Our Team
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </Button>
+            </motion.div>
+
+            <motion.div variants={fadeUp}>
+              <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
+                <MapPin className="w-3 h-3 mr-1" />
+                Built for Hawai'i Small Businesses
+              </Badge>
+            </motion.div>
           </motion.div>
-
-          <motion.h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6" variants={fadeUp}>
-            The Average Hawaii Restaurant Loses{" "}
-            <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-              $14,400/Year
-            </span>{" "}
-            to Processing Fees.
-          </motion.h1>
-
-          <motion.p className="text-lg sm:text-2xl text-muted-foreground leading-relaxed mb-4 max-w-2xl mx-auto" variants={fadeUp}>
-            TechSavvy Hawaii helps local businesses eliminate processing fees with a compliant cash discount program.
-          </motion.p>
-
-          <motion.p className="text-sm sm:text-base text-muted-foreground/80 mb-10 max-w-xl mx-auto" variants={fadeUp}>
-            Apply online. Once approved, we configure your POS and help you start saving.
-          </motion.p>
-
-          <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
-            <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
-              <a href="/statement-review">
-                Free AI Statement Analysis
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </Button>
-            <Button variant="outline" size="lg" className="text-base px-6 py-6 w-full sm:w-auto" asChild>
-              <a href="/contact">
-                Talk to Our Team
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </Button>
-          </motion.div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
