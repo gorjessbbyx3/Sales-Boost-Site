@@ -17,11 +17,22 @@ const stepKeepProfits = "/images/step-keep-revenue.png";
 
 export default function HowItWorksPage() {
   useSEO({
-    title: "How It Works | Zero-Fee Payment Processing | TechSavvy Hawaii",
-    description: "See how TechSavvy Hawaii eliminates your processing fees in 3 simple steps. Cash Back, free terminals, no contracts. Get set up in days, not weeks.",
-    keywords: "how payment processing works Hawaii, Cash Back explained, cash discount program, zero fee processing setup, merchant services Hawaii",
+    title: "How It Works | Eliminate Credit Card Fees in 3 Steps | TechSavvy Hawaii",
+    description: "Apply in 3 minutes, get approved in 24 hours, start saving immediately. TechSavvy handles setup, training, and signage. Zero-fee payment processing for Hawaii businesses.",
+    keywords: "how cash discount program works, eliminate credit card fees steps, payment processing setup Hawaii, TechSavvy how it works",
     canonical: "https://techsavvyhawaii.com/how-it-works",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to Eliminate Credit Card Processing Fees for Your Hawaii Business",
+      "description": "Three steps to eliminate processing fees with TechSavvy Hawaii's cash discount program.",
+      "step": [
+        { "@type": "HowToStep", "position": 1, "name": "Tell Us About Your Business", "text": "Fill out a quick application or give us a call. We break down every fee your current processor is charging." },
+        { "@type": "HowToStep", "position": 2, "name": "We Take Care of Everything", "text": "Our local Hawaii team delivers your free terminal, installs signage, and trains your staff." },
+        { "@type": "HowToStep", "position": 3, "name": "You Stop Paying Fees", "text": "Accept payments with $0 processing fees from day one. No contracts, cancel anytime." },
+      ],
+    },
   });
 
   const steps = [

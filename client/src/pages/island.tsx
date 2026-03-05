@@ -81,6 +81,7 @@ export default function IslandPage() {
     description: island.seo.description,
     keywords: island.seo.keywords,
     canonical: `https://techsavvyhawaii.com/locations/${island.slug}`,
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
 
   return (

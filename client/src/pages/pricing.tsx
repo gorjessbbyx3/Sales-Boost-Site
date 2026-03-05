@@ -13,10 +13,20 @@ import { useSEO } from "@/hooks/useSEO";
 
 export default function PricingPage() {
   useSEO({
-    title: "Pricing | Zero-Fee Payment Processing | TechSavvy Hawaii",
-    description: "TechSavvy Hawaii: $0 processing fees, $0 monthly fees, no contracts. Free equipment for qualifying businesses. See how our cash discount program puts thousands back in your pocket.",
-    keywords: "zero fee payment processing pricing, cash discount program cost, free POS terminal Hawaii, no contract merchant services pricing, TechSavvy Hawaii pricing",
+    title: "Try Free | Zero-Fee Payment Processing | TechSavvy Hawaii",
+    description: "TechSavvy Hawaii: $0 processing fees, $0 monthly fees, no contracts. Free equipment for qualifying businesses. Cash discount program saves Hawaii businesses $6,000–$36,000/year.",
+    keywords: "zero fee payment processing pricing Hawaii, cash discount program cost, free POS terminal Hawaii, no contract merchant services, TechSavvy Hawaii pricing",
     canonical: "https://techsavvyhawaii.com/pricing",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "TechSavvy Hawaii — Zero-Fee Payment Processing",
+      "url": "https://techsavvyhawaii.com/pricing",
+      "description": "$0 processing fees, $0 monthly fees, no contracts. Free equipment for qualifying businesses.",
+      "isPartOf": { "@id": "https://techsavvyhawaii.com/#website" },
+      "about": { "@id": "https://techsavvyhawaii.com/#payment-service" },
+    },
   });
 
   return (

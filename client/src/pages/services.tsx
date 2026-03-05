@@ -100,13 +100,14 @@ export default function ServicesPage() {
   }), []);
 
   useSEO({
-    title: "Payment Processing & Website Design Services | λechSavvy (TechSavvy)",
+    title: "Payment Processing & Website Design Services | TechSavvy Hawaii",
     description: "Full range of business services: zero-fee payment processing, credit card processing, high-risk merchant accounts, online payment gateway, POS systems, contactless payments, and free business website design. No processing fees, no monthly fees, no contracts. Same-day setup.",
     keywords: "payment processing services, merchant services, credit card processing services, business payment solutions, POS system services, high risk merchant services, online payment services, payment gateway services, website design services, business web design, e-commerce solutions, contactless payment services, mobile payment solutions, payment terminal services, merchant account services",
     canonical: "https://techsavvyhawaii.com/services",
-    ogTitle: "Payment Processing & Web Design Services | λechSavvy (TechSavvy)",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
+    ogTitle: "Payment Processing & Web Design Services | TechSavvy Hawaii",
     ogDescription: "Zero-fee payment processing, high-risk merchant accounts, online payment gateway, POS systems, and Cash Back. All with zero fees.",
-    twitterTitle: "All Services — Zero-Fee Processing & Web Design | λechSavvy",
+    twitterTitle: "All Services — Zero-Fee Processing & Web Design | TechSavvy Hawaii",
     twitterDescription: "Payment processing, high-risk accounts, online gateway, POS, and Cash Back. Zero fees, no contracts, same-day setup.",
     jsonLd,
   });
@@ -122,7 +123,7 @@ export default function ServicesPage() {
           >
             <img
               src={servicesBanner}
-              alt="λechSavvy — Eliminate Credit Card Fees Forever. Cash Back Program. No Contracts. Local Hawaii Support."
+              alt="TechSavvy Hawaii — Eliminate Credit Card Fees Forever. Cash Back Program. No Contracts. Local Hawaii Support."
               className="w-full rounded-lg shadow-2xl"
               data-testid="img-services-banner"
             />

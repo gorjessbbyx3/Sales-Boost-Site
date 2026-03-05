@@ -33,7 +33,9 @@ function Navbar() {
   ];
 
   return (
+    <header>
     <nav
+      aria-label="Main navigation"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? "bg-background/80 backdrop-blur-xl border-b border-border"
@@ -129,12 +131,13 @@ function Navbar() {
         </div>
       )}
     </nav>
+    </header>
   );
 }
 
 function Footer() {
   return (
-    <footer className="relative py-8 sm:py-14 overflow-hidden" data-testid="section-footer">
+    <footer className="relative py-8 sm:py-14 overflow-hidden" data-testid="section-footer" aria-label="Site footer">
       <video
         autoPlay
         loop
@@ -286,7 +289,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       <Breadcrumb />
-      <main>{children}</main>
+      <main id="main-content" role="main">{children}</main>
       <Footer />
 
       {/* Exit-intent popup */}

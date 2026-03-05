@@ -136,6 +136,7 @@ export default function IndustryPage() {
     description: industry.seo.description,
     keywords: industry.seo.keywords,
     canonical: `https://techsavvyhawaii.com/industries/${industry.slug}`,
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
 
   return (

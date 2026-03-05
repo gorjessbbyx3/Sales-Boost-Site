@@ -881,6 +881,7 @@ export default function ContactPage() {
     description: "Contact TechSavvy Hawaii for a free savings analysis on your payment processing. Zero-fee terminals, Cash Back, and high-risk accounts. Serving all Hawaiian Islands.",
     keywords: "contact TechSavvy Hawaii, free payment processing quote, merchant services Hawaii, Honolulu payment processor, Cash Back Hawaii",
     canonical: "https://techsavvyhawaii.com/contact",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
 
   return (

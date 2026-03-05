@@ -522,6 +522,7 @@ export default function ConnectPage() {
     description: "Connect with TechSavvy Hawaii's AI assistant, schedule a call, or start your free consultation. Zero-fee payment processing and Cash Back solutions for Hawaiian businesses.",
     keywords: "connect TechSavvy Hawaii, AI chat business Hawaii, schedule consultation Honolulu, payment processing demo, AI assistant merchant services",
     canonical: "https://techsavvyhawaii.com/connect",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
 
   return (

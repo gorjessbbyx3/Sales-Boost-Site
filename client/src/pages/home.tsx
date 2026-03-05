@@ -40,7 +40,7 @@ function HeroSection() {
     <section className="relative overflow-hidden">
       {/* Video */}
       <div className="relative w-full">
-        <video autoPlay loop muted playsInline preload="auto" src="/videos/hero-bg-v3.mp4?v=20260305" className="w-full h-auto block" />
+        <video autoPlay loop muted playsInline preload="auto" src="/videos/hero-bg-v3.mp4?v=20260305" className="w-full h-auto block" aria-label="Hawaii business payment processing" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       </div>
 
@@ -932,9 +932,9 @@ function FAQSection() {
 
 export default function Home() {
   useSEO({
-    title: "Hawaii Businesses Lose $6,000–$36,000/Year to Credit Card Fees | TechSavvy",
-    description: "TechSavvy Hawaii helps local businesses eliminate processing fees with a compliant cash discount program. Apply online, get approved in 24 hours, start saving immediately. No contracts.",
-    keywords: "stop paying credit card fees Hawaii, save money processing fees Honolulu, zero fee payment processing, Hawaii small business payment processor, no contract merchant services, TechSavvy Hawaii",
+    title: "Zero-Fee Payment Processing for Hawaii Businesses | TechSavvy Hawaii",
+    description: "Hawaii businesses save $6,000–$36,000/year by eliminating credit card fees. Compliant cash discount program, free equipment, no contracts. Locally owned in Honolulu. Apply in 3 minutes.",
+    keywords: "zero fee payment processing Hawaii, eliminate credit card fees Honolulu, cash discount program Hawaii, merchant services Oahu, no contract payment processor, TechSavvy Hawaii, free POS terminal, high risk merchant Hawaii",
     canonical: "https://techsavvyhawaii.com/",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });

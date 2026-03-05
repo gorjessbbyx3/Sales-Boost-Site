@@ -61,10 +61,17 @@
     <meta name="twitter:image" content="https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg" />
     <meta name="twitter:image:alt" content="TechSavvy Hawaii AI Payment Processing" />
 
+    <!-- Hreflang for US English / Hawaii -->
+    <link rel="alternate" hreflang="en-US" href="https://techsavvyhawaii.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://techsavvyhawaii.com/" />
+
     <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
+
+    <!-- Preload critical fonts -->
+    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/bricolagegrotesque/v9/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpw.woff2" crossorigin />
 
     <!-- DNS Prefetch & Preconnect -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
@@ -295,6 +302,13 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="padding:2rem;text-align:center;font-family:sans-serif;">
+        <h1>TechSavvy Hawaii — Zero-Fee Payment Processing</h1>
+        <p>Hawaii businesses save $500-$3,000+/month by eliminating credit card processing fees. Call us at <a href="tel:8087675460">(808) 767-5460</a> or visit <a href="https://techsavvyhawaii.com">techsavvyhawaii.com</a>.</p>
+        <p>1917 S King St, Honolulu, HI 96826</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

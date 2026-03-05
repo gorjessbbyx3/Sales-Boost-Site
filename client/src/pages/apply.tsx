@@ -169,6 +169,7 @@ export default function ApplyPage() {
     description:
       "Apply for zero-fee payment processing in under 3 minutes. No paperwork, no fax machines.",
     canonical: "https://techsavvyhawaii.com/apply",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
 
   const [step, setStep] = useState(0);
