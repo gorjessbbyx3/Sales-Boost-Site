@@ -29,7 +29,7 @@ function FAQSection() {
     },
     {
       q: "What are the pricing options?",
-      a: "Option 1: Purchase outright for $399 — best value, you own it immediately. Option 2: Try free for 30 days, then $599 if you keep it. Both options come with zero monthly fees and zero processing fees forever.",
+      a: "Start with a free 30-day trial — we ship you a terminal, you process with zero fees. Love it? Keep it. Not for you? Return it and we cover shipping. No contracts, no monthly fees.",
     },
     {
       q: "Are there any monthly fees or contracts?",

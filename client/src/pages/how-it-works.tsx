@@ -80,12 +80,12 @@ function StepsSection() {
   const steps = [
     {
       step: "01",
-      title: "Choose Your Plan",
-      description: "Buy outright for $399 (best value) or start a 30-day risk-free trial. Both include zero processing fees forever.",
+      title: "Start Your Free Trial",
+      description: "We ship you a terminal — fully programmed, ready to process. Try it for 30 days with zero fees, zero risk.",
       details: [
-        "In-Store Terminal — $399 one-time, own it immediately",
-        "30-Day Trial — free to try, $599 if you keep it",
-        "Online-Only — FREE website + payment gateway with Cash Discount Processing",
+        "Free terminal shipped to your door",
+        "Process real payments from day one",
+        "Return anytime — we cover shipping",
       ],
       icon: CreditCard,
       accent: "from-primary/20 to-primary/5",
@@ -205,8 +205,8 @@ function WhyTechSavvySection() {
     },
     {
       icon: Palette,
-      title: "Free Custom Website",
-      description: "Every merchant gets a professional business website — $997 value included.",
+      title: "Zero Risk Trial",
+      description: "Try for 30 days free. Return anytime — no fees, no contracts, no questions.",
     },
     {
       icon: ShieldCheck,

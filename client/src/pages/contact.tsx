@@ -52,12 +52,12 @@ const faqs: FAQ[] = [
   },
   {
     q: "What are the pricing options?",
-    a: "Option 1: Purchase outright for $399 \u2014 best value, you own it immediately. Option 2: Try free for 30 days, then $599 if you keep it. Both options come with zero monthly fees and zero processing fees forever. Retail terminals sell for $800+.",
+    a: "Start with a free 30-day trial — we ship you a terminal, you process real payments with zero fees. If you love it, keep it. If not, return it and we cover shipping. No contracts, no monthly fees, no hidden costs.",
     category: "pricing",
   },
   {
     q: "Are there any monthly fees or contracts?",
-    a: "No. There are zero monthly fees, zero contracts, and zero commitments. Whether you purchase outright ($399) or keep after a trial ($599), your ongoing cost is $0.",
+    a: "No. There are zero monthly fees, zero contracts, and zero commitments. Your ongoing cost with TechSavvy is $0.",
     category: "pricing",
   },
   {
@@ -92,7 +92,7 @@ const faqs: FAQ[] = [
   },
   {
     q: "Does TechSavvy offer website design for Hawai'i businesses?",
-    a: "Yes. Online-only processing merchants get a free custom-built business website \u2014 no templates, no extra cost. We also offer premium website packages with e-commerce integration, online ordering, booking systems, and custom software for any merchant. All websites are mobile-optimized, SEO-ready, and built to help your Hawai'i business get found online.",
+    a: "TechSavvy offers web design services for merchants who need an online presence. We also offer premium website packages with e-commerce integration, online ordering, booking systems, and custom software. All websites are mobile-optimized, SEO-ready, and built to help your Hawai'i business get found online.",
     category: "websites",
   },
   {
@@ -441,7 +441,7 @@ function TestimonialsSection() {
       name: "Sarah L.",
       business: "Island Beauty Lounge",
       location: "Honolulu, HI",
-      text: "TechSavvy set everything up in one afternoon. The free website they built for me looks amazing and I'm already getting new clients from Google searches. Can't believe it's all included.",
+      text: "TechSavvy set everything up in one afternoon. I started saving money from day one and the whole process was seamless. Can't believe there are no monthly fees.",
       rating: 5,
     },
     {
@@ -803,7 +803,7 @@ function ContactSection() {
                       className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                       data-testid="select-contact-interest"
                     >
-                      <option value="bundle-terminal">Zero-Fee Terminal ($399)</option>
+                      <option value="bundle-terminal">30-Day Free Trial</option>
                       <option value="bundle-trial">30-Day Free Trial</option>
                       <option value="online-only">Online Payment Processing</option>
                       <option value="high-risk">High-Risk Merchant Account</option>

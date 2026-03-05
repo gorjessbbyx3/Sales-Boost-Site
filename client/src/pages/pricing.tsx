@@ -109,7 +109,7 @@ function HowTheTrialWorks() {
       num: "03",
       icon: ShieldCheck,
       title: "Decide on Day 31",
-      desc: "Love it? Keep the terminal for $399 (you already saved more than that). Not for you? Ship it back free.",
+      desc: "Love it? Keep the terminal — you've already saved more than it costs. Not for you? Ship it back free.",
     },
   ];
 
@@ -187,12 +187,12 @@ function WhatYouGet() {
                     "Zero processing fees — forever",
                     "Zero monthly fees — forever",
                     "Zero contracts or cancellation fees",
-                    "Free custom-built website",
                     "Free statement analysis & consultation",
                     "Full setup, programming & training",
                     "Compliance signage kit included",
                     "Local Hawai'i-based support team",
                     "Online payment gateway access",
+                    "Return anytime — we cover shipping",
                   ].map((item) => (
                     <div key={item} className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
@@ -206,13 +206,12 @@ function WhatYouGet() {
                 <div className="mt-8 pt-6 border-t border-primary/10">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
-                      <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">After your free trial</div>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">After your 30-day trial</div>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-3xl sm:text-4xl font-extrabold text-primary">$399</span>
-                        <span className="text-sm text-muted-foreground">one-time · you own it</span>
+                        <span className="text-xl sm:text-2xl font-extrabold text-foreground">Keep it or return it</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        No monthly fees. No lease. No recurring charges. Ever.
+                        No monthly fees. No contracts. No pressure. We cover return shipping.
                       </p>
                     </div>
                     <Button size="lg" asChild>
@@ -238,8 +237,8 @@ function ComparisonSection() {
     { feature: "Processing fees", them: "2.5–4.5% effective rate", us: "0% — zero fees" },
     { feature: "Contract length", them: "2–3 year lock-in", us: "None — cancel anytime" },
     { feature: "Early termination fee", them: "$300–$500+", us: "$0" },
-    { feature: "Terminal cost", them: "$30–$80/mo lease", us: "$399 one-time (you own it)" },
-    { feature: "Website", them: "Not included", us: "Free custom site included" },
+    { feature: "Terminal cost", them: "$30–$80/mo lease", us: "Free 30-day trial" },
+    { feature: "Hidden fees", them: "Statement, PCI, gateway, batch", us: "None — $0 total" },
     { feature: "Setup time", them: "2–4 weeks", us: "3–7 days" },
     { feature: "Support", them: "Overseas call center", us: "Local Hawai'i team" },
   ];
@@ -321,8 +320,8 @@ function ZeroRiskSection() {
     },
     {
       icon: Gift,
-      title: "Keep the website",
-      desc: "We build you a free custom website during your trial. It's yours to keep no matter what.",
+      title: "Free savings analysis",
+      desc: "Before the trial even starts, we show you exactly what you're paying now vs. what you'd pay with us. No obligation.",
     },
   ];
 
@@ -365,85 +364,6 @@ function ZeroRiskSection() {
               </motion.div>
             ))}
           </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-function OnlineOption() {
-  return (
-    <section className="py-14 sm:py-24 relative">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-        >
-          <motion.div className="text-center mb-8" variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-chart-2 border-chart-2/30 bg-chart-2/5">
-              <Globe className="w-3 h-3 mr-1.5" />
-              Online-Only Businesses
-            </Badge>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">
-              No Storefront? No Problem.
-            </h2>
-            <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
-              If you only take payments online, we build you a free website with a built-in payment gateway — no terminal needed.
-            </p>
-          </motion.div>
-
-          <motion.div variants={fadeUp}>
-            <Card className="border-chart-2/20 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-chart-2/3 to-transparent" />
-              <CardContent className="p-6 sm:p-8 relative">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="space-y-3">
-                    {[
-                      "Free custom website — you own it",
-                      "Virtual payment gateway included",
-                      "Payment links, buttons & invoices",
-                      "Online ordering & booking",
-                      "Mobile-optimized & SEO-ready",
-                    ].map((item) => (
-                      <div key={item} className="flex items-center gap-2.5">
-                        <Check className="w-4 h-4 text-chart-2 flex-shrink-0" />
-                        <span className="text-sm text-foreground/80">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-3">
-                    {[
-                      "Self-manage for free (it's your site)",
-                      "One-off updates from $40",
-                      "Maintenance plans from $50/mo",
-                      "Zero processing fees",
-                      "No contracts — ever",
-                    ].map((item) => (
-                      <div key={item} className="flex items-center gap-2.5">
-                        <Check className="w-4 h-4 text-chart-2 flex-shrink-0" />
-                        <span className="text-sm text-foreground/80">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-5 border-t border-chart-2/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div>
-                    <span className="text-2xl sm:text-3xl font-extrabold text-chart-2">FREE</span>
-                    <span className="text-sm text-muted-foreground ml-2">with cash discount processing</span>
-                  </div>
-                  <Button variant="outline" size="lg" asChild>
-                    <Link href="/contact">
-                      Go Online with TechSavvy
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
         </motion.div>
       </div>
     </section>
@@ -504,7 +424,6 @@ export default function PricingPage() {
       <WhatYouGet />
       <ComparisonSection />
       <ZeroRiskSection />
-      <OnlineOption />
       <FinalCTA />
     </Layout>
   );

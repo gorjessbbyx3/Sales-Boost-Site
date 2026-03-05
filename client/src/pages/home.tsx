@@ -164,7 +164,7 @@ function HeroSection() {
               </div>
               <div className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5 text-primary" />
-                <span>Free Website Included</span>
+                <span>Return Anytime — No Questions</span>
               </div>
             </motion.div>
           </motion.div>
@@ -223,12 +223,10 @@ function SavingsCalculator() {
   // TechSavvy cost
   const techSavvyMonthly = 0; // zero monthly
   const techSavvyYearly = 0;
-  const terminalCost = 399; // one-time
 
   // Savings
   const monthlySavings = totalCurrentCost;
   const yearlySavings = yearlyCost;
-  const paybackDays = Math.ceil(terminalCost / (totalCurrentCost / 30));
 
   const fmt = (n: number) =>
     n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -427,8 +425,8 @@ function SavingsCalculator() {
                       "Zero processing fees — ever",
                       "Zero monthly fees",
                       "Zero contracts or cancellation fees",
-                      "Free custom website included",
-                      "$399 one-time terminal (you own it)",
+                      "30-day free trial — return anytime",
+                      "Full setup & training included",
                     ].map((item) => (
                       <div key={item} className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
@@ -454,9 +452,9 @@ function SavingsCalculator() {
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Terminal pays for itself in</div>
-                    <div className="text-3xl sm:text-4xl font-extrabold text-foreground">
-                      {paybackDays} <span className="text-lg text-muted-foreground font-medium">days</span>
+                    <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Your first month</div>
+                    <div className="text-3xl sm:text-4xl font-extrabold text-primary">
+                      FREE
                     </div>
                   </div>
                   <div className="text-center sm:text-right">
@@ -715,53 +713,39 @@ function QuickPricingPreview() {
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto"
+          className="max-w-xl mx-auto"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
-          {[
-            {
-              title: "Free 30-Day Trial",
-              price: "FREE",
-              note: "Love it? Keep it. Don't? Send it back.",
-              icon: Clock,
-              color: "text-primary",
-              border: "border-primary/20",
-              features: ["No upfront cost", "Real transactions, real savings", "Return it — no questions asked"],
-            },
-            {
-              title: "Online-Only",
-              price: "FREE",
-              note: "Accept payments online with zero fees",
-              icon: Globe,
-              color: "text-chart-2",
-              border: "border-chart-2/20",
-              features: ["No terminal needed", "Zero processing fees", "Same-day setup"],
-            },
-          ].map((plan, i) => (
-            <motion.div key={i} variants={scaleIn}>
-              <Card className={`h-full overflow-visible ${plan.border}`}>
-                <CardContent className="p-5 sm:p-6 text-center">
-                  <div className={`w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-3`}>
-                    <plan.icon className={`w-5 h-5 ${plan.color}`} />
-                  </div>
-                  <h3 className="font-bold text-foreground mb-1">{plan.title}</h3>
-                  <div className={`text-2xl sm:text-3xl font-extrabold ${plan.color} mb-1`}>{plan.price}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground mb-4">{plan.note}</div>
-                  <ul className="space-y-2 text-left mb-4">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2 text-sm">
-                        <Check className={`w-3.5 h-3.5 ${plan.color} shrink-0`} />
-                        <span className="text-foreground/80">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+          <motion.div variants={scaleIn}>
+            <Card className="overflow-visible border-primary/20">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
+              <CardContent className="p-6 sm:p-8 text-center relative">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Clock className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-1">30-Day Free Trial</h3>
+                <div className="text-4xl sm:text-5xl font-extrabold text-primary mb-2">FREE</div>
+                <div className="text-sm text-muted-foreground mb-6">Love it? Keep it. Don't? Send it back — no questions.</div>
+                <ul className="space-y-3 text-left max-w-xs mx-auto mb-6">
+                  {["Zero processing fees from day one", "Real transactions, real savings", "Zero monthly fees — forever", "No contracts or commitments", "Return anytime — we cover shipping"].map((f) => (
+                    <li key={f} className="flex items-center gap-2.5 text-sm">
+                      <Check className="w-4 h-4 text-primary shrink-0" />
+                      <span className="text-foreground/80">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button size="lg" className="w-full sm:w-auto px-8" asChild>
+                  <Link href="/contact">
+                    Start Your Free Trial
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
 
         <motion.div
@@ -770,9 +754,9 @@ function QuickPricingPreview() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <Button size="lg" asChild>
+          <Button variant="outline" size="lg" asChild>
             <Link href="/pricing">
-              Compare All Options
+              See Full Trial Details
               <ArrowRight className="w-4 h-4" />
             </Link>
           </Button>
@@ -785,7 +769,7 @@ function QuickPricingPreview() {
 function TestimonialSection() {
   const testimonials = [
     {
-      quote: "Switching to TechSavvy saved us over $4,800 last year. The free website brings in new customers every week.",
+      quote: "Switching to TechSavvy saved us over $4,800 last year. The free trial made it a no-brainer — we saw the savings in the first week.",
       name: "Marcus Kalani",
       role: "Kalani's Auto Repair — Honolulu",
       rating: 5,
@@ -1075,15 +1059,9 @@ function ContactFormSection() {
                   <label className="text-sm font-medium text-foreground">Select a Plan</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
-                      { value: "in-store", label: "In-Store Terminal", price: "$399",
+                      { value: "trial", label: "30-Day Free Trial", price: "FREE",
                         selectedClasses: "border-primary bg-primary/10 ring-1 ring-primary",
                         priceClass: "text-primary" },
-                      { value: "trial", label: "30-Day Trial", price: "FREE",
-                        selectedClasses: "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500",
-                        priceClass: "text-emerald-500" },
-                      { value: "online", label: "Online-Only", price: "FREE",
-                        selectedClasses: "border-sky-500 bg-sky-500/10 ring-1 ring-sky-500",
-                        priceClass: "text-sky-500" },
                     ].map((plan) => (
                       <button
                         key={plan.value}
@@ -1204,7 +1182,7 @@ export default function Home() {
   useSEO({
     title: "TechSavvy Hawaii | AI-Powered Zero-Fee Payment Processing & Web Design in Honolulu",
     description: "Hawaii's #1 AI-powered payment processing company. Zero processing fees, zero monthly fees. Free AI-optimized custom websites for merchants. Serving Honolulu, Maui, Kona & all Hawaiian Islands with intelligent business solutions.",
-    keywords: "AI payment processing Hawaii, artificial intelligence merchant services Honolulu, zero-fee payment processing, AI web design Hawaii, smart POS system, AI chatbot business Hawaii, search engine optimization Hawaii, machine learning payment solutions, free website merchants Hawaii",
+    keywords: "AI payment processing Hawaii, zero-fee payment processing Honolulu, free trial payment terminal Hawaii, smart POS system, no contract payment processor, free trial merchant services Hawaii",
     canonical: "https://techsavvyhawaii.com/",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
