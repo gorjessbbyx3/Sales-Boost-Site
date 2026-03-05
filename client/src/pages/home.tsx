@@ -82,27 +82,41 @@ function HeroSection() {
           src="/videos/hero-bg.mp4"
           className="w-full h-auto block"
         />
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-black/50" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
         <div className="absolute inset-0 flex items-center justify-center px-4">
-          <motion.h1
-            className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] text-center text-white drop-shadow-lg"
-            variants={fadeUp}
+          <motion.div
+            className="text-center"
+            variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            data-testid="text-hero-title"
           >
-            We Won't Lie —{" "}
-            <span className="relative inline-block">
-              <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-                Nothing Is "Completely Free."
+            <motion.h1
+              className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] text-white drop-shadow-lg"
+              variants={fadeUp}
+              data-testid="text-hero-title"
+            >
+              Your Processor Takes{" "}
+              <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+                $800+/Month
               </span>
-            </span>
-            <br />
-            <span className="text-xl sm:text-3xl lg:text-4xl text-white/90">
-              But We're So Confident You'll Love Us, Your First Month Is On Us.
-            </span>
-          </motion.h1>
+              <br />
+              <span className="text-2xl sm:text-4xl lg:text-5xl">
+                From You.{" "}
+                <span className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
+                  We Make It Stop.
+                </span>
+              </span>
+            </motion.h1>
+            <motion.p
+              className="mt-4 sm:mt-6 text-base sm:text-xl text-white/80 max-w-2xl mx-auto"
+              variants={fadeUp}
+            >
+              Try the terminal free for 30 days — keep every dollar you process.
+              <br className="hidden sm:block" />
+              {" "}If it doesn't pay for itself, send it back. No fee. No catch.
+            </motion.p>
+          </motion.div>
         </div>
       </div>
 
@@ -114,65 +128,43 @@ function HeroSection() {
             initial="hidden"
             animate="visible"
           >
-            <motion.div className="flex flex-wrap items-center justify-center gap-2" variants={fadeUp}>
-              <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
-                <MapPin className="w-3 h-3 mr-1" />
-                Hawai'i's Most Honest Payment Processor
-              </Badge>
-              <Badge variant="outline" className="mb-3 sm:mb-4 py-1 px-3 text-xs sm:text-sm text-primary border-primary/30 bg-primary/5">
-                <CircleDollarSign className="w-3 h-3 mr-1" />
-                30-Day Free Trial — No Strings
-              </Badge>
-            </motion.div>
-
-            <motion.p
-              className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-10 max-w-2xl mx-auto"
-              variants={fadeUp}
-              data-testid="text-hero-subtitle"
-            >
-              Other companies promise "free everything" — then hit you with hidden fees.{" "}
-              We're different. <span className="text-primary font-semibold">Try our terminal free for 30 days</span>.{" "}
-              Pay for the equipment with the money you save — or{" "}
-              <span className="text-primary font-semibold">give it back, no questions asked</span>.
-            </motion.p>
-
             <motion.div
-              className="flex flex-col sm:flex-row items-center justify-center gap-3"
+              className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8"
               variants={fadeUp}
             >
-              <Button size="lg" className="w-full sm:w-auto" asChild>
+              <Button size="lg" className="w-full sm:w-auto text-base px-8" asChild>
                 <Link href="/contact" data-testid="link-hero-get-terminal">
-                  Try It Free for 30 Days
+                  Start Your Free Trial
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
               <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
-                <Link href="/how-it-works" data-testid="link-hero-learn-more">
-                  See How It Works
+                <Link href="/statement-review" data-testid="link-hero-learn-more">
+                  See What You're Overpaying
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </Button>
             </motion.div>
 
             <motion.div
-              className="mt-8 sm:mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground"
+              className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground"
               variants={fadeUp}
             >
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                <span>No Contracts</span>
+                <span>Zero Contracts</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-primary" />
+                <span>Zero Monthly Fees</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-primary" />
                 <span>30-Day Free Trial</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-primary" />
-                <span>No Hidden Fees</span>
-              </div>
-              <div className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5 text-primary" />
-                <span>Return Anytime — No Questions</span>
+                <span>Free Website Included</span>
               </div>
             </motion.div>
           </motion.div>
@@ -185,10 +177,10 @@ function HeroSection() {
           >
             <div className="grid grid-cols-3 gap-3 sm:gap-6">
               {[
-                { value: 5400, prefix: "$", suffix: "+", label: "Saved/Year", color: "text-primary" },
+                { value: 5400, prefix: "$", suffix: "+", label: "Avg Saved/Year", color: "text-primary" },
                 { value: 0, prefix: "$", suffix: "", label: "Monthly Fees", color: "text-foreground" },
                 { value: 100, prefix: "", suffix: "%", label: "Revenue Kept", color: "text-foreground" },
-              ].map((stat, i) => (
+              ].map((stat) => (
                 <Card key={stat.label} className="overflow-visible text-center border-primary/10">
                   <CardContent className="p-3 sm:p-6">
                     <div className={`text-xl sm:text-3xl lg:text-5xl font-extrabold ${stat.color} mb-1`}>
