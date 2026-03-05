@@ -944,9 +944,9 @@ export default function Home() {
       <HeroSection />
       <HowItWorks />
       <SavingsCalculator />
-      <QualifySection />
-      <CompareSection />
       <WhoWeWorkWith />
+      <CompareSection />
+      <QualifySection />
       <TrustSection />
       <LocalTrustBadges />
       <TestimonialSection />
