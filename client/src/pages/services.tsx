@@ -25,8 +25,8 @@ function ServicesSection() {
     },
     {
       icon: Globe,
-      title: "Online Business Package",
-      description: "Go online-only with a free custom website and payment gateway — an alternative to the physical terminal.",
+      title: "Online Payment Gateway",
+      description: "Accept payments online with virtual terminals, invoicing, and payment links — no physical terminal needed.",
     },
     {
       icon: ShieldCheck,
@@ -105,9 +105,9 @@ export default function ServicesPage() {
     keywords: "payment processing services, merchant services, credit card processing services, business payment solutions, POS system services, high risk merchant services, online payment services, payment gateway services, website design services, business web design, e-commerce solutions, contactless payment services, mobile payment solutions, payment terminal services, merchant account services",
     canonical: "https://techsavvyhawaii.com/services",
     ogTitle: "Payment Processing & Web Design Services | λechSavvy (TechSavvy)",
-    ogDescription: "Zero-fee payment processing, high-risk merchant accounts, online payment gateway, POS systems, and free website design. All with zero fees.",
+    ogDescription: "Zero-fee payment processing, high-risk merchant accounts, online payment gateway, POS systems, and dual pricing. All with zero fees.",
     twitterTitle: "All Services — Zero-Fee Processing & Web Design | λechSavvy",
-    twitterDescription: "Payment processing, high-risk accounts, online gateway, POS, and free website design. Zero fees, no contracts, same-day setup.",
+    twitterDescription: "Payment processing, high-risk accounts, online gateway, POS, and dual pricing. Zero fees, no contracts, same-day setup.",
     jsonLd,
   });
 
@@ -122,7 +122,7 @@ export default function ServicesPage() {
           >
             <img
               src={servicesBanner}
-              alt="λechSavvy — Eliminate Credit Card Fees Forever. Cash Discount Program, Free Custom Website, 30-Day Risk-Free Trial."
+              alt="λechSavvy — Eliminate Credit Card Fees Forever. Dual Pricing Program. No Contracts. Local Hawaii Support."
               className="w-full rounded-lg shadow-2xl"
               data-testid="img-services-banner"
             />

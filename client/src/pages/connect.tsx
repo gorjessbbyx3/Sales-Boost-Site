@@ -180,13 +180,13 @@ function AIChatSection() {
 
   const quickQuestions = [
     "How does zero-fee processing work?",
-    "Tell me about the free website offer",
+    "Tell me about dual pricing",
     "What are the pricing options?",
     "Do you work with high-risk merchants?",
   ];
 
   const welcomeMessage = config?.welcomeMessage ||
-    "Hi! I'm TechSavvy's AI assistant. Ask me about our zero-fee payment processing, free websites, or custom software solutions.";
+    "Hi! I'm TechSavvy's AI assistant. Ask me about our zero-fee payment processing, dual pricing, or high-risk merchant services.";
 
   return (
     <section className="py-12 sm:py-20 relative" data-testid="section-ai-chat">
@@ -493,7 +493,7 @@ function ScheduleCallSection() {
                       >
                         <option value="">Select a topic...</option>
                         <option value="Zero-Fee Processing">Zero-Fee Payment Processing</option>
-                        <option value="Free Website">Free Website for My Business</option>
+                        <option value="Dual Pricing">Dual Pricing Information</option>
                         <option value="Online Presence">Building My Online Presence</option>
                         <option value="High-Risk Account">High-Risk Merchant Account</option>
                         <option value="Premium Website">Premium Website Package</option>
@@ -516,118 +516,10 @@ function ScheduleCallSection() {
   );
 }
 
-function OnlinePresenceSection() {
-  const services = [
-    {
-      icon: Globe,
-      title: "Free Business Website",
-      description: "Online-only processing merchants get a custom-built website at no cost. Mobile-optimized, SEO-ready, and designed to match your brand.",
-      link: "/online-processing",
-      linkText: "See Free Website Details",
-    },
-    {
-      icon: Palette,
-      title: "Premium Web Packages",
-      description: "Advanced features like online ordering, booking systems, e-commerce stores, and custom integrations. Monthly maintenance plans from $50/mo.",
-      link: "/pricing",
-      linkText: "See Pricing",
-    },
-    {
-      icon: ShoppingCart,
-      title: "Online Payment Gateway",
-      description: "Accept payments online through your website. Integrated checkout, invoicing, and real-time transaction tracking.",
-      link: "/online-processing",
-      linkText: "Explore",
-    },
-    {
-      icon: Monitor,
-      title: "Portfolio & Case Studies",
-      description: "See real websites we've built for Hawai'i businesses. Restaurants, retail, salons, auto shops, and more.",
-      link: "/our-work",
-      linkText: "View Portfolio",
-    },
-    {
-      icon: Code,
-      title: "Custom Software",
-      description: "Need something unique? We build custom tools, dashboards, inventory systems, and business automation software.",
-      link: "/contact",
-      linkText: "Get a Quote",
-    },
-    {
-      icon: Sparkles,
-      title: "SEO & Digital Marketing",
-      description: "Get found on Google. We optimize your site for local Hawai'i searches so customers find you first.",
-      link: "/contact",
-      linkText: "Request SEO Consultation",
-    },
-  ];
-
-  return (
-    <section className="py-12 sm:py-20 relative" data-testid="section-online-presence">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-8 sm:mb-14"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              <Globe className="w-3 h-3 mr-1.5" />
-              Online Presence
-            </Badge>
-          </motion.div>
-          <motion.h2
-            className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
-            variants={fadeUp}
-          >
-            Build Your Digital Presence
-          </motion.h2>
-          <motion.p
-            className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto"
-            variants={fadeUp}
-          >
-            From free websites to custom software, we help Hawai'i businesses get online and grow. All available exclusively to our payment processing merchants.
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          {services.map((s, i) => (
-            <motion.div key={i} variants={fadeUp}>
-              <Card className="h-full overflow-visible border-primary/10 hover-elevate" data-testid={`card-service-${i}`}>
-                <CardContent className="p-5 sm:p-6 flex flex-col h-full">
-                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mb-3">
-                    <s.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <h3 className="font-bold text-foreground mb-1.5" data-testid={`text-service-title-${i}`}>{s.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-1">{s.description}</p>
-                  <Button variant="outline" size="sm" asChild data-testid={`link-service-${i}`}>
-                    <Link href={s.link}>
-                      {s.linkText}
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
 export default function ConnectPage() {
   useSEO({
     title: "Connect With TechSavvy Hawaii | AI Chat, Schedule Call, Get Started",
-    description: "Connect with TechSavvy Hawaii's AI assistant, schedule a call, or start your free consultation. AI-powered payment processing and web design solutions for Hawaiian businesses.",
+    description: "Connect with TechSavvy Hawaii's AI assistant, schedule a call, or start your free consultation. Zero-fee payment processing and dual pricing solutions for Hawaiian businesses.",
     keywords: "connect TechSavvy Hawaii, AI chat business Hawaii, schedule consultation Honolulu, payment processing demo, AI assistant merchant services",
     canonical: "https://techsavvyhawaii.com/connect",
   });
@@ -637,7 +529,6 @@ export default function ConnectPage() {
       <ConnectHero />
       <AIChatSection />
       <ScheduleCallSection />
-      <OnlinePresenceSection />
     </Layout>
   );
 }

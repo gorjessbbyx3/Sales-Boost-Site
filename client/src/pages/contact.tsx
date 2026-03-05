@@ -151,7 +151,7 @@ function FAQHero() {
             className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
             variants={fadeUp}
           >
-            Everything you need to know about zero-fee payment processing, our free website program, and how TechSavvy helps Hawai'i businesses thrive.
+            Everything you need to know about zero-fee payment processing, dual pricing, and how TechSavvy helps Hawai'i businesses thrive.
           </motion.p>
         </motion.div>
       </div>
@@ -803,11 +803,10 @@ function ContactSection() {
                       className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                       data-testid="select-contact-interest"
                     >
-                      <option value="bundle-terminal">30-Day Free Trial</option>
+                      <option value="bundle-terminal">Zero-Fee Processing</option>
                       <option value="bundle-trial">30-Day Free Trial</option>
-                      <option value="online-only">Online Payment Processing</option>
                       <option value="high-risk">High-Risk Merchant Account</option>
-                      <option value="online-store">Online Store or App</option>
+                      <option value="online-store">Online Payment Gateway</option>
                       <option value="questions">Just Have Questions</option>
                     </select>
                   </div>
@@ -880,8 +879,8 @@ function ContactSection() {
 export default function ContactPage() {
   useSEO({
     title: "Contact TechSavvy Hawaii | Free Quote & Website Mockup",
-    description: "Contact TechSavvy Hawaii for a free website mockup and savings analysis on your payment processing. Zero-fee terminals, free websites for merchants, and high-risk accounts. Serving all Hawaiian Islands.",
-    keywords: "contact TechSavvy Hawaii, free payment processing quote, free website mockup, merchant services Hawaii, Honolulu payment processor",
+    description: "Contact TechSavvy Hawaii for a free savings analysis on your payment processing. Zero-fee terminals, dual pricing, and high-risk accounts. Serving all Hawaiian Islands.",
+    keywords: "contact TechSavvy Hawaii, free payment processing quote, merchant services Hawaii, Honolulu payment processor, dual pricing Hawaii",
     canonical: "https://techsavvyhawaii.com/contact",
   });
 

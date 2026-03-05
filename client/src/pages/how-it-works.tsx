@@ -3,331 +3,215 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import {
-  CreditCard,
-  Zap,
-  DollarSign,
-  ShieldCheck,
-  Check,
-  ArrowRight,
-  Clock,
-  Palette,
-  MapPin,
-  CircleDollarSign,
-  BarChart3,
+  CreditCard, Check, ArrowRight, Clock, DollarSign, ShieldCheck,
+  Zap, Phone, FileText, BarChart3, Users, Headphones,
 } from "lucide-react";
-import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
+import { fadeUp, staggerContainer } from "@/lib/animations";
 import Layout from "@/components/layout";
-import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
-import stepChoosePlan from "@/assets/images/step-choose-plan.png";
-import stepSetup from "@/assets/images/step-setup.png";
-import stepKeepProfits from "@/assets/images/step-keep-profits.png";
+import { Link } from "wouter";
 
-function HowItWorksHero() {
-  return (
-    <section className="relative overflow-hidden pt-20 pb-10 sm:pt-36 sm:pb-16">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />
-        <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full bg-primary/10 blur-[120px]" />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="max-w-4xl mx-auto text-center"
-          variants={staggerContainer}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.div className="flex flex-wrap items-center justify-center gap-2" variants={fadeUp}>
-            <Badge variant="outline" className="mb-3 text-primary border-primary/30 bg-primary/5">
-              <CircleDollarSign className="w-3 h-3 mr-1" />
-              How It Works
-            </Badge>
-          </motion.div>
-
-          <motion.h1
-            className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-4 sm:mb-6"
-            variants={fadeUp}
-          >
-            Three Steps to{" "}
-            <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
-              Zero Fees
-            </span>
-          </motion.h1>
-
-          <motion.p
-            className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto"
-            variants={fadeUp}
-          >
-            Traditional processors take 2-4% of every sale. Our model flips
-            that — your customer pays a small surcharge, and you keep every dollar.
-          </motion.p>
-
-          <motion.div className="mt-8 rounded-xl overflow-hidden bg-muted/30 max-w-2xl mx-auto" variants={fadeUp}>
-            <img
-              src="/images/how-it-works-steps.jpeg"
-              alt="How TechSavvy zero-fee payment processing works — Step 1: Customer pays with card, Step 2: Small non-cash adjustment, Business keeps 100% of payment"
-              className="w-full max-h-[50vh] object-contain"
-            />
-          </motion.div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-function StepsSection() {
-  const steps = [
-    {
-      step: "01",
-      title: "Start Your Free Trial",
-      description: "We ship you a terminal — fully programmed, ready to process. Try it for 30 days with zero fees, zero risk.",
-      details: [
-        "Free terminal shipped to your door",
-        "Process real payments from day one",
-        "Return anytime — we cover shipping",
-      ],
-      icon: CreditCard,
-      accent: "from-primary/20 to-primary/5",
-      color: "text-primary",
-      border: "border-primary/20",
-      image: stepChoosePlan,
-      imageAlt: "Business owner choosing a payment plan",
-    },
-    {
-      step: "02",
-      title: "We Set Everything Up",
-      description: "Same-day setup. We configure your terminal, connect it to your bank, train you on how to use it, and provide compliance signage.",
-      details: [
-        "Terminal programming & configuration",
-        "Bank account connection",
-        "Hands-on training (remote or on-site in Honolulu)",
-        "Compliance signage provided",
-      ],
-      icon: Zap,
-      accent: "from-chart-2/20 to-chart-2/5",
-      color: "text-chart-2",
-      border: "border-chart-2/20",
-      image: stepSetup,
-      imageAlt: "Technician setting up a payment terminal",
-    },
-    {
-      step: "03",
-      title: "Keep 100% of Every Sale",
-      description: "A small surcharge is passed to card-paying customers at checkout. You keep 100% of the listed price, deposited by next business day.",
-      details: [
-        "Customer pays small surcharge on card transactions",
-        "Cash-paying customers get the listed price (or a discount)",
-        "100% of your sale deposited next business day",
-        "Real-time dashboard to track all transactions",
-      ],
-      icon: DollarSign,
-      accent: "from-chart-3/20 to-chart-3/5",
-      color: "text-chart-3",
-      border: "border-chart-3/20",
-      image: stepKeepProfits,
-      imageAlt: "Happy business owner keeping all their profits",
-    },
-  ];
-
-  return (
-    <section className="py-12 sm:py-24 relative">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-6 sm:space-y-10">
-          {steps.map((s, i) => (
-            <motion.div
-              key={s.step}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-            >
-              <Card className={`overflow-visible relative ${s.border}`}>
-                <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${s.accent} opacity-50`} />
-                <CardContent className="p-0 relative">
-                  <div className={`grid grid-cols-1 md:grid-cols-2 ${i % 2 === 1 ? "md:grid-flow-dense" : ""}`}>
-                    <div className={`relative overflow-hidden ${i % 2 === 1 ? "md:col-start-2" : ""} rounded-t-xl md:rounded-t-none ${i % 2 === 0 ? "md:rounded-l-xl" : "md:rounded-r-xl"}`}>
-                      <img
-                        src={s.image}
-                        alt={s.imageAlt}
-                        className="w-full h-48 md:h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent md:bg-gradient-to-r md:from-transparent md:to-black/10" />
-                    </div>
-                    <div className="p-5 sm:p-8 flex flex-col justify-center">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <s.icon className={`w-6 h-6 ${s.color}`} />
-                        </div>
-                        <div>
-                          <div className={`text-xs font-bold ${s.color} uppercase tracking-[0.2em]`}>
-                            Step {s.step}
-                          </div>
-                          <h2 className="text-lg sm:text-2xl font-bold text-foreground">
-                            {s.title}
-                          </h2>
-                        </div>
-                      </div>
-                      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4">
-                        {s.description}
-                      </p>
-                      <ul className="space-y-2">
-                        {s.details.map((detail) => (
-                          <li key={detail} className="flex items-start gap-2 text-sm">
-                            <Check className={`w-4 h-4 ${s.color} shrink-0 mt-0.5`} />
-                            <span className="text-foreground/80">{detail}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function WhyTechSavvySection() {
-  const benefits = [
-    {
-      icon: DollarSign,
-      title: "Zero Processing Fees",
-      description: "You keep 100% of every sale. No 2-4% taken from your revenue.",
-    },
-    {
-      icon: Clock,
-      title: "Same-Day Setup",
-      description: "Start accepting payments today with full training and support.",
-    },
-    {
-      icon: Palette,
-      title: "Zero Risk Trial",
-      description: "Try for 30 days free. Return anytime — no fees, no contracts, no questions.",
-    },
-    {
-      icon: ShieldCheck,
-      title: "PCI Compliant & Secure",
-      description: "End-to-end encryption, tokenization, and full PCI compliance.",
-    },
-    {
-      icon: BarChart3,
-      title: "Real-Time Dashboard",
-      description: "Track every transaction, deposit, and refund from your dashboard.",
-    },
-    {
-      icon: MapPin,
-      title: "Local Hawai'i Support",
-      description: "Based in Honolulu with on-site support available. We know your market.",
-    },
-  ];
-
-  return (
-    <section className="py-12 sm:py-24 relative">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-8 sm:mb-14"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              Why TechSavvy
-            </Badge>
-          </motion.div>
-          <motion.h2
-            className="text-2xl sm:text-4xl font-extrabold tracking-tight"
-            variants={fadeUp}
-          >
-            Why Hawai'i Businesses Choose Us
-          </motion.h2>
-        </motion.div>
-
-        <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          {benefits.map((b, i) => (
-            <motion.div key={i} variants={scaleIn}>
-              <Card className="h-full overflow-visible border-primary/10">
-                <CardContent className="p-5 sm:p-6">
-                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mb-3">
-                    <b.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <h3 className="font-bold text-foreground mb-1">{b.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{b.description}</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-function HowItWorksCTA() {
-  return (
-    <section className="py-12 sm:py-24 relative">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <Card className="overflow-visible border-primary/20">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 via-emerald-300/5 to-primary/5" />
-            <CardContent className="p-8 relative text-center">
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
-                Ready to Keep Every Dollar?
-              </h2>
-              <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-                See our pricing options and choose the plan that works for your business.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button size="lg" asChild>
-                  <Link href="/pricing">
-                    See Pricing
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </Button>
-                <Button size="lg" variant="outline" asChild>
-                  <Link href="/contact">
-                    Contact Us
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
+const stepChoosePlan = "/images/step-choose-plan.png";
+const stepSetup = "/images/step-setup.png";
+const stepKeepProfits = "/images/step-keep-revenue.png";
 
 export default function HowItWorksPage() {
   useSEO({
-    title: "How AI Payment Processing Works in Hawaii | Zero-Fee Setup | TechSavvy",
-    description: "Learn how TechSavvy's AI-powered zero-fee payment processing works. Choose your plan, get same-day setup, and keep 100% of your revenue. AI-driven merchant solutions for Hawaii businesses.",
-    keywords: "how AI payment processing works Hawaii, zero-fee processing explained, surcharge processing Hawaii, AI merchant setup Honolulu, same-day payment terminal, intelligent payment solutions",
+    title: "How It Works | Zero-Fee Payment Processing | TechSavvy Hawaii",
+    description: "See how TechSavvy Hawaii eliminates your processing fees in 3 simple steps. Dual pricing, free terminals, no contracts. Get set up in days, not weeks.",
+    keywords: "how payment processing works Hawaii, dual pricing explained, cash discount program, zero fee processing setup, merchant services Hawaii",
     canonical: "https://techsavvyhawaii.com/how-it-works",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
+
+  const steps = [
+    {
+      num: "01",
+      title: "Contact Us & Get a Free Analysis",
+      description: "We review your current processing statement and show you exactly how much you're losing to hidden fees. No obligation, no pressure — just the real numbers.",
+      details: [
+        "Free statement analysis — see your true effective rate",
+        "Side-by-side comparison: your current costs vs. TechSavvy",
+        "Personalized savings estimate for your business",
+      ],
+      icon: FileText,
+      image: stepChoosePlan,
+      imageAlt: "Business owner reviewing processing statement",
+    },
+    {
+      num: "02",
+      title: "We Handle the Entire Setup",
+      description: "Our local team programs your terminal, configures dual pricing, installs compliance signage, and trains your staff. You don't lift a finger.",
+      details: [
+        "Free terminal delivered to your business",
+        "Full programming & dual pricing configuration",
+        "Compliance signage and staff training included",
+      ],
+      icon: Zap,
+      image: stepSetup,
+      imageAlt: "TechSavvy team setting up payment terminal",
+    },
+    {
+      num: "03",
+      title: "Keep 100% of Every Sale",
+      description: "Start processing with zero fees from day one. Your customers choose cash or card — and you keep every dollar either way. No monthly fees, no contracts, no surprises.",
+      details: [
+        "Zero processing fees — forever",
+        "Zero monthly fees or hidden charges",
+        "Cancel anytime — no contracts, no penalties",
+      ],
+      icon: DollarSign,
+      image: stepKeepProfits,
+      imageAlt: "Business owner keeping all profits",
+    },
+  ];
+
+  const features = [
+    { icon: Clock, title: "3–7 Day Setup", description: "Most businesses are live and processing within a week." },
+    { icon: ShieldCheck, title: "Fully Compliant", description: "Dual pricing is legal in all 50 states. We handle all disclosures." },
+    { icon: CreditCard, title: "Accept All Cards", description: "Chip, swipe, tap, Apple Pay, Google Pay — all accepted." },
+    { icon: BarChart3, title: "Real-Time Dashboard", description: "Track every transaction, deposit, and refund from your phone." },
+    { icon: Headphones, title: "Local Hawaii Support", description: "Real people based in Hawaii. Call, text, or email anytime." },
+    { icon: Users, title: "No Contracts", description: "We earn your business every month. Leave whenever you want." },
+  ];
 
   return (
     <Layout>
-      <HowItWorksHero />
-      <StepsSection />
-      <WhyTechSavvySection />
-      <HowItWorksCTA />
+      {/* Hero */}
+      <section className="relative overflow-hidden pt-20 pb-10 sm:pt-36 sm:pb-16">
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />
+          <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full bg-primary/10 blur-[120px]" />
+        </div>
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+            <motion.div variants={fadeUp}>
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+                <Zap className="w-3 h-3 mr-1" />
+                Simple 3-Step Process
+              </Badge>
+            </motion.div>
+            <motion.h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5" variants={fadeUp}>
+              How <span className="text-primary">TechSavvy</span> Works
+            </motion.h1>
+            <motion.p className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto" variants={fadeUp}>
+              Three steps to eliminate your processing fees. We handle everything — you just keep making money.
+            </motion.p>
+            <motion.div variants={fadeUp}>
+              <Button size="lg" asChild>
+                <a href="#steps">
+                  See the Steps
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </Button>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Steps */}
+      <section className="py-16 sm:py-24" id="steps">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="space-y-20 sm:space-y-28">
+            {steps.map((step, i) => (
+              <motion.div
+                key={step.num}
+                className={`grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center ${i % 2 === 1 ? "lg:flex-row-reverse" : ""}`}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className={i % 2 === 1 ? "lg:order-2" : ""}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <step.icon className="w-6 h-6 text-primary" />
+                    </div>
+                    <span className="text-5xl font-extrabold text-primary/15">{step.num}</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-4">{step.title}</h2>
+                  <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-6">{step.description}</p>
+                  <ul className="space-y-3">
+                    {step.details.map((d) => (
+                      <li key={d} className="flex items-center gap-3">
+                        <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-3.5 h-3.5 text-primary" />
+                        </div>
+                        <span className="text-foreground/90">{d}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className={i % 2 === 1 ? "lg:order-1" : ""}>
+                  <div className="rounded-2xl overflow-hidden border border-border/30 bg-muted/10">
+                    <img src={step.image} alt={step.imageAlt} className="w-full aspect-[4/3] object-cover" />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-16 sm:py-24 relative">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-card/50 via-transparent to-card/50" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
+            <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
+              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
+                Everything You Need. <span className="text-primary">Nothing You Don't.</span>
+              </h2>
+            </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {features.map((f) => (
+                <motion.div key={f.title} variants={fadeUp}>
+                  <Card className="h-full border-border/50">
+                    <CardContent className="p-6">
+                      <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                        <f.icon className="w-5 h-5 text-primary" />
+                      </div>
+                      <h3 className="font-bold mb-2">{f.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-16 sm:py-24">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <Card className="border-primary/20 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-primary/3 to-transparent" />
+              <CardContent className="p-8 sm:p-12 relative">
+                <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">Ready to Eliminate Your Fees?</h2>
+                <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
+                  Get a free statement analysis and see exactly how much you'll save. No obligation — just honest numbers.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Button size="lg" asChild>
+                    <Link href="/contact">
+                      Get Your Free Analysis
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="lg" asChild>
+                    <a href="tel:8087675460">
+                      <Phone className="w-4 h-4" />
+                      Call (808) 767-5460
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </section>
     </Layout>
   );
 }

@@ -39,27 +39,6 @@
     <priority>0.85</priority>
   </url>
 
-  <!-- Our Work / Web Design Portfolio -->
-  <url>
-    <loc>https://techsavvyhawaii.com/our-work</loc>
-    <lastmod>2026-02-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-    <image:image>
-      <image:loc>https://techsavvyhawaii.com/images/website-before-after.jpg</image:loc>
-      <image:title>Website Design Portfolio - TechSavvy Hawaii</image:title>
-      <image:caption>Before and after website transformations by TechSavvy Hawaii</image:caption>
-    </image:image>
-  </url>
-
-  <!-- Online Processing -->
-  <url>
-    <loc>https://techsavvyhawaii.com/online-processing</loc>
-    <lastmod>2026-02-21</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
   <!-- High-Risk Merchants -->
   <url>
     <loc>https://techsavvyhawaii.com/high-risk</loc>
