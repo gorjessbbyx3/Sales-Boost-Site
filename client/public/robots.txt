@@ -7,30 +7,28 @@ Disallow: /admin
 Disallow: /api/
 
 # Sitemaps
-Sitemap: https://techsavvyhawaii.com/sitemap.xml
+Sitemap: https://techsavvyhawaii.com/sitemap-index.xml
+Sitemap: https://techsavvyhawaii.com/sitemap-pages.xml
+Sitemap: https://techsavvyhawaii.com/sitemap-industries.xml
+Sitemap: https://techsavvyhawaii.com/sitemap-locations.xml
 
-# Crawl-delay (optional, respected by some bots)
-Crawl-delay: 1
-
-# Google specific
+# Google
 User-agent: Googlebot
 Allow: /
 Disallow: /admin
 Disallow: /api/
 
-# Bing specific
+# Bing
 User-agent: Bingbot
 Allow: /
 Disallow: /admin
 Disallow: /api/
 
-# Google Image Bot
+# Google Image
 User-agent: Googlebot-Image
 Allow: /images/
-Allow: /favicon.png
-Allow: /favicon.svg
 
-# AI Crawlers - Allow for visibility
+# AI Crawlers
 User-agent: GPTBot
 Allow: /
 
@@ -44,12 +42,6 @@ User-agent: Anthropic-AI
 Allow: /
 
 User-agent: Claude-Web
-Allow: /
-
-User-agent: Bytespider
-Allow: /
-
-User-agent: CCBot
 Allow: /
 
 User-agent: PerplexityBot
