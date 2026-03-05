@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { ChevronRight, Home } from "lucide-react";
 
 const routeNames: Record<string, string> = {
-  "/pricing": "Pricing",
+  "/pricing": "Try Free",
   "/how-it-works": "How It Works",
   "/high-risk": "High-Risk Merchants",
   "/contact": "Contact",

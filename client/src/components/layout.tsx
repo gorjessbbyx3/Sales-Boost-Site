@@ -27,7 +27,7 @@ function Navbar() {
 
   const links = [
     { label: "How It Works", href: "/how-it-works" },
-    { label: "Pricing", href: "/pricing" },
+    { label: "Try Free", href: "/pricing" },
     { label: "High-Risk", href: "/high-risk" },
     { label: "FAQ", href: "/faq" },
   ];
