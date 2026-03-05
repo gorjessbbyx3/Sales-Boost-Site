@@ -270,12 +270,12 @@ function HowItWorks() {
             {/* Connecting line */}
             <div className="hidden lg:block absolute top-[80px] left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-[2px] bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 max-w-3xl mx-auto">
               {steps.map((step, i) => {
                 const Illustration = illustrations[i];
                 return (
                   <motion.div key={step.num} variants={fadeUp}>
-                    <div className="relative group text-center h-full">
+                    <div className="relative group text-center h-full max-w-[160px] sm:max-w-none mx-auto">
                       {/* Illustration */}
                       <div className="mx-auto w-full max-w-[100px] sm:max-w-[150px] mb-2 sm:mb-3">
                         <Illustration />
