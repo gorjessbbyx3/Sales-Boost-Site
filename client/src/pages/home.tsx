@@ -582,12 +582,6 @@ function SavingsCalculator() {
                       <div className="text-4xl sm:text-5xl font-extrabold text-primary">{fmt(annualFees)}</div>
                     </div>
                     <div className="mt-4 text-center space-y-3">
-                      <Button size="lg" asChild>
-                        <a href="/contact">
-                          Connect With Us
-                          <ArrowRight className="w-4 h-4" />
-                        </a>
-                      </Button>
                       <div className="flex items-center justify-center gap-2">
                         <span className="text-xs text-muted-foreground">Share:</span>
                         <button
