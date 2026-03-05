@@ -53,36 +53,30 @@ function HeroSection() {
           </motion.div>
 
           <motion.h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6" variants={fadeUp}>
-            Stop Losing Money{" "}
+            Credit Card Fees Are{" "}
             <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-              to Credit Card Fees.
+              Eating Your Profits.
             </span>
           </motion.h1>
 
-          <motion.p className="text-lg sm:text-2xl text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto" variants={fadeUp}>
-            Hawaii businesses save{" "}
-            <span className="text-primary font-bold">$500–$3,000+ every month</span>{" "}
-            when they switch. Yours could too.
+          <motion.p className="text-lg sm:text-2xl text-muted-foreground leading-relaxed mb-4 max-w-2xl mx-auto" variants={fadeUp}>
+            TechSavvy Hawaii helps local businesses eliminate processing fees with a compliant cash discount program.
           </motion.p>
 
-          <motion.div className="flex flex-col items-center gap-5 mb-10" variants={fadeUp}>
-            <ul className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm sm:text-base text-foreground/80">
-              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" />No processing fees</li>
-              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" />No contracts</li>
-              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" />30-day risk-free trial</li>
-            </ul>
-          </motion.div>
+          <motion.p className="text-sm sm:text-base text-muted-foreground/80 mb-10 max-w-xl mx-auto" variants={fadeUp}>
+            Apply online. Once approved, we configure your POS and help you start saving.
+          </motion.p>
 
           <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
             <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
-              <a href="#calculator">
-                See How Much You're Losing
+              <a href="#contact-form">
+                Get a Free Savings Estimate
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
             <Button variant="outline" size="lg" className="text-base px-6 py-6 w-full sm:w-auto" asChild>
-              <a href="#contact-form">
-                Get a Free Savings Estimate
+              <a href="#calculator">
+                See How Much You're Losing
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
@@ -144,9 +138,16 @@ function ProblemSection() {
   );
 }
 
-// ─── 3. How It Works — Dead simple ──────────────────────────────────────────
+// ─── 3. How It Works — Remove uncertainty ───────────────────────────────────
 
 function HowItWorks() {
+  const steps = [
+    { num: "1", title: "Apply in 3 minutes", desc: "Quick online application. No paperwork, no fax machines. Just a few questions about your business." },
+    { num: "2", title: "Get approved", desc: "Usually within 24 hours. We review your info and confirm your savings estimate." },
+    { num: "3", title: "We set up your POS", desc: "Our local team configures your terminal, installs signage, and trains your staff. You don't touch a thing." },
+    { num: "4", title: "Start saving immediately", desc: "Accept payments with $0 processing fees from day one. Keep 100% of every sale." },
+  ];
+
   return (
     <section className="py-16 sm:py-24 relative">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-card/50 via-transparent to-card/50" />
@@ -154,32 +155,35 @@ function HowItWorks() {
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
           <motion.div className="text-center mb-10 sm:mb-16" variants={fadeUp}>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Here's how you stop paying fees.
+              How It Works
             </h2>
-            <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
-              No tech headaches. We handle everything. You just keep your money.
-            </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {[
-              { num: "1", title: "We look at your statement", desc: "Send us a processing statement or tell us your monthly volume. We'll show you exactly how much you're losing — no strings attached." },
-              { num: "2", title: "We set everything up", desc: "New terminal, signage, training — all handled by our local Hawaii team. Most businesses are live in 3–7 days." },
-              { num: "3", title: "You keep your money", desc: "Your customers choose cash or card. Either way, you keep 100% of the sale. No more giving away 2–4% on every transaction." },
-            ].map((step) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {steps.map((step, i) => (
               <motion.div key={step.num} variants={fadeUp}>
-                <Card className="h-full border-primary/10">
-                  <CardContent className="p-6 sm:p-8">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-5">
-                      <span className="text-xl font-extrabold text-primary">{step.num}</span>
+                <Card className="h-full border-primary/10 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/60 to-primary/20" />
+                  <CardContent className="p-5 sm:p-6">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <span className="text-lg font-extrabold text-primary">{step.num}</span>
                     </div>
-                    <h3 className="text-lg font-bold mb-2">{step.title}</h3>
+                    <h3 className="font-bold mb-2">{step.title}</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
                   </CardContent>
                 </Card>
               </motion.div>
             ))}
           </div>
+
+          <motion.div className="text-center mt-8" variants={fadeUp}>
+            <Button size="lg" asChild>
+              <a href="#contact-form">
+                Apply Now — Takes 3 Minutes
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </Button>
+          </motion.div>
         </motion.div>
       </div>
     </section>
@@ -646,8 +650,8 @@ function ContactFormSection() {
 
 export default function Home() {
   useSEO({
-    title: "Stop Losing Money to Credit Card Fees | TechSavvy Hawaii",
-    description: "Hawaii businesses save $500–$3,000+ per month when they stop paying credit card processing fees. No contracts, no monthly fees, free equipment. Built for Hawaii small businesses. 30-day risk-free trial.",
+    title: "Credit Card Fees Are Eating Your Profits | TechSavvy Hawaii",
+    description: "TechSavvy Hawaii helps local businesses eliminate processing fees with a compliant cash discount program. Apply online, get approved in 24 hours, start saving immediately. No contracts.",
     keywords: "stop paying credit card fees Hawaii, save money processing fees Honolulu, zero fee payment processing, Hawaii small business payment processor, no contract merchant services, TechSavvy Hawaii",
     canonical: "https://techsavvyhawaii.com/",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
@@ -656,10 +660,10 @@ export default function Home() {
   return (
     <Layout>
       <HeroSection />
-      <ProblemSection />
       <HowItWorks />
-      <EquipmentSection />
       <SavingsCalculator />
+      <ProblemSection />
+      <EquipmentSection />
       <CompareSection />
       <WhoWeWorkWith />
       <TrustSection />
