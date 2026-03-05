@@ -18,8 +18,8 @@ const stepKeepProfits = "/images/step-keep-revenue.png";
 export default function HowItWorksPage() {
   useSEO({
     title: "How It Works | Zero-Fee Payment Processing | TechSavvy Hawaii",
-    description: "See how TechSavvy Hawaii eliminates your processing fees in 3 simple steps. Dual pricing, free terminals, no contracts. Get set up in days, not weeks.",
-    keywords: "how payment processing works Hawaii, dual pricing explained, cash discount program, zero fee processing setup, merchant services Hawaii",
+    description: "See how TechSavvy Hawaii eliminates your processing fees in 3 simple steps. Cash Back, free terminals, no contracts. Get set up in days, not weeks.",
+    keywords: "how payment processing works Hawaii, Cash Back explained, cash discount program, zero fee processing setup, merchant services Hawaii",
     canonical: "https://techsavvyhawaii.com/how-it-works",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
@@ -41,10 +41,10 @@ export default function HowItWorksPage() {
     {
       num: "02",
       title: "We Handle the Entire Setup",
-      description: "Our local team programs your terminal, configures dual pricing, installs compliance signage, and trains your staff. You don't lift a finger.",
+      description: "Our local team programs your terminal, configures the Cash Back program, installs compliance signage, and trains your staff. You don't lift a finger.",
       details: [
         "Free terminal delivered to your business",
-        "Full programming & dual pricing configuration",
+        "Full programming & Cash Back program configuration",
         "Compliance signage and staff training included",
       ],
       icon: Zap,
@@ -68,7 +68,7 @@ export default function HowItWorksPage() {
 
   const features = [
     { icon: Clock, title: "3–7 Day Setup", description: "Most businesses are live and processing within a week." },
-    { icon: ShieldCheck, title: "Fully Compliant", description: "Dual pricing is legal in all 50 states. We handle all disclosures." },
+    { icon: ShieldCheck, title: "Fully Compliant", description: "Cash Back is legal in all 50 states. We handle all disclosures." },
     { icon: CreditCard, title: "Accept All Cards", description: "Chip, swipe, tap, Apple Pay, Google Pay — all accepted." },
     { icon: BarChart3, title: "Real-Time Dashboard", description: "Track every transaction, deposit, and refund from your phone." },
     { icon: Headphones, title: "Local Hawaii Support", description: "Real people based in Hawaii. Call, text, or email anytime." },

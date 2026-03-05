@@ -146,7 +146,7 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
           <div className="col-span-2 md:col-span-1">
             <p className="text-xs sm:text-sm text-white/70 leading-relaxed max-w-sm mb-3">
-              Hawai'i's trusted payment processing company. Zero fees, no contracts, local support. Dual pricing solutions for every business.
+              Hawai'i's trusted payment processing company. Zero fees, no contracts, local support. Cash Back solutions for every business.
             </p>
             <div className="space-y-2.5 text-sm text-white/60">
               <a href="tel:+18087675460" className="flex items-center gap-2 transition-colors hover:text-white">

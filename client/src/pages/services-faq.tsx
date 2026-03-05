@@ -35,25 +35,25 @@ function FAQAccordion({ items }: { items: { q: string; a: string }[] }) {
 export default function FaqPage() {
   useSEO({
     title: "FAQ | Zero-Fee Payment Processing Questions | TechSavvy Hawaii",
-    description: "Get answers about zero-fee payment processing, dual pricing, surcharging, high-risk merchants, and more. Everything you need to know about TechSavvy Hawaii.",
-    keywords: "payment processing FAQ, zero fee processing questions, how does dual pricing work, is surcharging legal Hawaii, merchant services FAQ, TechSavvy Hawaii questions",
+    description: "Get answers about zero-fee payment processing, Cash Back, surcharging, high-risk merchants, and more. Everything you need to know about TechSavvy Hawaii.",
+    keywords: "payment processing FAQ, zero fee processing questions, how does Cash Back work, is surcharging legal Hawaii, merchant services FAQ, TechSavvy Hawaii questions",
     canonical: "https://techsavvyhawaii.com/faq",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
 
   const generalFAQs = [
-    { q: "How much can I save with TechSavvy?", a: "With our Dual Pricing program, you can eliminate up to 100% of processing fees. The average Hawaii business saves $800–$2,000+ per month. We'll show you your exact savings with a free statement analysis." },
-    { q: "How does Dual Pricing work?", a: "We set up your system to offer a cash price and a card price. Card-paying customers see a small surcharge (typically 3–4%) added at the terminal before they confirm. Cash customers pay the listed price. The merchant keeps 100% of every transaction — card or cash." },
-    { q: "Is Dual Pricing legal in Hawaii?", a: "Yes — 100% legal in Hawaii and all 50 states. The FTC and all major card networks (Visa, Mastercard, Amex, Discover) allow surcharges when properly disclosed. TechSavvy handles all required signage and compliance for you." },
+    { q: "How much can I save with TechSavvy?", a: "With our Cash Back program, you can eliminate up to 100% of processing fees. The average Hawaii business saves $800–$2,000+ per month. We'll show you your exact savings with a free statement analysis." },
+    { q: "How does Cash Back work?", a: "We set up your system to offer a cash price and a card price. Card-paying customers see a small surcharge (typically 3–4%) added at the terminal before they confirm. Cash customers pay the listed price. The merchant keeps 100% of every transaction — card or cash." },
+    { q: "Is Cash Back legal in Hawaii?", a: "Yes — 100% legal in Hawaii and all 50 states. The FTC and all major card networks (Visa, Mastercard, Amex, Discover) allow surcharges when properly disclosed. TechSavvy handles all required signage and compliance for you." },
     { q: "Will my customers mind the surcharge?", a: "Most don't. Card surcharges are now mainstream — gas stations, restaurants, and retailers all do it. The terminal shows the amount clearly before the customer confirms. Many customers won't even notice or will simply pay with cash." },
     { q: "What kind of businesses do you work with?", a: "We serve restaurants, retail stores, auto repair shops, salons, medical offices, service providers, food trucks, and more — anyone who processes card payments. We also work with high-risk merchants (CBD, vape, firearms, gaming, nutraceuticals)." },
   ];
 
   const pricingFAQs = [
     { q: "Are there any contracts or sign-up fees?", a: "Nope! No contracts, no sign-up fees, no hidden costs. Just simple, transparent pricing. You can cancel anytime with zero penalties." },
-    { q: "How do I qualify for a free terminal?", a: "If you process $5,000+ per month in card transactions and enroll in our Dual Pricing program, you qualify for a free terminal. We ship it to you and handle the full setup." },
+    { q: "How do I qualify for a free terminal?", a: "If you process $5,000+ per month in card transactions and enroll in our Cash Back program, you qualify for a free terminal. We ship it to you and handle the full setup." },
     { q: "Are there any monthly fees?", a: "No. TechSavvy charges zero monthly fees — no statement fees, no PCI fees, no gateway fees, no batch fees. Your ongoing cost with us is $0." },
-    { q: "What about interchange fees — don't I still pay those?", a: "With Dual Pricing, the surcharge covers the interchange and processing costs entirely. You keep 100% of your sale amount. That's the whole point — zero fees to you." },
+    { q: "What about interchange fees — don't I still pay those?", a: "With Cash Back, the surcharge covers the interchange and processing costs entirely. You keep 100% of your sale amount. That's the whole point — zero fees to you." },
     { q: "What if I want to leave TechSavvy?", a: "No problem. There's no contract and no cancellation fee. You can leave anytime with zero penalty. We keep merchants by delivering value, not by trapping them." },
   ];
 
@@ -92,7 +92,7 @@ export default function FaqPage() {
               <span className="text-primary">Questions...</span>
             </motion.h1>
             <motion.p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto" variants={fadeUp}>
-              Everything you need to know about TechSavvy's zero-fee payment processing, dual pricing, and how we help Hawaii businesses keep more of what they earn.
+              Everything you need to know about TechSavvy's zero-fee payment processing, Cash Back, and how we help Hawaii businesses keep more of what they earn.
             </motion.p>
           </motion.div>
         </div>

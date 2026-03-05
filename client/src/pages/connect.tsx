@@ -180,13 +180,13 @@ function AIChatSection() {
 
   const quickQuestions = [
     "How does zero-fee processing work?",
-    "Tell me about dual pricing",
+    "Tell me about the Cash Back program",
     "What are the pricing options?",
     "Do you work with high-risk merchants?",
   ];
 
   const welcomeMessage = config?.welcomeMessage ||
-    "Hi! I'm TechSavvy's AI assistant. Ask me about our zero-fee payment processing, dual pricing, or high-risk merchant services.";
+    "Hi! I'm TechSavvy's AI assistant. Ask me about our zero-fee payment processing, Cash Back, or high-risk merchant services.";
 
   return (
     <section className="py-12 sm:py-20 relative" data-testid="section-ai-chat">
@@ -493,7 +493,7 @@ function ScheduleCallSection() {
                       >
                         <option value="">Select a topic...</option>
                         <option value="Zero-Fee Processing">Zero-Fee Payment Processing</option>
-                        <option value="Dual Pricing">Dual Pricing Information</option>
+                        <option value="Cash Back">Cash Back Information</option>
                         <option value="Online Presence">Building My Online Presence</option>
                         <option value="High-Risk Account">High-Risk Merchant Account</option>
                         <option value="Premium Website">Premium Website Package</option>
@@ -519,7 +519,7 @@ function ScheduleCallSection() {
 export default function ConnectPage() {
   useSEO({
     title: "Connect With TechSavvy Hawaii | AI Chat, Schedule Call, Get Started",
-    description: "Connect with TechSavvy Hawaii's AI assistant, schedule a call, or start your free consultation. Zero-fee payment processing and dual pricing solutions for Hawaiian businesses.",
+    description: "Connect with TechSavvy Hawaii's AI assistant, schedule a call, or start your free consultation. Zero-fee payment processing and Cash Back solutions for Hawaiian businesses.",
     keywords: "connect TechSavvy Hawaii, AI chat business Hawaii, schedule consultation Honolulu, payment processing demo, AI assistant merchant services",
     canonical: "https://techsavvyhawaii.com/connect",
   });

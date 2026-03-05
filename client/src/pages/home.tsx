@@ -90,14 +90,14 @@ function KeepMoreSection() {
               <span className="text-muted-foreground">with <span className="text-primary font-extrabold">Hawaii's Own</span> Payment Processor</span>
             </h2>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
-              TechSavvy helps business owners keep more of what they earn with simple, transparent payment solutions. No contracts, no hidden fees. Just seamless transactions designed to maximize your bottom line with our Dual Pricing model and local Hawaii support.
+              TechSavvy helps business owners keep more of what they earn with simple, transparent payment solutions. No contracts, no hidden fees. Just seamless transactions designed to maximize your bottom line with our Cash Back model and local Hawaii support.
             </p>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
             <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 p-8 sm:p-12 text-center">
               <div className="text-6xl sm:text-8xl font-extrabold text-primary mb-3">$0</div>
               <div className="text-lg sm:text-xl font-semibold text-foreground mb-1">Monthly Processing Fees</div>
-              <div className="text-sm text-muted-foreground">with TechSavvy's Dual Pricing</div>
+              <div className="text-sm text-muted-foreground">with TechSavvy's Cash Back program</div>
             </div>
           </motion.div>
         </div>
@@ -137,7 +137,7 @@ function EquipmentSection() {
   );
 }
 
-// ─── 4. Dual Pricing / Put Thousands Back ───────────────────────────────────
+// ─── 4. Cash Back / Put Thousands Back ───────────────────────────────────
 
 function DualPricingSection() {
   return (
@@ -149,7 +149,7 @@ function DualPricingSection() {
               Put <span className="text-primary">Thousands</span> Back Into Your Business
             </h2>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-6">
-              TechSavvy's dual pricing system gives your customers the choice: pay the standard price with a card or get a discount for paying with cash. It's simple, transparent, and fully compliant — so you stop giving away 2–4% of every sale.
+              TechSavvy's Cash Back system gives your customers the choice: pay the standard price with a card or get a discount for paying with cash. It's simple, transparent, and fully compliant — so you stop giving away 2–4% of every sale.
             </p>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-8">
               Whether you run a shop, restaurant, or service biz, we'll help you keep more of your hard-earned money.
@@ -157,7 +157,7 @@ function DualPricingSection() {
             <ul className="space-y-3">
               {[
                 "Get a terminal at no cost",
-                "Eliminate processing fees with Dual Pricing",
+                "Eliminate processing fees with Cash Back",
                 "No contracts or sign-up fees",
                 "Keep more of your profits where they belong: in your pocket",
               ].map((item) => (
@@ -292,8 +292,8 @@ function PricingModels() {
       accent: "border-border/50",
     },
     {
-      title: "Dual Pricing",
-      desc: "With Dual Pricing, your customers choose between cash or card payments, and processing fees are automatically adjusted. It's a simple way to eliminate your processing costs without sacrificing customer satisfaction.",
+      title: "Cash Back",
+      desc: "With Cash Back, your customers choose between cash or card payments, and processing fees are automatically adjusted. It's a simple way to eliminate your processing costs without sacrificing customer satisfaction.",
       features: ["No Processing Costs", "Boosts Bottom Line", "Simple To Implement", "Most Popular"],
       accent: "border-primary/30 ring-1 ring-primary/10",
       popular: true,
@@ -536,11 +536,11 @@ function TestimonialSection() {
 function FAQSection() {
   const [open, setOpen] = useState<number | null>(null);
   const faqs = [
-    { q: "How much can I save with TechSavvy?", a: "With our Dual Pricing program, you can eliminate up to 100% of processing fees, keeping more revenue in your business." },
-    { q: "How does Dual Pricing work?", a: "We set up your system to offer a cash price and a card price — allowing your customers to cover processing costs when they pay with a card." },
+    { q: "How much can I save with TechSavvy?", a: "With our Cash Back program, you can eliminate up to 100% of processing fees, keeping more revenue in your business." },
+    { q: "How does Cash Back work?", a: "We set up your system to offer a cash price and a card price — allowing your customers to cover processing costs when they pay with a card." },
     { q: "What kind of businesses do you work with?", a: "We serve restaurants, retail stores, service providers, and B2B businesses — anyone who processes payments." },
     { q: "Are there any contracts or sign up fees?", a: "Nope! No contracts, no sign-up fees, no hidden costs. Just simple, transparent pricing." },
-    { q: "How do I qualify for a free terminal?", a: "If you process $5K+ per month and enroll in our Dual Pricing, you qualify for a free device!" },
+    { q: "How do I qualify for a free terminal?", a: "If you process $5K+ per month and enroll in our Cash Back program, you qualify for a free device!" },
     { q: "How long does it take to get set up?", a: "Most businesses are fully operational within 3–7 days after approval." },
   ];
 
@@ -673,8 +673,8 @@ function ContactFormSection() {
 export default function Home() {
   useSEO({
     title: "TechSavvy Hawaii | Eliminate Processing Fees | Hawaii's Payment Processor",
-    description: "TechSavvy helps local Hawaii business owners keep more of what they earn with simple, transparent payment solutions. No contracts, no hidden fees. Dual pricing, free terminals, local support.",
-    keywords: "payment processing Hawaii, zero-fee processing Honolulu, dual pricing Hawaii, eliminate processing fees, merchant services Hawaii, POS terminal Hawaii, TechSavvy Hawaii",
+    description: "TechSavvy helps local Hawaii business owners keep more of what they earn with simple, transparent payment solutions. No contracts, no hidden fees. Cash Back, free terminals, local support.",
+    keywords: "payment processing Hawaii, zero-fee processing Honolulu, Cash Back Hawaii, eliminate processing fees, merchant services Hawaii, POS terminal Hawaii, TechSavvy Hawaii",
     canonical: "https://techsavvyhawaii.com/",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });

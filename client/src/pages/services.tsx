@@ -105,9 +105,9 @@ export default function ServicesPage() {
     keywords: "payment processing services, merchant services, credit card processing services, business payment solutions, POS system services, high risk merchant services, online payment services, payment gateway services, website design services, business web design, e-commerce solutions, contactless payment services, mobile payment solutions, payment terminal services, merchant account services",
     canonical: "https://techsavvyhawaii.com/services",
     ogTitle: "Payment Processing & Web Design Services | λechSavvy (TechSavvy)",
-    ogDescription: "Zero-fee payment processing, high-risk merchant accounts, online payment gateway, POS systems, and dual pricing. All with zero fees.",
+    ogDescription: "Zero-fee payment processing, high-risk merchant accounts, online payment gateway, POS systems, and Cash Back. All with zero fees.",
     twitterTitle: "All Services — Zero-Fee Processing & Web Design | λechSavvy",
-    twitterDescription: "Payment processing, high-risk accounts, online gateway, POS, and dual pricing. Zero fees, no contracts, same-day setup.",
+    twitterDescription: "Payment processing, high-risk accounts, online gateway, POS, and Cash Back. Zero fees, no contracts, same-day setup.",
     jsonLd,
   });
 
@@ -122,7 +122,7 @@ export default function ServicesPage() {
           >
             <img
               src={servicesBanner}
-              alt="λechSavvy — Eliminate Credit Card Fees Forever. Dual Pricing Program. No Contracts. Local Hawaii Support."
+              alt="λechSavvy — Eliminate Credit Card Fees Forever. Cash Back Program. No Contracts. Local Hawaii Support."
               className="w-full rounded-lg shadow-2xl"
               data-testid="img-services-banner"
             />

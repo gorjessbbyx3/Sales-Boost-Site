@@ -151,7 +151,7 @@ function FAQHero() {
             className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
             variants={fadeUp}
           >
-            Everything you need to know about zero-fee payment processing, dual pricing, and how TechSavvy helps Hawai'i businesses thrive.
+            Everything you need to know about zero-fee payment processing, Cash Back, and how TechSavvy helps Hawai'i businesses thrive.
           </motion.p>
         </motion.div>
       </div>
@@ -879,8 +879,8 @@ function ContactSection() {
 export default function ContactPage() {
   useSEO({
     title: "Contact TechSavvy Hawaii | Free Quote & Website Mockup",
-    description: "Contact TechSavvy Hawaii for a free savings analysis on your payment processing. Zero-fee terminals, dual pricing, and high-risk accounts. Serving all Hawaiian Islands.",
-    keywords: "contact TechSavvy Hawaii, free payment processing quote, merchant services Hawaii, Honolulu payment processor, dual pricing Hawaii",
+    description: "Contact TechSavvy Hawaii for a free savings analysis on your payment processing. Zero-fee terminals, Cash Back, and high-risk accounts. Serving all Hawaiian Islands.",
+    keywords: "contact TechSavvy Hawaii, free payment processing quote, merchant services Hawaii, Honolulu payment processor, Cash Back Hawaii",
     canonical: "https://techsavvyhawaii.com/contact",
   });
 
