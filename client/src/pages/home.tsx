@@ -365,6 +365,131 @@ function PricingModels() {
   );
 }
 
+// ─── 6b. Competitor Comparison ──────────────────────────────────────────────
+
+function CompareSection() {
+  const features = [
+    {
+      label: "Processing Fees",
+      square: "2.6–3.5%",
+      clover: "2.3–3.5%",
+      techsavvy: "0%",
+      highlight: true,
+    },
+    {
+      label: "Monthly Fees",
+      square: "$0–$60+",
+      clover: "$14.95–$84.95",
+      techsavvy: "$0",
+      highlight: true,
+    },
+    {
+      label: "Contracts",
+      square: "No",
+      clover: "Sometimes",
+      techsavvy: "No",
+      highlight: false,
+    },
+    {
+      label: "Setup Time",
+      square: "Medium",
+      clover: "Medium",
+      techsavvy: "Fast",
+      highlight: false,
+    },
+    {
+      label: "Hardware Cost",
+      square: "$$$",
+      clover: "$$$",
+      techsavvy: "Low",
+      highlight: false,
+    },
+    {
+      label: "Local Hawaii Support",
+      square: "No",
+      clover: "No",
+      techsavvy: "Yes",
+      highlight: true,
+    },
+  ];
+
+  return (
+    <section className="py-16 sm:py-24 relative">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+        >
+          <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+              <TrendingUp className="w-3 h-3 mr-1.5" />
+              Side-by-Side Comparison
+            </Badge>
+            <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-3">
+              How We <span className="text-primary">Stack Up</span>
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
+              See how TechSavvy compares to the big-name processors. The numbers speak for themselves.
+            </p>
+          </motion.div>
+
+          <motion.div variants={fadeUp}>
+            <Card className="overflow-hidden border-border/50">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/50">
+                      <th className="text-left p-4 font-semibold text-muted-foreground w-[28%]">Feature</th>
+                      <th className="text-center p-4 w-[24%]">
+                        <div className="text-muted-foreground font-semibold">Square</div>
+                      </th>
+                      <th className="text-center p-4 w-[24%]">
+                        <div className="text-muted-foreground font-semibold">Clover</div>
+                      </th>
+                      <th className="text-center p-4 w-[24%] bg-primary/5">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-primary" />
+                          <span className="font-bold text-primary">TechSavvy</span>
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {features.map((row, i) => (
+                      <tr
+                        key={row.label}
+                        className={`border-b border-border/30 ${i % 2 === 0 ? "" : "bg-muted/10"}`}
+                      >
+                        <td className="p-3 sm:p-4 font-medium text-foreground/80">{row.label}</td>
+                        <td className="p-3 sm:p-4 text-center text-red-400/80 text-xs sm:text-sm">{row.square}</td>
+                        <td className="p-3 sm:p-4 text-center text-red-400/80 text-xs sm:text-sm">{row.clover}</td>
+                        <td className={`p-3 sm:p-4 text-center bg-primary/5 text-xs sm:text-sm ${row.highlight ? "text-primary font-bold text-base sm:text-lg" : "text-primary font-semibold"}`}>
+                          {row.techsavvy}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
+            <div className="mt-6 text-center">
+              <Button size="lg" asChild>
+                <a href="#contact-form">
+                  Switch to TechSavvy — It's Free to Start
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 // ─── 7. Trust / Values Section ──────────────────────────────────────────────
 
 function TrustSection() {
@@ -706,6 +831,7 @@ export default function Home() {
       <DualPricingSection />
       <SavingsCalculator />
       <PricingModels />
+      <CompareSection />
       <TrustSection />
       <PaymentSolutions />
       <SupportSection />
