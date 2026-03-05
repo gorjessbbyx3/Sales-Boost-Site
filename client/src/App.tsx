@@ -4,25 +4,26 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import Home from "@/pages/home";
-import PricingPage from "@/pages/pricing";
-import HowItWorksPage from "@/pages/how-it-works";
-import HighRiskPage from "@/pages/high-risk";
-import ContactPage from "@/pages/contact";
-import ConnectPage from "@/pages/connect";
-import FaqPage from "@/pages/services-faq";
-import LeadMagnetPage from "@/pages/lead-magnet";
-import FreeGuidesPage from "@/pages/free-guides";
-import AiConfigPage from "@/pages/ai-config";
-import StatementReviewPage from "@/pages/statement-review";
-import PartnerAgreementPage from "@/pages/partner-agreement";
-import ReferralPage from "@/pages/referral";
-import ApplyPage from "@/pages/apply";
 import NotFound from "@/pages/not-found";
 import { ChatWidget } from "@/components/chat-widget";
 
-import PartnerProgramPage from "@/pages/partner-program";
+// Lazy-load all pages except homepage for faster initial load
+const PricingPage = lazy(() => import("@/pages/pricing"));
+const HowItWorksPage = lazy(() => import("@/pages/how-it-works"));
+const HighRiskPage = lazy(() => import("@/pages/high-risk"));
+const ContactPage = lazy(() => import("@/pages/contact"));
+const ConnectPage = lazy(() => import("@/pages/connect"));
+const FaqPage = lazy(() => import("@/pages/services-faq"));
+const LeadMagnetPage = lazy(() => import("@/pages/lead-magnet"));
+const FreeGuidesPage = lazy(() => import("@/pages/free-guides"));
+const AiConfigPage = lazy(() => import("@/pages/ai-config"));
+const StatementReviewPage = lazy(() => import("@/pages/statement-review"));
+const PartnerAgreementPage = lazy(() => import("@/pages/partner-agreement"));
+const ReferralPage = lazy(() => import("@/pages/referral"));
+const ApplyPage = lazy(() => import("@/pages/apply"));
+const PartnerProgramPage = lazy(() => import("@/pages/partner-program"));
 
 const isAdminSubdomain = window.location.hostname.startsWith("admin.");
 const isProgramSubdomain = window.location.hostname.startsWith("program.");
@@ -41,41 +42,47 @@ function MainRouter() {
   return (
     <>
       <ScrollToTop />
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/pricing" component={PricingPage} />
-        <Route path="/how-it-works" component={HowItWorksPage} />
-        <Route path="/high-risk" component={HighRiskPage} />
-        <Route path="/contact" component={ContactPage} />
-        <Route path="/faq" component={FaqPage} />
-        <Route path="/connect" component={ConnectPage} />
-        <Route path="/free-guides" component={FreeGuidesPage} />
-        <Route path="/free/:slug" component={LeadMagnetPage} />
-        <Route path="/statement-review" component={StatementReviewPage} />
-        <Route path="/partner-agreement" component={PartnerAgreementPage} />
-        <Route path="/refer" component={ReferralPage} />
-        <Route path="/apply" component={ApplyPage} />
-        <Route component={NotFound} />
-      </Switch>
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/pricing" component={PricingPage} />
+          <Route path="/how-it-works" component={HowItWorksPage} />
+          <Route path="/high-risk" component={HighRiskPage} />
+          <Route path="/contact" component={ContactPage} />
+          <Route path="/faq" component={FaqPage} />
+          <Route path="/connect" component={ConnectPage} />
+          <Route path="/free-guides" component={FreeGuidesPage} />
+          <Route path="/free/:slug" component={LeadMagnetPage} />
+          <Route path="/statement-review" component={StatementReviewPage} />
+          <Route path="/partner-agreement" component={PartnerAgreementPage} />
+          <Route path="/refer" component={ReferralPage} />
+          <Route path="/apply" component={ApplyPage} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     </>
   );
 }
 
 function AdminRouter() {
   return (
-    <Switch>
-      <Route path="/" component={AiConfigPage} />
-      <Route component={AiConfigPage} />
-    </Switch>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+      <Switch>
+        <Route path="/" component={AiConfigPage} />
+        <Route component={AiConfigPage} />
+      </Switch>
+    </Suspense>
   );
 }
 
 function ProgramRouter() {
   return (
-    <Switch>
-      <Route path="/" component={PartnerProgramPage} />
-      <Route component={PartnerProgramPage} />
-    </Switch>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+      <Switch>
+        <Route path="/" component={PartnerProgramPage} />
+        <Route component={PartnerProgramPage} />
+      </Switch>
+    </Suspense>
   );
 }
 
