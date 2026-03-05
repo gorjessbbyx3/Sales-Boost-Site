@@ -186,6 +186,11 @@ function Footer() {
                   How It Works
                 </Link>
               </li>
+              <li>
+                <Link href="/refer" className="transition-colors hover:text-primary text-primary/80 font-medium" data-testid="link-footer-refer-biz">
+                  Earn Residual Income →
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -213,8 +218,8 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/refer" className="transition-colors hover:text-white" data-testid="link-footer-refer">
-                  Refer a Business
+                <Link href="/refer" className="transition-colors hover:text-primary text-primary/80 font-medium" data-testid="link-footer-refer">
+                  Refer a Business & Earn
                 </Link>
               </li>
               <li>

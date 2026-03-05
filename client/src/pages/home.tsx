@@ -116,7 +116,7 @@ function EquipmentSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="order-2 lg:order-1">
             <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-muted/30 to-muted/10 border border-border/50 p-8 sm:p-12">
-              <img src="/images/terminal-399.png" alt="TechSavvy payment terminal" className="w-full max-w-xs mx-auto object-contain" />
+              <img src="/images/pos-equipment.jpeg" alt="TechSavvy POS system and payment terminals" className="w-full max-w-md mx-auto object-contain" />
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="order-1 lg:order-2">
