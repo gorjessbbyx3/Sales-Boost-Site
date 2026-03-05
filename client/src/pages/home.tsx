@@ -775,7 +775,7 @@ function TestimonialSection() {
   const testimonials = [
     { name: "Restaurant Owner", loc: "Waikiki", quote: "We were losing over $1,200 a month and didn't even know it. TechSavvy showed us the numbers and switched us over in a week. Best business decision we made this year." },
     { name: "Nail Salon Owner", loc: "Kailua", quote: "Switching was so easy. TechSavvy's local team set everything up and we got a new terminal for free. The savings are real — we see it every month." },
-    { name: "Eye Care Associates", loc: "Ala Moana", quote: "Their customer service is incredible. Whenever we need help, they pick up the phone. No runaround, no waiting on hold. Highly recommend." },
+    { name: "Aloha Light Center", loc: "Honolulu", quote: "TechSavvy made the whole process seamless. No more processing fees eating into our revenue every month. Their local team is always a phone call away — couldn't ask for better service." },
     { name: "Spa Owner", loc: "Waikiki", quote: "Great rates, great service, and the equipment was free. I tell every business owner I know about TechSavvy." },
   ];
 
