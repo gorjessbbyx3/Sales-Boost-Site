@@ -57,11 +57,11 @@ function HeroSection() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div variants={staggerContainer} initial="hidden" animate="visible">
             <motion.h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-5" variants={fadeUp}>
-              The Average Hawaii Restaurant Loses{" "}
+              The Average Hawaii Business Loses{" "}
               <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-                $14,400/Year
+                $6,000–$36,000/Year
               </span>{" "}
-              to Processing Fees.
+              to Credit Card Fees.
             </motion.h1>
 
             <motion.p className="text-base sm:text-xl text-muted-foreground leading-relaxed mb-4 max-w-2xl mx-auto" variants={fadeUp}>
@@ -980,7 +980,7 @@ function FAQSection() {
 
 export default function Home() {
   useSEO({
-    title: "Hawaii Restaurants Lose $14,400/Year to Processing Fees | TechSavvy Hawaii",
+    title: "Hawaii Businesses Lose $6,000–$36,000/Year to Credit Card Fees | TechSavvy",
     description: "TechSavvy Hawaii helps local businesses eliminate processing fees with a compliant cash discount program. Apply online, get approved in 24 hours, start saving immediately. No contracts.",
     keywords: "stop paying credit card fees Hawaii, save money processing fees Honolulu, zero fee payment processing, Hawaii small business payment processor, no contract merchant services, TechSavvy Hawaii",
     canonical: "https://techsavvyhawaii.com/",
