@@ -75,6 +75,7 @@ export default function StatementReviewPage() {
     title: "Free AI Statement Review | TechSavvy Hawaii",
     description:
       "Upload your merchant statement and our AI instantly identifies hidden fees, inflated rates, and overcharges. Get a free savings report in minutes.",
+    canonical: "https://techsavvyhawaii.com/statement-review",
     keywords:
       "merchant statement review, hidden fees, credit card processing, payment processing analysis, free statement audit",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",

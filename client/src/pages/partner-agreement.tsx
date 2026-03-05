@@ -33,6 +33,7 @@ export default function PartnerAgreementPage() {
     title: "Partner Agreement | TechSavvy Hawaii",
     description:
       "Become a TechSavvy Hawaii partner. Zero-fee payment processing, free terminals, and ongoing support for your merchants.",
+    canonical: "https://techsavvyhawaii.com/partner-agreement",
     keywords:
       "partner agreement, merchant services partner, ISO agent, payment processing partnership",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",

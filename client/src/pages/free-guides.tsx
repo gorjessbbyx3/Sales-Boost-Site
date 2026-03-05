@@ -92,7 +92,10 @@ export default function FreeGuidesPage() {
 
   useSEO({
     title: "Free Merchant Processing Guides | TechSavvy Hawaii",
-    description: "Download free guides to review your merchant statement, compare rates, secure your payments, and eliminate processing fees.",
+    description: "Download free guides to review your merchant statement, compare rates, secure your payments, and eliminate processing fees with TechSavvy Hawaii's cash discount program.",
+    keywords: "free merchant statement guide, payment processing guide Hawaii, credit card fee comparison, cash discount guide",
+    canonical: "https://techsavvyhawaii.com/free-guides",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
 
   const toggleGuide = (slug: string) => {

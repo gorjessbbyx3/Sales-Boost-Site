@@ -161,8 +161,10 @@ function LeadMagnetLanding({ slug }: { slug: string }) {
   const Icon = magnet.icon;
 
   useSEO({
-    title: `${magnet.title} | TechSavvy Hawaii`,
+    title: `${magnet.title} | Free Guide | TechSavvy Hawaii`,
     description: magnet.subtitle,
+    keywords: "free payment processing guide, merchant statement checklist, credit card fee guide Hawaii",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

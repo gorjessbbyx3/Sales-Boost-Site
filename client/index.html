@@ -36,8 +36,8 @@
     <!-- Geo-targeting for Hawai'i -->
     <meta name="geo.region" content="US-HI" />
     <meta name="geo.placename" content="Honolulu, Hawaii" />
-    <meta name="geo.position" content="21.3069;-157.8583" />
-    <meta name="ICBM" content="21.3069, -157.8583" />
+    <meta name="geo.position" content="21.2942;-157.8275" />
+    <meta name="ICBM" content="21.2942, -157.8275" />
     <meta name="DC.title" content="TechSavvy Hawaii - Zero-Fee Payment Processing" />
     <meta name="DC.creator" content="TechSavvy Hawaii" />
     <meta name="DC.subject" content="Payment Processing; Cash Discount Program; Hawaii" />
@@ -60,7 +60,7 @@
     <meta name="twitter:title" content="TechSavvy Hawaii | Zero-Fee Payment Processing" />
     <meta name="twitter:description" content="Hawaii businesses save $500-$3,000+/month with zero-fee payment processing. Cash discount program, free equipment, no contracts. Serving all islands." />
     <meta name="twitter:image" content="https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg" />
-    <meta name="twitter:image:alt" content="TechSavvy Hawaii AI Payment Processing" />
+    <meta name="twitter:image:alt" content="TechSavvy Hawaii — Zero-Fee Payment Processing for Local Businesses" />
 
     <!-- Hreflang for US English / Hawaii -->
     <link rel="alternate" hreflang="en-US" href="https://techsavvyhawaii.com/" />
@@ -104,7 +104,11 @@
         "areaServed": "US-HI",
         "availableLanguage": "English"
       },
-      "knowsAbout": ["Payment Processing", "Cash Discount Program", "Merchant Services", "POS Systems", "High-Risk Merchant Accounts", "Credit Card Processing"]
+      "knowsAbout": ["Payment Processing", "Cash Discount Program", "Merchant Services", "POS Systems", "High-Risk Merchant Accounts", "Credit Card Processing"],
+      "sameAs": [
+        "https://www.facebook.com/techsavvyhawaii",
+        "https://www.instagram.com/techsavvyhawaii"
+      ]
     }
     </script>
 
@@ -118,7 +122,33 @@
       "url": "https://techsavvyhawaii.com",
       "description": "Zero-fee payment processing for Hawaii small businesses. Cash discount program, free equipment, no contracts.",
       "publisher": { "@id": "https://techsavvyhawaii.com/#organization" },
-      "inLanguage": "en-US"
+      "inLanguage": "en-US",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://techsavvyhawaii.com/?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- SiteNavigationElement Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "itemListElement": [
+        { "@type": "SiteNavigationElement", "position": 1, "name": "Home", "url": "https://techsavvyhawaii.com/" },
+        { "@type": "SiteNavigationElement", "position": 2, "name": "Try Free", "url": "https://techsavvyhawaii.com/pricing" },
+        { "@type": "SiteNavigationElement", "position": 3, "name": "How It Works", "url": "https://techsavvyhawaii.com/how-it-works" },
+        { "@type": "SiteNavigationElement", "position": 4, "name": "Statement Analysis", "url": "https://techsavvyhawaii.com/statement-review" },
+        { "@type": "SiteNavigationElement", "position": 5, "name": "High-Risk", "url": "https://techsavvyhawaii.com/high-risk" },
+        { "@type": "SiteNavigationElement", "position": 6, "name": "Contact", "url": "https://techsavvyhawaii.com/contact" },
+        { "@type": "SiteNavigationElement", "position": 7, "name": "Apply", "url": "https://techsavvyhawaii.com/apply" },
+        { "@type": "SiteNavigationElement", "position": 8, "name": "Refer a Business", "url": "https://techsavvyhawaii.com/refer" }
+      ]
     }
     </script>
 
@@ -134,6 +164,10 @@
       "email": "contact@techsavvyhawaii.com",
       "url": "https://techsavvyhawaii.com",
       "openingHours": "Mo-Fr 08:00-17:00",
+      "openingHoursSpecification": [
+        { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "08:00", "closes": "17:00" }
+      ],
+      "image": "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
       "paymentAccepted": "Cash, Credit Card, Debit Card",
       "currenciesAccepted": "USD",
       "address": {

@@ -165,9 +165,9 @@ function MilestoneMessage({ step }: { step: number }) {
 
 export default function ApplyPage() {
   useSEO({
-    title: "Apply Now | TechSavvy Hawaii — Zero-Fee Payment Processing",
-    description:
-      "Apply for zero-fee payment processing in under 3 minutes. No paperwork, no fax machines.",
+    title: "Apply Now | Zero-Fee Payment Processing | TechSavvy Hawaii",
+    description: "Apply for zero-fee payment processing in under 3 minutes. No contracts, no monthly fees, free equipment for qualifying businesses. Serving all Hawaiian Islands.",
+    keywords: "apply payment processing Hawaii, merchant application Honolulu, zero fee processing application, TechSavvy Hawaii apply",
     canonical: "https://techsavvyhawaii.com/apply",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
   });
