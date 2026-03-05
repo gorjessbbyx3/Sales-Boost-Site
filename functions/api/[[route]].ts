@@ -399,6 +399,96 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
     }
 
+    // POST /api/merchant-applications (public — gamified application form)
+    if (path === "/api/merchant-applications" && method === "POST") {
+      const body: any = await request.json();
+      if (!body.businessLegalName || !body.businessPhone || !body.businessEmail || !body.ownerName || !body.signatureName) {
+        return err("Required fields missing: businessLegalName, businessPhone, businessEmail, ownerName, signatureName");
+      }
+      const id = genId();
+      const ts = now();
+      try {
+        await env.DB.prepare(
+          `INSERT INTO merchant_applications (id, business_legal_name, dba, business_phone, business_email, address, city, state, zip, business_structure, business_start_date, federal_tax_id, owner_name, owner_title, ownership_percent, owner_phone, owner_email, products_sold, avg_monthly_volume, avg_ticket, percent_card_present, signature_name, agreed_to_terms, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+        ).bind(
+          id, body.businessLegalName, body.dba || null, body.businessPhone, body.businessEmail,
+          body.address || "", body.city || "", body.state || "", body.zip || "",
+          body.businessStructure || "", body.businessStartDate || null, body.federalTaxId || null,
+          body.ownerName, body.ownerTitle || null, body.ownershipPercent || null,
+          body.ownerPhone || null, body.ownerEmail || null,
+          body.productsSold || null, body.avgMonthlyVolume || null, body.avgTicket || null,
+          body.percentCardPresent || null, body.signatureName, body.agreedToTerms ? 1 : 0, ts
+        ).run();
+
+        // Log to admin inbox
+        try {
+          const threadId = genId();
+          const msgId = genId();
+          const subject = `Merchant Application: ${body.businessLegalName}`;
+          const msgBody = `New merchant application:\n\nBusiness: ${body.businessLegalName}${body.dba ? `\nDBA: ${body.dba}` : ""}\nOwner: ${body.ownerName}${body.ownerTitle ? ` (${body.ownerTitle})` : ""}\nEmail: ${body.businessEmail}\nPhone: ${body.businessPhone}\nAddress: ${body.address}, ${body.city}, ${body.state} ${body.zip}\nStructure: ${body.businessStructure}\nProducts: ${body.productsSold || "Not specified"}\nMonthly Volume: ${body.avgMonthlyVolume || "Not specified"}\nAvg Ticket: ${body.avgTicket || "Not specified"}\n% In-Person: ${body.percentCardPresent || "Not specified"}`;
+
+          await env.DB.prepare(
+            "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, '', ?, ?, 'merchant-application', 'open', 1, ?, ?)"
+          ).bind(threadId, subject, body.businessEmail, body.ownerName, ts, ts).run();
+
+          await env.DB.prepare(
+            "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, 'apply@techsavvyhawaii.com', ?, ?, '', '', 'received', ?)"
+          ).bind(msgId, threadId, body.businessEmail, body.ownerName, subject, msgBody, ts).run();
+        } catch (inboxErr) {
+          console.error("Failed to log merchant application to inbox:", inboxErr);
+        }
+
+        // Log activity
+        try {
+          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+            genId(), "New Merchant Application", `${body.businessLegalName} (${body.ownerName}) submitted application`, "lead", ts
+          ).run();
+        } catch { /* non-critical */ }
+
+        const row = await env.DB.prepare("SELECT * FROM merchant_applications WHERE id = ?").bind(id).first();
+        return json(row || { id, status: "pending" }, 201);
+      } catch (e: any) {
+        // Table might not exist — create it and retry
+        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS merchant_applications (
+          id TEXT PRIMARY KEY,
+          business_legal_name TEXT NOT NULL, dba TEXT,
+          business_phone TEXT NOT NULL, business_email TEXT NOT NULL,
+          address TEXT NOT NULL DEFAULT '', city TEXT NOT NULL DEFAULT '',
+          state TEXT NOT NULL DEFAULT '', zip TEXT NOT NULL DEFAULT '',
+          business_structure TEXT NOT NULL DEFAULT '',
+          business_start_date TEXT, federal_tax_id TEXT,
+          owner_name TEXT NOT NULL, owner_title TEXT,
+          ownership_percent TEXT, owner_phone TEXT, owner_email TEXT,
+          products_sold TEXT, avg_monthly_volume TEXT,
+          avg_ticket TEXT, percent_card_present TEXT,
+          signature_name TEXT NOT NULL, agreed_to_terms INTEGER NOT NULL DEFAULT 0,
+          status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL
+        )`).run();
+        await env.DB.prepare(
+          `INSERT INTO merchant_applications (id, business_legal_name, dba, business_phone, business_email, address, city, state, zip, business_structure, business_start_date, federal_tax_id, owner_name, owner_title, ownership_percent, owner_phone, owner_email, products_sold, avg_monthly_volume, avg_ticket, percent_card_present, signature_name, agreed_to_terms, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+        ).bind(
+          id, body.businessLegalName, body.dba || null, body.businessPhone, body.businessEmail,
+          body.address || "", body.city || "", body.state || "", body.zip || "",
+          body.businessStructure || "", body.businessStartDate || null, body.federalTaxId || null,
+          body.ownerName, body.ownerTitle || null, body.ownershipPercent || null,
+          body.ownerPhone || null, body.ownerEmail || null,
+          body.productsSold || null, body.avgMonthlyVolume || null, body.avgTicket || null,
+          body.percentCardPresent || null, body.signatureName, body.agreedToTerms ? 1 : 0, ts
+        ).run();
+        const row = await env.DB.prepare("SELECT * FROM merchant_applications WHERE id = ?").bind(id).first();
+        return json(row || { id, status: "pending" }, 201);
+      }
+    }
+
+    // GET /api/merchant-applications (admin — list all applications)
+    if (path === "/api/merchant-applications" && method === "GET") {
+      if (!authed) return err("Unauthorized", 401);
+      try {
+        const { results } = await env.DB.prepare("SELECT * FROM merchant_applications ORDER BY created_at DESC").all();
+        return json(results || []);
+      } catch { return json([]); }
+    }
+
     // POST /api/email/inbound (public webhook — Resend sends inbound emails here)
     if (path === "/api/email/inbound" && method === "POST") {
       const body: any = await request.json();
