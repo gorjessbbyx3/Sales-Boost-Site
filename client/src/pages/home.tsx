@@ -155,41 +155,48 @@ function ProblemSection() {
 
 function HowItWorks() {
   const steps = [
-    { num: "1", title: "Apply in 3 minutes", desc: "Quick online application. No paperwork, no fax machines. Just a few questions about your business." },
-    { num: "2", title: "Get approved", desc: "Usually within 24 hours. We review your info and show you exactly how much you'll save." },
-    { num: "3", title: "We set up your POS", desc: "Our local team configures your terminal, installs signage, and trains your staff. You don't touch a thing." },
-    { num: "4", title: "Start saving immediately", desc: "Accept payments with $0 processing fees from day one. Keep 100% of every sale." },
+    { num: "01", title: "Apply in 3 minutes", desc: "Quick online application. No paperwork, no fax machines. Just a few questions about your business.", icon: "📝" },
+    { num: "02", title: "Get approved", desc: "Usually within 24 hours. We review your info and show you exactly how much you'll save.", icon: "✅" },
+    { num: "03", title: "We set up your POS", desc: "Our local team configures your terminal, installs signage, and trains your staff. You don't touch a thing.", icon: "🔧" },
+    { num: "04", title: "Start saving immediately", desc: "Accept payments with $0 processing fees from day one. Keep 100% of every sale.", icon: "💰" },
   ];
 
   return (
-    <section className="py-16 sm:py-24 relative">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-card/50 via-transparent to-card/50" />
+    <section className="pt-6 pb-16 sm:pt-8 sm:pb-24 relative">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
-          <motion.div className="text-center mb-10 sm:mb-16" variants={fadeUp}>
+          <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
               How It Works
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {steps.map((step, i) => (
-              <motion.div key={step.num} variants={fadeUp}>
-                <Card className="h-full border-primary/10 relative overflow-hidden card-warm">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/60 to-primary/20" />
-                  <CardContent className="p-5 sm:p-6">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                      <span className="text-lg font-extrabold text-primary">{step.num}</span>
+          {/* Timeline layout */}
+          <div className="relative">
+            {/* Connecting line */}
+            <div className="hidden lg:block absolute top-16 left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-[2px] bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+              {steps.map((step, i) => (
+                <motion.div key={step.num} variants={fadeUp}>
+                  <div className="relative group text-center">
+                    {/* Number circle */}
+                    <div className="relative mx-auto w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center mb-5 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform z-10">
+                      <span className="text-lg font-extrabold text-primary-foreground">{step.num}</span>
                     </div>
-                    <h3 className="font-bold mb-2">{step.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                    {/* Card body */}
+                    <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-5 sm:p-6 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
+                      <div className="text-2xl mb-3">{step.icon}</div>
+                      <h3 className="font-bold text-base mb-2">{step.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
 
-          <motion.div className="text-center mt-8" variants={fadeUp}>
+          <motion.div className="text-center mt-10" variants={fadeUp}>
             <Button size="lg" asChild>
               <a href="/apply">
                 Apply Now — Takes 3 Minutes
