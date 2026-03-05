@@ -38,7 +38,7 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
 function HeroSection() {
   return (
     <section className="relative overflow-hidden">
-      {/* Video background */}
+      {/* Video — clean, no text overlay */}
       <div className="relative w-full">
         <video
           autoPlay
@@ -49,28 +49,25 @@ function HeroSection() {
           src="/videos/hero-bg-v2.mp4"
           className="w-full h-auto block"
         />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-40% to-black/70" />
-        <div className="absolute inset-0 flex items-end justify-center px-4 pb-16 sm:pb-24">
-          <motion.div className="max-w-3xl mx-auto text-center" variants={staggerContainer} initial="hidden" animate="visible">
-            <motion.h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-4 text-white drop-shadow-lg" variants={fadeUp}>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+      </div>
+
+      {/* Text + CTAs below video */}
+      <div className="py-10 sm:py-16 -mt-8 sm:-mt-12 relative z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+            <motion.h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-5" variants={fadeUp}>
               The Average Hawaii Restaurant Loses{" "}
               <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
                 $14,400/Year
               </span>{" "}
               to Processing Fees.
             </motion.h1>
-            <motion.p className="text-base sm:text-xl text-white/80 leading-relaxed mb-6 max-w-2xl mx-auto" variants={fadeUp}>
+
+            <motion.p className="text-base sm:text-xl text-muted-foreground leading-relaxed mb-4 max-w-2xl mx-auto" variants={fadeUp}>
               TechSavvy Hawaii helps local businesses eliminate processing fees with a compliant cash discount program.
             </motion.p>
-          </motion.div>
-        </div>
-      </div>
 
-      {/* Below video — CTA area */}
-      <div className="py-10 sm:py-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div variants={staggerContainer} initial="hidden" animate="visible">
             <motion.p className="text-sm text-muted-foreground mb-8" variants={fadeUp}>
               Apply online. Once approved, we configure your POS and help you start saving.
             </motion.p>
