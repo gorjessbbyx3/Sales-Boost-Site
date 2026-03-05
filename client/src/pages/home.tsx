@@ -473,7 +473,7 @@ function HowItWorksPreview() {
         >
           <Button variant="outline" size="lg" asChild>
             <Link href="/how-it-works">
-              Learn More
+              See How It Works
               <ChevronRight className="w-4 h-4" />
             </Link>
           </Button>

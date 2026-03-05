@@ -1317,7 +1317,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
         />
       )}
 
-      {/* ─── Merchant Application Dialog ─── */}}
+      {/* ─── Merchant Application Dialog ─── */}
       <Dialog open={showReferralForm} onOpenChange={(open) => { setShowReferralForm(open); if (!open) { setAppStep(0); setRefForm(emptyApp); } }}>
         <DialogContent className="sm:max-w-2xl bg-zinc-900 border-zinc-800 max-h-[85vh] overflow-y-auto">
           <DialogHeader>
