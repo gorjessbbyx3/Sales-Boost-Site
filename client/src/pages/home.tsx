@@ -353,10 +353,9 @@ function QualifySection() {
                         key={vol.value}
                         type="button"
                         onClick={() => { setAnswers(a => ({ ...a, volume: vol.value })); setStep(2); }}
-                        className="w-full rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 p-3 text-sm font-medium text-foreground transition-all text-left flex items-center justify-between"
+                        className="w-full rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 p-3 text-sm font-medium text-foreground transition-all text-left"
                       >
                         {vol.label}
-                        {vol.qualifies && <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">Likely qualifies</Badge>}
                       </button>
                     ))}
                   </div>
