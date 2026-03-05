@@ -156,6 +156,30 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
+      {/* Cash Discount Receipt Comparison */}
+      <section className="py-16 sm:py-24">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+                See It On the Receipt
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground max-w-lg mx-auto">
+                Here's exactly what your customers see. Card payments include a small service fee. Cash payments get that fee removed as a discount. You keep 100% either way.
+              </p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-border/50 bg-card">
+              <img
+                src="/images/cash-discount-receipt.jpeg"
+                alt="Understanding Payment Fees: Credit Card vs Cash Discount — side by side receipt comparison showing how card customers pay a small service fee while cash customers get a discount"
+                className="w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Features Grid */}
       <section className="py-16 sm:py-24 relative">
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-card/50 via-transparent to-card/50" />
