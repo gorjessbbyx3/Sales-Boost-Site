@@ -270,21 +270,21 @@ function HowItWorks() {
             {/* Connecting line */}
             <div className="hidden lg:block absolute top-[80px] left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-[2px] bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
 
-            <div className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-none lg:overflow-visible lg:pb-0 lg:grid lg:grid-cols-4">
+            <div className="grid grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
               {steps.map((step, i) => {
                 const Illustration = illustrations[i];
                 return (
-                  <motion.div key={step.num} variants={fadeUp} className="min-w-[260px] sm:min-w-[240px] lg:min-w-0 snap-center flex-shrink-0 lg:flex-shrink">
+                  <motion.div key={step.num} variants={fadeUp}>
                     <div className="relative group text-center h-full">
                       {/* Illustration */}
-                      <div className="mx-auto w-full max-w-[160px] mb-3">
+                      <div className="mx-auto w-full max-w-[120px] sm:max-w-[150px] mb-2 sm:mb-3">
                         <Illustration />
                       </div>
                       {/* Card body */}
-                      <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-4 sm:p-5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 h-full">
-                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-bold mb-2">{step.num}</div>
-                        <h3 className="font-bold text-sm sm:text-base mb-1.5">{step.title}</h3>
-                        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                      <div className="rounded-xl sm:rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-2 sm:p-4 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 h-full">
+                        <div className="inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground text-[10px] sm:text-xs font-bold mb-1.5 sm:mb-2">{step.num}</div>
+                        <h3 className="font-bold text-[11px] sm:text-sm mb-1">{step.title}</h3>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground leading-snug hidden sm:block">{step.desc}</p>
                       </div>
                     </div>
                   </motion.div>
