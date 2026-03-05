@@ -6,7 +6,6 @@ import {
   CreditCard, Check, ArrowRight, Clock, DollarSign, ShieldCheck,
   Zap, Phone, FileText, BarChart3, Users, Headphones,
 } from "lucide-react";
-import { useState } from "react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { useSEO } from "@/hooks/useSEO";
@@ -28,12 +27,12 @@ export default function HowItWorksPage() {
   const steps = [
     {
       num: "01",
-      title: "Contact Us & Get a Free Analysis",
-      description: "We review your current processing statement and show you exactly how much you're losing to hidden fees. No obligation, no pressure — just the real numbers.",
+      title: "Tell Us About Your Business",
+      description: "Fill out a quick application or give us a call. We'll look at what you're currently paying and show you the real number — most business owners are shocked when they see how much is actually walking out the door every month.",
       details: [
-        "Free statement analysis — see your true effective rate",
-        "Side-by-side comparison: your current costs vs. TechSavvy",
-        "Personalized savings estimate for your business",
+        "Takes about 3 minutes online or over the phone",
+        "We break down every fee your current processor is charging",
+        "You get a clear savings number — no guessing, no fluff",
       ],
       icon: FileText,
       image: stepChoosePlan,
@@ -41,12 +40,12 @@ export default function HowItWorksPage() {
     },
     {
       num: "02",
-      title: "We Handle the Entire Setup",
-      description: "Our local team programs your terminal, configures the Cash Back program, installs compliance signage, and trains your staff. You don't lift a finger.",
+      title: "We Take Care of Everything",
+      description: "Once you're approved, our local Hawai'i team does all the heavy lifting. We show up, swap out your old terminal, put up the required signage, and walk your staff through how it all works. You don't have to figure out a single thing.",
       details: [
-        "Free terminal delivered to your business",
-        "Full programming & Cash Back program configuration",
-        "Compliance signage and staff training included",
+        "Free terminal delivered and programmed on-site",
+        "Compliant signage installed — we bring everything",
+        "Hands-on training so your team is confident from day one",
       ],
       icon: Zap,
       image: stepSetup,
@@ -54,12 +53,12 @@ export default function HowItWorksPage() {
     },
     {
       num: "03",
-      title: "Keep 100% of Every Sale",
-      description: "Start processing with zero fees from day one. Your customers choose cash or card — and you keep every dollar either way. No monthly fees, no contracts, no surprises.",
+      title: "You Stop Paying Fees. Period.",
+      description: "From the moment you go live, processing fees are no longer your problem. Card customers see a small surcharge at the terminal. Cash customers pay the listed price. Either way, you keep every single dollar. And if it's ever not working for you — walk away anytime. No contract. No cancellation fee. No drama.",
       details: [
-        "Zero processing fees — forever",
-        "Zero monthly fees or hidden charges",
-        "Cancel anytime — no contracts, no penalties",
+        "Zero processing fees from day one — and every day after",
+        "No monthly fees, no PCI fees, no hidden charges",
+        "No contract — stay because you want to, not because you have to",
       ],
       icon: DollarSign,
       image: stepKeepProfits,
@@ -98,14 +97,6 @@ export default function HowItWorksPage() {
             <motion.p className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto" variants={fadeUp}>
               Three steps to eliminate your processing fees. We handle everything — you just keep making money.
             </motion.p>
-            <motion.div variants={fadeUp}>
-              <Button size="lg" asChild>
-                <a href="#steps">
-                  See the Steps
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-              </Button>
-            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -183,107 +174,42 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* Contact Form */}
-      <section className="py-16 sm:py-24 relative" id="contact-form">
-        <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ContactForm />
+      {/* AI Statement Analysis CTA */}
+      <section className="py-16 sm:py-24">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <Card className="border-primary/20 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-primary/3 to-transparent" />
+              <CardContent className="p-8 sm:p-12 relative">
+                <div className="text-4xl mb-4">📊</div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">
+                  See exactly what you're losing.
+                </h2>
+                <p className="text-muted-foreground mb-3 max-w-lg mx-auto">
+                  Upload your processing statement and our AI will analyze it in under 60 seconds — showing you every hidden fee, your true effective rate, and exactly how much you'd save with TechSavvy.
+                </p>
+                <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+                  Free. No commitment. No one will call you unless you ask.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Button size="lg" className="px-8" asChild>
+                    <Link href="/statement-review">
+                      Try the Free AI Statement Analysis
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="lg" asChild>
+                    <a href="tel:8087675460">
+                      <Phone className="w-4 h-4" />
+                      Call (808) 767-5460
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </section>
     </Layout>
-  );
-}
-
-function ContactForm() {
-  const [formData, setFormData] = useState({ businessName: "", contactName: "", phone: "", email: "", plan: "savings-estimate", highRisk: false, monthlyProcessing: "", bestContactTime: "" });
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!expanded && formData.contactName && formData.phone) {
-      setExpanded(true);
-      return;
-    }
-    setError("");
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/contact-leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) });
-      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed to submit"); }
-      setSubmitted(true);
-    } catch (err: any) { setError(err.message || "Something went wrong."); } finally { setSubmitting(false); }
-  };
-  const set = (field: string, value: string | boolean) => setFormData((prev) => ({ ...prev, [field]: value }));
-
-  if (submitted) {
-    return (
-      <Card className="border-primary/20">
-        <CardContent className="p-8 sm:p-12 text-center">
-          <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-4">
-            <Check className="w-7 h-7 text-primary" />
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">Mahalo! We're On It 🤙</h2>
-          <p className="text-muted-foreground">We'll review your info and reach out with your savings estimate. Usually within a few hours.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const inputClass = "flex h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30";
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-      <div className="text-center mb-8">
-        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-          Find out how much{" "}
-          <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">you're losing.</span>
-        </h2>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Free. No commitment. Just your name and number to start.
-        </p>
-      </div>
-
-      <Card className="border-primary/15">
-        <CardContent className="p-6 sm:p-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Your Name *</label>
-                <input required value={formData.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="First & Last Name" className={inputClass} />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Phone *</label>
-                <input type="tel" required value={formData.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(808) 555-1234" className={inputClass} />
-              </div>
-            </div>
-
-            {expanded && (
-              <>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">Email</label>
-                  <input type="email" value={formData.email} onChange={(e) => set("email", e.target.value)} placeholder="you@business.com (optional)" className={inputClass} />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">Business Name</label>
-                  <input value={formData.businessName} onChange={(e) => set("businessName", e.target.value)} placeholder="Your business name (optional)" className={inputClass} />
-                </div>
-              </>
-            )}
-
-            {error && <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm text-destructive">{error}</div>}
-
-            <Button type="submit" size="lg" className="w-full text-base" disabled={submitting}>
-              {submitting ? "Submitting..." : expanded ? "Get My Free Analysis" : "Next — Almost Done"}
-              {!submitting && <ArrowRight className="w-4 h-4" />}
-            </Button>
-
-            <p className="text-[10px] text-muted-foreground text-center">
-              No spam. No pressure. We'll reach out with your personalized savings number.
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </motion.div>
   );
 }
