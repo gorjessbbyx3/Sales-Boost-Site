@@ -38,41 +38,48 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
 function HeroSection() {
   return (
     <section className="relative overflow-hidden">
-      {/* Video — clean, no text overlay */}
+      {/* Video */}
       <div className="relative w-full">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          src="/videos/hero-bg-v3.mp4?v=20260305"
-          className="w-full h-auto block"
-        />
+        <video autoPlay loop muted playsInline preload="auto" src="/videos/hero-bg-v3.mp4?v=20260305" className="w-full h-auto block" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       </div>
 
-      {/* Text + CTAs directly below — minimal gap */}
-      <div className="pb-10 sm:pb-14 -mt-16 sm:-mt-24 relative z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* Content */}
+      <div className="pb-10 sm:pb-14 -mt-12 sm:-mt-20 relative z-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div variants={staggerContainer} initial="hidden" animate="visible">
-            <motion.h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-5" variants={fadeUp}>
-              The Average Hawaii Business Loses{" "}
-              <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-                $6,000–$36,000/Year
-              </span>{" "}
-              to Credit Card Fees.
+            <motion.h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-3" variants={fadeUp}>
+              Every swipe costs you.{" "}
+              <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">We make it $0.</span>
             </motion.h1>
 
-            <motion.p className="text-base sm:text-xl text-muted-foreground leading-relaxed mb-4 max-w-2xl mx-auto" variants={fadeUp}>
-              TechSavvy Hawaii helps local businesses eliminate processing fees with a compliant cash discount program.
+            <motion.p className="text-sm sm:text-base text-muted-foreground mb-6 max-w-lg mx-auto" variants={fadeUp}>
+              Most Hawaii businesses lose 2–4% on every card transaction. TechSavvy eliminates that with a compliant cash discount program.
             </motion.p>
 
-            <motion.p className="text-sm text-muted-foreground mb-8" variants={fadeUp}>
-              Apply online. Once approved, we configure your POS and help you start saving.
-            </motion.p>
+            {/* 3-card comparison */}
+            <motion.div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-xl mx-auto mb-8" variants={fadeUp}>
+              <Card className="border-red-500/15 text-center">
+                <CardContent className="p-3 sm:p-5">
+                  <div className="text-lg sm:text-3xl font-extrabold text-red-400 mb-1">-$800</div>
+                  <div className="text-[9px] sm:text-xs text-muted-foreground leading-tight">Avg restaurant<br/>per month</div>
+                </CardContent>
+              </Card>
+              <Card className="border-primary/30 bg-primary/5 text-center ring-2 ring-primary/20">
+                <CardContent className="p-3 sm:p-5">
+                  <div className="text-lg sm:text-3xl font-extrabold text-primary mb-1">$0</div>
+                  <div className="text-[9px] sm:text-xs text-foreground font-semibold leading-tight">With TechSavvy<br/>every month</div>
+                </CardContent>
+              </Card>
+              <Card className="border-red-500/15 text-center">
+                <CardContent className="p-3 sm:p-5">
+                  <div className="text-lg sm:text-3xl font-extrabold text-red-400 mb-1">-$1,500</div>
+                  <div className="text-[9px] sm:text-xs text-muted-foreground leading-tight">Avg auto shop<br/>per month</div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8" variants={fadeUp}>
+            <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6" variants={fadeUp}>
               <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
                 <a href="/statement-review">
                   Free AI Statement Analysis
@@ -101,50 +108,6 @@ function HeroSection() {
 }
 
 // ─── 2. The Problem — How much you're losing ────────────────────────────────
-
-function ProblemSection() {
-  return (
-    <section className="py-10 sm:py-16 relative">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-center mb-2">
-            Every swipe costs you.{" "}
-            <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">We make it $0.</span>
-          </h2>
-          <p className="text-sm text-muted-foreground text-center mb-8 max-w-lg mx-auto">
-            Most businesses lose 2–4% on every card transaction. Here's what that looks like — and what TechSavvy changes.
-          </p>
-
-          <div className="grid grid-cols-3 gap-3 sm:gap-5">
-            {/* Restaurant - loss */}
-            <Card className="border-red-500/15 text-center">
-              <CardContent className="p-3 sm:p-5">
-                <div className="text-xl sm:text-3xl font-extrabold text-red-400 mb-1">-$800</div>
-                <div className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Avg restaurant<br/>per month</div>
-              </CardContent>
-            </Card>
-
-            {/* TechSavvy - center */}
-            <Card className="border-primary/30 bg-primary/5 text-center ring-2 ring-primary/20">
-              <CardContent className="p-3 sm:p-5">
-                <div className="text-xl sm:text-3xl font-extrabold text-primary mb-1">$0</div>
-                <div className="text-[10px] sm:text-xs text-foreground font-semibold leading-tight">With TechSavvy<br/>every month</div>
-              </CardContent>
-            </Card>
-
-            {/* Auto shop - loss */}
-            <Card className="border-red-500/15 text-center">
-              <CardContent className="p-3 sm:p-5">
-                <div className="text-xl sm:text-3xl font-extrabold text-red-400 mb-1">-$1,500</div>
-                <div className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Avg auto shop<br/>per month</div>
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
 
 // ─── 3. How It Works — Remove uncertainty ───────────────────────────────────
 
@@ -985,7 +948,6 @@ export default function Home() {
   return (
     <Layout>
       <HeroSection />
-      <ProblemSection />
       <HowItWorks />
       <SavingsCalculator />
       <QualifySection />
