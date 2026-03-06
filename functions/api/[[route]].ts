@@ -158,11 +158,10 @@ function generateBrandedEmail(type: string, data: any): { subject: string; html:
     }
     case "referral-contract": {
       const firstName = data.partnerName?.split(" ")[0] || "there";
-      const commission = data.commissionRate || "$50 per signed merchant";
       return {
         subject: "Your Referral Partner Agreement — Tech Savvy Hawaii",
-        html: emailWrap(`${emailHeader("Referral Partner Program")}${emailBody(`${ep(`Hi ${firstName},`)}${ep(`Thank you for your interest in becoming a <strong>Tech Savvy Hawaii Referral Partner</strong>!${data.partnerBusiness ? ` We're excited to work with <strong>${data.partnerBusiness}</strong>.` : ""}`)}${eBullet(["<strong>Refer a business</strong> — share our info", "<strong>We handle the rest</strong> — statement review, setup, installation", "<strong>You get paid</strong> — commission for every signed merchant"])}${eHighlight("Your Commission", commission, "#7c3aed")}<table width="100%" style="font-size:14px;margin-bottom:16px;"><tr style="background:#f8fafc;"><td style="padding:12px;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Referrals</td><td style="padding:12px;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Per Merchant</td><td style="padding:12px;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Bonus</td></tr><tr><td style="padding:12px;border-bottom:1px solid #f1f5f9;">1–5</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;color:#059669;font-weight:700;">$50</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;">—</td></tr><tr style="background:#f8fafc;"><td style="padding:12px;border-bottom:1px solid #f1f5f9;">6–15</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;color:#059669;font-weight:700;">$75</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;color:#7c3aed;">$100 at 10</td></tr><tr><td style="padding:12px;">16+</td><td style="padding:12px;color:#059669;font-weight:700;">$100</td><td style="padding:12px;color:#7c3aed;">$250 at 20</td></tr></table>${data.agreementUrl ? emailCta("Review & Sign Agreement", data.agreementUrl, "#7c3aed") : ""}${emailCta("Call (808) 767-5460", "tel:8087675460")}${ep(`${data.agentName || "Tech Savvy Hawaii"}<br/>Referral Partner Program`)}`)}}`),
-        text: `Hi ${firstName},\n\nThanks for your interest in our Referral Partner Program!\n\nCommission: ${commission}\nTiers: 1-5 ($50/ea), 6-15 ($75/ea), 16+ ($100/ea)\n\n${data.agentName || "Tech Savvy Hawaii"}\n(808) 767-5460`,
+        html: emailWrap(`${emailHeader("Referral Partner Program")}${emailBody(`${ep(`Hi ${firstName},`)}${ep(`Welcome to the <strong>Tech Savvy Hawaii Referral Partner Program</strong>!${data.partnerBusiness ? ` We're excited to work with <strong>${data.partnerBusiness}</strong>.` : ""}`)}${eBullet(["<strong>Refer a business</strong> — share our info or make an introduction", "<strong>We handle the rest</strong> — statement review, setup, terminal, training", "<strong>You earn 50% of profit</strong> — on every merchant, every month, for life"])}${eHighlight("Your Compensation", "50% of TechSavvy's net profit on every merchant you refer — paid monthly, for life", "#059669")}<table width="100%" style="font-size:14px;margin-bottom:16px;"><tr style="background:#f8fafc;"><td style="padding:12px;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Merchant Volume</td><td style="padding:12px;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Est. Profit</td><td style="padding:12px;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Your 50%</td></tr><tr><td style="padding:12px;border-bottom:1px solid #f1f5f9;">$15K/mo (coffee shop)</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;">$80–$150</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;color:#059669;font-weight:700;">$40–$75/mo</td></tr><tr style="background:#f8fafc;"><td style="padding:12px;border-bottom:1px solid #f1f5f9;">$35K/mo (restaurant)</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;">$180–$350</td><td style="padding:12px;border-bottom:1px solid #f1f5f9;color:#059669;font-weight:700;">$90–$175/mo</td></tr><tr><td style="padding:12px;">$60K/mo (medical)</td><td style="padding:12px;">$300–$600</td><td style="padding:12px;color:#059669;font-weight:700;">$150–$300/mo</td></tr></table><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;margin-bottom:16px;text-align:center;font-size:13px;color:#166534;"><strong>No tiers. No caps. No minimum referrals.</strong><br/>Every partner earns the same rate from day one.</div>${data.agreementUrl ? emailCta("Review & Sign Agreement", data.agreementUrl, "#059669") : ""}${emailCta("Call (808) 767-5460", "tel:8087675460")}${ep(`${data.agentName || "Tech Savvy Hawaii"}<br/>Referral Partner Program`)}`)}}`),
+        text: `Hi ${firstName},\n\nWelcome to the Tech Savvy Hawaii Referral Partner Program!\n\nYour compensation: 50% of TechSavvy's net profit on every merchant you refer.\nPaid monthly, for life. No tiers, no caps.\n\nExamples:\n- Coffee shop ($15K/mo): $40-$75/mo to you\n- Restaurant ($35K/mo): $90-$175/mo to you\n- Medical office ($60K/mo): $150-$300/mo to you\n\n${data.agentName || "Tech Savvy Hawaii"}\n(808) 767-5460`,
       };
     }
     default:
@@ -1493,11 +1492,42 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     // GET /api/email/threads
     if (path === "/api/email/threads" && method === "GET") {
       try {
-        const { results } = await env.DB.prepare("SELECT * FROM email_threads ORDER BY last_message_at DESC").all();
+        const starred = url.searchParams.get("starred");
+        const folder = url.searchParams.get("folder");
+        let sql = "SELECT * FROM email_threads";
+        const params: any[] = [];
+        if (starred === "true") { sql += " WHERE starred = 1"; }
+        else if (folder) { sql += " WHERE folder = ?"; params.push(folder); }
+        sql += " ORDER BY last_message_at DESC";
+        const stmt = params.length > 0 ? env.DB.prepare(sql).bind(...params) : env.DB.prepare(sql);
+        const { results } = await stmt.all();
         return json(results.map(mapThread));
       } catch {
         return json([]);
       }
+    }
+
+    // POST /api/email/threads/bulk
+    if (path === "/api/email/threads/bulk" && method === "POST") {
+      const body: any = await request.json();
+      const { ids, action, folder: targetFolder } = body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) return err("No thread IDs provided", 400);
+      try {
+        for (const id of ids) {
+          switch (action) {
+            case "move": if (targetFolder) await env.DB.prepare("UPDATE email_threads SET folder = ? WHERE id = ?").bind(targetFolder, id).run(); break;
+            case "star": await env.DB.prepare("UPDATE email_threads SET starred = 1 WHERE id = ?").bind(id).run(); break;
+            case "unstar": await env.DB.prepare("UPDATE email_threads SET starred = 0 WHERE id = ?").bind(id).run(); break;
+            case "read": await env.DB.prepare("UPDATE email_threads SET unread = 0 WHERE id = ?").bind(id).run(); break;
+            case "unread": await env.DB.prepare("UPDATE email_threads SET unread = 1 WHERE id = ?").bind(id).run(); break;
+            case "delete":
+              await env.DB.prepare("DELETE FROM email_messages WHERE thread_id = ?").bind(id).run();
+              await env.DB.prepare("DELETE FROM email_threads WHERE id = ?").bind(id).run();
+              break;
+          }
+        }
+        return json({ success: true, affected: ids.length });
+      } catch (e: any) { return err(e.message || "Bulk operation failed", 500); }
     }
 
     // GET /api/email/threads/:id
@@ -1530,6 +1560,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const values: any[] = [];
       if (body.unread !== undefined) { updates.push("unread = ?"); values.push(body.unread ? 1 : 0); }
       if (body.status !== undefined) { updates.push("status = ?"); values.push(body.status); }
+      if (body.starred !== undefined) { updates.push("starred = ?"); values.push(body.starred ? 1 : 0); }
+      if (body.folder !== undefined) { updates.push("folder = ?"); values.push(body.folder); }
       if (updates.length > 0) {
         await env.DB.prepare(`UPDATE email_threads SET ${updates.join(", ")} WHERE id = ?`).bind(...values, id).run();
       }
@@ -3083,7 +3115,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         { type: "meeting-follow-up", label: "Meeting Follow Up", category: "follow-up", description: "Post-meeting recap with action items and savings" },
         { type: "welcome-to-team", label: "Welcome to Team", category: "internal", description: "New agent onboarding with first-week schedule" },
         { type: "referral-follow-up", label: "Referral Follow Up", category: "referral", description: "Following up on a referral lead with social proof" },
-        { type: "referral-contract", label: "Referral Contract", category: "referral", description: "Partner agreement email with commission tiers" },
+        { type: "referral-contract", label: "Referral Contract", category: "referral", description: "Partner agreement email with 50% profit share details" },
       ]);
     }
 
