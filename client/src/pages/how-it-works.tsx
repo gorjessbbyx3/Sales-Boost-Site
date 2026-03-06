@@ -156,6 +156,101 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
+      {/* How the Cash Discount Program Works */}
+      <section className="py-16 sm:py-24 relative">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-card/50 via-transparent to-card/50" />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div className="text-center mb-10">
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+                <ShieldCheck className="w-3 h-3 mr-1" />
+                100% Legal & Compliant
+              </Badge>
+              <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+                How the Cash Discount Program Works
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
+                It's the same model gas stations have used for decades — just applied to your business. Two prices: a cash price and a card price. Simple, transparent, and fully compliant with Visa, Mastercard, and the FTC.
+              </p>
+            </div>
+
+            {/* Side by side explanation */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+              {/* Card Payment */}
+              <Card className="border-red-500/15">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                      <CreditCard className="w-5 h-5 text-red-400" />
+                    </div>
+                    <h3 className="font-bold text-lg">Card Payment</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    When a customer pays with a credit or debit card, a small service fee (typically 3–4%) is added to the total. This is shown clearly on the terminal screen <strong>before</strong> the customer confirms.
+                  </p>
+                  <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-4 text-sm">
+                    <div className="flex justify-between mb-1"><span className="text-muted-foreground">Subtotal</span><span>$100.00</span></div>
+                    <div className="flex justify-between mb-1"><span className="text-red-400">Service Fee (3.5%)</span><span className="text-red-400">$3.50</span></div>
+                    <div className="flex justify-between font-bold border-t border-red-500/10 pt-1 mt-1"><span>Card Total</span><span>$103.50</span></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    The service fee covers your processing cost. <strong>You keep 100% of the $100.</strong>
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Cash Payment */}
+              <Card className="border-primary/20">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <DollarSign className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="font-bold text-lg">Cash Payment</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    When a customer pays with cash, there's no processing fee. The service fee is removed as a <strong>cash discount</strong> — so the customer pays the exact listed price.
+                  </p>
+                  <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 text-sm">
+                    <div className="flex justify-between mb-1"><span className="text-muted-foreground">Subtotal</span><span>$100.00</span></div>
+                    <div className="flex justify-between mb-1"><span className="text-primary">Cash Discount</span><span className="text-primary">-$0.00</span></div>
+                    <div className="flex justify-between font-bold border-t border-primary/10 pt-1 mt-1"><span>Cash Total</span><span className="text-primary">$100.00</span></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    No fee. Customer pays the listed price. <strong>You still keep 100%.</strong>
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* The bottom line */}
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="p-6 text-center">
+                <h3 className="font-bold text-lg mb-2">The Bottom Line</h3>
+                <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+                  Whether your customer pays cash or card, <strong className="text-foreground">you keep 100% of the sale</strong>. The processing cost is passed through transparently — just like gas stations, parking meters, and ATMs have done for years. Your prices don't change. Your profit doesn't change. The only thing that changes is you stop paying thousands in hidden fees.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Common questions inline */}
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { q: "Is this legal?", a: "Yes — in all 50 states. The Dodd-Frank Act and state surcharge laws allow merchants to pass processing costs to card users. Visa, Mastercard, and the FTC all permit it when properly disclosed." },
+                { q: "Do I need different prices on my menu?", a: "No. Your listed prices stay the same. The terminal automatically adds the service fee on card transactions and removes it for cash. You don't change a thing." },
+                { q: "Will customers complain?", a: "Most don't even notice. About 70% of businesses report zero customer pushback. The fee is shown clearly before they tap 'confirm' — and most expect it now." },
+                { q: "What about tips?", a: "Tips are calculated on the pre-fee amount. Your staff keeps 100% of tips with zero fees deducted. Tips are never surcharged." },
+              ].map((faq) => (
+                <div key={faq.q} className="p-4 rounded-xl border border-border/50 bg-card">
+                  <h4 className="font-bold text-sm mb-1.5">{faq.q}</h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{faq.a}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Cash Discount Receipt Comparison */}
       <section className="py-16 sm:py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
