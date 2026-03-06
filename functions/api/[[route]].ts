@@ -3337,59 +3337,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
     }
 
-    if (path === "/api/statement-review/email" && method === "POST") {
-      try {
-        const body: any = await request.json();
-        const { email, name, business, type, analysis } = body;
-        if (!email || !name) return err("Name and email are required.");
-
-        const apiKey = env.RESEND_API_KEY;
-        if (!apiKey) return err("RESEND_API_KEY not configured", 500);
-        let fromEmail = "contact@techsavvyhawaii.com";
-        let fromName = "TechSavvy Hawaii";
-        try { const cfg = await env.DB.prepare("SELECT * FROM resend_config WHERE id = 'default'").first(); if (cfg?.enabled) { fromEmail = (cfg.from_email as string) || fromEmail; fromName = (cfg.from_name as string) || fromName; } } catch {}
-
-        let subject: string;
-        let html: string;
-
-        if (type === "report" && analysis) {
-          const emailContent = generateBrandedEmail("statement-analysis", {
-            ownerName: name, businessName: business || "Your Business",
-            processorName: analysis.processorName || analysis.currentProcessor || "your processor",
-            effectiveRate: analysis.effectiveRate || "N/A",
-            totalFees: analysis.totalFees || analysis.estimatedOverpay || "N/A",
-            monthlyVolume: analysis.monthlyVolume || "N/A",
-            overallGrade: analysis.overallGrade || "C",
-            hiddenFees: analysis.hiddenFees || [], redFlags: analysis.redFlags || [],
-            junkFees: analysis.junkFees || [], recommendations: analysis.recommendations || [],
-            estimatedOverpay: analysis.estimatedOverpay || "N/A",
-            potentialAnnualSavings: analysis.estimatedOverpay ? `$${(parseFloat(analysis.estimatedOverpay.replace(/[$,]/g, "")) * 12).toLocaleString()}` : "N/A",
-          });
-          subject = emailContent!.subject;
-          html = emailContent!.html;
-        } else {
-          subject = "Your Free Merchant Statement Review Guides | TechSavvy Hawaii";
-          html = `<div style="font-family:'Segoe UI',sans-serif;max-width:640px;margin:0 auto;background:#0a0a0a;color:#e0e0e0;"><div style="padding:32px;background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid #4aeaff;"><h1 style="margin:0;font-size:24px;color:#4aeaff;">TechSavvy</h1></div><div style="padding:32px;"><p>Hi ${name},</p><p style="color:#aaa;">Here are your free statement review guides.</p><div style="text-align:center;margin:24px 0;"><a href="https://techsavvyhawaii.com/statement-review" style="background:#4aeaff;color:#000;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;">Get AI Analysis</a></div></div></div>`;
-        }
-
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-          body: JSON.stringify({ from: `${fromName} <${fromEmail}>`, to: [email], subject, html }),
-        });
-
-        // Save as lead
-        try {
-          const ts = now();
-          await env.DB.prepare(
-            "INSERT INTO leads (id, name, business, phone, email, package, status, source, notes, attachments, created_at, updated_at) VALUES (?, ?, ?, '', ?, 'terminal', 'new', 'statement-review', ?, '[]', ?, ?)"
-          ).bind(genId(), name, business || "", email, type === "report" ? "AI statement report emailed" : "Requested self-review guides", ts, ts).run();
-        } catch {}
-
-        return json({ success: true });
-      } catch { return err("Failed to send email.", 500); }
-    }
-
     // ─── PARTNER AGREEMENT (Public) ───────────────────────────────────
 
     if (path === "/api/partner-agreement" && method === "POST") {
@@ -3414,7 +3361,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
         try {
           await env.DB.prepare(
-            "INSERT INTO referral_partners (id, name, niche, client_types, referral_terms, intro_method, tracking_notes, last_check_in, next_check_in, created_at) VALUES (?, ?, ?, '', 'Tier A: first month revenue. Tier B: 10-15% ongoing residual.', 'partner-agreement-form', ?, ?, ?, ?)"
+            "INSERT INTO referral_partners (id, name, niche, client_types, referral_terms, intro_method, tracking_notes, last_check_in, next_check_in, created_at) VALUES (?, ?, ?, '', '50% of profit — monthly, for life', 'partner-agreement-form', ?, ?, ?, ?)"
           ).bind(genId(), partnerName, businessType || "", `Signed agreement. Email: ${email}`, ts, new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0], ts).run();
         } catch {}
 
@@ -3422,6 +3369,27 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           await env.DB.prepare(
             "INSERT INTO leads (id, name, business, phone, email, package, status, source, vertical, notes, attachments, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'terminal', 'new', 'partner-agreement', ?, 'Signed partner agreement via website', '[]', ?, ?)"
           ).bind(genId(), partnerName, businessName, phone || "", email, businessType || "other", ts, ts).run();
+        } catch {}
+
+        // Log to admin inbox
+        try {
+          const threadId = genId();
+          const msgId = genId();
+          const subject = `New Partner Agreement: ${partnerName} — ${businessName}`;
+          const msgBody = `Partner agreement signed via website:\n\nPartner: ${partnerName}\nBusiness: ${businessName}\nEmail: ${email}\nPhone: ${phone || "N/A"}\nBusiness Type: ${businessType || "N/A"}\nCompensation: 50% of profit — monthly, for life`;
+          await env.DB.prepare(
+            "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, '', ?, ?, 'partner-agreement', 'open', 1, ?, ?)"
+          ).bind(threadId, subject, email, partnerName, ts, ts).run();
+          await env.DB.prepare(
+            "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, 'contact@techsavvyhawaii.com', ?, ?, '', '', 'received', ?)"
+          ).bind(msgId, threadId, email, partnerName, subject, msgBody, ts).run();
+        } catch {}
+
+        // Log activity
+        try {
+          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+            genId(), "Partner Agreement", `${partnerName} (${businessName}) signed partner agreement`, "lead", ts
+          ).run();
         } catch {}
 
         return json({ success: true });
@@ -3437,9 +3405,31 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         if (!referrerName || !businessName) return err("Your name and the business name are required.");
 
         const ts = now();
+        const leadId = genId();
         await env.DB.prepare(
           "INSERT INTO leads (id, name, business, phone, email, package, status, source, vertical, notes, next_step, next_step_date, attachments, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'terminal', 'new', 'referral', ?, ?, 'Contact referred business', ?, '[]', ?, ?)"
-        ).bind(genId(), businessOwner || businessName, businessName, businessPhone || "", businessEmail || "", businessType || "other", `Referred by: ${referrerName} (${referrerEmail || referrerPhone || "no contact"}). ${notes || ""}`.trim(), new Date(Date.now() + 2 * 86400000).toISOString().split("T")[0], ts, ts).run();
+        ).bind(leadId, businessOwner || businessName, businessName, businessPhone || "", businessEmail || "", businessType || "other", `Referred by: ${referrerName} (${referrerEmail || referrerPhone || "no contact"}). ${notes || ""}`.trim(), new Date(Date.now() + 2 * 86400000).toISOString().split("T")[0], ts, ts).run();
+
+        // Log to admin inbox
+        try {
+          const threadId = genId();
+          const msgId = genId();
+          const subject = `Referral: ${businessName} (from ${referrerName})`;
+          const msgBody = `New referral submitted:\n\nReferred Business: ${businessName}\nBusiness Owner: ${businessOwner || "N/A"}\nBusiness Phone: ${businessPhone || "N/A"}\nBusiness Email: ${businessEmail || "N/A"}\nBusiness Type: ${businessType || "N/A"}\n\nReferred By: ${referrerName}\nReferrer Email: ${referrerEmail || "N/A"}\nReferrer Phone: ${referrerPhone || "N/A"}\nNotes: ${notes || "N/A"}`;
+          await env.DB.prepare(
+            "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, ?, ?, ?, 'referral', 'open', 1, ?, ?)"
+          ).bind(threadId, subject, leadId, businessEmail || referrerEmail || "", businessOwner || businessName, ts, ts).run();
+          await env.DB.prepare(
+            "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, 'contact@techsavvyhawaii.com', ?, ?, '', '', 'received', ?)"
+          ).bind(msgId, threadId, referrerEmail || "", referrerName, subject, msgBody, ts).run();
+        } catch {}
+
+        // Log activity
+        try {
+          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+            genId(), "New Referral", `${referrerName} referred ${businessName}`, "lead", ts
+          ).run();
+        } catch {}
 
         return json({ success: true });
       } catch { return err("Failed to submit referral.", 500); }
@@ -4081,7 +4071,7 @@ function buildAnalysisEmailHtml(name: string, business: string, analysis: any, a
 
   return `<div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;max-width:640px;margin:0 auto;background:#0a0a0a;color:#e0e0e0;">
     <div style="padding:32px;background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid #4aeaff;">
-      <h1 style="margin:0;font-size:24px;color:#4aeaff;">λechSavvy</h1>
+      <h1 style="margin:0;font-size:24px;color:#4aeaff;">TechSavvy</h1>
       <p style="margin:8px 0 0;color:#94a3b8;font-size:14px;">Statement Analysis Report</p>
     </div>
     <div style="padding:32px;">
@@ -4129,7 +4119,7 @@ function buildAnalysisEmailHtml(name: string, business: string, analysis: any, a
 function buildGuidesEmailHtml(name: string): string {
   return `<div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;max-width:640px;margin:0 auto;background:#0a0a0a;color:#e0e0e0;">
     <div style="padding:32px;background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid #4aeaff;">
-      <h1 style="margin:0;font-size:24px;color:#4aeaff;">λechSavvy</h1>
+      <h1 style="margin:0;font-size:24px;color:#4aeaff;">TechSavvy</h1>
       <p style="margin:8px 0 0;color:#94a3b8;font-size:14px;">Your Free Statement Review Guides</p>
     </div>
     <div style="padding:32px;">
