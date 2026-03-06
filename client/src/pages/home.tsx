@@ -826,10 +826,10 @@ export default function Home() {
   return (
     <Layout>
       <HeroSection />
-      <HowItWorks />
+      <SavingsCalculator />
       <CompareSection />
       <TestimonialSection />
-      <SavingsCalculator />
+      <HowItWorks />
       <WhoWeWorkWith />
       <QualifySection />
       <TrustSection />
