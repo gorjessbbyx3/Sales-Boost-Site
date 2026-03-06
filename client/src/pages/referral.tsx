@@ -41,7 +41,7 @@ function ReferralHero() {
             </span>
           </motion.h1>
           <motion.p className="text-sm sm:text-lg text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto" variants={fadeUp}>
-            Know a business owner who accepts credit cards? Make a simple introduction and earn money every month — for as long as they stay with TechSavvy. No selling required. Just connect.
+            Know a business owner who accepts credit cards? Make a simple introduction and earn 50% of the profit TechSavvy makes on that account — every month, for life. No selling required. Just connect.
           </motion.p>
           <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
             <Button size="lg" className="w-full sm:w-auto text-base px-8" asChild>
@@ -71,8 +71,8 @@ function StatsBar() {
       <div className="max-w-4xl mx-auto px-4">
         <div className="grid grid-cols-3 gap-4 sm:gap-6">
           {[
-            { icon: DollarSign, value: "$500–$2,000+", label: "Per Referral" },
-            { icon: Repeat, value: "Monthly", label: "Residual Income" },
+            { icon: DollarSign, value: "50%", label: "Of Profit — Every Month" },
+            { icon: Repeat, value: "Residual", label: "Lifetime Income" },
             { icon: Clock, value: "3 Minutes", label: "To Refer Someone" },
           ].map((s) => (
             <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
@@ -98,7 +98,7 @@ function HowItWorks() {
     { num: "01", icon: Users, title: "Identify a Business", desc: "Think of any business owner you know who accepts credit cards — a restaurant, salon, auto shop, retail store, or any business that processes payments." },
     { num: "02", icon: Phone, title: "Make a Simple Introduction", desc: "Mention TechSavvy and connect them to our team. No pitch, no selling. Just introduce them and let us handle the rest." },
     { num: "03", icon: Zap, title: "TechSavvy Closes the Deal", desc: "Our team runs a free savings analysis, presents the offer, handles all paperwork and setup. You don't need to know anything technical." },
-    { num: "04", icon: Wallet, title: "You Get Paid — Every Month", desc: "Once the merchant is live and processing, you earn a commission. And as long as they stay with TechSavvy, you keep earning residual income every month." },
+    { num: "04", icon: Wallet, title: "You Get Paid — Every Month", desc: "Once the merchant is live and processing, you earn 50% of the profit TechSavvy makes on that account. Every month. For as long as they stay." },
   ];
 
   return (
@@ -142,10 +142,10 @@ function HowItWorks() {
 
 function EarningsSection() {
   const examples = [
-    { business: "Coffee Shop", volume: "$15K/mo", payout: "$150–$600" },
-    { business: "Restaurant", volume: "$35K/mo", payout: "$350–$1,400" },
-    { business: "Auto Repair", volume: "$40K/mo", payout: "$400–$1,600" },
-    { business: "Medical Office", volume: "$60K/mo", payout: "$600–$2,400" },
+    { business: "Coffee Shop", volume: "$15K/mo", payout: "$40–$75/mo" },
+    { business: "Restaurant", volume: "$35K/mo", payout: "$90–$175/mo" },
+    { business: "Auto Repair", volume: "$40K/mo", payout: "$100–$200/mo" },
+    { business: "Medical Office", volume: "$60K/mo", payout: "$150–$300/mo" },
   ];
 
   return (
@@ -158,7 +158,7 @@ function EarningsSection() {
               Your Earning <span className="text-primary">Potential</span>
             </h2>
             <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
-              Real numbers based on merchant processing volume. These are per-referral payouts — and you earn residual income every month after.
+              You earn 50% of the profit TechSavvy makes on every merchant you refer — paid monthly, for life. Here's what that looks like.
             </p>
           </motion.div>
 
@@ -170,7 +170,7 @@ function EarningsSection() {
                     <tr className="border-b border-border/50 bg-muted/30">
                       <th className="text-left p-4 font-semibold">Business Type</th>
                       <th className="text-center p-4 font-semibold">Monthly Volume</th>
-                      <th className="text-center p-4 font-semibold text-primary">Your Payout</th>
+                      <th className="text-center p-4 font-semibold text-primary">Your 50% (Monthly)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -192,8 +192,8 @@ function EarningsSection() {
               <CardContent className="p-5 sm:p-6">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-bold text-foreground">Example:</span> Refer just 5 restaurants processing $30K/month each → earn{" "}
-                  <span className="font-bold text-primary">$1,500–$6,000+</span> in first-month payouts, plus{" "}
-                  <span className="font-bold text-primary">monthly residual income</span> for as long as they stay.
+                  <span className="font-bold text-primary">$375–$750/month</span> in passive residual income.{" "}
+                  That's <span className="font-bold text-primary">$4,500–$9,000/year</span> — and it grows with every referral.
                 </p>
               </CardContent>
             </Card>
@@ -208,10 +208,10 @@ function EarningsSection() {
 
 function WhyPartnerSection() {
   const reasons = [
-    { icon: DollarSign, title: "Residual Income", desc: "Earn every month — not just once. As long as your referral processes with TechSavvy, you keep getting paid." },
+    { icon: DollarSign, title: "50% of Profit — Every Month", desc: "Not a one-time bonus. You earn half of every dollar TechSavvy makes on your referral. Every month. For life." },
     { icon: ShieldCheck, title: "Zero Investment Required", desc: "No fees, no inventory, no startup costs. Just make introductions and let TechSavvy close the deals." },
     { icon: Users, title: "No Selling Required", desc: "You're not a salesperson — you're a connector. Mention TechSavvy, make the intro, and our team handles everything." },
-    { icon: TrendingUp, title: "Tier Advancement", desc: "The more you refer, the higher your payout percentage. Start earning immediately and grow your income over time." },
+    { icon: TrendingUp, title: "Income That Compounds", desc: "Every referral adds to your monthly total. Refer 5 businesses and you're earning $500+/month passively — forever." },
     { icon: Star, title: "Training & Support", desc: "Access our Partner Academy with scripts, training modules, and strategies to help you succeed." },
     { icon: Clock, title: "Works On Your Schedule", desc: "No hours, no quotas, no boss. Refer when you want, how you want. This is your side income, your way." },
   ];
@@ -284,12 +284,12 @@ function WhoShouldRefer() {
             </div>
             <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-8 sm:p-10 text-center">
               <Repeat className="w-14 h-14 text-primary mx-auto mb-4" />
-              <div className="text-2xl font-bold text-foreground mb-2">Residual Income</div>
+              <div className="text-2xl font-bold text-foreground mb-2">50% of Profit</div>
               <p className="text-muted-foreground text-sm mb-4">
-                Every merchant you refer becomes a source of monthly income. The more you refer, the more you earn — automatically.
+                Every merchant you refer becomes a source of monthly income. You earn half of what TechSavvy makes on that account — automatically, every month.
               </p>
-              <div className="text-4xl font-extrabold text-primary">$$$</div>
-              <div className="text-xs text-muted-foreground mt-1">Every month, for every active merchant</div>
+              <div className="text-4xl font-extrabold text-primary">For Life</div>
+              <div className="text-xs text-muted-foreground mt-1">As long as they stay with TechSavvy</div>
             </div>
           </div>
         </motion.div>
@@ -412,7 +412,7 @@ function ApplyForm() {
 export default function ReferralPage() {
   useSEO({
     title: "Refer a Business & Earn Residual Income | TechSavvy Hawaii",
-    description: "Earn residual monthly income by referring businesses to TechSavvy Hawaii. No selling, no experience needed. Just make introductions and get paid every month for as long as they process.",
+    description: "Earn 50% of profit every month by referring businesses to TechSavvy Hawaii. No selling, no experience needed. Just make introductions and get paid for life.",
     keywords: "referral partner program Hawaii, earn residual income, payment processing referrals, side income Hawaii, refer businesses, TechSavvy partner program",
     canonical: "https://techsavvyhawaii.com/refer",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
