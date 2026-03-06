@@ -1903,7 +1903,7 @@ function PlaybooksTab() {
             </div>
             <div className="space-y-1.5"><Label className="text-xs">Client Types They Serve</Label><Input value={partnerForm.clientTypes} onChange={(e) => setPartnerForm(p => ({ ...p, clientTypes: e.target.value }))} placeholder="Restaurants, retail shops..." /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label className="text-xs">Referral Terms</Label><Input value={partnerForm.referralTerms} onChange={(e) => setPartnerForm(p => ({ ...p, referralTerms: e.target.value }))} placeholder="$100 flat or 10% residual" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Referral Terms</Label><Input value={partnerForm.referralTerms} onChange={(e) => setPartnerForm(p => ({ ...p, referralTerms: e.target.value }))} placeholder="50% of profit" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Intro Method</Label><Input value={partnerForm.introMethod} onChange={(e) => setPartnerForm(p => ({ ...p, introMethod: e.target.value }))} placeholder="Email intro, shared form..." /></div>
             </div>
             <div className="space-y-1.5"><Label className="text-xs">Next Check-In Date</Label><Input type="date" value={partnerForm.nextCheckIn} onChange={(e) => setPartnerForm(p => ({ ...p, nextCheckIn: e.target.value }))} /></div>
