@@ -18,6 +18,7 @@ import {
   Send, Building, Phone, Mail, User, Star, Trophy, Zap,
   Clock, Target, Gift, LogOut, Menu, X, Sparkles, Shield,
   BarChart3, Heart, Video, CalendarDays, MapPin, Globe, FileText,
+  AlertTriangle, Download,
   CreditCard, ChevronDown, ChevronUp,
 } from "lucide-react";
 
@@ -622,6 +623,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
     { value: "learn", icon: GraduationCap, label: "Learn" },
     { value: "referrals", icon: FileText, label: "Apply" },
     { value: "meetings", icon: CalendarDays, label: "Meetings" },
+    { value: "resources", icon: BookOpen, label: "Resources" },
     { value: "agreement", icon: Shield, label: "Agreement" },
   ];
 
@@ -1093,6 +1095,163 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               })}
             </div>
           )}
+        </main>
+      )}
+
+      {/* ─── Resources Tab ─── */}
+      {activeTab === "resources" && (
+        <main className="max-w-6xl mx-auto px-4 py-6">
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-white">Partner Resources</h2>
+              <p className="text-sm text-zinc-500 mt-0.5">Reference materials to help you identify and refer the right businesses.</p>
+            </div>
+
+            {/* Download PDF */}
+            <Card className="bg-zinc-900/60 border-zinc-800/60">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-indigo-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">PaybotX Merchant Types Guide</div>
+                      <div className="text-[10px] text-zinc-500">Restricted & prohibited business types reference (PDF)</div>
+                    </div>
+                  </div>
+                  <a href="/docs/paybotx-restricted.pdf" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-lg">
+                    <Download className="w-3.5 h-3.5" />Download PDF
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Restricted Merchants */}
+            <Card className="bg-zinc-900/60 border-zinc-800/60">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center">
+                    <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-yellow-400">Restricted Merchant Types</div>
+                    <div className="text-[10px] text-zinc-500">Require additional documentation &amp; underwriting. Case-by-case approval.</div>
+                  </div>
+                </div>
+                <p className="text-xs text-zinc-400 mb-3">These businesses CAN be approved but require established credit, financial stability, and additional docs (bank statements, processing history, etc). Exception policies available for E-Cig/Vape, Firearms, Travel, Pharmacy, and Direct Marketing.</p>
+                <div className="rounded-xl overflow-hidden border border-zinc-800/60">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0 divide-y sm:divide-y-0 divide-zinc-800/40">
+                    {[
+                      "Alarm Services", "Auctions (online/houses)", "Background Checks",
+                      "Buying Clubs", "Call Center: Domestic (B2B)", "Collectables & Coins",
+                      "Consulting Businesses", "Direct Marketing / Beauty", "Established SEO & Web Design",
+                      "Firearms & Ammo (card present)", "Furniture (future delivery)", "Gaming - Online",
+                      "High Risk Registered", "Immigration Services", "Pawn Shops",
+                      "Payment Facilitators", "Prepaid Phone/Calling Cards", "Prescription Drugs (Internet/MOTO)",
+                      "Seminars", "Services Fulfilled Internationally", "Ticket Brokers",
+                      "Travel Clubs & Tour Operators", "Unattended POS", "Web Host & Web Design (established)",
+                    ].map((item) => (
+                      <div key={item} className="px-3 py-2 text-xs text-zinc-400 border-b border-zinc-800/30 last:border-0 flex items-center gap-2">
+                        <span className="text-yellow-400/60 text-[10px]">●</span>{item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Prohibited Merchants */}
+            <Card className="bg-zinc-900/60 border-red-500/20">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                    <X className="w-4 h-4 text-red-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-red-400">Prohibited Merchant Types</div>
+                    <div className="text-[10px] text-zinc-500">Generally NOT underwritten. Some may request waivers from sponsor banks.</div>
+                  </div>
+                </div>
+                <p className="text-xs text-zinc-400 mb-3">These business models put card brands, sponsor banks, or processors at financial/reputational risk. Some well-established merchants may request waivers (e.g., bail bonds, airlines, cruise lines, credit repair). Exceptions are NEVER made for gambling, illegal drugs, or counterfeit products.</p>
+                <div className="rounded-xl overflow-hidden border border-zinc-800/60">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
+                    {[
+                      "Adult content (web, stores, toys, audiotext)",
+                      "Age restricted products online",
+                      "Airlines or Cruise Lines",
+                      "Any merchant on MATCH list",
+                      "Bail bonds",
+                      "Bankruptcy lawyers",
+                      "Business/Investment opportunities (get-rich-quick)",
+                      "Charities without CRA registration",
+                      "Collection/Recovery agencies",
+                      "Computer repair (remote/CNP)",
+                      "Concierge services",
+                      "Counterfeit goods/replicas",
+                      "Credit repair/restoration/debt consolidation",
+                      "Dating services (sexually-oriented)/escort",
+                      "Decryption/descrambler products",
+                      "Delayed delivery beyond 1 year",
+                      "Door-to-door sales",
+                      "Drug paraphernalia",
+                      "E-Wallets",
+                      "Essay mills/paper mills",
+                      "Extended warranties",
+                      "Fake references/IDs",
+                      "File sharing/Cloud storage",
+                      "Fortune teller/Occult",
+                      "Gambling (online & in-person)",
+                      "Gentleman's clubs/strip clubs",
+                      "Home-based software/web design/SEO",
+                      "Illegal drugs & psychoactive products",
+                      "In-house financing",
+                      "Investment advice",
+                      "Marijuana & related (excl. Hemp)",
+                      "Medical discount plans",
+                      "Merchants with deceptive marketing",
+                      "Merchants with excessive chargebacks",
+                      "MLM / Direct response marketing",
+                      "MSB / Currency exchange / Virtual currency",
+                      "Negative response marketing",
+                      "Nutraceuticals/Pseudo pharmaceuticals",
+                      "Outbound telemarketing",
+                      "Payday loans",
+                      "Penny auctions",
+                      "Products promoting hate/violence/abuse",
+                      "Pyramid schemes",
+                      "Security brokers",
+                      "Shipping/forwarding brokers",
+                      "Social media click farms",
+                      "Telemarketing (inbound postcard/flyer)",
+                      "Timeshares",
+                      "Tobacco & E-Cig (Internet/MOTO)",
+                      "Weapons/ammo/firearm parts (Internet/MOTO)",
+                    ].map((item) => (
+                      <div key={item} className="px-3 py-2 text-xs text-zinc-500 border-b border-zinc-800/30 last:border-0 flex items-center gap-2">
+                        <span className="text-red-400/60 text-[10px]">●</span>{item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick tip */}
+            <Card className="bg-emerald-500/5 border-emerald-500/20">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-semibold text-emerald-400 mb-1">Partner Tip</div>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      If you're unsure whether a business qualifies, refer them anyway. TechSavvy's underwriting team will handle the assessment. Many restricted businesses get approved — especially those with strong financials and clean processing history. When in doubt, submit the referral and let us do the work.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </main>
       )}
 
