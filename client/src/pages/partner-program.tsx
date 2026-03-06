@@ -815,7 +815,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
               <button onClick={() => setShowReferralForm(true)} className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-5 text-left hover:border-emerald-500/30 transition-all group">
                 <Send className="w-6 h-6 text-emerald-400 mb-3" />
                 <div className="text-sm font-semibold text-white">Submit Application</div>
-                <p className="text-[10px] text-zinc-500 mt-1">Refer a business and earn commission</p>
+                <p className="text-[10px] text-zinc-500 mt-1">Refer a business and earn 50% of profit</p>
               </button>
             </div>
           </>
@@ -1159,7 +1159,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
                 {/* Section 2 */}
                 <div>
                   <p className="text-xs font-bold text-white uppercase tracking-wider mb-2">1. Purpose</p>
-                  <p className="text-zinc-400 text-sm">Referral Partner agrees to refer business clients who may benefit from payment processing services. Tech Savvy Hawaii agrees to compensate Referral Partner for qualified referrals that result in new merchant accounts.</p>
+                  <p className="text-zinc-400 text-sm">Referral Partner agrees to refer business clients who may benefit from payment processing services. Tech Savvy Hawaii agrees to pay Referral Partner 50% of net profit on each qualified referral that results in a new merchant account, paid monthly for the lifetime of the account.</p>
                 </div>
 
                 {/* Section 3 */}
@@ -1230,7 +1230,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
                 {/* Section 6 */}
                 <div>
                   <p className="text-xs font-bold text-white uppercase tracking-wider mb-2">5. Term & Termination</p>
-                  <p className="text-zinc-400 text-sm">This agreement is ongoing and may be terminated by either party with 30 days written notice. Compensation for referrals made before termination will still be honored.</p>
+                  <p className="text-zinc-400 text-sm">This agreement is ongoing and may be terminated by either party with 30 days written notice. Residual payments for merchants referred before termination will continue for as long as those accounts remain active with TechSavvy.</p>
                 </div>
 
               </div>

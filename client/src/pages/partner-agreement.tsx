@@ -131,13 +131,13 @@ export default function PartnerAgreementPage() {
           </motion.h1>
 
           <motion.p variants={fadeUp} className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
-            Join our network of merchant services partners. Earn recurring revenue, get free terminals for your
-            merchants, and leverage our AI-powered sales tools.
+            Join our partner network. Earn 50% of profit on every merchant you refer — paid monthly, for life.
+            Free terminals for your merchants, training, and dedicated support.
           </motion.p>
 
           <motion.div variants={fadeUp} className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
             {[
-              { icon: DollarSign, text: "Recurring commissions" },
+              { icon: DollarSign, text: "50% of profit — monthly" },
               { icon: Zap, text: "Free terminals & setup" },
               { icon: Users, text: "Dedicated support team" },
             ].map((item) => (
@@ -244,9 +244,12 @@ export default function PartnerAgreementPage() {
                     <p className="font-medium text-foreground">Partnership Terms</p>
                     <ul className="space-y-2 list-disc pl-5">
                       <li>Partner agrees to represent TechSavvy Hawaii products and services accurately.</li>
-                      <li>Commissions are paid monthly on active merchant accounts referred by partner.</li>
+                      <li><strong>Partner earns 50% of TechSavvy's net profit</strong> on every merchant account referred by partner, paid monthly for the lifetime of the account.</li>
+                      <li>Net profit is defined as TechSavvy's revenue minus interchange, processing costs, and direct expenses on the referred account.</li>
+                      <li>Commissions are paid within 30 days of merchant statement close date.</li>
                       <li>Free terminal equipment is provided for each approved merchant referral.</li>
-                      <li>Either party may terminate the partnership with 30 days written notice.</li>
+                      <li>There are no tiers, no caps, and no minimum referral requirements.</li>
+                      <li>Either party may terminate the partnership with 30 days written notice. Active residual payments continue for existing accounts.</li>
                       <li>Partner will not make unauthorized promises regarding pricing or services.</li>
                       <li>TechSavvy Hawaii provides ongoing training, marketing materials, and support.</li>
                     </ul>
