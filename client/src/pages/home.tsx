@@ -40,7 +40,7 @@ function HeroSection() {
     <section className="relative overflow-hidden">
       {/* Video */}
       <div className="relative w-full">
-        <video autoPlay loop muted playsInline preload="auto" src="/videos/hero-bg-v3.mp4?v=20260305" className="w-full h-auto block" aria-label="Hawaii business payment processing" />
+        <video autoPlay loop muted playsInline preload="auto" src="/videos/hero-v4.mp4" className="w-full h-auto block" aria-label="Hawaii business payment processing" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-background" />
       </div>
 
