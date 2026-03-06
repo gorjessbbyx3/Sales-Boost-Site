@@ -99,46 +99,58 @@ function HeroSection() {
 
 function HowItWorks() {
   return (
-    <section className="py-12 sm:py-20 relative">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-14 sm:py-24 relative">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
-          <motion.div className="text-center mb-8 sm:mb-12" variants={fadeUp}>
+          <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-2">
-              Up and running in days, not weeks.
+              How TechSavvy Hawai'i Works
             </h2>
-            <p className="text-sm text-muted-foreground">Four steps. We handle three of them.</p>
+            <p className="text-sm sm:text-base text-muted-foreground">Three simple steps. No complicated process. No long wait times.</p>
           </motion.div>
 
-          <motion.div className="space-y-0" variants={fadeUp}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 mb-10">
             {[
-              { num: "1", title: "You apply", time: "3 min", desc: "Quick online form. Name, business type, monthly volume. That's it." },
-              { num: "2", title: "We crunch the numbers", time: "24 hrs", desc: "We show you exactly what you're paying now and what you'd save. No obligation." },
-              { num: "3", title: "We set everything up", time: "3–7 days", desc: "Terminal, signage, staff training — our local team handles it all. You don't touch a thing." },
-              { num: "4", title: "You keep your money", time: "Day 1", desc: "$0 processing fees from the first transaction. Every dollar stays yours." },
-            ].map((step, i) => (
-              <div key={step.num} className="flex gap-4 sm:gap-6 items-start relative">
-                {/* Vertical line */}
-                {i < 3 && <div className="absolute left-[19px] sm:left-[23px] top-12 w-[2px] h-[calc(100%-12px)] bg-gradient-to-b from-primary/30 to-primary/10" />}
-                {/* Number */}
-                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm sm:text-base z-10">
-                  {step.num}
-                </div>
-                {/* Content */}
-                <div className="pb-8 sm:pb-10 flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <h3 className="font-bold text-base sm:text-lg text-foreground">{step.title}</h3>
-                    <span className="text-[10px] sm:text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">{step.time}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{step.desc}</p>
-                </div>
-              </div>
+              {
+                num: "1",
+                icon: ShieldCheck,
+                title: "We set up your payment system",
+                desc: "Quick application, fast approval. Our local team installs your new terminal, sets up signage, and trains your staff. You don't touch a thing.",
+              },
+              {
+                num: "2",
+                icon: Users,
+                title: "Customers pay normally",
+                desc: "Customers can still use all cards — Visa, Mastercard, Amex, Apple Pay. Your posted prices reflect a cash discount, and card users simply pay the standard listed price.",
+              },
+              {
+                num: "3",
+                icon: DollarSign,
+                title: "Processing costs disappear",
+                desc: "With our cash discount program, you keep 100% of every sale. No processing fees, no monthly fees, no hidden charges. Funds deposited next business day.",
+              },
+            ].map((step) => (
+              <motion.div key={step.num} variants={fadeUp}>
+                <Card className="h-full border-border/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
+                  <CardContent className="p-6 sm:p-8 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                      <step.icon className="w-7 h-7 text-primary" />
+                    </div>
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center mx-auto mb-4">
+                      {step.num}
+                    </div>
+                    <h3 className="font-bold text-base sm:text-lg mb-3">{step.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
-          </motion.div>
+          </div>
 
           <motion.div className="text-center" variants={fadeUp}>
             <Button size="lg" asChild>
               <a href="/apply">
-                Start Your Application
+                Apply Now — Takes 3 Minutes
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
