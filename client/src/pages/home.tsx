@@ -41,65 +41,51 @@ function HeroSection() {
       {/* Video */}
       <div className="relative w-full">
         <video autoPlay loop muted playsInline preload="auto" src="/videos/hero-bg-v3.mp4?v=20260305" className="w-full h-auto block" aria-label="Hawaii business payment processing" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-background" />
       </div>
 
       {/* Content */}
-      <div className="pb-10 sm:pb-14 -mt-12 sm:-mt-20 relative z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="pb-8 sm:pb-12 -mt-10 sm:-mt-16 relative z-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div variants={staggerContainer} initial="hidden" animate="visible">
-            <motion.h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-3" variants={fadeUp}>
-              Every swipe costs you.{" "}
-              <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">We make it $0.</span>
+            <motion.h1 className="text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] mb-4" variants={fadeUp}>
+              Stop Paying Credit Card Fees.{" "}
+              <span className="text-primary">Keep Every Dollar.</span>
             </motion.h1>
 
-            <motion.p className="text-sm sm:text-base text-muted-foreground mb-6 max-w-lg mx-auto" variants={fadeUp}>
-              Most Hawaii businesses lose 2–4% on every card transaction. TechSavvy eliminates that with a compliant cash discount program.
+            <motion.p className="text-sm sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto leading-relaxed" variants={fadeUp}>
+              Hawaii businesses save <span className="text-foreground font-semibold">$500–$3,000+ every month</span> with our compliant cash discount program. No contracts. No monthly fees. Free equipment.
             </motion.p>
 
-            {/* 3-card comparison */}
-            <motion.div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-xl mx-auto mb-8" variants={fadeUp}>
-              <Card className="border-red-500/15 text-center">
-                <CardContent className="p-3 sm:p-5">
-                  <div className="text-lg sm:text-3xl font-extrabold text-red-400 mb-1">-$800</div>
-                  <div className="text-[9px] sm:text-xs text-muted-foreground leading-tight">Avg restaurant<br/>per month</div>
-                </CardContent>
-              </Card>
-              <Card className="border-primary/30 bg-primary/5 text-center ring-2 ring-primary/20">
-                <CardContent className="p-3 sm:p-5">
-                  <div className="text-lg sm:text-3xl font-extrabold text-primary mb-1">$0</div>
-                  <div className="text-[9px] sm:text-xs text-foreground font-semibold leading-tight">With TechSavvy<br/>every month</div>
-                </CardContent>
-              </Card>
-              <Card className="border-red-500/15 text-center">
-                <CardContent className="p-3 sm:p-5">
-                  <div className="text-lg sm:text-3xl font-extrabold text-red-400 mb-1">-$1,500</div>
-                  <div className="text-[9px] sm:text-xs text-muted-foreground leading-tight">Avg auto shop<br/>per month</div>
-                </CardContent>
-              </Card>
+            {/* Social proof */}
+            <motion.div className="flex items-center justify-center gap-2 mb-6" variants={fadeUp}>
+              <div className="flex">
+                {[1,2,3,4,5].map(i => (
+                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <span className="text-sm text-muted-foreground">4.9/5 from Hawaii business owners</span>
             </motion.div>
 
-            <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6" variants={fadeUp}>
+            <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-5" variants={fadeUp}>
               <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
                 <a href="/statement-review">
-                  Free AI Statement Analysis
+                  See How Much You're Losing — Free
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </Button>
               <Button variant="outline" size="lg" className="text-base px-6 py-6 w-full sm:w-auto" asChild>
-                <a href="/contact">
-                  Talk to Our Team
-                  <ArrowRight className="w-4 h-4" />
+                <a href="tel:8087675460">
+                  <Phone className="w-4 h-4" />
+                  (808) 767-5460
                 </a>
               </Button>
             </motion.div>
 
-            <motion.div variants={fadeUp}>
-              <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
-                <MapPin className="w-3 h-3 mr-1" />
-                Built for Hawai'i Small Businesses
-              </Badge>
-            </motion.div>
+            {/* Trust line */}
+            <motion.p className="text-xs text-muted-foreground" variants={fadeUp}>
+              ✓ 100% legal  ·  ✓ Setup in 3–7 days  ·  ✓ Cancel anytime  ·  ✓ Locally owned in Honolulu
+            </motion.p>
           </motion.div>
         </div>
       </div>
@@ -112,149 +98,47 @@ function HeroSection() {
 // ─── 3. How It Works — Remove uncertainty ───────────────────────────────────
 
 function HowItWorks() {
-  const StepApply = () => (
-    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
-      {/* Phone */}
-      <rect x="60" y="15" width="80" height="130" rx="14" fill="hsl(var(--primary) / 0.08)" stroke="hsl(var(--primary) / 0.3)" strokeWidth="2"/>
-      <rect x="70" y="30" width="60" height="90" rx="4" fill="hsl(var(--primary) / 0.05)"/>
-      {/* Form lines */}
-      <rect x="78" y="42" width="44" height="6" rx="3" fill="hsl(var(--primary) / 0.2)"/>
-      <rect x="78" y="56" width="44" height="6" rx="3" fill="hsl(var(--primary) / 0.15)"/>
-      <rect x="78" y="70" width="44" height="6" rx="3" fill="hsl(var(--primary) / 0.15)"/>
-      {/* Submit button */}
-      <rect x="78" y="86" width="44" height="14" rx="7" fill="hsl(var(--primary))"/>
-      <text x="100" y="96" textAnchor="middle" fill="white" fontSize="7" fontWeight="700">APPLY</text>
-      {/* Checkmarks floating */}
-      <circle cx="150" cy="40" r="10" fill="hsl(var(--primary) / 0.15)"/>
-      <path d="M145 40l3 3 7-7" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="45" cy="60" r="8" fill="hsl(var(--primary) / 0.1)"/>
-      <path d="M41 60l2.5 2.5 5.5-5.5" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      {/* Clock */}
-      <circle cx="155" cy="110" r="14" fill="hsl(var(--primary) / 0.1)" stroke="hsl(var(--primary) / 0.25)" strokeWidth="1.5"/>
-      <text x="155" y="114" textAnchor="middle" fill="hsl(var(--primary))" fontSize="9" fontWeight="700">3m</text>
-    </svg>
-  );
-
-  const StepApproved = () => (
-    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
-      {/* Document */}
-      <rect x="50" y="20" width="100" height="120" rx="10" fill="hsl(var(--primary) / 0.06)" stroke="hsl(var(--primary) / 0.2)" strokeWidth="2"/>
-      {/* Header */}
-      <rect x="65" y="35" width="70" height="8" rx="4" fill="hsl(var(--primary) / 0.15)"/>
-      {/* Lines */}
-      <rect x="65" y="52" width="55" height="5" rx="2.5" fill="hsl(var(--primary) / 0.1)"/>
-      <rect x="65" y="63" width="70" height="5" rx="2.5" fill="hsl(var(--primary) / 0.1)"/>
-      <rect x="65" y="74" width="45" height="5" rx="2.5" fill="hsl(var(--primary) / 0.1)"/>
-      {/* Savings highlight */}
-      <rect x="65" y="90" width="70" height="22" rx="6" fill="hsl(var(--primary) / 0.12)" stroke="hsl(var(--primary) / 0.25)" strokeWidth="1"/>
-      <text x="100" y="104" textAnchor="middle" fill="hsl(var(--primary))" fontSize="11" fontWeight="800">-$1,200/mo</text>
-      {/* Big approval stamp */}
-      <circle cx="155" cy="45" r="22" fill="hsl(var(--primary) / 0.12)" stroke="hsl(var(--primary))" strokeWidth="2.5"/>
-      <path d="M145 45l5 5 13-13" stroke="hsl(var(--primary))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-      {/* 24h badge */}
-      <rect x="30" y="95" width="28" height="22" rx="11" fill="hsl(var(--primary) / 0.15)"/>
-      <text x="44" y="109" textAnchor="middle" fill="hsl(var(--primary))" fontSize="8" fontWeight="700">24h</text>
-    </svg>
-  );
-
-  const StepSetup = () => (
-    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
-      {/* Terminal */}
-      <rect x="60" y="30" width="80" height="95" rx="10" fill="hsl(var(--primary) / 0.08)" stroke="hsl(var(--primary) / 0.3)" strokeWidth="2"/>
-      {/* Screen */}
-      <rect x="70" y="40" width="60" height="45" rx="5" fill="hsl(var(--primary) / 0.05)" stroke="hsl(var(--primary) / 0.15)" strokeWidth="1"/>
-      {/* Screen content - card icon */}
-      <rect x="88" y="52" width="24" height="16" rx="3" fill="hsl(var(--primary) / 0.2)"/>
-      <circle cx="95" cy="60" r="3" fill="hsl(var(--primary) / 0.3)"/>
-      {/* Keypad dots */}
-      {[0,1,2].map(r => [0,1,2].map(c => (
-        <circle key={`${r}${c}`} cx={82 + c * 18} cy={96 + r * 10} r="3" fill="hsl(var(--primary) / 0.15)"/>
-      )))}
-      {/* Person silhouette */}
-      <circle cx="35" cy="55" r="10" fill="hsl(var(--primary) / 0.12)"/>
-      <path d="M20 90 Q35 75 50 90" fill="hsl(var(--primary) / 0.08)"/>
-      {/* Arrow from person to terminal */}
-      <path d="M48 72 L60 65" stroke="hsl(var(--primary) / 0.3)" strokeWidth="1.5" strokeDasharray="3 3"/>
-      {/* Wrench */}
-      <circle cx="168" cy="50" r="16" fill="hsl(var(--primary) / 0.1)"/>
-      <text x="168" y="55" textAnchor="middle" fontSize="16">🔧</text>
-      {/* Signage */}
-      <rect x="155" y="100" width="30" height="20" rx="4" fill="hsl(var(--primary) / 0.15)" stroke="hsl(var(--primary) / 0.25)" strokeWidth="1"/>
-      <text x="170" y="113" textAnchor="middle" fill="hsl(var(--primary))" fontSize="6" fontWeight="700">SIGNAGE</text>
-    </svg>
-  );
-
-  const StepSave = () => (
-    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
-      {/* Rising bar chart */}
-      <rect x="35" y="100" width="22" height="40" rx="4" fill="hsl(var(--primary) / 0.15)"/>
-      <rect x="65" y="75" width="22" height="65" rx="4" fill="hsl(var(--primary) / 0.2)"/>
-      <rect x="95" y="50" width="22" height="90" rx="4" fill="hsl(var(--primary) / 0.3)"/>
-      <rect x="125" y="25" width="22" height="115" rx="4" fill="hsl(var(--primary))"/>
-      {/* Arrow going up */}
-      <path d="M40 95 L135 20" stroke="hsl(var(--primary))" strokeWidth="2" strokeDasharray="4 3" opacity="0.4"/>
-      <polygon points="135,15 140,25 130,25" fill="hsl(var(--primary) / 0.4)"/>
-      {/* $0 fee badge */}
-      <circle cx="165" cy="45" r="22" fill="hsl(var(--primary) / 0.12)" stroke="hsl(var(--primary))" strokeWidth="2"/>
-      <text x="165" y="43" textAnchor="middle" fill="hsl(var(--primary))" fontSize="14" fontWeight="800">$0</text>
-      <text x="165" y="54" textAnchor="middle" fill="hsl(var(--primary))" fontSize="6" fontWeight="600">FEES</text>
-      {/* Money symbols floating */}
-      <text x="160" y="100" fill="hsl(var(--primary) / 0.3)" fontSize="18" fontWeight="700">$</text>
-      <text x="175" y="120" fill="hsl(var(--primary) / 0.2)" fontSize="14" fontWeight="700">$</text>
-      <text x="25" y="80" fill="hsl(var(--primary) / 0.15)" fontSize="12" fontWeight="700">$</text>
-    </svg>
-  );
-
-  const illustrations = [StepApply, StepApproved, StepSetup, StepSave];
-
-  const steps = [
-    { num: "01", title: "Apply in 3 minutes", desc: "Quick online application. No paperwork, no fax machines. Just a few questions about your business." },
-    { num: "02", title: "Get approved", desc: "Usually within 24 hours. We review your info and show you exactly how much you'll save." },
-    { num: "03", title: "We set up your POS", desc: "Our local team configures your terminal, installs signage, and trains your staff. You don't touch a thing." },
-    { num: "04", title: "Start saving immediately", desc: "Accept payments with $0 processing fees from day one. Keep 100% of every sale." },
-  ];
-
   return (
-    <section className="pt-6 pb-16 sm:pt-8 sm:pb-24 relative">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-12 sm:py-20 relative">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
-          <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              How It Works
+          <motion.div className="text-center mb-8 sm:mb-12" variants={fadeUp}>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-2">
+              Up and running in days, not weeks.
             </h2>
+            <p className="text-sm text-muted-foreground">Four steps. We handle three of them.</p>
           </motion.div>
 
-          <div className="relative">
-            {/* Connecting line */}
-            <div className="hidden lg:block absolute top-[80px] left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-[2px] bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+          <motion.div className="space-y-0" variants={fadeUp}>
+            {[
+              { num: "1", title: "You apply", time: "3 min", desc: "Quick online form. Name, business type, monthly volume. That's it." },
+              { num: "2", title: "We crunch the numbers", time: "24 hrs", desc: "We show you exactly what you're paying now and what you'd save. No obligation." },
+              { num: "3", title: "We set everything up", time: "3–7 days", desc: "Terminal, signage, staff training — our local team handles it all. You don't touch a thing." },
+              { num: "4", title: "You keep your money", time: "Day 1", desc: "$0 processing fees from the first transaction. Every dollar stays yours." },
+            ].map((step, i) => (
+              <div key={step.num} className="flex gap-4 sm:gap-6 items-start relative">
+                {/* Vertical line */}
+                {i < 3 && <div className="absolute left-[19px] sm:left-[23px] top-12 w-[2px] h-[calc(100%-12px)] bg-gradient-to-b from-primary/30 to-primary/10" />}
+                {/* Number */}
+                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm sm:text-base z-10">
+                  {step.num}
+                </div>
+                {/* Content */}
+                <div className="pb-8 sm:pb-10 flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <h3 className="font-bold text-base sm:text-lg text-foreground">{step.title}</h3>
+                    <span className="text-[10px] sm:text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">{step.time}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 max-w-3xl mx-auto">
-              {steps.map((step, i) => {
-                const Illustration = illustrations[i];
-                return (
-                  <motion.div key={step.num} variants={fadeUp}>
-                    <div className="relative group text-center h-full max-w-[160px] sm:max-w-none mx-auto">
-                      {/* Illustration */}
-                      <div className="mx-auto w-full max-w-[100px] sm:max-w-[150px] mb-2 sm:mb-3">
-                        <Illustration />
-                      </div>
-                      {/* Card body */}
-                      <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-3 sm:p-5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 h-full">
-                        <div className="inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground text-[10px] sm:text-xs font-bold mb-1.5">{step.num}</div>
-                        <h3 className="font-bold text-xs sm:text-sm mb-1">{step.title}</h3>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground leading-snug">{step.desc}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-
-          <motion.div className="text-center mt-10" variants={fadeUp}>
+          <motion.div className="text-center" variants={fadeUp}>
             <Button size="lg" asChild>
               <a href="/apply">
-                Apply Now — Takes 3 Minutes
+                Start Your Application
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
@@ -884,7 +768,7 @@ function TestimonialSection() {
 // ─── 10. FAQ — Address fears ────────────────────────────────────────────────
 
 function FAQSection() {
-  const [open, setOpen] = useState<number | null>(null);
+  const [open, setOpen] = useState<number | null>(0);
   const faqs = [
     { q: "Is this actually legal?", a: "Yes — 100% legal in Hawaii and all 50 states. Visa, Mastercard, and the FTC all allow it when properly disclosed. We handle all the compliance and signage for you." },
     { q: "Will my customers get mad about the surcharge?", a: "Most don't even notice. It's the same model gas stations have used for years — cash price vs. card price. It's now standard at restaurants, salons, and retail stores across Hawaii." },
@@ -943,13 +827,13 @@ export default function Home() {
     <Layout>
       <HeroSection />
       <HowItWorks />
+      <CompareSection />
+      <TestimonialSection />
       <SavingsCalculator />
       <WhoWeWorkWith />
-      <CompareSection />
       <QualifySection />
       <TrustSection />
       <LocalTrustBadges />
-      <TestimonialSection />
       <FAQSection />
     </Layout>
   );
