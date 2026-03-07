@@ -549,14 +549,15 @@ function AdminSetup({ onComplete }: { onComplete: () => void }) {
 // ─── Login ───────────────────────────────────────────────────────────
 
 function AdminLogin({ onLogin }: { onLogin: () => void }) {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const { toast } = useToast();
 
   const loginMutation = useMutation({
-    mutationFn: async (pw: string) => { const res = await apiRequest("POST", "/api/admin/login", { password: pw }); return res.json(); },
-    onSuccess: () => { onLogin(); toast({ title: "Logged in", description: "Welcome to the admin panel." }); },
-    onError: () => { setError("Invalid password. Please try again."); },
+    mutationFn: async ({ username, password }: { username: string; password: string }) => { const res = await apiRequest("POST", "/api/admin/login", { username, password }); return res.json(); },
+    onSuccess: (data: any) => { onLogin(); toast({ title: "Logged in", description: data?.user?.displayName ? `Welcome, ${data.user.displayName}` : "Welcome to the admin panel." }); },
+    onError: () => { setError("Invalid credentials. Please try again."); },
   });
 
   return (
@@ -566,14 +567,19 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
         <CardHeader className="text-center relative">
           <div className="w-14 h-14 rounded-md bg-primary/15 flex items-center justify-center mx-auto mb-3"><Lock className="w-7 h-7 text-primary" /></div>
           <CardTitle className="text-xl">Admin Access</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">Enter your admin password to continue</p>
+          <p className="text-sm text-muted-foreground mt-1">Sign in to your admin dashboard</p>
         </CardHeader>
         <CardContent className="relative">
-          <form onSubmit={(e) => { e.preventDefault(); setError(""); loginMutation.mutate(password); }} className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); setError(""); loginMutation.mutate({ username, password }); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+                className="w-full bg-muted rounded-md px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50" placeholder="Enter username" autoComplete="username" />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-muted rounded-md px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50" placeholder="Enter admin password" />
+                className="w-full bg-muted rounded-md px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50" placeholder="Enter password" autoComplete="current-password" />
             </div>
             {error && <p className="text-destructive text-sm">{error}</p>}
             <Button type="submit" className="w-full" disabled={loginMutation.isPending || !password}>{loginMutation.isPending ? "Logging in..." : "Log In"}</Button>

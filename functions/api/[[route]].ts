@@ -173,7 +173,7 @@ function generateBrandedEmail(type: string, data: any): { subject: string; html:
 
 async function ensureSessionsTable(db: D1Database) {
   await db.prepare(
-    "CREATE TABLE IF NOT EXISTS admin_sessions (token TEXT PRIMARY KEY, created_at TEXT NOT NULL)"
+    "CREATE TABLE IF NOT EXISTS admin_sessions (token TEXT PRIMARY KEY, user_id TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)"
   ).run();
 }
 
@@ -208,6 +208,18 @@ async function isAuthenticated(db: D1Database, request: Request): Promise<boolea
     const row = await db.prepare("SELECT token FROM admin_sessions WHERE token = ?").bind(token).first();
     return !!row;
   }
+}
+
+async function getSessionUser(db: D1Database, request: Request): Promise<{ id: string; username: string; email: string; displayName: string; role: string } | null> {
+  const token = getSessionToken(request);
+  if (!token) return null;
+  try {
+    const session = await db.prepare("SELECT user_id FROM admin_sessions WHERE token = ?").bind(token).first();
+    if (!session || !session.user_id) return { id: "admin", username: "admin", email: "contact@techsavvyhawaii.com", displayName: "Admin", role: "admin" };
+    const user = await db.prepare("SELECT id, username, email, display_name, role FROM user_accounts WHERE id = ?").bind(session.user_id).first();
+    if (!user) return { id: "admin", username: "admin", email: "contact@techsavvyhawaii.com", displayName: "Admin", role: "admin" };
+    return { id: user.id as string, username: (user.username as string) || "", email: user.email as string, displayName: user.display_name as string, role: user.role as string };
+  } catch { return null; }
 }
 
 function setSessionCookie(token: string): string {
@@ -422,35 +434,50 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (path === "/api/admin/login" && method === "POST") {
       await ensureSessionsTable(env.DB);
       const body: any = await request.json();
-      const { password } = body || {};
+      const { username, password } = body || {};
 
-      // Check stored password first
+      // Try user_accounts first (multi-user login)
+      if (username) {
+        try {
+          const user = await env.DB.prepare("SELECT id, username, email, password_hash, display_name, role FROM user_accounts WHERE username = ? OR email = ?").bind(username, username).first();
+          if (user && user.password_hash && await verifyPassword(password, user.password_hash as string)) {
+            const token = genId() + genId() + genId();
+            await env.DB.prepare("INSERT INTO admin_sessions (token, user_id, created_at) VALUES (?, ?, ?)").bind(token, user.id, now()).run();
+            await env.DB.prepare("UPDATE user_accounts SET last_login_at = ? WHERE id = ?").bind(now(), user.id).run();
+            await env.DB.prepare("DELETE FROM admin_sessions WHERE created_at < datetime('now', '-1 day')").run();
+            return json({ success: true, user: { id: user.id, username: user.username, displayName: user.display_name, email: user.email, role: user.role } }, 200, { "Set-Cookie": setSessionCookie(token) });
+          }
+        } catch {}
+      }
+
+      // Fallback: check admin_settings password (legacy single-user)
       const settings = await getAdminSettings(env.DB);
       if (settings && settings.password_hash) {
         if (await verifyPassword(password, settings.password_hash as string)) {
           const token = genId() + genId() + genId();
-          await env.DB.prepare("INSERT INTO admin_sessions (token, created_at) VALUES (?, ?)").bind(token, now()).run();
+          await env.DB.prepare("INSERT INTO admin_sessions (token, user_id, created_at) VALUES (?, ?, ?)").bind(token, "admin", now()).run();
           await env.DB.prepare("DELETE FROM admin_sessions WHERE created_at < datetime('now', '-1 day')").run();
-          return json({ success: true }, 200, { "Set-Cookie": setSessionCookie(token) });
+          return json({ success: true, user: { id: "admin", username: "admin", displayName: "Admin", email: "contact@techsavvyhawaii.com", role: "admin" } }, 200, { "Set-Cookie": setSessionCookie(token) });
         }
-        return err("Invalid password.", 401);
+        return err("Invalid credentials.", 401);
       }
 
       // Fallback to SESSION_SECRET env var
       const adminPassword = env.SESSION_SECRET;
       if (adminPassword && password === adminPassword) {
         const token = genId() + genId() + genId();
-        await env.DB.prepare("INSERT INTO admin_sessions (token, created_at) VALUES (?, ?)").bind(token, now()).run();
+        await env.DB.prepare("INSERT INTO admin_sessions (token, user_id, created_at) VALUES (?, ?, ?)").bind(token, "admin", now()).run();
         await env.DB.prepare("DELETE FROM admin_sessions WHERE created_at < datetime('now', '-1 day')").run();
-        return json({ success: true }, 200, { "Set-Cookie": setSessionCookie(token) });
+        return json({ success: true, user: { id: "admin", username: "admin", displayName: "Admin", email: "contact@techsavvyhawaii.com", role: "admin" } }, 200, { "Set-Cookie": setSessionCookie(token) });
       }
-      return err("Invalid password.", 401);
+      return err("Invalid credentials.", 401);
     }
 
     // GET /api/admin/check
     if (path === "/api/admin/check" && method === "GET") {
       const authed = await isAuthenticated(env.DB, request);
-      return json({ authenticated: authed });
+      const user = authed ? await getSessionUser(env.DB, request) : null;
+      return json({ authenticated: authed, user });
     }
 
     // POST /api/admin/logout
@@ -471,6 +498,20 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
         return err("New password must be at least 6 characters.");
       }
+
+      // Check if logged in as a user account
+      const user = await getSessionUser(env.DB, request);
+      if (user && user.id !== "admin") {
+        const ua = await env.DB.prepare("SELECT password_hash FROM user_accounts WHERE id = ?").bind(user.id).first();
+        if (ua && !await verifyPassword(currentPassword, ua.password_hash as string)) {
+          return err("Current password is incorrect.", 401);
+        }
+        const pw = await hashPassword(newPassword);
+        await env.DB.prepare("UPDATE user_accounts SET password_hash = ? WHERE id = ?").bind(pw, user.id).run();
+        return json({ success: true });
+      }
+
+      // Legacy admin password
       const settings = await getAdminSettings(env.DB);
       if (settings && settings.password_hash) {
         if (!await verifyPassword(currentPassword, settings.password_hash as string)) {
@@ -487,6 +528,28 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         "INSERT INTO admin_settings (id, password_hash, updated_at) VALUES ('default', ?, ?) ON CONFLICT(id) DO UPDATE SET password_hash = ?, updated_at = ?"
       ).bind(pw, ts, pw, ts).run();
       return json({ success: true });
+    }
+
+    // POST /api/admin/create-user (requires admin auth)
+    if (path === "/api/admin/create-user" && method === "POST") {
+      const authed = await isAuthenticated(env.DB, request);
+      if (!authed) return err("Unauthorized", 401);
+      const body: any = await request.json();
+      const { username, password, email, displayName, role } = body || {};
+      if (!username || !password || !email) return err("username, password, and email are required.");
+      if (password.length < 6) return err("Password must be at least 6 characters.");
+
+      // Check if username already exists
+      const existing = await env.DB.prepare("SELECT id FROM user_accounts WHERE username = ?").bind(username).first();
+      if (existing) return err("Username already exists.", 409);
+
+      const id = genId();
+      const ts = now();
+      const pw = await hashPassword(password);
+      await env.DB.prepare(
+        "INSERT INTO user_accounts (id, username, email, password_hash, display_name, role, team_id, avatar_url, is_active, last_login_at, created_at) VALUES (?, ?, ?, ?, ?, ?, '', '', 1, '', ?)"
+      ).bind(id, username, email, pw, displayName || username, role || "admin", ts).run();
+      return json({ success: true, user: { id, username, email, displayName: displayName || username, role: role || "admin" } }, 201);
     }
 
     // POST /api/contact-leads (public — contact form submission)
@@ -1591,13 +1654,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     // POST /api/email/send
     if (path === "/api/email/send" && method === "POST") {
       const body: any = await request.json();
-      const { to, subject, html, text, threadId } = body;
+      const { to, subject, html, text, threadId, fromAlias } = body;
       if (!to || !subject || !html) return err("to, subject, and html are required");
 
       const apiKey = env.RESEND_API_KEY;
       if (!apiKey) return err("RESEND_API_KEY not configured", 500);
 
-      // Get email config
+      // Get email config defaults
       let fromEmail = "contact@techsavvyhawaii.com";
       let fromName = "TechSavvy Hawaii";
       try {
@@ -1607,6 +1670,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           fromName = (cfg.from_name as string) || fromName;
         }
       } catch { /* use defaults */ }
+
+      // Override from address based on logged-in user or explicit alias
+      const sessionUser = await getSessionUser(env.DB, request);
+      if (fromAlias && fromAlias.includes("@techsavvyhawaii.com")) {
+        fromEmail = fromAlias;
+      } else if (sessionUser && sessionUser.email && sessionUser.email.includes("@techsavvyhawaii.com")) {
+        fromEmail = sessionUser.email;
+        fromName = sessionUser.displayName || fromName;
+      }
 
       // Send via Resend API
       const resendRes = await fetch("https://api.resend.com/emails", {
@@ -2854,6 +2926,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       if (!apiKey) return err("RESEND_API_KEY not configured", 500);
       let fromEmail = "contact@techsavvyhawaii.com"; let fromName = "TechSavvy Hawaii";
       try { const cfg = await env.DB.prepare("SELECT * FROM resend_config WHERE id = 'default'").first(); if (cfg?.enabled) { fromEmail = (cfg.from_email as string) || fromEmail; fromName = (cfg.from_name as string) || fromName; } } catch {}
+      const outreachUser = await getSessionUser(env.DB, request);
+      if (outreachUser && outreachUser.email && outreachUser.email.includes("@techsavvyhawaii.com")) { fromEmail = outreachUser.email; fromName = outreachUser.displayName || fromName; }
       const subject = body.subject || `Eliminate Processing Fees for ${lead.business || lead.name}`;
       const html = body.html || `<p>Hi ${lead.name},</p><p>We'd love to help ${lead.business || "your business"} eliminate processing fees.</p><p>Best,<br>TechSavvy Team</p>`;
       const resendRes = await fetch("https://api.resend.com/emails", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ from: `${fromName} <${fromEmail}>`, to: [lead.email as string], subject, html, text: body.text || "" }) });
