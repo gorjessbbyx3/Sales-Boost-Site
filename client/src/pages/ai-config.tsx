@@ -1539,7 +1539,7 @@ function LeadsTab() {
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold">Current Offers — OhanaPay Price Match</p>
             <p className="text-[10px] text-muted-foreground">
-              <span className="text-primary font-medium">FREE Valor VP500 terminal</span> for all new merchants • 
+              <span className="text-primary font-medium">FREE Valor VP100 terminal</span> for all new merchants • 
               <span className="text-primary font-medium"> FREE POS system</span> (Clover/Pax) for merchants processing <span className="font-medium">$10k+/mo</span> • 
               Zero processing fees • No contracts
             </p>
