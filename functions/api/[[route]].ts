@@ -1670,8 +1670,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     // ─── EMAIL ACCOUNTS ──────────────────────────────────────────────────
     if (path === "/api/email/accounts" && method === "GET") {
       try {
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS email_accounts (id TEXT PRIMARY KEY, address TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '#3B82F6', icon TEXT NOT NULL DEFAULT 'mail', sort_order INTEGER NOT NULL DEFAULT 0, is_default INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')))").run();
-        const { results } = await env.DB.prepare("SELECT * FROM email_accounts ORDER BY sort_order, created_at").all();
+        const sessionUser = await getSessionUser(env.DB, request);
+        const userId = sessionUser?.id || "";
+        const { results } = await env.DB.prepare(
+          "SELECT * FROM email_accounts WHERE owner_id = '' OR owner_id = ? ORDER BY sort_order, created_at"
+        ).bind(userId).all();
         return json(results);
       } catch { return json([]); }
     }
