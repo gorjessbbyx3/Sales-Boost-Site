@@ -306,15 +306,37 @@ interface EmailThread {
   contactName: string;
   source: "direct" | "contact-form" | "outreach" | "outreach-reply" | "email_inbound" | "statement-review" | "lead-magnet";
   status: "open" | "replied" | "closed";
-  folder: "inbox" | "sent" | "spam" | "trash" | "archived";
+  folder: string;
   starred: boolean;
   aiIntent: string;
   aiPriority: string;
   aiSentiment: string;
+  emailAccount: string;
   unread: boolean;
   lastMessageAt: string;
   createdAt: string;
   messages?: EmailMessage[];
+}
+
+interface EmailAccount {
+  id: string;
+  address: string;
+  display_name: string;
+  description: string;
+  color: string;
+  icon: string;
+  sort_order: number;
+  is_default: number;
+}
+
+interface EmailFolder {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  sort_order: number;
+  total: number;
+  unread: number;
 }
 
 interface EmailMessage {
@@ -5515,6 +5537,11 @@ function InboxTab() {
   const [showOutreach, setShowOutreach] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState("");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [activeAccount, setActiveAccount] = useState<string>("all");
+  const [showFolderCreate, setShowFolderCreate] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderColor, setNewFolderColor] = useState("#6B7280");
+  const [composeFromAccount, setComposeFromAccount] = useState("contact@techsavvyhawaii.com");
 
   // Compose state
   const [composeTo, setComposeTo] = useState("");
@@ -5548,11 +5575,22 @@ function InboxTab() {
   const resetTemplateForm = () => { setTemplateName(""); setTemplateSubject(""); setTemplateBody(""); setTemplateCategory("cold"); };
 
   // ── Queries ──
-  const threadQuery = viewStarred ? "/api/email/threads?starred=true" : `/api/email/threads?folder=${activeFolder}`;
+  const accountParam = activeAccount !== "all" ? `&account=${encodeURIComponent(activeAccount)}` : "";
+  const threadQuery = viewStarred ? `/api/email/threads?starred=true${accountParam}` : `/api/email/threads?folder=${activeFolder}${accountParam}`;
   const { data: threads = [], refetch: refetchThreads } = useQuery<EmailThread[]>({ queryKey: [threadQuery] });
-  const { data: stats, refetch: refetchStats } = useQuery<EmailStats>({ queryKey: ["/api/email/stats"] });
+  const { data: stats, refetch: refetchStats } = useQuery<EmailStats>({ queryKey: [`/api/email/stats${activeAccount !== "all" ? `?account=${encodeURIComponent(activeAccount)}` : ""}`] });
   const { data: emailConfig } = useQuery<ResendEmailConfig>({ queryKey: ["/api/email/config"] });
   const { data: leads = [] } = useQuery<Lead[]>({ queryKey: ["/api/leads"] });
+  const { data: emailAccounts = [] } = useQuery<EmailAccount[]>({ queryKey: ["/api/email/accounts"] });
+  const { data: customFolders = [], refetch: refetchFolders } = useQuery<EmailFolder[]>({ queryKey: ["/api/email/folders"] });
+
+  // Account color lookup
+  const accountColorMap: Record<string, string> = {};
+  const accountNameMap: Record<string, string> = {};
+  for (const acct of emailAccounts) {
+    accountColorMap[acct.address] = acct.color;
+    accountNameMap[acct.address] = acct.display_name;
+  }
 
   const { data: threadDetail, refetch: refetchDetail } = useQuery<EmailThread & { messages: EmailMessage[] }>({
     queryKey: ["/api/email/threads", selectedThread?.id],
@@ -5585,7 +5623,18 @@ function InboxTab() {
   });
 
   // ── Mutations ──
-  const refetchAll = () => { refetchThreads(); refetchStats(); };
+  const refetchAll = () => { refetchThreads(); refetchStats(); refetchFolders(); };
+
+  const createFolderMutation = useMutation({
+    mutationFn: async (data: { name: string; color: string }) => { const res = await apiRequest("POST", "/api/email/folders", data); return res.json(); },
+    onSuccess: () => { toast({ title: "Folder created" }); refetchFolders(); setShowFolderCreate(false); setNewFolderName(""); setNewFolderColor("#6B7280"); },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const deleteFolderMutation = useMutation({
+    mutationFn: async (id: string) => { const res = await apiRequest("DELETE", `/api/email/folders/${id}`); return res.json(); },
+    onSuccess: () => { toast({ title: "Folder deleted" }); refetchFolders(); refetchAll(); if (activeFolder.startsWith("fld-")) setActiveFolder("inbox"); },
+  });
 
   const sendMutation = useMutation({
     mutationFn: async (data: { to: string; subject: string; html: string; threadId?: string }) => {
@@ -5720,6 +5769,12 @@ function InboxTab() {
               {threadDetail.aiPriority && threadDetail.aiPriority !== "normal" && (
                 <span className="flex items-center gap-1 text-[10px]"><span className={`w-1.5 h-1.5 rounded-full ${priorityDot[threadDetail.aiPriority] || ""}`} />{threadDetail.aiPriority}</span>
               )}
+              {accountColorMap[threadDetail.emailAccount] && (
+                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ backgroundColor: accountColorMap[threadDetail.emailAccount] + "15", color: accountColorMap[threadDetail.emailAccount] }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accountColorMap[threadDetail.emailAccount] }} />
+                  {accountNameMap[threadDetail.emailAccount] || threadDetail.emailAccount}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -5749,6 +5804,18 @@ function InboxTab() {
               <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { bulkMutation.mutate({ ids: [threadDetail.id], action: "move", folder: "inbox" }); setSelectedThread(null); }}>
                 <Inbox className="w-3.5 h-3.5 mr-1" />Move to Inbox
               </Button>
+            )}
+            {customFolders.length > 0 && (
+              <Select onValueChange={(fId) => { bulkMutation.mutate({ ids: [threadDetail.id], action: "move", folder: fId }); setSelectedThread(null); }}>
+                <SelectTrigger className="h-8 text-xs w-auto gap-1 border-0 shadow-none"><Folder className="w-3.5 h-3.5" /><span>Folder</span></SelectTrigger>
+                <SelectContent>
+                  {customFolders.map(cf => (
+                    <SelectItem key={cf.id} value={cf.id} className="text-xs">
+                      <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: cf.color }} />{cf.name}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
         </div>
@@ -5789,15 +5856,33 @@ function InboxTab() {
 
         <Card className="border-border/50">
           <CardContent className="p-4 space-y-3">
-            <p className="text-xs font-medium text-muted-foreground">Reply to {threadDetail.contactEmail}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">Reply to {threadDetail.contactEmail}</p>
+              {emailAccounts.length > 0 && (
+                <Select value={composeFromAccount} onValueChange={setComposeFromAccount}>
+                  <SelectTrigger className="h-7 text-[10px] w-auto gap-1">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: accountColorMap[composeFromAccount] || "#3B82F6" }} />
+                    <span>{composeFromAccount.split("@")[0]}</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {emailAccounts.map(acct => (
+                      <SelectItem key={acct.id} value={acct.address} className="text-xs">
+                        <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: acct.color }} />{acct.display_name} &lt;{acct.address}&gt;</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
             <Textarea value={replyBody} onChange={(e) => setReplyBody(e.target.value)} placeholder="Type your reply..." rows={4} className="resize-none text-sm" />
             <div className="flex justify-end">
               <Button size="sm" disabled={!replyBody.trim() || sendMutation.isPending} onClick={() => sendMutation.mutate({
                 to: threadDetail.contactEmail,
                 subject: `Re: ${threadDetail.subject}`,
-                html: `<p>${replyBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | contact@techsavvyhawaii.com</p></div>`,
+                html: `<p>${replyBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | ${composeFromAccount}</p></div>`,
                 threadId: threadDetail.id,
-              })}><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send Reply"}</Button>
+                ...(composeFromAccount !== "contact@techsavvyhawaii.com" ? { fromAlias: composeFromAccount } : {}),
+              } as any)}><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send Reply"}</Button>
             </div>
           </CardContent>
         </Card>
@@ -5814,7 +5899,23 @@ function InboxTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold flex items-center gap-2"><Mail className="w-5 h-5 text-primary" />Email</h2>
-          <p className="text-xs text-muted-foreground mt-1">contact@techsavvyhawaii.com</p>
+          <div className="flex items-center gap-2 mt-1">
+            {emailAccounts.length > 0 ? (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button onClick={() => setActiveAccount("all")} className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${activeAccount === "all" ? "bg-primary/15 text-primary ring-1 ring-primary/30" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}>
+                  All Accounts
+                </button>
+                {emailAccounts.map(acct => (
+                  <button key={acct.id} onClick={() => setActiveAccount(acct.address)} className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${activeAccount === acct.address ? "ring-1 ring-offset-1" : "hover:opacity-80"}`} style={{ backgroundColor: activeAccount === acct.address ? acct.color + "20" : acct.color + "10", color: acct.color, ...(activeAccount === acct.address ? { ringColor: acct.color } : {}) }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: acct.color }} />
+                    {acct.display_name || acct.address.split("@")[0]}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">contact@techsavvyhawaii.com</p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}><Settings className="w-4 h-4 mr-1" />Config</Button>
@@ -5859,6 +5960,75 @@ function InboxTab() {
               </button>
             );
           })}
+
+          {/* Custom Folders */}
+          {customFolders.length > 0 && (
+            <>
+              <div className="pt-3 pb-1 px-3"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Folders</span></div>
+              {customFolders.map((cf) => {
+                const isActive = !viewStarred && activeFolder === cf.id;
+                return (
+                  <div key={cf.id} className="group relative">
+                    <button
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? "font-medium" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+                      style={isActive ? { backgroundColor: cf.color + "15", color: cf.color } : {}}
+                      onClick={() => { setViewStarred(false); setActiveFolder(cf.id); }}
+                    >
+                      <span className="w-3.5 h-3.5 rounded shrink-0" style={{ backgroundColor: cf.color }} />
+                      <span className="flex-1 text-left truncate">{cf.name}</span>
+                      {(cf.total || 0) > 0 && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: (cf.unread || 0) > 0 ? cf.color : undefined, color: (cf.unread || 0) > 0 ? "#fff" : undefined }} >
+                          {(cf.unread || 0) > 0 ? cf.unread : cf.total}
+                        </span>
+                      )}
+                    </button>
+                    <button className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center justify-center w-5 h-5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); if (confirm(`Delete folder "${cf.name}"? Emails will move to Inbox.`)) deleteFolderMutation.mutate(cf.id); }}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {/* Create Folder */}
+          {showFolderCreate ? (
+            <div className="px-2 py-2 space-y-2">
+              <Input value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="Folder name" className="h-7 text-xs" autoFocus />
+              <div className="flex items-center gap-1.5">
+                {["#EF4444","#F59E0B","#10B981","#3B82F6","#8B5CF6","#EC4899","#6B7280","#06B6D4"].map(c => (
+                  <button key={c} className={`w-5 h-5 rounded-full transition-all ${newFolderColor === c ? "ring-2 ring-offset-1 ring-gray-400 scale-110" : "hover:scale-110"}`} style={{ backgroundColor: c }} onClick={() => setNewFolderColor(c)} />
+                ))}
+              </div>
+              <div className="flex gap-1">
+                <Button size="sm" variant="ghost" className="h-6 text-[10px] flex-1" onClick={() => { setShowFolderCreate(false); setNewFolderName(""); }}>Cancel</Button>
+                <Button size="sm" className="h-6 text-[10px] flex-1" disabled={!newFolderName.trim()} onClick={() => createFolderMutation.mutate({ name: newFolderName, color: newFolderColor })}>Create</Button>
+              </div>
+            </div>
+          ) : (
+            <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/30 transition-colors" onClick={() => setShowFolderCreate(true)}>
+              <Plus className="w-4 h-4" /><span className="text-xs">New Folder</span>
+            </button>
+          )}
+
+          {/* Account Legend */}
+          {emailAccounts.length > 0 && (
+            <>
+              <div className="pt-3 pb-1 px-3"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Accounts</span></div>
+              {emailAccounts.map(acct => (
+                <div key={acct.id} className="px-3 py-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acct.color }} />
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-medium truncate">{acct.display_name}</p>
+                      <p className="text-[9px] text-muted-foreground truncate">{acct.address}</p>
+                    </div>
+                  </div>
+                  {acct.description && <p className="text-[9px] text-muted-foreground/60 mt-0.5 pl-[18px] leading-tight">{acct.description}</p>}
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
         {/* ── Thread List ── */}
@@ -5875,6 +6045,18 @@ function InboxTab() {
               <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => bulkAction("star")}><Star className="w-3.5 h-3.5 mr-1" />Star</Button>
               {activeFolder !== "archived" && <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => bulkAction("move", "archived")}><Archive className="w-3.5 h-3.5 mr-1" />Archive</Button>}
               {activeFolder !== "spam" && <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => bulkAction("move", "spam")}><ShieldAlert className="w-3.5 h-3.5 mr-1" />Spam</Button>}
+              {customFolders.length > 0 && (
+                <Select onValueChange={(fId) => bulkAction("move", fId)}>
+                  <SelectTrigger className="h-7 text-xs w-auto gap-1"><Folder className="w-3.5 h-3.5" /><span>Move to...</span></SelectTrigger>
+                  <SelectContent>
+                    {customFolders.map(cf => (
+                      <SelectItem key={cf.id} value={cf.id} className="text-xs">
+                        <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: cf.color }} />{cf.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               {activeFolder === "trash" || activeFolder === "spam" ? (
                 <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => bulkAction("delete")}><Trash2 className="w-3.5 h-3.5 mr-1" />Delete Forever</Button>
               ) : (
@@ -5942,6 +6124,10 @@ function InboxTab() {
                   }`}
                 >
                   <Checkbox checked={selectedIds.has(thread.id)} onCheckedChange={() => toggleSelect(thread.id)} onClick={(e) => e.stopPropagation()} />
+                  {/* Account color indicator */}
+                  {accountColorMap[thread.emailAccount] && (
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: accountColorMap[thread.emailAccount] }} title={accountNameMap[thread.emailAccount] || thread.emailAccount} />
+                  )}
                   <button className="p-0.5 shrink-0 opacity-40 hover:opacity-100 transition-opacity" onClick={(e) => {
                     e.stopPropagation();
                     bulkMutation.mutate({ ids: [thread.id], action: thread.starred ? "unstar" : "star" });
@@ -5972,7 +6158,7 @@ function InboxTab() {
       {/* Compose Dialog */}
       <Dialog open={showCompose} onOpenChange={setShowCompose}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Compose Email</DialogTitle><DialogDescription>Send from contact@techsavvyhawaii.com</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>Compose Email</DialogTitle><DialogDescription>Send from your TechSavvy Hawaii email</DialogDescription></DialogHeader>
           {templates.length > 0 && (
             <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
               <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -5986,6 +6172,28 @@ function InboxTab() {
             </div>
           )}
           <div className="space-y-3">
+            {/* From Account Selector */}
+            {emailAccounts.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">From</Label>
+                <Select value={composeFromAccount} onValueChange={setComposeFromAccount}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {emailAccounts.map(acct => (
+                      <SelectItem key={acct.id} value={acct.address} className="text-xs">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acct.color }} />
+                          <span className="font-medium">{acct.display_name}</span>
+                          <span className="text-muted-foreground">&lt;{acct.address}&gt;</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1.5"><Label className="text-xs">To</Label><Input value={composeTo} onChange={(e) => setComposeTo(e.target.value)} placeholder="recipient@email.com" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Subject</Label><Input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} placeholder="Email subject" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Message</Label><Textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} placeholder="Write your email..." rows={8} className="resize-none text-sm" /></div>
@@ -5994,8 +6202,9 @@ function InboxTab() {
             <Button variant="outline" onClick={() => setShowCompose(false)}>Cancel</Button>
             <Button disabled={!composeTo || !composeSubject || !composeBody || sendMutation.isPending} onClick={() => sendMutation.mutate({
               to: composeTo, subject: composeSubject,
-              html: `<p>${composeBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | contact@techsavvyhawaii.com</p></div>`,
-            })}><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send"}</Button>
+              html: `<p>${composeBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | ${composeFromAccount}</p></div>`,
+              ...(composeFromAccount !== "contact@techsavvyhawaii.com" ? { fromAlias: composeFromAccount } : {}),
+            } as any)}><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

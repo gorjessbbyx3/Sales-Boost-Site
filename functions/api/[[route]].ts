@@ -1557,10 +1557,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       try {
         const starred = url.searchParams.get("starred");
         const folder = url.searchParams.get("folder");
+        const account = url.searchParams.get("account");
         let sql = "SELECT * FROM email_threads";
+        const conditions: string[] = [];
         const params: any[] = [];
-        if (starred === "true") { sql += " WHERE starred = 1"; }
-        else if (folder) { sql += " WHERE folder = ?"; params.push(folder); }
+        if (starred === "true") { conditions.push("starred = 1"); }
+        else if (folder) { conditions.push("folder = ?"); params.push(folder); }
+        if (account && account !== "all") { conditions.push("email_account = ?"); params.push(account); }
+        if (conditions.length > 0) sql += " WHERE " + conditions.join(" AND ");
         sql += " ORDER BY last_message_at DESC";
         const stmt = params.length > 0 ? env.DB.prepare(sql).bind(...params) : env.DB.prepare(sql);
         const { results } = await stmt.all();
@@ -1636,19 +1640,126 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     // GET /api/email/stats
     if (path === "/api/email/stats" && method === "GET") {
       try {
-        const { results } = await env.DB.prepare("SELECT * FROM email_threads").all();
+        const account = url.searchParams.get("account");
+        let sql = "SELECT * FROM email_threads";
+        if (account && account !== "all") sql += ` WHERE email_account = '${account.replace(/'/g, "''")}'`;
+        const { results } = await env.DB.prepare(sql).all();
         const threads = results || [];
+        const folders: Record<string, { total: number; unread: number }> = {};
+        for (const t of threads as any[]) {
+          const f = t.folder || "inbox";
+          if (!folders[f]) folders[f] = { total: 0, unread: 0 };
+          folders[f].total++;
+          if (t.unread) folders[f].unread++;
+        }
         return json({
           total: threads.length,
           unread: threads.filter((t: any) => t.unread).length,
+          starred: threads.filter((t: any) => t.starred).length,
           outreach: threads.filter((t: any) => t.source === "outreach").length,
           replies: threads.filter((t: any) => t.source === "outreach-reply").length,
           directInbound: threads.filter((t: any) => t.source === "direct").length,
           contactForm: threads.filter((t: any) => t.source === "contact-form").length,
+          folders,
         });
       } catch {
-        return json({ total: 0, unread: 0, outreach: 0, replies: 0, directInbound: 0, contactForm: 0 });
+        return json({ total: 0, unread: 0, starred: 0, outreach: 0, replies: 0, directInbound: 0, contactForm: 0, folders: {} });
       }
+    }
+
+    // ─── EMAIL ACCOUNTS ──────────────────────────────────────────────────
+    if (path === "/api/email/accounts" && method === "GET") {
+      try {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS email_accounts (id TEXT PRIMARY KEY, address TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '#3B82F6', icon TEXT NOT NULL DEFAULT 'mail', sort_order INTEGER NOT NULL DEFAULT 0, is_default INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')))").run();
+        const { results } = await env.DB.prepare("SELECT * FROM email_accounts ORDER BY sort_order, created_at").all();
+        return json(results);
+      } catch { return json([]); }
+    }
+
+    if (path === "/api/email/accounts" && method === "POST") {
+      const body: any = await request.json();
+      const { address, displayName, description, color, icon } = body;
+      if (!address) return err("Address is required");
+      const id = "acct-" + genId();
+      const ts = now();
+      try {
+        const maxOrder = await env.DB.prepare("SELECT MAX(sort_order) as m FROM email_accounts").first();
+        const nextOrder = ((maxOrder?.m as number) || 0) + 1;
+        await env.DB.prepare("INSERT INTO email_accounts (id, address, display_name, description, color, icon, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(id, address, displayName || "", description || "", color || "#3B82F6", icon || "mail", nextOrder, ts).run();
+        return json({ success: true, id });
+      } catch (e: any) { return err(e.message || "Failed to create account", 500); }
+    }
+
+    const acctMatch = path.match(/^\/api\/email\/accounts\/([^/]+)$/);
+    if (acctMatch && method === "PATCH") {
+      const id = acctMatch[1];
+      const body: any = await request.json();
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (body.displayName !== undefined) { updates.push("display_name = ?"); params.push(body.displayName); }
+      if (body.description !== undefined) { updates.push("description = ?"); params.push(body.description); }
+      if (body.color !== undefined) { updates.push("color = ?"); params.push(body.color); }
+      if (body.icon !== undefined) { updates.push("icon = ?"); params.push(body.icon); }
+      if (body.sortOrder !== undefined) { updates.push("sort_order = ?"); params.push(body.sortOrder); }
+      if (updates.length === 0) return err("No fields to update");
+      params.push(id);
+      await env.DB.prepare(`UPDATE email_accounts SET ${updates.join(", ")} WHERE id = ?`).bind(...params).run();
+      return json({ success: true });
+    }
+
+    if (acctMatch && method === "DELETE") {
+      await env.DB.prepare("DELETE FROM email_accounts WHERE id = ? AND is_default = 0").bind(acctMatch[1]).run();
+      return json({ success: true });
+    }
+
+    // ─── EMAIL FOLDERS ──────────────────────────────────────────────────
+    if (path === "/api/email/folders" && method === "GET") {
+      try {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS email_folders (id TEXT PRIMARY KEY, name TEXT NOT NULL, color TEXT NOT NULL DEFAULT '#6B7280', icon TEXT NOT NULL DEFAULT 'folder', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')))").run();
+        const { results } = await env.DB.prepare("SELECT * FROM email_folders ORDER BY sort_order, created_at").all();
+        // Get counts for each folder
+        const enriched = [];
+        for (const f of results) {
+          const countResult = await env.DB.prepare("SELECT COUNT(*) as total, SUM(CASE WHEN unread = 1 THEN 1 ELSE 0 END) as unread FROM email_threads WHERE folder = ?").bind(f.id).first();
+          enriched.push({ ...f, total: countResult?.total || 0, unread: countResult?.unread || 0 });
+        }
+        return json(enriched);
+      } catch { return json([]); }
+    }
+
+    if (path === "/api/email/folders" && method === "POST") {
+      const body: any = await request.json();
+      const { name, color, icon } = body;
+      if (!name) return err("Folder name is required");
+      const id = "fld-" + genId();
+      try {
+        const maxOrder = await env.DB.prepare("SELECT MAX(sort_order) as m FROM email_folders").first();
+        const nextOrder = ((maxOrder?.m as number) || 0) + 1;
+        await env.DB.prepare("INSERT INTO email_folders (id, name, color, icon, sort_order) VALUES (?, ?, ?, ?, ?)").bind(id, name, color || "#6B7280", icon || "folder", nextOrder).run();
+        return json({ success: true, id });
+      } catch (e: any) { return err(e.message || "Failed to create folder", 500); }
+    }
+
+    const folderMatch = path.match(/^\/api\/email\/folders\/([^/]+)$/);
+    if (folderMatch && method === "PATCH") {
+      const id = folderMatch[1];
+      const body: any = await request.json();
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (body.name !== undefined) { updates.push("name = ?"); params.push(body.name); }
+      if (body.color !== undefined) { updates.push("color = ?"); params.push(body.color); }
+      if (body.icon !== undefined) { updates.push("icon = ?"); params.push(body.icon); }
+      if (updates.length === 0) return err("No fields to update");
+      params.push(id);
+      await env.DB.prepare(`UPDATE email_folders SET ${updates.join(", ")} WHERE id = ?`).bind(...params).run();
+      return json({ success: true });
+    }
+
+    if (folderMatch && method === "DELETE") {
+      // Move threads back to inbox before deleting folder
+      await env.DB.prepare("UPDATE email_threads SET folder = 'inbox' WHERE folder = ?").bind(folderMatch[1]).run();
+      await env.DB.prepare("DELETE FROM email_folders WHERE id = ?").bind(folderMatch[1]).run();
+      return json({ success: true });
     }
 
     // POST /api/email/send
@@ -1708,8 +1819,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       if (!tid) {
         tid = genId();
         await env.DB.prepare(
-          "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at) VALUES (?, ?, '', ?, ?, 'direct', 'open', 0, ?, ?)"
-        ).bind(tid, subject, to, to, ts, ts).run();
+          "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at, email_account) VALUES (?, ?, '', ?, ?, 'direct', 'open', 0, ?, ?, ?)"
+        ).bind(tid, subject, to, to, ts, ts, fromEmail).run();
       } else {
         await env.DB.prepare("UPDATE email_threads SET last_message_at = ?, status = 'replied' WHERE id = ?").bind(ts, tid).run();
       }
@@ -3941,6 +4052,12 @@ function mapThread(row: Record<string, unknown>) {
     contactName: row.contact_name,
     source: row.source,
     status: row.status,
+    folder: row.folder || "inbox",
+    starred: !!(row.starred),
+    aiIntent: row.ai_intent || "",
+    aiPriority: row.ai_priority || "normal",
+    aiSentiment: row.ai_sentiment || "neutral",
+    emailAccount: row.email_account || "contact@techsavvyhawaii.com",
     unread: !!row.unread,
     lastMessageAt: row.last_message_at,
     createdAt: row.created_at,
