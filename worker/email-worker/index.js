@@ -155,6 +155,9 @@ export default {
     // Determine folder
     const folder = classification.intent === "spam" ? "spam" : "inbox";
 
+    // Determine which email account received this
+    const emailAccount = to || "contact@techsavvyhawaii.com";
+
     // Log ALL emails to D1 (including spam — goes to spam folder)
     if (env.DB) {
       try {
@@ -163,13 +166,13 @@ export default {
         const messageId = crypto.randomUUID();
 
         await env.DB.prepare(`
-          INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, folder, starred, ai_intent, ai_priority, ai_sentiment, unread, last_message_at, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, folder, starred, ai_intent, ai_priority, ai_sentiment, unread, last_message_at, created_at, email_account)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           threadId, subject, "", senderEmail, senderName, "email_inbound", "open",
           folder, 0,
           classification.intent || "", classification.priority || "normal", classification.sentiment || "neutral",
-          1, now, now
+          1, now, now, emailAccount
         ).run();
 
         await env.DB.prepare(`

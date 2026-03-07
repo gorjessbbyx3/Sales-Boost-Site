@@ -450,26 +450,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         } catch {}
       }
 
-      // Fallback: check admin_settings password (legacy single-user)
-      const settings = await getAdminSettings(env.DB);
-      if (settings && settings.password_hash) {
-        if (await verifyPassword(password, settings.password_hash as string)) {
-          const token = genId() + genId() + genId();
-          await env.DB.prepare("INSERT INTO admin_sessions (token, user_id, created_at) VALUES (?, ?, ?)").bind(token, "admin", now()).run();
-          await env.DB.prepare("DELETE FROM admin_sessions WHERE created_at < datetime('now', '-1 day')").run();
-          return json({ success: true, user: { id: "admin", username: "admin", displayName: "Admin", email: "contact@techsavvyhawaii.com", role: "admin" } }, 200, { "Set-Cookie": setSessionCookie(token) });
-        }
-        return err("Invalid credentials.", 401);
-      }
-
-      // Fallback to SESSION_SECRET env var
-      const adminPassword = env.SESSION_SECRET;
-      if (adminPassword && password === adminPassword) {
-        const token = genId() + genId() + genId();
-        await env.DB.prepare("INSERT INTO admin_sessions (token, user_id, created_at) VALUES (?, ?, ?)").bind(token, "admin", now()).run();
-        await env.DB.prepare("DELETE FROM admin_sessions WHERE created_at < datetime('now', '-1 day')").run();
-        return json({ success: true, user: { id: "admin", username: "admin", displayName: "Admin", email: "contact@techsavvyhawaii.com", role: "admin" } }, 200, { "Set-Cookie": setSessionCookie(token) });
-      }
       return err("Invalid credentials.", 401);
     }
 
@@ -511,23 +491,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         return json({ success: true });
       }
 
-      // Legacy admin password
-      const settings = await getAdminSettings(env.DB);
-      if (settings && settings.password_hash) {
-        if (!await verifyPassword(currentPassword, settings.password_hash as string)) {
-          return err("Current password is incorrect.", 401);
-        }
-      } else {
-        const envPw = env.SESSION_SECRET;
-        if (currentPassword !== envPw) return err("Current password is incorrect.", 401);
-      }
-      await ensureAdminSettingsTable(env.DB);
-      const ts = now();
-      const pw = await hashPassword(newPassword);
-      await env.DB.prepare(
-        "INSERT INTO admin_settings (id, password_hash, updated_at) VALUES ('default', ?, ?) ON CONFLICT(id) DO UPDATE SET password_hash = ?, updated_at = ?"
-      ).bind(pw, ts, pw, ts).run();
-      return json({ success: true });
+      return err("User account not found.", 400);
     }
 
     // POST /api/admin/create-user (requires admin auth)
@@ -1078,6 +1042,32 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       await env.DB.prepare("UPDATE partner_referrals SET lead_id = ? WHERE id = ?").bind(leadId, id).run();
       // Increment partner referral count
       await env.DB.prepare("UPDATE partner_accounts SET total_referrals = total_referrals + 1, updated_at = ? WHERE id = ?").bind(ts, partnerId).run();
+
+      // Get partner name for notifications
+      const partner = await env.DB.prepare("SELECT name, email FROM partner_accounts WHERE id = ?").bind(partnerId).first();
+      const partnerName = (partner?.name as string) || "Partner";
+
+      // Create email thread in admin inbox
+      try {
+        const threadId = genId();
+        const msgId = genId();
+        const subj = `🎯 New Referral: ${body.businessName || body.contactName || "Unknown"} (via ${partnerName})`;
+        const emailBody = `New referral submitted by ${partnerName}\n\nBusiness: ${body.businessName || "N/A"}\nContact: ${body.contactName || "N/A"}\nPhone: ${body.contactPhone || "N/A"}\nEmail: ${body.contactEmail || "N/A"}\nNotes: ${body.notes || "None"}${body.applicationData ? `\n\nApplication Data:\nDBA: ${body.applicationData.dbaName || "N/A"}\nAddress: ${body.applicationData.address || "N/A"}\nMonthly Volume: ${body.applicationData.monthlyVolume || "N/A"}\nAvg Ticket: ${body.applicationData.avgTransaction || "N/A"}` : ""}`;
+        await env.DB.prepare(
+          "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, folder, unread, last_message_at, created_at, email_account, ai_intent, ai_priority) VALUES (?, ?, ?, ?, ?, 'partner-referral', 'open', 'inbox', 1, ?, ?, 'biz@techsavvyhawaii.com', 'new_lead', 'high')"
+        ).bind(threadId, subj, leadId, body.contactEmail || "", body.contactName || body.businessName || "", ts, ts).run();
+        await env.DB.prepare(
+          "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, 'biz@techsavvyhawaii.com', ?, ?, '', '', 'received', ?)"
+        ).bind(msgId, threadId, (partner?.email as string) || "partner@program", partnerName, subj, emailBody, ts).run();
+      } catch { /* non-critical */ }
+
+      // Activity log
+      try {
+        await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+          genId(), "Partner Referral", `${partnerName} referred ${body.businessName || body.contactName || "a merchant"}`, "lead", ts
+        ).run();
+      } catch { /* non-critical */ }
+
       return json({ success: true, id }, 201);
     }
 
@@ -1145,6 +1135,32 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       await env.DB.prepare(
         "INSERT INTO partner_meetings (id, partner_id, merchant_name, merchant_phone, merchant_email, business_name, meeting_type, preferred_date, preferred_time, location, notes, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)"
       ).bind(id, partnerId, body.merchantName || "", body.merchantPhone || "", body.merchantEmail || "", body.businessName || "", body.meetingType || "video", body.preferredDate || "", body.preferredTime || "", body.location || "", body.notes || "", ts, ts).run();
+
+      // Get partner name for notifications
+      const partner = await env.DB.prepare("SELECT name, email FROM partner_accounts WHERE id = ?").bind(partnerId).first();
+      const partnerName = (partner?.name as string) || "Partner";
+
+      // Create email thread in admin inbox so team sees it
+      try {
+        const threadId = genId();
+        const msgId = genId();
+        const subj = `📅 Meeting Request: ${body.businessName || body.merchantName || "Unknown"} (via ${partnerName})`;
+        const emailBody = `Meeting request from partner ${partnerName}\n\nMerchant: ${body.merchantName || "N/A"}\nBusiness: ${body.businessName || "N/A"}\nPhone: ${body.merchantPhone || "N/A"}\nEmail: ${body.merchantEmail || "N/A"}\nType: ${body.meetingType || "video"}\nPreferred Date: ${body.preferredDate || "Flexible"}\nPreferred Time: ${body.preferredTime || "Flexible"}\nLocation: ${body.location || "N/A"}\nNotes: ${body.notes || "None"}`;
+        await env.DB.prepare(
+          "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, folder, unread, last_message_at, created_at, email_account, ai_intent, ai_priority) VALUES (?, ?, '', ?, ?, 'partner-meeting', 'open', 'inbox', 1, ?, ?, 'biz@techsavvyhawaii.com', 'meeting_request', 'high')"
+        ).bind(threadId, subj, body.merchantEmail || (partner?.email as string) || "", body.merchantName || partnerName, ts, ts).run();
+        await env.DB.prepare(
+          "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, 'biz@techsavvyhawaii.com', ?, ?, '', '', 'received', ?)"
+        ).bind(msgId, threadId, (partner?.email as string) || "partner@program", partnerName, subj, emailBody, ts).run();
+      } catch { /* non-critical */ }
+
+      // Activity log
+      try {
+        await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+          genId(), "Meeting Request", `${partnerName} requested a ${body.meetingType || "video"} meeting for ${body.businessName || body.merchantName || "a merchant"}`, "partner", ts
+        ).run();
+      } catch { /* non-critical */ }
+
       return json({ success: true, id }, 201);
     }
 
@@ -1175,6 +1191,32 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const ts = now();
       await env.DB.prepare("UPDATE partner_accounts SET agreement_signature = ?, agreement_agreed_at = ?, updated_at = ? WHERE id = ?")
         .bind(body.signature || "", body.agreedAt || ts, ts, partnerId).run();
+
+      // Get partner name
+      const partner = await env.DB.prepare("SELECT name, email FROM partner_accounts WHERE id = ?").bind(partnerId).first();
+      const partnerName = (partner?.name as string) || "Partner";
+
+      // Notify admin inbox
+      try {
+        const threadId = genId();
+        const msgId = genId();
+        const subj = `✅ Agreement Signed: ${partnerName}`;
+        const emailBody = `${partnerName} has signed the referral partner agreement.\n\nSignature: ${body.signature || "N/A"}\nSigned at: ${body.agreedAt || ts}\nPartner ID: ${partnerId}\nEmail: ${(partner?.email as string) || "N/A"}`;
+        await env.DB.prepare(
+          "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, folder, unread, last_message_at, created_at, email_account, ai_intent, ai_priority) VALUES (?, ?, '', ?, ?, 'partner-agreement', 'open', 'inbox', 1, ?, ?, 'biz@techsavvyhawaii.com', 'general_inquiry', 'normal')"
+        ).bind(threadId, subj, (partner?.email as string) || "", partnerName, ts, ts).run();
+        await env.DB.prepare(
+          "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, 'biz@techsavvyhawaii.com', ?, ?, '', '', 'received', ?)"
+        ).bind(msgId, threadId, (partner?.email as string) || "partner@program", partnerName, subj, emailBody, ts).run();
+      } catch { /* non-critical */ }
+
+      // Activity log
+      try {
+        await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+          genId(), "Agreement Signed", `${partnerName} signed the referral partner agreement`, "partner", ts
+        ).run();
+      } catch { /* non-critical */ }
+
       return json({ success: true, agreedAt: body.agreedAt || ts });
     }
 

@@ -5619,6 +5619,7 @@ function InboxTab() {
     if (sourceFilter === "contact-form") return t.source === "contact-form";
     if (sourceFilter === "statement-review") return t.source === "statement-review";
     if (sourceFilter === "lead-magnet") return t.source === "lead-magnet";
+    if (sourceFilter === "partner") return t.source === "partner-referral" || t.source === "partner-meeting" || t.source === "partner-agreement";
     return true;
   });
 
@@ -5723,6 +5724,7 @@ function InboxTab() {
   const sourceLabel: Record<string, string> = {
     direct: "Direct", "contact-form": "Form", outreach: "Outreach", "outreach-reply": "Reply", email_inbound: "Inbound",
     "statement-review": "Statement", "lead-magnet": "Lead Magnet",
+    "partner-referral": "Referral", "partner-meeting": "Meeting", "partner-agreement": "Agreement",
   };
   const sourceBadge: Record<string, string> = {
     direct: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
@@ -5732,12 +5734,16 @@ function InboxTab() {
     email_inbound: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
     "statement-review": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     "lead-magnet": "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+    "partner-referral": "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    "partner-meeting": "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+    "partner-agreement": "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
   };
   const intentBadge: Record<string, string> = {
     new_lead: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
     support_request: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
     billing_question: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
     general_inquiry: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+    meeting_request: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
     spam: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   };
   const priorityDot: Record<string, string> = { urgent: "bg-red-500", high: "bg-orange-500", normal: "bg-blue-400", low: "bg-gray-400" };
@@ -6067,9 +6073,9 @@ function InboxTab() {
             /* Source filter bar */
             <div className="flex items-center gap-2 flex-wrap">
               <Checkbox checked={false} onCheckedChange={selectAll} className="mr-1" />
-              {(["all", "unread", "direct", "outreach", "contact-form", "statement-review", "lead-magnet"] as const).map(f => (
+              {(["all", "unread", "direct", "outreach", "contact-form", "statement-review", "lead-magnet", "partner"] as const).map(f => (
                 <Button key={f} variant={sourceFilter === f ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setSourceFilter(f)}>
-                  {f === "all" ? "All" : f === "unread" ? `Unread` : f === "outreach" ? "Outreach" : f === "direct" ? "Direct" : f === "contact-form" ? "Contact Form" : f === "statement-review" ? "Statements" : "Lead Magnet"}
+                  {f === "all" ? "All" : f === "unread" ? `Unread` : f === "outreach" ? "Outreach" : f === "direct" ? "Direct" : f === "contact-form" ? "Contact Form" : f === "statement-review" ? "Statements" : f === "lead-magnet" ? "Lead Magnet" : "Partner"}
                 </Button>
               ))}
               <div className="flex-1" />

@@ -1,6 +1,6 @@
 # Tech Savvy Hawaii — Email Worker
-# Handles inbound email to contact@techsavvyhawaii.com
-# Classifies, logs to D1, auto-replies, and forwards
+# Handles inbound email to *@techsavvyhawaii.com
+# Classifies, logs to D1 with correct email_account, auto-replies, and forwards
 
 name = "tight-fog-5031"
 main = "index.js"
