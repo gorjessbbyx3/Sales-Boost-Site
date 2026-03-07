@@ -1600,9 +1600,25 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         const starred = url.searchParams.get("starred");
         const folder = url.searchParams.get("folder");
         const account = url.searchParams.get("account");
+
+        // Enforce user-level email account access
+        const sessionUser = await getSessionUser(env.DB, request);
+        const userId = sessionUser?.id || "";
+        const { results: userAccounts } = await env.DB.prepare(
+          "SELECT address FROM email_accounts WHERE owner_id = '' OR owner_id = ?"
+        ).bind(userId).all();
+        const allowedAddresses = userAccounts.map((a: any) => a.address);
+        if (allowedAddresses.length === 0) return json([]);
+
         let sql = "SELECT * FROM email_threads";
         const conditions: string[] = [];
         const params: any[] = [];
+
+        // Always restrict to user's accessible accounts
+        const placeholders = allowedAddresses.map(() => "?").join(", ");
+        conditions.push(`(email_account IN (${placeholders}) OR email_account IS NULL OR email_account = '')`);
+        params.push(...allowedAddresses);
+
         if (starred === "true") { conditions.push("starred = 1"); }
         else if (folder) { conditions.push("folder = ?"); params.push(folder); }
         if (account && account !== "all") { conditions.push("email_account = ?"); params.push(account); }
@@ -1645,6 +1661,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const id = threadMatch[1];
       const thread = await env.DB.prepare("SELECT * FROM email_threads WHERE id = ?").bind(id).first();
       if (!thread) return err("Thread not found", 404);
+
+      // Verify user has access to this thread's email account
+      const sessionUser = await getSessionUser(env.DB, request);
+      const userId = sessionUser?.id || "";
+      if (thread.email_account) {
+        const acctAccess = await env.DB.prepare(
+          "SELECT id FROM email_accounts WHERE address = ? AND (owner_id = '' OR owner_id = ?)"
+        ).bind(thread.email_account, userId).first();
+        if (!acctAccess) return err("Access denied", 403);
+      }
+
       const { results: messages } = await env.DB.prepare("SELECT * FROM email_messages WHERE thread_id = ? ORDER BY sent_at ASC").bind(id).all();
       // Mark as read
       if (thread.unread) {
@@ -1683,9 +1710,21 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (path === "/api/email/stats" && method === "GET") {
       try {
         const account = url.searchParams.get("account");
-        let sql = "SELECT * FROM email_threads";
-        if (account && account !== "all") sql += ` WHERE email_account = '${account.replace(/'/g, "''")}'`;
-        const { results } = await env.DB.prepare(sql).all();
+
+        // Enforce user-level email account access
+        const sessionUser = await getSessionUser(env.DB, request);
+        const userId = sessionUser?.id || "";
+        const { results: userAccounts } = await env.DB.prepare(
+          "SELECT address FROM email_accounts WHERE owner_id = '' OR owner_id = ?"
+        ).bind(userId).all();
+        const allowedAddresses = userAccounts.map((a: any) => a.address);
+        if (allowedAddresses.length === 0) return json({ total: 0, unread: 0, starred: 0, outreach: 0, replies: 0, directInbound: 0, contactForm: 0, folders: {} });
+
+        const placeholders = allowedAddresses.map(() => "?").join(", ");
+        let sql = `SELECT * FROM email_threads WHERE (email_account IN (${placeholders}) OR email_account IS NULL OR email_account = '')`;
+        const params: any[] = [...allowedAddresses];
+        if (account && account !== "all") { sql += " AND email_account = ?"; params.push(account); }
+        const { results } = await env.DB.prepare(sql).bind(...params).all();
         const threads = results || [];
         const folders: Record<string, { total: number; unread: number }> = {};
         for (const t of threads as any[]) {
