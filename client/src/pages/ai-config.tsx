@@ -6021,18 +6021,26 @@ function InboxTab() {
           {emailAccounts.length > 0 && (
             <>
               <div className="pt-3 pb-1 px-3"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Accounts</span></div>
-              {emailAccounts.map(acct => (
-                <div key={acct.id} className="px-3 py-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acct.color }} />
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-medium truncate">{acct.display_name}</p>
-                      <p className="text-[9px] text-muted-foreground truncate">{acct.address}</p>
+              {emailAccounts.map(acct => {
+                const isActive = activeAccount === acct.address;
+                return (
+                  <button
+                    key={acct.id}
+                    className={`w-full text-left px-3 py-1.5 rounded-lg transition-colors ${isActive ? "font-medium" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+                    style={isActive ? { backgroundColor: acct.color + "15", color: acct.color } : {}}
+                    onClick={() => setActiveAccount(isActive ? "all" : acct.address)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acct.color }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-medium truncate">{acct.display_name}</p>
+                        <p className="text-[9px] text-muted-foreground truncate">{acct.address}</p>
+                      </div>
                     </div>
-                  </div>
-                  {acct.description && <p className="text-[9px] text-muted-foreground/60 mt-0.5 pl-[18px] leading-tight">{acct.description}</p>}
-                </div>
-              ))}
+                    {acct.description && <p className="text-[9px] text-muted-foreground/60 mt-0.5 pl-[18px] leading-tight">{acct.description}</p>}
+                  </button>
+                );
+              })}
             </>
           )}
         </div>
