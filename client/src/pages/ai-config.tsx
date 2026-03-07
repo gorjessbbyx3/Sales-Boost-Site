@@ -22,7 +22,7 @@ import {
   AlertTriangle, Calendar, Search, Filter, Copy, MapPin, Paperclip, Target, BookOpen,
   UserPlus, Building, CheckCircle,
   BarChart3, ArrowUpRight, ArrowDownRight, ArrowRight,
-  Plug, FolderOpen, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
+  Plug, FolderOpen, Folder, Activity, FileText, Video, File, Bell, Send, RefreshCw, ExternalLink, Upload, Hash, Library, Star,
   Pin, PinOff, Sparkles, Clock, UserCog, Briefcase, Sun, Moon,
   ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu, Eye,
   Download, LayoutList, LayoutGrid, Image, FileSpreadsheet, Monitor,
