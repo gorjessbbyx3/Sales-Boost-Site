@@ -548,7 +548,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
         // Log activity
         try {
-          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+          await env.DB.prepare("INSERT INTO activity_log (id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
             genId(), "New Website Lead", `${body.businessName || body.contactName} submitted contact form`, "lead", ts
           ).run();
         } catch { /* non-critical */ }
@@ -612,7 +612,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
         // Log activity
         try {
-          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+          await env.DB.prepare("INSERT INTO activity_log (id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
             genId(), "New Merchant Application", `${body.businessLegalName} (${body.ownerName}) submitted application`, "lead", ts
           ).run();
         } catch { /* non-critical */ }
@@ -725,7 +725,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
       // Log activity
       try {
-        await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+        await env.DB.prepare("INSERT INTO activity_log (id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
           genId(), "Website Lead", `${body.business || body.name} submitted contact form`, "lead", ts
         ).run();
       } catch { /* non-critical */ }
@@ -793,7 +793,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
         // Log activity
         try {
-          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+          await env.DB.prepare("INSERT INTO activity_log (id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
             genId(), "Statement Review", `AI analysis completed — Grade: ${analysis.overallGrade || "?"}, Overpay: ${analysis.estimatedOverpay || "?"}`, "lead", now()
           ).run();
         } catch { /* non-critical */ }
@@ -911,7 +911,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
         // Log activity
         try {
-          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+          await env.DB.prepare("INSERT INTO activity_log (id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
             genId(), "Statement Review Email", `${type === "report" ? "AI report" : "Guide booklets"} sent to ${email}`, "lead", ts
           ).run();
         } catch { /* non-critical */ }
@@ -1063,7 +1063,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
       // Activity log
       try {
-        await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+        await env.DB.prepare("INSERT INTO activity_log (id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
           genId(), "Partner Referral", `${partnerName} referred ${body.businessName || body.contactName || "a merchant"}`, "lead", ts
         ).run();
       } catch { /* non-critical */ }
@@ -1156,7 +1156,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
       // Activity log
       try {
-        await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+        await env.DB.prepare("INSERT INTO activity_log (id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
           genId(), "Meeting Request", `${partnerName} requested a ${body.meetingType || "video"} meeting for ${body.businessName || body.merchantName || "a merchant"}`, "partner", ts
         ).run();
       } catch { /* non-critical */ }
@@ -1212,7 +1212,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
       // Activity log
       try {
-        await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+        await env.DB.prepare("INSERT INTO activity_log (id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
           genId(), "Agreement Signed", `${partnerName} signed the referral partner agreement`, "partner", ts
         ).run();
       } catch { /* non-critical */ }
@@ -3617,7 +3617,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
         // Log activity
         try {
-          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+          await env.DB.prepare("INSERT INTO activity_log (id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
             genId(), "Partner Agreement", `${partnerName} (${businessName}) signed partner agreement`, "lead", ts
           ).run();
         } catch {}
@@ -3656,7 +3656,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
         // Log activity
         try {
-          await env.DB.prepare("INSERT INTO activity_log (id, title, description, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
+          await env.DB.prepare("INSERT INTO activity_log (id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)").bind(
             genId(), "New Referral", `${referrerName} referred ${businessName}`, "lead", ts
           ).run();
         } catch {}
