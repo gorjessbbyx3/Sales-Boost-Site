@@ -1458,6 +1458,7 @@ function LeadsTab() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<PipelineStage | "all">("all");
   const [filterSource, setFilterSource] = useState<LeadSource | "all">("all");
+  const [showRestrictions, setShowRestrictions] = useState(false);
   const { toast } = useToast();
 
   const createMutation = useMutation({
@@ -1529,6 +1530,53 @@ function LeadsTab() {
             {(Object.keys(SOURCE_CONFIG) as LeadSource[]).map((s) => <SelectItem key={s} value={s}>{SOURCE_CONFIG[s].label}</SelectItem>)}
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Equipment Offer Banner */}
+      <Card className="overflow-visible border-primary/20 bg-primary/5">
+        <CardContent className="p-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-primary/15 flex items-center justify-center shrink-0"><CreditCard className="w-4 h-4 text-primary" /></div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold">Current Offers — OhanaPay Price Match</p>
+            <p className="text-[10px] text-muted-foreground">
+              <span className="text-primary font-medium">FREE Valor VP500 terminal</span> for all new merchants • 
+              <span className="text-primary font-medium"> FREE POS system</span> (Clover/Pax) for merchants processing <span className="font-medium">$10k+/mo</span> • 
+              Zero processing fees • No contracts
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Restricted Merchants Reference */}
+      <div>
+        <button onClick={() => setShowRestrictions(!showRestrictions)} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
+          <span className="font-medium">Restricted & Prohibited Industries</span>
+          <ChevronDown className={`w-3 h-3 transition-transform ${showRestrictions ? "rotate-180" : ""}`} />
+        </button>
+        {showRestrictions && (
+          <Card className="mt-2 overflow-visible border-yellow-500/20 bg-yellow-500/5">
+            <CardContent className="p-4 space-y-4">
+              <div>
+                <p className="text-xs font-bold text-red-500 mb-2 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" />Prohibited — Will NOT Underwrite</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-0.5">
+                  {["Adult content/audiotext", "Airlines or Cruise Lines", "Any merchant on MATCH", "Bail bonds", "Bankruptcy lawyers", "Business/Investment \"get-rich-quick\"", "Collection agencies", "Counterfeit goods/replicas", "Credit repair/debt consolidation", "Dating (sexually-oriented)/escort", "Door-to-door sales", "Drug paraphernalia", "E-Wallets", "Extended warranties", "Fake references/IDs", "Fortune teller/occult", "Gambling (online & in-person)", "Gentleman's clubs/strip clubs", "Home-based software/web/SEO", "Illegal drugs/substances", "In-house financing", "Investment advice", "Marijuana businesses (excl. Hemp)", "MSB/Virtual Currency", "Multi-level marketing", "Nutraceuticals/pseudo-pharma", "Outbound telemarketing", "Payday loans", "Penny auctions", "Pyramid schemes", "Timeshares", "Weapons/ammo — Internet/MOTO"].map(item => (
+                    <span key={item} className="text-[10px] text-muted-foreground py-0.5">• {item}</span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-amber-500 mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" />Restricted — Requires Extra Documentation</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-0.5">
+                  {["Alarm services", "Auctions (online/house)", "Background checks", "Buying clubs", "Call centers (B2B)", "Collectibles/coins", "Consulting businesses", "Direct marketing/beauty", "Established SEO/Web Design", "Firearms & ammo (card-present)", "Furniture (future delivery)", "Gaming — online", "High risk registered", "Immigration services", "Pawn shops", "Payment facilitators", "Prepaid phone/calling cards", "Seminars", "Services fulfilled internationally", "Ticket brokers", "Travel clubs/agents/tours", "Unattended POS", "Web hosting (well-established)"].map(item => (
+                    <span key={item} className="text-[10px] text-muted-foreground py-0.5">• {item}</span>
+                  ))}
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground/60">Exception policies available: Direct Marketing, E-Cig Vape, Firearm, Payment Facilitator, Pharmacy, Travel. Contact PaybotX for waivers on established businesses.</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {filteredLeads.length === 0 ? (
@@ -5905,39 +5953,38 @@ function InboxTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold flex items-center gap-2"><Mail className="w-5 h-5 text-primary" />Email</h2>
-          <div className="flex items-center gap-2 mt-1">
-            {emailAccounts.length > 0 ? (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <button onClick={() => setActiveAccount("all")} className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${activeAccount === "all" ? "bg-primary/15 text-primary ring-1 ring-primary/30" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}>
-                  All Accounts
-                </button>
-                {emailAccounts.map(acct => (
-                  <button key={acct.id} onClick={() => setActiveAccount(acct.address)} className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${activeAccount === acct.address ? "ring-1 ring-offset-1" : "hover:opacity-80"}`} style={{ backgroundColor: activeAccount === acct.address ? acct.color + "20" : acct.color + "10", color: acct.color, ...(activeAccount === acct.address ? { ringColor: acct.color } : {}) }}>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: acct.color }} />
-                    {acct.display_name || acct.address.split("@")[0]}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">contact@techsavvyhawaii.com</p>
-            )}
-          </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}><Settings className="w-4 h-4 mr-1" />Config</Button>
           <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)}><FileText className="w-4 h-4 mr-1" />Templates</Button>
           <Button variant="outline" size="sm" onClick={() => setShowOutreach(true)}><Zap className="w-4 h-4 mr-1" />Outreach</Button>
           <Button size="sm" onClick={() => setShowCompose(true)}><Plus className="w-4 h-4 mr-1" />Compose</Button>
         </div>
       </div>
 
+      {/* Account Tabs — Gmail style */}
+      {emailAccounts.length > 0 && (
+        <div className="flex items-center gap-0 border-b border-border/50 -mb-2">
+          <button onClick={() => setActiveAccount("all")} className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${activeAccount === "all" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`}>
+            <Mail className="w-3.5 h-3.5" />All Mail
+          </button>
+          {emailAccounts.map(acct => (
+            <button key={acct.id} onClick={() => setActiveAccount(activeAccount === acct.address ? "all" : acct.address)} className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${activeAccount === acct.address ? "border-current" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`} style={activeAccount === acct.address ? { color: acct.color, borderColor: acct.color } : {}}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: acct.color }} />
+              {acct.display_name || acct.address.split("@")[0]}
+            </button>
+          ))}
+          <div className="flex-1" />
+          <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground" onClick={() => setShowConfig(true)}><Settings className="w-3 h-3 mr-1" />Email Settings</Button>
+        </div>
+      )}
+
       {/* Email enabled status banner */}
       {emailConfig && !emailConfig.enabled && (
         <Card className="border-yellow-500/30 bg-yellow-500/5">
           <CardContent className="p-3 flex items-center gap-3">
             <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />
-            <p className="text-xs flex-1">Email sending is disabled. <span className="text-muted-foreground">Enable in Config for outreach, auto-replies, and inbox replies.</span></p>
-            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowConfig(true)}>Configure</Button>
+            <p className="text-xs flex-1">Email sending is disabled. <span className="text-muted-foreground">Enable in Email Settings for outreach, auto-replies, and inbox replies.</span></p>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowConfig(true)}>Email Settings</Button>
           </CardContent>
         </Card>
       )}
@@ -6017,32 +6064,7 @@ function InboxTab() {
             </button>
           )}
 
-          {/* Account Legend */}
-          {emailAccounts.length > 0 && (
-            <>
-              <div className="pt-3 pb-1 px-3"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Accounts</span></div>
-              {emailAccounts.map(acct => {
-                const isActive = activeAccount === acct.address;
-                return (
-                  <button
-                    key={acct.id}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg transition-colors ${isActive ? "font-medium" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
-                    style={isActive ? { backgroundColor: acct.color + "15", color: acct.color } : {}}
-                    onClick={() => setActiveAccount(isActive ? "all" : acct.address)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acct.color }} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-medium truncate">{acct.display_name}</p>
-                        <p className="text-[9px] text-muted-foreground truncate">{acct.address}</p>
-                      </div>
-                    </div>
-                    {acct.description && <p className="text-[9px] text-muted-foreground/60 mt-0.5 pl-[18px] leading-tight">{acct.description}</p>}
-                  </button>
-                );
-              })}
-            </>
-          )}
+          {/* Account Legend removed — accounts are now tabs at top */}
         </div>
 
         {/* ── Thread List ── */}
