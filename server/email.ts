@@ -35,6 +35,7 @@ interface SendEmailOptions {
   leadId?: string;
   source?: string;
   contactName?: string;
+  fromAlias?: string;
 }
 
 export async function sendEmail(opts: SendEmailOptions): Promise<{ success: boolean; messageId?: string; threadId?: string; error?: string }> {
@@ -50,14 +51,16 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ success: bool
     return { success: false, error: "Email sending is disabled" };
   }
 
+  const fromEmail = opts.fromAlias || config.fromEmail;
+
   try {
     const { data, error } = await resend.emails.send({
-      from: `${config.fromName} <${config.fromEmail}>`,
+      from: `${config.fromName} <${fromEmail}>`,
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
       text: opts.text,
-      replyTo: opts.replyTo || config.fromEmail,
+      replyTo: opts.replyTo || fromEmail,
     });
 
     if (error) {
@@ -79,6 +82,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ success: bool
         contactName: opts.contactName || "",
         source: opts.source || "outreach",
         status: "open",
+        emailAccount: fromEmail,
         unread: false,
         lastMessageAt: now,
         createdAt: now,
@@ -94,7 +98,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ success: bool
       id: randomUUID(),
       threadId,
       direction: "outbound",
-      fromEmail: config.fromEmail,
+      fromEmail,
       fromName: config.fromName,
       toEmail: opts.to,
       subject: opts.subject,
@@ -108,7 +112,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ success: bool
     // Forward copy if configured
     if (config.forwardCopyTo) {
       await resend.emails.send({
-        from: `${config.fromName} <${config.fromEmail}>`,
+        from: `${config.fromName} <${fromEmail}>`,
         to: config.forwardCopyTo,
         subject: `[Copy] ${opts.subject}`,
         html: `<p><em>Sent to: ${opts.to}</em></p><hr/>${opts.html}`,

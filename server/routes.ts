@@ -155,6 +155,7 @@ async function logToInbox(opts: {
   aiIntent?: string;
   aiPriority?: string;
   leadId?: string;
+  emailAccount?: string;
 }) {
   try {
     const now = new Date().toISOString();
@@ -174,6 +175,7 @@ async function logToInbox(opts: {
       aiIntent: opts.aiIntent || "",
       aiPriority: opts.aiPriority || "normal",
       aiSentiment: "neutral",
+      emailAccount: opts.emailAccount || "contact@techsavvyhawaii.com",
       unread: true,
       lastMessageAt: now,
       createdAt: now,
@@ -3408,10 +3410,12 @@ Return ONLY valid JSON, no other text.`,
   app.get("/api/email/threads", requireAdminSession, async (req, res) => {
     const folder = (req.query.folder as string) || "";
     const starred = req.query.starred === "true";
+    const account = (req.query.account as string) || "";
     
     let conditions: any[] = [];
     if (folder) conditions.push(eq(schema.emailThreads.folder, folder));
     if (starred) conditions.push(eq(schema.emailThreads.starred, true));
+    if (account) conditions.push(eq(schema.emailThreads.emailAccount, account));
     
     const rows = conditions.length > 0
       ? await db.select().from(schema.emailThreads).where(and(...conditions)).orderBy(desc(schema.emailThreads.lastMessageAt))
@@ -3513,11 +3517,11 @@ Return ONLY valid JSON, no other text.`,
   // ─── Send Email (Reply from Inbox) ────────────────────────────────
 
   app.post("/api/email/send", requireAdminSession, async (req, res) => {
-    const { to, subject, html, text, threadId, leadId, contactName } = req.body;
+    const { to, subject, html, text, threadId, leadId, contactName, fromAlias } = req.body;
     if (!to || !subject || !html) {
       return res.status(400).json({ error: "to, subject, and html are required" });
     }
-    const result = await sendEmail({ to, subject, html, text, threadId, leadId, contactName });
+    const result = await sendEmail({ to, subject, html, text, threadId, leadId, contactName, fromAlias });
     if (!result.success) {
       return res.status(500).json({ error: result.error });
     }
@@ -4063,8 +4067,10 @@ Return ONLY valid JSON, no other text.`,
 
   // ─── Email Stats for Dashboard ────────────────────────────────────
 
-  app.get("/api/email/stats", requireAdminSession, async (_req, res) => {
-    const threads = await db.select().from(schema.emailThreads);
+  app.get("/api/email/stats", requireAdminSession, async (req, res) => {
+    const account = (req.query.account as string) || "";
+    const allThreads = await db.select().from(schema.emailThreads);
+    const threads = account ? allThreads.filter(t => t.emailAccount === account) : allThreads;
     const total = threads.length;
     const unread = threads.filter(t => t.unread).length;
     const starred = threads.filter(t => t.starred).length;
@@ -4089,6 +4095,51 @@ Return ONLY valid JSON, no other text.`,
     }
 
     res.json({ total, unread, starred, outreach, replies, directInbound, contactForm, folders });
+  });
+
+  // ─── Email Accounts ─────────────────────────────────────────────────
+
+  app.get("/api/email/accounts", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.emailAccounts).orderBy(asc(schema.emailAccounts.sortOrder));
+    res.json(rows);
+  });
+
+  app.post("/api/email/accounts", requireAdminSession, async (req, res) => {
+    const { address, displayName, description, color, icon } = req.body;
+    if (!address) return res.status(400).json({ error: "Email address required" });
+    const existing = await db.select().from(schema.emailAccounts).where(eq(schema.emailAccounts.address, address));
+    if (existing.length > 0) return res.status(409).json({ error: "Account already exists" });
+    const maxOrder = await db.select({ max: sql<number>`COALESCE(MAX(sort_order), -1)` }).from(schema.emailAccounts);
+    const id = `acct-${randomUUID().slice(0, 8)}`;
+    const now = new Date().toISOString();
+    const [row] = await db.insert(schema.emailAccounts).values({
+      id,
+      address,
+      displayName: displayName || address.split("@")[0],
+      description: description || "",
+      color: color || "#3B82F6",
+      icon: icon || "mail",
+      sortOrder: (maxOrder[0]?.max ?? -1) + 1,
+      isDefault: false,
+      createdAt: now,
+    }).returning();
+    await logActivity("email_account_added", `Added email account ${address}`, `Account: ${displayName || address}`);
+    res.json(row);
+  });
+
+  app.patch("/api/email/accounts/:id", requireAdminSession, async (req, res) => {
+    const updateData = pickColumns(schema.emailAccounts, req.body);
+    const [updated] = await db.update(schema.emailAccounts).set(updateData).where(eq(schema.emailAccounts.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Account not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/email/accounts/:id", requireAdminSession, async (req, res) => {
+    const [acct] = await db.select().from(schema.emailAccounts).where(eq(schema.emailAccounts.id, req.params.id as string));
+    if (!acct) return res.status(404).json({ error: "Account not found" });
+    if (acct.isDefault) return res.status(400).json({ error: "Cannot delete default account" });
+    await db.delete(schema.emailAccounts).where(eq(schema.emailAccounts.id, req.params.id as string));
+    res.json({ success: true });
   });
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

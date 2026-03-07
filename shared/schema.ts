@@ -402,8 +402,23 @@ export const emailThreads = pgTable("email_threads", {
   aiIntent: text("ai_intent").notNull().default(""), // new_lead | support_request | billing_question | spam | general_inquiry
   aiPriority: text("ai_priority").notNull().default("normal"), // urgent | high | normal | low
   aiSentiment: text("ai_sentiment").notNull().default("neutral"), // positive | neutral | negative | angry
+  emailAccount: text("email_account").notNull().default("contact@techsavvyhawaii.com"),
   unread: boolean("unread").notNull().default(true),
   lastMessageAt: text("last_message_at").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+// ─── Email Accounts ─────────────────────────────────────────────────
+
+export const emailAccounts = pgTable("email_accounts", {
+  id: text("id").primaryKey(),
+  address: text("address").notNull().unique(),
+  displayName: text("display_name").notNull().default(""),
+  description: text("description").notNull().default(""),
+  color: text("color").notNull().default("#3B82F6"),
+  icon: text("icon").notNull().default("mail"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isDefault: boolean("is_default").notNull().default(false),
   createdAt: text("created_at").notNull(),
 });
 
@@ -610,6 +625,7 @@ export type MerchantApplication = typeof merchantApplications.$inferSelect;
 export type InsertMerchantApplication = z.infer<typeof insertMerchantApplicationSchema>;
 export type EmailThread = typeof emailThreads.$inferSelect;
 export type EmailMessage = typeof emailMessages.$inferSelect;
+export type EmailAccount = typeof emailAccounts.$inferSelect;
 export type OutreachTemplate = typeof outreachTemplates.$inferSelect;
 export type CallScript = typeof callScripts.$inferSelect;
 export type ResendConfig = typeof resendConfig.$inferSelect;
