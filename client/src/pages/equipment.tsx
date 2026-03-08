@@ -125,7 +125,7 @@ export default function EquipmentPage() {
               <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">FREE.</span>
             </motion.h1>
             <motion.p className="text-base sm:text-lg text-muted-foreground mb-3 max-w-xl mx-auto" variants={fadeUp}>
-              We're launching in Hawaii and want to earn your business. Pick any terminal or POS system below — <span className="text-foreground font-semibold">it's on us</span>. No catch, no lease, you own it.
+              We're launching in Hawaii and want to earn your business. Pick any terminal or POS system below — <span className="text-foreground font-semibold">it's on us</span>. No catch, no lease payments, no upfront cost.
             </motion.p>
             <motion.p className="text-sm text-muted-foreground/70 mb-8 max-w-md mx-auto flex items-center justify-center gap-1.5" variants={fadeUp}>
               <Clock className="w-3.5 h-3.5" /> Offer available while supplies last
@@ -138,40 +138,6 @@ export default function EquipmentPage() {
                 <a href="tel:8087675460"><Phone className="w-4 h-4" /> (808) 767-5460</a>
               </Button>
             </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* What You Get */}
-      <section className="py-10 sm:py-14">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <Card className="border-primary/30 bg-primary/5 ring-1 ring-primary/20">
-              <CardContent className="p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center"><Gift className="w-6 h-6 text-primary" /></div>
-                  <div>
-                    <h3 className="font-bold text-lg">Here's the deal</h3>
-                    <p className="text-xs text-muted-foreground">What every new TechSavvy merchant gets</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                  {[
-                    { icon: CreditCard, text: "Free terminal or POS system of your choice" },
-                    { icon: ShieldCheck, text: "Zero credit card processing fees — ever" },
-                    { icon: Gift, text: "No contracts, no monthly fees, no cancellation fees" },
-                    { icon: Monitor, text: "Free setup, programming, and training" },
-                    { icon: Phone, text: "Local Hawaii support — real people, not a call center" },
-                    { icon: Star, text: "You own the equipment — it's yours to keep" },
-                  ].map(item => (
-                    <div key={item.text} className="flex items-start gap-2.5">
-                      <item.icon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                      <span>{item.text}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </motion.div>
         </div>
       </section>
@@ -267,7 +233,7 @@ export default function EquipmentPage() {
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
             <motion.div className="text-center mb-10" variants={fadeUp}>
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Pick your equipment</h2>
-              <p className="text-muted-foreground">All free during our launch promotion. You own it — no lease.</p>
+              <p className="text-muted-foreground">All free during our launch promotion. No upfront cost, no lease payments.</p>
             </motion.div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {FEATURED_DEVICES.map((device) => (

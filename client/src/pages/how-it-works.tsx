@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import {
   CreditCard, Check, ArrowRight, Clock, DollarSign, ShieldCheck,
-  Zap, Phone, FileText, BarChart3, Users, Headphones,
+  Zap, Phone, FileText, BarChart3, Users, Headphones, ChevronDown, HelpCircle,
 } from "lucide-react";
+import { useState } from "react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { useSEO } from "@/hooks/useSEO";
@@ -15,23 +16,41 @@ const stepChoosePlan = "/images/step-choose-plan.png";
 const stepSetup = "/images/step-setup.png";
 const stepKeepProfits = "/images/step-keep-revenue.png";
 
+function FAQAccordion({ items }: { items: { q: string; a: string }[] }) {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <div className="space-y-3">
+      {items.map((faq, i) => (
+        <Card key={i} className="border-border/50 overflow-hidden cursor-pointer" onClick={() => setOpen(open === i ? null : i)}>
+          <CardContent className="p-0">
+            <button className="w-full p-5 flex items-center justify-between text-left">
+              <span className="font-bold text-foreground pr-4">{faq.q}</span>
+              <ChevronDown className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform ${open === i ? "rotate-180" : ""}`} />
+            </button>
+            {open === i && (
+              <div className="px-5 pb-5 -mt-1">
+                <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export default function HowItWorksPage() {
   useSEO({
-    title: "How Zero-Fee Credit Card Processing Works | Cash Discount Program | TechSavvy Hawaii",
-    description: "Apply in 3 minutes, get approved in 24 hours, start saving immediately. TechSavvy handles setup, training, and signage. Zero-fee payment processing for Hawaii businesses.",
-    keywords: "how credit card processing works Hawaii, cash discount program setup, eliminate credit card fees steps, payment processing setup Hawaii, how to stop paying credit card fees, card processing setup Hawaii",
+    title: "How It Works & FAQ | Zero-Fee Processing | TechSavvy Hawaii",
+    description: "Apply in 3 minutes, get approved in 24 hours, start saving immediately. Plus answers to every question about cash discount programs, equipment, fees, and setup.",
+    keywords: "how credit card processing works Hawaii, cash discount program FAQ, eliminate credit card fees, payment processing setup Hawaii, credit card processing FAQ",
     canonical: "https://techsavvyhawaii.com/how-it-works",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "HowTo",
-      "name": "How to Eliminate Credit Card Processing Fees for Your Hawaii Business",
-      "description": "Three steps to eliminate processing fees with TechSavvy Hawaii's cash discount program.",
-      "step": [
-        { "@type": "HowToStep", "position": 1, "name": "Tell Us About Your Business", "text": "Fill out a quick application or give us a call. We break down every fee your current processor is charging." },
-        { "@type": "HowToStep", "position": 2, "name": "We Take Care of Everything", "text": "Our local Hawaii team delivers your free terminal, installs signage, and trains your staff." },
-        { "@type": "HowToStep", "position": 3, "name": "You Stop Paying Fees", "text": "Accept payments with $0 processing fees from day one. No contracts, cancel anytime." },
-      ],
+      "@type": "FAQPage",
+      "name": "How It Works & FAQ — TechSavvy Hawaii",
+      "url": "https://techsavvyhawaii.com/how-it-works",
     },
   });
 
@@ -54,7 +73,7 @@ export default function HowItWorksPage() {
       title: "We Take Care of Everything",
       description: "Once you're approved, our local Hawai'i team does all the heavy lifting. We show up, swap out your old terminal, put up the required signage, and walk your staff through how it all works. You don't have to figure out a single thing.",
       details: [
-        "Free terminal delivered and programmed on-site",
+        "Free terminal or POS delivered and programmed on-site",
         "Compliant signage installed — we bring everything",
         "Hands-on training so your team is confident from day one",
       ],
@@ -65,7 +84,7 @@ export default function HowItWorksPage() {
     {
       num: "03",
       title: "You Stop Paying Fees. Period.",
-      description: "From the moment you go live, processing fees are no longer your problem. Card customers see a small surcharge at the terminal. Cash customers pay the listed price. Either way, you keep every single dollar. And if it's ever not working for you — walk away anytime. No contract. No cancellation fee. No drama.",
+      description: "From the moment you go live, processing fees are no longer your problem. Card customers see a small surcharge at the terminal. Cash customers pay the listed price. Either way, you keep every single dollar. And if it's ever not working for you — walk away anytime. No contract. No cancellation fee.",
       details: [
         "Zero processing fees from day one — and every day after",
         "No monthly fees, no PCI fees, no hidden charges",
@@ -79,11 +98,35 @@ export default function HowItWorksPage() {
 
   const features = [
     { icon: Clock, title: "3–7 Day Setup", description: "Most businesses are live and processing within a week." },
-    { icon: ShieldCheck, title: "Fully Compliant", description: "Cash Back is legal in all 50 states. We handle all disclosures." },
+    { icon: ShieldCheck, title: "Fully Compliant", description: "Legal in all 50 states. We handle all disclosures and signage." },
     { icon: CreditCard, title: "Accept All Cards", description: "Chip, swipe, tap, Apple Pay, Google Pay — all accepted." },
     { icon: BarChart3, title: "Real-Time Dashboard", description: "Track every transaction, deposit, and refund from your phone." },
     { icon: Headphones, title: "Local Hawaii Support", description: "Real people based in Hawaii. Call, text, or email anytime." },
     { icon: Users, title: "No Contracts", description: "We earn your business every month. Leave whenever you want." },
+  ];
+
+  const generalFAQs = [
+    { q: "How much can I save with TechSavvy?", a: "With our Cash Back program, you can eliminate up to 100% of processing fees. The average Hawaii business saves $800–$2,000+ per month. We'll show you your exact savings with a free statement analysis." },
+    { q: "How does Cash Back work?", a: "We set up your system to offer a cash price and a card price. Card-paying customers see a small surcharge (typically 3–4%) added at the terminal before they confirm. Cash customers pay the listed price. The merchant keeps 100% of every transaction — card or cash." },
+    { q: "Is Cash Back legal in Hawaii?", a: "Yes — 100% legal in Hawaii and all 50 states. The FTC and all major card networks (Visa, Mastercard, Amex, Discover) allow surcharges when properly disclosed. TechSavvy handles all required signage and compliance for you." },
+    { q: "Will my customers mind the surcharge?", a: "Most don't. Card surcharges are now mainstream — gas stations, restaurants, and retailers all do it. The terminal shows the amount clearly before the customer confirms. Many customers won't even notice or will simply pay with cash." },
+    { q: "What kind of businesses do you work with?", a: "We serve restaurants, retail stores, auto repair shops, salons, medical offices, service providers, food trucks, and more — anyone who processes card payments. We also work with high-risk merchants (CBD, vape, firearms, gaming, nutraceuticals)." },
+  ];
+
+  const pricingFAQs = [
+    { q: "Are there any contracts or sign-up fees?", a: "No contracts, no sign-up fees, no hidden costs. Simple, transparent pricing. You can cancel anytime with zero penalties." },
+    { q: "Is the equipment really free?", a: "Yes — during our Hawaii launch promotion, all equipment is free. Terminals and POS systems are provided at no cost for the life of your account. Equipment remains TechSavvy property and is returned if you ever leave the program." },
+    { q: "Are there any monthly fees?", a: "TechSavvy charges zero monthly fees — no statement fees, no PCI fees, no gateway fees, no batch fees. Note: Clover POS devices have a separate monthly software fee billed by Clover ($19.99–$84.99/mo depending on plan). Our Valor terminals have zero monthly fees." },
+    { q: "What about interchange fees — don't I still pay those?", a: "With Cash Back, the surcharge covers the interchange and processing costs entirely. You keep 100% of your sale amount. That's the whole point — zero fees to you." },
+    { q: "What if I want to leave TechSavvy?", a: "No problem. There's no contract and no cancellation fee. Simply return the equipment and you're done. We keep merchants by delivering value, not by trapping them." },
+  ];
+
+  const setupFAQs = [
+    { q: "How long does it take to get set up?", a: "Most businesses are fully operational within 3–7 days after approval. Our local team handles the entire setup — terminal programming, signage, and staff training." },
+    { q: "What equipment will I get?", a: "You choose: basic countertop terminal (Valor VP100), compact POS (Clover Mini), portable wireless (Clover Flex), or full POS station (Clover Solo/Duo). All free during our launch promo." },
+    { q: "Do I need to change my bank account?", a: "No. We deposit directly into your existing business bank account. Next-day funding is available for most merchants." },
+    { q: "What happens if my terminal breaks?", a: "Contact our local Hawaii support team. We'll troubleshoot remotely or replace the equipment at no cost." },
+    { q: "Can I accept online payments too?", a: "Yes. We offer online payment gateways, virtual terminals, invoicing, and payment links in addition to in-store terminals." },
   ];
 
   return (
@@ -185,7 +228,35 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* AI Statement Analysis CTA */}
+      {/* FAQ Sections */}
+      <section className="py-16 sm:py-24" id="faq">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
+          <motion.div className="text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+              <HelpCircle className="w-3 h-3 mr-1" />
+              FAQ
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Questions you're probably thinking.</h2>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h3 className="text-xl font-extrabold mb-5">General</h3>
+            <FAQAccordion items={generalFAQs} />
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h3 className="text-xl font-extrabold mb-5">Pricing & Equipment</h3>
+            <FAQAccordion items={pricingFAQs} />
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h3 className="text-xl font-extrabold mb-5">Setup & Support</h3>
+            <FAQAccordion items={setupFAQs} />
+          </motion.div>
+        </div>
+      </section>
+
+      {/* CTA */}
       <section className="py-16 sm:py-24">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
