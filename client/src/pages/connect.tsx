@@ -104,9 +104,9 @@ function ConnectHero() {
               <div className="w-10 h-10 rounded-md bg-primary/15 flex items-center justify-center shrink-0">
                 <Mail className="w-5 h-5 text-primary" />
               </div>
-              <div className="text-left">
+              <div className="text-left min-w-0">
                 <div className="text-xs text-muted-foreground">Email Us</div>
-                <div className="text-sm font-semibold text-foreground">contact@techsavvyhawaii.com</div>
+                <div className="text-sm font-semibold text-foreground truncate">contact@techsavvy<wbr />hawaii.com</div>
               </div>
             </a>
             <div className="flex items-center gap-3 p-4 rounded-lg border border-primary/10 bg-card/50" data-testid="text-connect-hours">
@@ -385,21 +385,21 @@ function ScheduleCallSection() {
           >
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
               <Calendar className="w-3 h-3 mr-1.5" />
-              Schedule a Call
+              Don't miss out
             </Badge>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-4">
-              Book a Free Consultation
+              You're Still Paying Processing Fees?
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base mb-6 leading-relaxed">
-              Schedule a one-on-one call with our team. We'll walk you through our zero-fee processing, answer your questions, and put together a personalized plan for your business.
+              Every day without our cash discount program is another day you're giving away 3–4% of every sale. Let us show you how much you're leaving on the table — and how to keep it all.
             </p>
 
             <div className="space-y-4">
               {[
-                { icon: CheckCircle, text: "Free savings analysis on your current processing fees" },
-                { icon: CheckCircle, text: "Personalized website mockup for your business" },
-                { icon: CheckCircle, text: "No commitment — just a friendly conversation" },
-                { icon: CheckCircle, text: "Same-day follow-up with your custom quote" },
+                { icon: CheckCircle, text: "Find out exactly how much you're losing every month" },
+                { icon: CheckCircle, text: "Get a free terminal shipped to your door" },
+                { icon: CheckCircle, text: "No commitment — just see what you're missing" },
+                { icon: CheckCircle, text: "Most businesses are saving within a week" },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <item.icon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
@@ -502,7 +502,7 @@ function ScheduleCallSection() {
                       </select>
                     </div>
                     <Button type="submit" size="lg" className="w-full" disabled={submitting} data-testid="button-schedule-submit">
-                      {submitting ? "Scheduling..." : "Schedule My Free Call"}
+                      {submitting ? "Scheduling..." : "Show Me What I'm Missing"}
                       {!submitting && <ArrowRight className="w-4 h-4" />}
                     </Button>
                   </form>
