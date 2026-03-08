@@ -14,7 +14,7 @@ const FEATURED_DEVICES = [
   {
     name: "Valor VP100",
     retail: "$195",
-    img: "/images/equipment/valor-vp100.jpg",
+    img: "/images/equipment/valor-vp100.png",
     desc: "Countertop terminal with EMV chip, contactless tap, and swipe. Built-in receipt printer. Perfect for any business that just needs to accept cards.",
     best: "Food trucks, small shops, service pros",
     features: ["EMV chip + tap + swipe", "Built-in receipt printer", "Cash discount ready", "Countertop or wireless"],
