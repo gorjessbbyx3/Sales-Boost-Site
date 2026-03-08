@@ -891,7 +891,7 @@ function FAQSection() {
     { q: "Is it hard to switch processors?", a: "Not at all. We handle everything — terminal, programming, signage, training. Most businesses are up and running in 3–7 days. You don't cancel your old processor until you're ready." },
     { q: "How much will I actually save?", a: "That depends on your volume, but most Hawaii businesses save $500–$3,000+ per month. We'll show you your exact number with a free statement analysis — no commitment required." },
     { q: "What if I don't like it?", a: "No contract. No cancellation fee. If it's not working for you, you can leave anytime with zero penalty. We keep businesses by saving them money, not by trapping them." },
-    { q: "Do I have to buy the terminal?", a: "No — every new merchant gets a FREE Valor VP100 terminal. If you process $10K+ per month, you qualify for a free full POS system (Clover, Pax). We ship it, set it up, and train your team." },
+    { q: "Do I have to buy the terminal?", a: "No — right now ALL equipment is free during our Hawaii launch promotion. Pick any terminal or POS system and it's yours at no cost. We ship it, set it up, and train your team. You own the equipment." },
   ];
 
   return (

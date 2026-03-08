@@ -1537,11 +1537,10 @@ function LeadsTab() {
         <CardContent className="p-3 flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-primary/15 flex items-center justify-center shrink-0"><CreditCard className="w-4 h-4 text-primary" /></div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold">Current Offers — OhanaPay Price Match</p>
+            <p className="text-xs font-semibold">Launch Promo — All Equipment FREE</p>
             <p className="text-[10px] text-muted-foreground">
-              <span className="text-primary font-medium">FREE Valor VP100 terminal</span> for all new merchants • 
-              <span className="text-primary font-medium"> FREE POS system</span> (Clover/Pax) for merchants processing <span className="font-medium">$10k+/mo</span> • 
-              Zero processing fees • No contracts
+              <span className="text-primary font-medium">ALL terminals & POS systems FREE</span> for new merchants during Hawaii launch • 
+              Zero processing fees • No contracts • No monthly fees
             </p>
           </div>
         </CardContent>
