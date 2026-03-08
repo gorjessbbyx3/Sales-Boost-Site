@@ -641,11 +641,11 @@ function CompareSection() {
           <path d="M0,60 C300,10 600,50 900,20 C1050,5 1150,30 1200,15 L1200,0 L0,0 Z" fill="hsl(var(--background))" />
         </svg>
       </div>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
           <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 text-background">
-              Why local businesses are switching.
+              See how we compare.
             </h2>
           </motion.div>
 
@@ -655,27 +655,31 @@ function CompareSection() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-background/10">
-                      <th className="text-left p-4 font-semibold text-background/60 w-[28%]"></th>
-                      <th className="text-center p-4 w-[24%] text-background/60 font-semibold">Square</th>
-                      <th className="text-center p-4 w-[24%] text-background/60 font-semibold">Clover</th>
-                      <th className="text-center p-4 w-[24%] bg-primary/20 rounded-t-lg">
+                      <th className="text-left p-4 font-semibold text-background/60 w-[22%]"></th>
+                      <th className="text-center p-4 w-[19%] text-background/60 font-semibold">Square</th>
+                      <th className="text-center p-4 w-[19%] text-background/60 font-semibold">Clover Direct</th>
+                      <th className="text-center p-4 w-[19%] text-background/60 font-semibold">OhanaPay</th>
+                      <th className="text-center p-4 w-[21%] bg-primary/20 rounded-t-lg">
                         <span className="font-bold text-primary">TechSavvy</span>
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {[
-                      { f: "Processing Fees", sq: "2.6–3.5%", cl: "2.3–3.5%", ts: "0%", big: true },
-                      { f: "Monthly Fees", sq: "$0–$60+", cl: "$14.95–$85", ts: "$0", big: true },
-                      { f: "Contracts", sq: "No", cl: "Sometimes", ts: "Never", big: false },
-                      { f: "Setup Time", sq: "Medium", cl: "Medium", ts: "Fast", big: false },
-                      { f: "Hardware Cost", sq: "$$$", cl: "$$$", ts: "Free*", big: false },
-                      { f: "Local Hawaii Support", sq: "No", cl: "No", ts: "Yes", big: true },
+                      { f: "Processing Fees", sq: "2.6–3.5%", cl: "2.3–3.5%", op: "0%", ts: "0%", big: true },
+                      { f: "Monthly Fees", sq: "$0–$60+", cl: "$14.95–$85", op: "$15/mo", ts: "$0", big: true },
+                      { f: "Free Equipment", sq: "No", cl: "No", op: "$10K+ only", ts: "ALL free", big: true },
+                      { f: "Contracts", sq: "No", cl: "Sometimes", op: "No", ts: "Never", big: false },
+                      { f: "Free Custom Website", sq: "No", cl: "No", op: "No", ts: "Yes", big: true },
+                      { f: "AI Statement Analysis", sq: "No", cl: "No", op: "No", ts: "Yes", big: false },
+                      { f: "Partner Referral Program", sq: "No", cl: "No", op: "No", ts: "Yes", big: false },
+                      { f: "Local Hawaii Support", sq: "No", cl: "No", op: "Yes", ts: "Yes", big: false },
                     ].map((r, i) => (
                       <tr key={r.f} className={`border-b border-background/10 ${i % 2 ? "bg-background/5" : ""}`}>
                         <td className="p-3 sm:p-4 font-medium text-background/70">{r.f}</td>
                         <td className="p-3 sm:p-4 text-center text-red-300/80">{r.sq}</td>
                         <td className="p-3 sm:p-4 text-center text-red-300/80">{r.cl}</td>
+                        <td className="p-3 sm:p-4 text-center text-background/60">{r.op}</td>
                         <td className={`p-3 sm:p-4 text-center bg-primary/20 ${r.big ? "text-primary font-bold text-base sm:text-lg" : "text-primary font-semibold"}`}>{r.ts}</td>
                       </tr>
                     ))}
@@ -683,7 +687,7 @@ function CompareSection() {
                 </table>
               </div>
               <div className="px-4 py-2 text-[10px] text-background/40 border-t border-background/10">
-                *Free terminal for businesses processing $5K+/month
+                All equipment free during Hawaii launch promotion. Free custom website included for every TechSavvy merchant.
               </div>
             </Card>
           </motion.div>
