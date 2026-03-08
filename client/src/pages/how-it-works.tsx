@@ -3,9 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import {
-  CreditCard, Check, ArrowRight, Clock, DollarSign, ShieldCheck,
-  Zap, Phone, FileText, BarChart3, Users, Headphones, ChevronDown, HelpCircle,
-  Receipt, BadgeDollarSign,
+  CreditCard, Check, ArrowRight, DollarSign, ShieldCheck,
+  Zap, Phone, FileText, BarChart3, Users, Headphones, ChevronDown,
+  Banknote, Building, ArrowDown, Smartphone,
 } from "lucide-react";
 import { useState } from "react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
@@ -39,19 +39,19 @@ function FAQAccordion({ items }: { items: { q: string; a: string }[] }) {
 export default function HowItWorksPage() {
   useSEO({
     title: "How the Cash Discount Program Works | TechSavvy Hawaii",
-    description: "See how Hawaii businesses eliminate credit card processing fees with TechSavvy's cash discount program. Simple 3-step setup, free equipment, no contracts.",
-    keywords: "cash discount program Hawaii, how to eliminate credit card fees, zero processing fees, dual pricing Hawaii",
+    description: "See how Hawaii businesses eliminate credit card processing fees. Customer pays with card, service fee covers processing, you keep 100%. Next-day deposits.",
+    keywords: "cash discount program Hawaii, how to eliminate credit card fees, surcharge program, dual pricing Hawaii",
     canonical: "https://techsavvyhawaii.com/how-it-works",
   });
 
   const faqs = [
-    { q: "Is this actually legal?", a: "Yes — 100% legal in Hawaii and all 50 states. Visa, Mastercard, and the FTC all allow cash discount / dual pricing programs when properly disclosed. We handle all compliance and signage for you." },
-    { q: "Will my customers get mad about the surcharge?", a: "Most don't even notice. It's the same model gas stations have used for years — cash price vs. card price. It's now standard at restaurants, salons, and retail stores across Hawaii." },
-    { q: "Is it hard to switch processors?", a: "Not at all. We handle everything — equipment, programming, signage, training. Most businesses are up and running in 3–7 days. You don't cancel your old processor until you're ready." },
-    { q: "How much will I actually save?", a: "That depends on your volume, but most Hawaii businesses save $500–$3,000+ per month. Upload your statement to our free analysis tool and we'll show you your exact number — no commitment required." },
-    { q: "What if I don't like it?", a: "No contract. No cancellation fee. If it's not working for you, you can leave anytime with zero penalty." },
-    { q: "Do I have to buy the terminal?", a: "No — all equipment is free during our Hawaii launch promotion. Pick any terminal or POS system and there's no cost to you. We ship it, set it up, and train your team." },
-    { q: "What kind of businesses do you work with?", a: "Restaurants, retail stores, auto repair, salons, medical offices, food trucks — anyone who accepts card payments. We also work with high-risk merchants." },
+    { q: "Is this actually legal?", a: "Yes — 100% legal in Hawaii and all 50 states. Visa, Mastercard, and the FTC all allow cash discount and surcharge programs when properly disclosed. We handle all compliance and signage for you." },
+    { q: "What's the difference between cash discount and surcharge?", a: "Cash discount: your prices include a small service fee, and cash customers get a discount. Surcharge: your prices are the base price, and card customers pay a small surcharge. Same result — you keep 100% either way. We set up whichever model fits your business best." },
+    { q: "Will my customers get mad?", a: "Most don't even notice. It's the same model gas stations have used for years. The terminal clearly shows the amount before the customer confirms. Many just pay with cash instead — which saves you even more." },
+    { q: "How much will I actually save?", a: "Depends on your volume. Most Hawaii businesses save $500–$3,000+ per month. Upload your statement to our free analysis tool and we'll show you your exact number." },
+    { q: "Is it hard to switch processors?", a: "Not at all. We handle everything — equipment, programming, signage, training. Most businesses are up and running in 3–7 days." },
+    { q: "What if I don't like it?", a: "No contract. No cancellation fee. Leave anytime with zero penalty." },
+    { q: "Do I have to buy the terminal?", a: "No — all equipment is free during our Hawaii launch promotion. We ship it, set it up, and train your team." },
   ];
 
   return (
@@ -63,87 +63,144 @@ export default function HowItWorksPage() {
           <motion.div variants={staggerContainer} initial="hidden" animate="visible">
             <motion.div variants={fadeUp}>
               <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-                <Zap className="w-3 h-3 mr-1" /> Cash Discount Program
+                <Zap className="w-3 h-3 mr-1" /> Zero Processing Fees
               </Badge>
             </motion.div>
             <motion.h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight mb-5" variants={fadeUp}>
-              How You <span className="text-primary">Stop Paying</span> Processing Fees
+              How You <span className="text-primary">Keep 100%</span> of Every Sale
             </motion.h1>
             <motion.p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto" variants={fadeUp}>
-              Right now, every time a customer swipes their card, you lose 2–4% of that sale to processing fees. Our cash discount program eliminates that entirely. Here's how it works.
+              Right now, every card swipe costs you 2–4%. Our cash discount program makes that someone else's problem — not yours.
             </motion.p>
           </motion.div>
         </div>
       </section>
 
-      {/* How Cash Discount Works */}
-      <section className="py-14 sm:py-20">
+      {/* The Flow — Customer pays → You keep 100% → Next day deposit */}
+      <section className="py-12 sm:py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }}>
+            <motion.div className="text-center mb-10" variants={fadeUp}>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">Here's what happens at checkout</h2>
+            </motion.div>
+
+            {/* 3-step visual flow */}
+            <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto mb-12" variants={fadeUp}>
+              <Card className="border-primary/20 bg-primary/5 text-center">
+                <CardContent className="p-6">
+                  <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-3">
+                    <CreditCard className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="font-bold mb-1">Customer Pays</h3>
+                  <p className="text-xs text-muted-foreground">Card or cash — their choice. Card customers see a small service fee. Cash customers get a discount.</p>
+                </CardContent>
+              </Card>
+              <Card className="border-primary/20 bg-primary/5 text-center">
+                <CardContent className="p-6">
+                  <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-3">
+                    <DollarSign className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="font-bold mb-1">You Keep 100%</h3>
+                  <p className="text-xs text-muted-foreground">The service fee covers all processing costs. You keep the full sale amount — every dollar, every time.</p>
+                </CardContent>
+              </Card>
+              <Card className="border-primary/20 bg-primary/5 text-center">
+                <CardContent className="p-6">
+                  <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-3">
+                    <Building className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="font-bold mb-1">Deposited Next Day</h3>
+                  <p className="text-xs text-muted-foreground">100% of your sales deposited directly into your bank account. Next business day.</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Receipt Comparison — The actual receipt image */}
+      <section className="py-12 sm:py-20 bg-card/50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <div className="text-center mb-12">
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">The Cash Discount Model</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">Your prices stay the same. Customers who pay with a card see a small service fee added at checkout. Customers who pay cash get the listed price. Either way — you keep 100%.</p>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">See it on the receipt</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">Card payments include a small service fee that covers processing. Cash payments get that fee removed as a discount. You keep the full subtotal either way.</p>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {/* Before */}
-              <Card className="border-red-500/20 bg-red-500/5">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center"><Receipt className="w-5 h-5 text-red-400" /></div>
-                    <div>
-                      <p className="font-bold text-red-400">Before TechSavvy</p>
-                      <p className="text-xs text-muted-foreground">Traditional processing</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between p-2 rounded bg-background/50"><span>Customer pays</span><span className="font-semibold">$100.00</span></div>
-                    <div className="flex justify-between p-2 rounded bg-red-500/10"><span className="text-red-400">Processing fee (3.5%)</span><span className="font-semibold text-red-400">-$3.50</span></div>
-                    <div className="flex justify-between p-2 rounded bg-red-500/10"><span className="text-red-400">PCI compliance fee</span><span className="font-semibold text-red-400">-$0.15</span></div>
-                    <div className="flex justify-between p-2 rounded bg-red-500/10"><span className="text-red-400">Batch / statement fees</span><span className="font-semibold text-red-400">-$0.10</span></div>
-                    <div className="border-t pt-2 flex justify-between font-bold"><span>You actually keep</span><span className="text-red-400">$96.25</span></div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-3">That's $3.75 gone on a single $100 sale. Multiply by hundreds of transactions a month.</p>
-                </CardContent>
-              </Card>
-
-              {/* After */}
-              <Card className="border-primary/20 bg-primary/5 ring-2 ring-primary/20">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><BadgeDollarSign className="w-5 h-5 text-primary" /></div>
-                    <div>
-                      <p className="font-bold text-primary">With TechSavvy</p>
-                      <p className="text-xs text-muted-foreground">Cash discount program</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between p-2 rounded bg-background/50"><span>Your listed price</span><span className="font-semibold">$100.00</span></div>
-                    <div className="flex justify-between p-2 rounded bg-primary/10"><span className="text-primary">Card customer pays</span><span className="font-semibold text-primary">$103.99</span></div>
-                    <div className="flex justify-between p-2 rounded bg-background/50"><span>Cash customer pays</span><span className="font-semibold">$100.00</span></div>
-                    <div className="flex justify-between p-2 rounded bg-primary/10"><span className="text-primary">Processing fee</span><span className="font-semibold text-primary">$0.00</span></div>
-                    <div className="border-t pt-2 flex justify-between font-bold"><span>You keep</span><span className="text-primary">$100.00</span></div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-3">The card surcharge covers the processing cost. You keep every dollar of every sale — card or cash.</p>
-                </CardContent>
-              </Card>
+            <div className="max-w-3xl mx-auto">
+              <img
+                src="/images/cash-discount-receipt.jpeg"
+                alt="Cash discount receipt comparison — credit card payment with service fee vs cash payment with discount applied"
+                className="w-full rounded-xl border border-border/30 shadow-lg"
+                loading="lazy"
+              />
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* 3 Steps */}
-      <section className="py-14 sm:py-20 bg-card/50">
+      {/* Two Options — Cash Discount vs Surcharge */}
+      <section className="py-12 sm:py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }}>
-            <motion.div className="text-center mb-12" variants={fadeUp}>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">Getting Started Takes 3 Steps</h2>
+            <motion.div className="text-center mb-10" variants={fadeUp}>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">Two programs, same result: <span className="text-primary">you pay $0</span></h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">We'll help you pick the model that fits your business best.</p>
+            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              <motion.div variants={fadeUp}>
+                <Card className="h-full border-border/50">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><Banknote className="w-5 h-5 text-primary" /></div>
+                      <h3 className="font-bold text-lg">Cash Discount</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">Your listed prices include a small service fee. Customers who pay cash get a discount (the fee is removed). Card customers pay the listed price.</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2"><Check className="w-4 h-4 text-primary shrink-0" />Most popular option</div>
+                      <div className="flex items-center gap-2"><Check className="w-4 h-4 text-primary shrink-0" />Works for all card brands</div>
+                      <div className="flex items-center gap-2"><Check className="w-4 h-4 text-primary shrink-0" />Encourages cash payments</div>
+                      <div className="flex items-center gap-2"><Check className="w-4 h-4 text-primary shrink-0" />Simple signage — we provide it</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              <motion.div variants={fadeUp}>
+                <Card className="h-full border-border/50">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><CreditCard className="w-5 h-5 text-primary" /></div>
+                      <h3 className="font-bold text-lg">Surcharge</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">Your listed prices are the base price. Card customers see a small surcharge added at the terminal. Cash customers pay the listed price as-is.</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2"><Check className="w-4 h-4 text-primary shrink-0" />Simpler pricing display</div>
+                      <div className="flex items-center gap-2"><Check className="w-4 h-4 text-primary shrink-0" />Surcharge shown before confirmation</div>
+                      <div className="flex items-center gap-2"><Check className="w-4 h-4 text-primary shrink-0" />FTC & card brand compliant</div>
+                      <div className="flex items-center gap-2"><Check className="w-4 h-4 text-primary shrink-0" />Great for service businesses</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+            <motion.p className="text-center text-xs text-muted-foreground mt-6 max-w-xl mx-auto" variants={fadeUp}>
+              Both programs are 100% legal and compliant. We handle all signage, terminal programming, and disclosures. You just run your business.
+            </motion.p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Getting Started Steps */}
+      <section className="py-12 sm:py-20 bg-card/50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }}>
+            <motion.div className="text-center mb-10" variants={fadeUp}>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Getting Started Takes 3 Steps</h2>
             </motion.div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { num: "01", icon: FileText, title: "Tell us about your business", desc: "Fill out a quick application or give us a call. We'll look at your current statement and show you exactly how much you're losing to hidden fees every month." },
-                { num: "02", icon: Zap, title: "We handle everything", desc: "Our local Hawaii team delivers your free equipment, installs the compliant signage, and trains your staff. You don't figure out a single thing." },
-                { num: "03", icon: DollarSign, title: "You stop paying fees", desc: "From day one, processing fees are no longer your problem. Card customers pay a small surcharge. Cash customers pay the listed price. You keep 100%." },
+                { num: "01", icon: FileText, title: "Tell us about your business", desc: "Quick application or phone call. We'll review your current statement and show you what you're really paying in hidden fees." },
+                { num: "02", icon: Zap, title: "We handle everything", desc: "Our local team delivers your free equipment, installs signage, and trains your staff. You don't figure out a single thing." },
+                { num: "03", icon: DollarSign, title: "You stop paying fees", desc: "Processing fees are no longer your problem. 100% of your sales go into your bank account. Next business day." },
               ].map((step) => (
                 <motion.div key={step.num} variants={fadeUp}>
                   <Card className="h-full border-border/50">
@@ -165,41 +222,8 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-14 sm:py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }}>
-            <motion.div className="text-center mb-10" variants={fadeUp}>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">What You Get</h2>
-            </motion.div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[
-                { icon: Clock, title: "3–7 Day Setup", desc: "Most businesses are live and processing within a week." },
-                { icon: ShieldCheck, title: "Fully Compliant", desc: "Legal in all 50 states. We handle all disclosures and signage." },
-                { icon: CreditCard, title: "Accept All Cards", desc: "Chip, swipe, tap, Apple Pay, Google Pay — all accepted." },
-                { icon: BarChart3, title: "Real-Time Dashboard", desc: "Track every transaction, deposit, and refund from your phone." },
-                { icon: Headphones, title: "Local Hawaii Support", desc: "Real people based in Hawaii. Call, text, or email anytime." },
-                { icon: Users, title: "No Contracts", desc: "We earn your business every month. Leave whenever you want." },
-              ].map((f) => (
-                <motion.div key={f.title} variants={fadeUp}>
-                  <Card className="h-full border-border/50">
-                    <CardContent className="p-5">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-                        <f.icon className="w-5 h-5 text-primary" />
-                      </div>
-                      <h3 className="font-bold mb-1 text-sm">{f.title}</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* FAQ */}
-      <section className="py-14 sm:py-20 bg-card/50" id="faq">
+      <section className="py-12 sm:py-20" id="faq">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }}>
             <motion.div className="text-center mb-10" variants={fadeUp}>
@@ -213,17 +237,16 @@ export default function HowItWorksPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-14 sm:py-20">
+      <section className="py-12 sm:py-20 bg-card/50">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <Card className="border-primary/20 overflow-hidden relative">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent" />
               <CardContent className="p-8 sm:p-12 relative">
-                <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">See exactly what you're losing.</h2>
-                <p className="text-muted-foreground mb-3 max-w-lg mx-auto">
-                  Upload your processing statement and we'll break down every line — interchange markups, PCI fees, batch fees, statement fees, junk charges. Most merchants are paying 8–15 hidden fees and don't even know it.
+                <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">See what you're really paying.</h2>
+                <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
+                  Upload your processing statement and we'll break down every hidden fee — interchange markups, PCI charges, batch fees, statement fees. Most merchants have no idea how much they're actually losing.
                 </p>
-                <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">Free. No commitment. No one will call you unless you ask.</p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Button size="lg" className="px-8" asChild>
                     <Link href="/statement-review">Free Statement Analysis <ArrowRight className="w-4 h-4" /></Link>

@@ -562,10 +562,9 @@ function CompareSection() {
                   <tbody>
                     {[
                       { f: "Processing Fees", sq: "2.6–3.5%", cl: "2.3–3.5%", ts: "0%", big: true },
-                      { f: "Monthly Fees", sq: "$0–$60+", cl: "$14.95–$85", ts: "Low", big: true },
                       { f: "Contracts", sq: "No", cl: "Sometimes", ts: "Never", big: false },
+                      { f: "Hardware Cost", sq: "$$$", cl: "$$$", ts: "Free", big: true },
                       { f: "Setup Time", sq: "Medium", cl: "Medium", ts: "Fast", big: false },
-                      { f: "Hardware Cost", sq: "$$$", cl: "$$$", ts: "Free", big: false },
                       { f: "Local Hawaii Support", sq: "No", cl: "No", ts: "Yes", big: true },
                     ].map((r, i) => (
                       <tr key={r.f} className={`border-b border-background/10 ${i % 2 ? "bg-background/5" : ""}`}>
@@ -736,36 +735,27 @@ function LocalTrustBadges() {
 // ─── 9. Testimonials ────────────────────────────────────────────────────────
 
 function TestimonialSection() {
-  const testimonials = [
-    { name: "Restaurant Owner", loc: "Waikiki", quote: "We were losing over $1,200 a month and didn't even know it. TechSavvy showed us the numbers and switched us over in a week. Best business decision we made this year." },
-    { name: "Nail Salon Owner", loc: "Kailua", quote: "Switching was so easy. TechSavvy's local team set everything up and we got a new terminal for free. The savings are real — we see it every month." },
-    { name: "Aloha Light Center", loc: "Honolulu", quote: "TechSavvy made the whole process seamless. No more processing fees eating into our revenue every month. Their local team is always a phone call away — couldn't ask for better service." },
-    { name: "Spa Owner", loc: "Waikiki", quote: "Great rates, great service, and the equipment was free. I tell every business owner I know about TechSavvy." },
-  ];
-
   return (
-    <section className="py-16 sm:py-24 relative">
+    <section className="py-10 sm:py-14 relative">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-card/50 via-transparent to-card/50" />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
-          <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Hawaii business owners who stopped losing money.
-            </h2>
-          </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {testimonials.map((t, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { name: "Restaurant Owner", loc: "Waikiki", quote: "Switched in a week. Saving over $1,200/mo now." },
+              { name: "Nail Salon Owner", loc: "Kailua", quote: "Free terminal, easy setup, real savings every month." },
+              { name: "Spa Owner", loc: "Waikiki", quote: "Great service, free equipment. I tell everyone about TechSavvy." },
+            ].map((t, i) => (
               <motion.div key={i} variants={fadeUp}>
-                <Card className="h-full border-border/50 card-warm">
-                  <CardContent className="p-5 sm:p-7">
-                    <div className="flex items-center gap-0.5 mb-3">
+                <Card className="border-border/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-0.5 mb-2">
                       {Array.from({ length: 5 }).map((_, j) => (
-                        <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                        <Star key={j} className="w-3 h-3 fill-amber-400 text-amber-400" />
                       ))}
                     </div>
-                    <p className="text-sm text-foreground/90 leading-relaxed mb-4">"{t.quote}"</p>
-                    <div className="font-semibold text-sm text-foreground">{t.name}</div>
-                    <div className="text-xs text-muted-foreground">{t.loc}</div>
+                    <p className="text-xs text-foreground/90 leading-relaxed mb-2">"{t.quote}"</p>
+                    <div className="text-xs font-semibold text-foreground">{t.name} <span className="font-normal text-muted-foreground">— {t.loc}</span></div>
                   </CardContent>
                 </Card>
               </motion.div>
