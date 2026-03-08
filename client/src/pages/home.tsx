@@ -54,7 +54,7 @@ function HeroSection() {
             </motion.h1>
 
             <motion.p className="text-sm sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto leading-relaxed" variants={fadeUp}>
-              Hawaii businesses save <span className="text-foreground font-semibold">$500–$3,000+ every month</span> with our compliant cash discount program. No contracts. Free equipment.
+              Hawaii businesses save <span className="text-foreground font-semibold">$500–$3,000+ every month</span> with our compliant cash discount program. No contracts. No processing fees. Free equipment.
             </motion.p>
 
             {/* Social proof */}
@@ -127,7 +127,7 @@ function HowItWorks() {
                 num: "3",
                 icon: DollarSign,
                 title: "Processing costs disappear",
-                desc: "With our cash discount program, you keep 100% of every sale. No processing fees, no hidden charges. Just a flat $15/mo. Funds deposited next business day.",
+                desc: "With our cash discount program, you keep 100% of every sale. No processing fees, no hidden charges. You keep 100% of every sale. Funds deposited next business day.",
               },
             ].map((step) => (
               <motion.div key={step.num} variants={fadeUp}>
@@ -230,7 +230,7 @@ function QualifySection() {
                 {[
                   { label: "Terminal", value: "FREE" },
                   { label: "Setup & Training", value: "FREE" },
-                  { label: "Monthly Fees", value: "$15" },
+                  { label: "Processing Fees", value: "$0" },
                 ].map((item) => (
                   <div key={item.label} className="bg-primary/5 rounded-lg p-3">
                     <div className="text-lg font-extrabold text-primary">{item.value}</div>
@@ -562,7 +562,7 @@ function CompareSection() {
                   <tbody>
                     {[
                       { f: "Processing Fees", sq: "2.6–3.5%", cl: "2.3–3.5%", ts: "0%", big: true },
-                      { f: "Monthly Fees", sq: "$0–$60+", cl: "$14.95–$85", ts: "$15", big: true },
+                      { f: "Monthly Fees", sq: "$0–$60+", cl: "$14.95–$85", ts: "Low", big: true },
                       { f: "Contracts", sq: "No", cl: "Sometimes", ts: "Never", big: false },
                       { f: "Setup Time", sq: "Medium", cl: "Medium", ts: "Fast", big: false },
                       { f: "Hardware Cost", sq: "$$$", cl: "$$$", ts: "Free", big: false },
@@ -579,7 +579,7 @@ function CompareSection() {
                 </table>
               </div>
               <div className="px-4 py-2 text-[10px] text-background/40 border-t border-background/10">
-                All equipment free during Hawaii launch promotion. $15/mo flat fee — no processing fees, no PCI fees, no hidden charges.
+                All equipment free during Hawaii launch promotion. Zero processing fees.
               </div>
             </Card>
           </motion.div>

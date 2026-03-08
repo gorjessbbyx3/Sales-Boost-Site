@@ -52,7 +52,7 @@ const faqs: FAQ[] = [
   },
   {
     q: "What are the pricing options?",
-    a: "It's simple: $0 processing fees, $15/mo flat fee, no contracts. Qualifying businesses ($10K+/month) get a free terminal. We set everything up at no cost. Your ongoing cost with TechSavvy is $0.",
+    a: "It's simple: $0 processing fees, no contracts, free equipment. We handle the entire setup at no cost to you. You stop paying credit card processing fees from day one.",
     category: "pricing",
   },
   {
@@ -441,7 +441,7 @@ function TestimonialsSection() {
       name: "Sarah L.",
       business: "Island Beauty Lounge",
       location: "Honolulu, HI",
-      text: "TechSavvy set everything up in one afternoon. I started saving money from day one and the whole process was seamless. The $15/mo flat fee is nothing compared to what we were paying before.",
+      text: "TechSavvy set everything up in one afternoon. I started saving money from day one and the whole process was seamless. Best decision I made for my business this year.",
       rating: 5,
     },
     {

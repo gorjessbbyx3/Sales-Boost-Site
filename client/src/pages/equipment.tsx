@@ -155,7 +155,7 @@ export default function EquipmentPage() {
                   <p className="text-xs font-bold text-red-400 mb-2">OhanaPay & Others</p>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <p>Free equipment <span className="text-red-400 font-medium">only if you process $10K+/mo</span></p>
-                    <p>$15/mo fee <span className="text-red-400 font-medium">+ still pay processing fees on some plans</span></p>
+                    <p><span className="text-red-400 font-medium">Hidden fees</span> buried in fine print</p>
                     <p>No statement analysis tools</p>
                     <p>No referral partner income program</p>
                     <p>Limited equipment selection</p>
@@ -167,7 +167,7 @@ export default function EquipmentPage() {
                   <p className="text-xs font-bold text-primary mb-2">TechSavvy Hawaii</p>
                   <div className="space-y-2 text-sm">
                     <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">ALL equipment free</span> — no volume requirement</span></p>
-                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">$15/mo flat</span> — zero processing fees on top</span></p>
+                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Zero processing fees</span> — keep 100% of every sale</span></p>
                     <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Statement analysis</span> exposes hidden fees you're paying</span></p>
                     <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Referral program</span> — earn 50% on every merchant you send</span></p>
                     <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Choose any device</span> — Clover, Valor, Pax</span></p>

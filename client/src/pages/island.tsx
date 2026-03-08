@@ -155,7 +155,7 @@ export default function IslandPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 "$0 processing fees — forever",
-                "$15/mo flat fee",
+                "Free equipment",
                 "Free terminal for qualifying businesses",
                 "No contracts — cancel anytime",
                 "Next-day deposits",
