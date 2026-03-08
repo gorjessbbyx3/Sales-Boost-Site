@@ -1,139 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-
-  <url>
-    <loc>https://techsavvyhawaii.com/</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-    <image:image>
-      <image:loc>https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg</image:loc>
-      <image:title>TechSavvy Hawaii — Zero-Fee Payment Processing</image:title>
-      <image:caption>Eliminate credit card processing fees for Hawaii businesses</image:caption>
-    </image:image>
-    <image:image>
-      <image:loc>https://techsavvyhawaii.com/images/pos-equipment.jpeg</image:loc>
-      <image:title>TechSavvy POS Terminal and Payment Equipment</image:title>
-      <image:caption>Free POS terminal for qualifying Hawaii businesses</image:caption>
-    </image:image>
-    <video:video>
-      <video:thumbnail_loc>https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg</video:thumbnail_loc>
-      <video:title>TechSavvy Hawaii — Zero-Fee Payment Processing</video:title>
-      <video:description>See how Hawaii businesses eliminate credit card processing fees</video:description>
-      <video:content_loc>https://techsavvyhawaii.com/videos/hero-bg-v3.mp4</video:content_loc>
-    </video:video>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/pricing</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/how-it-works</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://techsavvyhawaii.com/images/cash-discount-receipt.jpeg</image:loc>
-      <image:title>Cash Discount Receipt Comparison</image:title>
-      <image:caption>Credit card vs cash discount receipt side by side</image:caption>
-    </image:image>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/statement-review</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.95</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/apply</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/high-risk</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/contact</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/faq</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/refer</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.75</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/connect</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/partner-agreement</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/free-guides</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/free/statement-checklist</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/free/rate-comparison</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/free/security-checklist</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://techsavvyhawaii.com/free/cash-discount-guide</loc>
-    <lastmod>2026-03-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://techsavvyhawaii.com/</loc><lastmod>2026-03-06</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://techsavvyhawaii.com/pricing</loc><lastmod>2026-03-06</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://techsavvyhawaii.com/how-it-works</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://techsavvyhawaii.com/statement-review</loc><lastmod>2026-03-06</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://techsavvyhawaii.com/high-risk</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://techsavvyhawaii.com/contact</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://techsavvyhawaii.com/faq</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://techsavvyhawaii.com/apply</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://techsavvyhawaii.com/equipment</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://techsavvyhawaii.com/refer</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://techsavvyhawaii.com/connect</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://techsavvyhawaii.com/free-guides</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://techsavvyhawaii.com/free/statement-checklist</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://techsavvyhawaii.com/free/rate-comparison</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://techsavvyhawaii.com/free/security-checklist</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://techsavvyhawaii.com/free/cash-discount-guide</loc><lastmod>2026-03-06</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>
