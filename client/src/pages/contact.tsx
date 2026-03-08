@@ -87,7 +87,7 @@ const faqs: FAQ[] = [
   },
   {
     q: "Do I need a minimum sales volume?",
-    a: "Yes \u2014 we require a minimum of $5,000-$10,000 in monthly processing volume to qualify. This ensures the zero-fee model delivers meaningful savings for your business.",
+    a: "We work with businesses of all sizes. Whether you process $3,000 or $300,000 a month, our cash discount program eliminates your processing fees. The more volume you do, the more you save.",
     category: "processing",
   },
   {

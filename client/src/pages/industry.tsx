@@ -30,7 +30,7 @@ const industries: Record<string, {
     ],
     benefits: [
       "Eliminate 100% of processing fees with our cash discount program",
-      "Free POS terminal for qualifying restaurants ($10K+/month)",
+      "Free POS terminal — no volume requirement",
       "Works with your existing menu pricing — we handle the signage",
       "Next-day deposits so you always have cash flow for supplies",
       "No contracts — leave anytime if you're not saving money",
@@ -62,7 +62,7 @@ const industries: Record<string, {
     ],
     benefits: [
       "Eliminate 100% of processing fees — keep every dollar of every repair",
-      "Free terminal for qualifying shops ($10K+/month volume)",
+      "Free terminal — no volume requirement",
       "Works perfectly with large ticket sizes — the bigger the job, the more you save",
       "No contracts — try it risk-free",
       "Next-day funding so you can order parts without waiting",
@@ -94,7 +94,7 @@ const industries: Record<string, {
     ],
     benefits: [
       "Eliminate 100% of processing fees — keep every dollar from every appointment",
-      "Free terminal for qualifying salons ($10K+/month)",
+      "Free terminal — no volume requirement",
       "Works perfectly with appointment-based businesses",
       "Your stylists keep 100% of tips — zero fees deducted",
       "No contracts — switch back anytime with zero penalty",

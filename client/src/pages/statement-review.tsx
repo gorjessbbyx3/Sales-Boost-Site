@@ -309,7 +309,7 @@ export default function StatementReviewPage() {
           >
             <h2 className="text-2xl sm:text-3xl font-bold mb-3">Choose how you'd like to review your statement</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Get instant AI analysis, or request our free guides and do it yourself.
+              Get instant analysis, or request our free guides and do it yourself.
             </p>
           </motion.div>
 

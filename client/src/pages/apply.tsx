@@ -101,7 +101,7 @@ export default function ApplyPage() {
               {[
                 { icon: Gift, text: "Free POS terminal" },
                 { icon: Heart, text: "Zero processing fees" },
-                { icon: Sparkles, text: "No monthly charges" },
+                { icon: Sparkles, text: "No contracts" },
                 { icon: ShieldCheck, text: "100% compliant" },
               ].map((perk) => (
                 <div

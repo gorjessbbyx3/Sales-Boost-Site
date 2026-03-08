@@ -156,7 +156,7 @@ export default function IslandPage() {
               {[
                 "$0 processing fees — forever",
                 "Free equipment",
-                "Free terminal for qualifying businesses",
+                "Free equipment for all merchants",
                 "No contracts — cancel anytime",
                 "Next-day deposits",
                 "Local Hawai'i support team",

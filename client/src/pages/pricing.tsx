@@ -14,7 +14,7 @@ import { useSEO } from "@/hooks/useSEO";
 export default function PricingPage() {
   useSEO({
     title: "Credit Card Processing Pricing | Zero Fees | TechSavvy Hawaii",
-    description: "TechSavvy Hawaii: $0 processing fees, free equipment, no contracts. Free equipment for qualifying businesses. Cash discount program saves Hawaii businesses $6,000–$36,000/year.",
+    description: "TechSavvy Hawaii: $0 processing fees, free equipment, no contracts. Free equipment. Cash discount program saves Hawaii businesses $6,000–$36,000/year.",
     keywords: "credit card processing pricing Hawaii, payment processing cost, cash discount program pricing, zero fee card processing cost, free POS terminal Hawaii, no contract credit card processing, merchant services pricing Hawaii, card processing rates Hawaii",
     canonical: "https://techsavvyhawaii.com/pricing",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
@@ -23,7 +23,7 @@ export default function PricingPage() {
       "@type": "WebPage",
       "name": "TechSavvy Hawaii — Zero-Fee Payment Processing",
       "url": "https://techsavvyhawaii.com/pricing",
-      "description": "$0 processing fees, free equipment, no contracts. Free equipment for qualifying businesses.",
+      "description": "$0 processing fees, free equipment, no contracts. Free equipment for all new merchants.",
       "isPartOf": { "@id": "https://techsavvyhawaii.com/#website" },
       "about": { "@id": "https://techsavvyhawaii.com/#payment-service" },
     },
@@ -136,7 +136,7 @@ function WhatYouGet() {
                     "Zero processing fees — forever",
                     "Zero monthly fees — forever",
                     "No contracts or cancellation fees",
-                    "Free terminal for qualifying businesses",
+                    "Free equipment — no volume requirement",
                     "Full setup, programming & training",
                     "Compliance signage kit included",
                     "Next-day funding",
@@ -154,8 +154,8 @@ function WhatYouGet() {
                 </div>
                 <div className="mt-8 pt-6 border-t border-primary/10 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div>
-                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Your ongoing cost with TechSavvy</div>
-                    <div className="text-4xl font-extrabold text-primary">$0<span className="text-lg text-muted-foreground font-normal">/month</span></div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Processing fees with TechSavvy</div>
+                    <div className="text-4xl font-extrabold text-primary">0%<span className="text-lg text-muted-foreground font-normal"> forever</span></div>
                   </div>
                   <Button size="lg" asChild>
                     <a href="/statement-review">
@@ -177,12 +177,11 @@ function ComparisonSection() {
   const [open, setOpen] = useState<number | null>(null);
   const fees = [
     { label: "Processing fees", typical: "$600–$3,000/mo", ts: "$0", note: "Biggest savings — you keep 100%" },
-    { label: "Monthly/statement fees", typical: "$15–$85/mo", ts: "$0", note: null },
     { label: "PCI compliance fee", typical: "$10–$25/mo", ts: "$0", note: null },
     { label: "Gateway/batch fee", typical: "$10–$30/mo", ts: "$0", note: null },
     { label: "Contract length", typical: "2–3 years", ts: "None", note: "Cancel anytime, zero penalty" },
     { label: "Cancellation fee", typical: "$300–$500", ts: "$0", note: null },
-    { label: "Equipment", typical: "$30–$80/mo lease", ts: "Free*", note: "Free for $10K+/mo volume" },
+    { label: "Equipment", typical: "$30–$80/mo lease", ts: "Free", note: "Free during Hawaii launch promo" },
   ];
 
   return (
