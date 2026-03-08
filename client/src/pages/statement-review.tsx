@@ -262,9 +262,9 @@ export default function StatementReviewPage() {
             variants={fadeUp}
             className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            Upload your merchant statement and our AI scans every line —
-            interchange markups, hidden fees, junk charges, PCI non-compliance penalties —
-            and shows you exactly what you're overpaying.
+            Upload your merchant statement and we'll scan every line —
+            interchange markups, PCI non-compliance fees, batch fees, statement fees, regulatory fees, minimum processing charges —
+            most merchants are paying 8–15 hidden fees they don't even know exist.
           </motion.p>
 
           <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
@@ -278,6 +278,21 @@ export default function StatementReviewPage() {
                 <span>{item.text}</span>
               </div>
             ))}
+          </motion.div>
+
+          {/* Hidden fees examples */}
+          <motion.div variants={fadeUp} className="mt-10 max-w-3xl mx-auto">
+            <p className="text-center text-xs text-muted-foreground uppercase tracking-wider mb-4 font-semibold">Common hidden fees we find on statements</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                "PCI Non-Compliance", "Statement Fees", "Batch Processing", "Regulatory Fees",
+                "Interchange Markup", "Monthly Minimums", "Annual Fees", "Junk & Misc Fees",
+              ].map(fee => (
+                <div key={fee} className="text-center p-3 rounded-lg bg-red-500/5 border border-red-500/10">
+                  <span className="text-xs font-medium text-red-400">{fee}</span>
+                </div>
+              ))}
+            </div>
           </motion.div>
         </motion.div>
       </section>
@@ -315,7 +330,7 @@ export default function StatementReviewPage() {
                     </div>
                     <div>
                       <Badge variant="outline" className="text-xs mb-1 border-primary/30 text-primary">RECOMMENDED</Badge>
-                      <h3 className="text-xl font-bold">AI Statement Analysis</h3>
+                      <h3 className="text-xl font-bold">Statement Analysis</h3>
                     </div>
                   </div>
                   <p className="text-muted-foreground mb-6">

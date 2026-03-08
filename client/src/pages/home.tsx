@@ -41,65 +41,51 @@ function HeroSection() {
       {/* Video */}
       <div className="relative w-full">
         <video autoPlay loop muted playsInline preload="auto" src="/videos/hero-v5.mp4" className="w-full h-auto block" aria-label="Hawaii business payment processing" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-background" />
       </div>
 
       {/* Content */}
-      <div className="pb-10 sm:pb-14 -mt-12 sm:-mt-20 relative z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="pb-8 sm:pb-12 -mt-10 sm:-mt-16 relative z-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div variants={staggerContainer} initial="hidden" animate="visible">
-            <motion.h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-3" variants={fadeUp}>
-              Every swipe costs you.{" "}
-              <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">We make it $0.</span>
+            <motion.h1 className="text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] mb-4" variants={fadeUp}>
+              Stop Paying Credit Card Fees.{" "}
+              <span className="text-primary">Keep Every Dollar.</span>
             </motion.h1>
 
-            <motion.p className="text-sm sm:text-base text-muted-foreground mb-6 max-w-lg mx-auto" variants={fadeUp}>
-              Most Hawaii businesses lose 2–4% on every card transaction. TechSavvy eliminates that with a compliant cash discount program.
+            <motion.p className="text-sm sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto leading-relaxed" variants={fadeUp}>
+              Hawaii businesses save <span className="text-foreground font-semibold">$500–$3,000+ every month</span> with our compliant cash discount program. No contracts. Free equipment.
             </motion.p>
 
-            {/* 3-card comparison */}
-            <motion.div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-xl mx-auto mb-8" variants={fadeUp}>
-              <Card className="border-red-500/15 text-center">
-                <CardContent className="p-3 sm:p-5">
-                  <div className="text-lg sm:text-3xl font-extrabold text-red-400 mb-1">-$800</div>
-                  <div className="text-[9px] sm:text-xs text-muted-foreground leading-tight">Avg restaurant<br/>per month</div>
-                </CardContent>
-              </Card>
-              <Card className="border-primary/30 bg-primary/5 text-center ring-2 ring-primary/20">
-                <CardContent className="p-3 sm:p-5">
-                  <div className="text-lg sm:text-3xl font-extrabold text-primary mb-1">$0</div>
-                  <div className="text-[9px] sm:text-xs text-foreground font-semibold leading-tight">With TechSavvy<br/>every month</div>
-                </CardContent>
-              </Card>
-              <Card className="border-red-500/15 text-center">
-                <CardContent className="p-3 sm:p-5">
-                  <div className="text-lg sm:text-3xl font-extrabold text-red-400 mb-1">-$1,500</div>
-                  <div className="text-[9px] sm:text-xs text-muted-foreground leading-tight">Avg auto shop<br/>per month</div>
-                </CardContent>
-              </Card>
+            {/* Social proof */}
+            <motion.div className="flex items-center justify-center gap-2 mb-6" variants={fadeUp}>
+              <div className="flex">
+                {[1,2,3,4,5].map(i => (
+                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <span className="text-sm text-muted-foreground">4.9/5 from Hawaii business owners</span>
             </motion.div>
 
-            <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6" variants={fadeUp}>
+            <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-5" variants={fadeUp}>
               <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
                 <a href="/statement-review">
-                  Free AI Statement Analysis
+                  See How Much You're Losing — Free
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </Button>
               <Button variant="outline" size="lg" className="text-base px-6 py-6 w-full sm:w-auto" asChild>
-                <a href="/contact">
-                  Talk to Our Team
-                  <ArrowRight className="w-4 h-4" />
+                <a href="tel:8087675460">
+                  <Phone className="w-4 h-4" />
+                  (808) 767-5460
                 </a>
               </Button>
             </motion.div>
 
-            <motion.div variants={fadeUp}>
-              <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
-                <MapPin className="w-3 h-3 mr-1" />
-                Built for Hawai'i Small Businesses
-              </Badge>
-            </motion.div>
+            {/* Trust line */}
+            <motion.p className="text-xs text-muted-foreground" variants={fadeUp}>
+              ✓ 100% legal  ·  ✓ Setup in 3–7 days  ·  ✓ Cancel anytime  ·  ✓ Locally owned in Honolulu
+            </motion.p>
           </motion.div>
         </div>
       </div>
@@ -112,146 +98,56 @@ function HeroSection() {
 // ─── 3. How It Works — Remove uncertainty ───────────────────────────────────
 
 function HowItWorks() {
-  const StepApply = () => (
-    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
-      {/* Phone */}
-      <rect x="60" y="15" width="80" height="130" rx="14" fill="hsl(var(--primary) / 0.08)" stroke="hsl(var(--primary) / 0.3)" strokeWidth="2"/>
-      <rect x="70" y="30" width="60" height="90" rx="4" fill="hsl(var(--primary) / 0.05)"/>
-      {/* Form lines */}
-      <rect x="78" y="42" width="44" height="6" rx="3" fill="hsl(var(--primary) / 0.2)"/>
-      <rect x="78" y="56" width="44" height="6" rx="3" fill="hsl(var(--primary) / 0.15)"/>
-      <rect x="78" y="70" width="44" height="6" rx="3" fill="hsl(var(--primary) / 0.15)"/>
-      {/* Submit button */}
-      <rect x="78" y="86" width="44" height="14" rx="7" fill="hsl(var(--primary))"/>
-      <text x="100" y="96" textAnchor="middle" fill="white" fontSize="7" fontWeight="700">APPLY</text>
-      {/* Checkmarks floating */}
-      <circle cx="150" cy="40" r="10" fill="hsl(var(--primary) / 0.15)"/>
-      <path d="M145 40l3 3 7-7" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="45" cy="60" r="8" fill="hsl(var(--primary) / 0.1)"/>
-      <path d="M41 60l2.5 2.5 5.5-5.5" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      {/* Clock */}
-      <circle cx="155" cy="110" r="14" fill="hsl(var(--primary) / 0.1)" stroke="hsl(var(--primary) / 0.25)" strokeWidth="1.5"/>
-      <text x="155" y="114" textAnchor="middle" fill="hsl(var(--primary))" fontSize="9" fontWeight="700">3m</text>
-    </svg>
-  );
-
-  const StepApproved = () => (
-    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
-      {/* Document */}
-      <rect x="50" y="20" width="100" height="120" rx="10" fill="hsl(var(--primary) / 0.06)" stroke="hsl(var(--primary) / 0.2)" strokeWidth="2"/>
-      {/* Header */}
-      <rect x="65" y="35" width="70" height="8" rx="4" fill="hsl(var(--primary) / 0.15)"/>
-      {/* Lines */}
-      <rect x="65" y="52" width="55" height="5" rx="2.5" fill="hsl(var(--primary) / 0.1)"/>
-      <rect x="65" y="63" width="70" height="5" rx="2.5" fill="hsl(var(--primary) / 0.1)"/>
-      <rect x="65" y="74" width="45" height="5" rx="2.5" fill="hsl(var(--primary) / 0.1)"/>
-      {/* Savings highlight */}
-      <rect x="65" y="90" width="70" height="22" rx="6" fill="hsl(var(--primary) / 0.12)" stroke="hsl(var(--primary) / 0.25)" strokeWidth="1"/>
-      <text x="100" y="104" textAnchor="middle" fill="hsl(var(--primary))" fontSize="11" fontWeight="800">-$1,200/mo</text>
-      {/* Big approval stamp */}
-      <circle cx="155" cy="45" r="22" fill="hsl(var(--primary) / 0.12)" stroke="hsl(var(--primary))" strokeWidth="2.5"/>
-      <path d="M145 45l5 5 13-13" stroke="hsl(var(--primary))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-      {/* 24h badge */}
-      <rect x="30" y="95" width="28" height="22" rx="11" fill="hsl(var(--primary) / 0.15)"/>
-      <text x="44" y="109" textAnchor="middle" fill="hsl(var(--primary))" fontSize="8" fontWeight="700">24h</text>
-    </svg>
-  );
-
-  const StepSetup = () => (
-    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
-      {/* Terminal */}
-      <rect x="60" y="30" width="80" height="95" rx="10" fill="hsl(var(--primary) / 0.08)" stroke="hsl(var(--primary) / 0.3)" strokeWidth="2"/>
-      {/* Screen */}
-      <rect x="70" y="40" width="60" height="45" rx="5" fill="hsl(var(--primary) / 0.05)" stroke="hsl(var(--primary) / 0.15)" strokeWidth="1"/>
-      {/* Screen content - card icon */}
-      <rect x="88" y="52" width="24" height="16" rx="3" fill="hsl(var(--primary) / 0.2)"/>
-      <circle cx="95" cy="60" r="3" fill="hsl(var(--primary) / 0.3)"/>
-      {/* Keypad dots */}
-      {[0,1,2].map(r => [0,1,2].map(c => (
-        <circle key={`${r}${c}`} cx={82 + c * 18} cy={96 + r * 10} r="3" fill="hsl(var(--primary) / 0.15)"/>
-      )))}
-      {/* Person silhouette */}
-      <circle cx="35" cy="55" r="10" fill="hsl(var(--primary) / 0.12)"/>
-      <path d="M20 90 Q35 75 50 90" fill="hsl(var(--primary) / 0.08)"/>
-      {/* Arrow from person to terminal */}
-      <path d="M48 72 L60 65" stroke="hsl(var(--primary) / 0.3)" strokeWidth="1.5" strokeDasharray="3 3"/>
-      {/* Wrench */}
-      <circle cx="168" cy="50" r="16" fill="hsl(var(--primary) / 0.1)"/>
-      <text x="168" y="55" textAnchor="middle" fontSize="16">🔧</text>
-      {/* Signage */}
-      <rect x="155" y="100" width="30" height="20" rx="4" fill="hsl(var(--primary) / 0.15)" stroke="hsl(var(--primary) / 0.25)" strokeWidth="1"/>
-      <text x="170" y="113" textAnchor="middle" fill="hsl(var(--primary))" fontSize="6" fontWeight="700">SIGNAGE</text>
-    </svg>
-  );
-
-  const StepSave = () => (
-    <svg viewBox="0 0 200 160" fill="none" className="w-full h-auto">
-      {/* Rising bar chart */}
-      <rect x="35" y="100" width="22" height="40" rx="4" fill="hsl(var(--primary) / 0.15)"/>
-      <rect x="65" y="75" width="22" height="65" rx="4" fill="hsl(var(--primary) / 0.2)"/>
-      <rect x="95" y="50" width="22" height="90" rx="4" fill="hsl(var(--primary) / 0.3)"/>
-      <rect x="125" y="25" width="22" height="115" rx="4" fill="hsl(var(--primary))"/>
-      {/* Arrow going up */}
-      <path d="M40 95 L135 20" stroke="hsl(var(--primary))" strokeWidth="2" strokeDasharray="4 3" opacity="0.4"/>
-      <polygon points="135,15 140,25 130,25" fill="hsl(var(--primary) / 0.4)"/>
-      {/* $0 fee badge */}
-      <circle cx="165" cy="45" r="22" fill="hsl(var(--primary) / 0.12)" stroke="hsl(var(--primary))" strokeWidth="2"/>
-      <text x="165" y="43" textAnchor="middle" fill="hsl(var(--primary))" fontSize="14" fontWeight="800">$0</text>
-      <text x="165" y="54" textAnchor="middle" fill="hsl(var(--primary))" fontSize="6" fontWeight="600">FEES</text>
-      {/* Money symbols floating */}
-      <text x="160" y="100" fill="hsl(var(--primary) / 0.3)" fontSize="18" fontWeight="700">$</text>
-      <text x="175" y="120" fill="hsl(var(--primary) / 0.2)" fontSize="14" fontWeight="700">$</text>
-      <text x="25" y="80" fill="hsl(var(--primary) / 0.15)" fontSize="12" fontWeight="700">$</text>
-    </svg>
-  );
-
-  const illustrations = [StepApply, StepApproved, StepSetup, StepSave];
-
-  const steps = [
-    { num: "01", title: "Apply in 3 minutes", desc: "Quick online application. No paperwork, no fax machines. Just a few questions about your business." },
-    { num: "02", title: "Get approved", desc: "Usually within 24 hours. We review your info and show you exactly how much you'll save." },
-    { num: "03", title: "We set up your POS", desc: "Our local team configures your terminal, installs signage, and trains your staff. You don't touch a thing." },
-    { num: "04", title: "Start saving immediately", desc: "Accept payments with $0 processing fees from day one. Keep 100% of every sale." },
-  ];
-
   return (
-    <section className="pt-6 pb-16 sm:pt-8 sm:pb-24 relative">
+    <section className="py-14 sm:py-24 relative">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
           <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              How It Works
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-2">
+              How TechSavvy Hawai'i Works
             </h2>
+            <p className="text-sm sm:text-base text-muted-foreground">Three simple steps. No complicated process. No long wait times.</p>
           </motion.div>
 
-          <div className="relative">
-            {/* Connecting line */}
-            <div className="hidden lg:block absolute top-[80px] left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-[2px] bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 max-w-3xl mx-auto">
-              {steps.map((step, i) => {
-                const Illustration = illustrations[i];
-                return (
-                  <motion.div key={step.num} variants={fadeUp}>
-                    <div className="relative group text-center h-full max-w-[160px] sm:max-w-none mx-auto">
-                      {/* Illustration */}
-                      <div className="mx-auto w-full max-w-[100px] sm:max-w-[150px] mb-2 sm:mb-3">
-                        <Illustration />
-                      </div>
-                      {/* Card body */}
-                      <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-3 sm:p-5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 h-full">
-                        <div className="inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground text-[10px] sm:text-xs font-bold mb-1.5">{step.num}</div>
-                        <h3 className="font-bold text-xs sm:text-sm mb-1">{step.title}</h3>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground leading-snug">{step.desc}</p>
-                      </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 mb-10">
+            {[
+              {
+                num: "1",
+                icon: ShieldCheck,
+                title: "We set up your payment system",
+                desc: "Quick application, fast approval. Our local team installs your new terminal, sets up signage, and trains your staff. You don't touch a thing.",
+              },
+              {
+                num: "2",
+                icon: Users,
+                title: "Customers pay normally",
+                desc: "Customers can still use all cards — Visa, Mastercard, Amex, Apple Pay. Your posted prices reflect a cash discount, and card users simply pay the standard listed price.",
+              },
+              {
+                num: "3",
+                icon: DollarSign,
+                title: "Processing costs disappear",
+                desc: "With our cash discount program, you keep 100% of every sale. No processing fees, no hidden charges. Just a flat $15/mo. Funds deposited next business day.",
+              },
+            ].map((step) => (
+              <motion.div key={step.num} variants={fadeUp}>
+                <Card className="h-full border-border/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
+                  <CardContent className="p-6 sm:p-8 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                      <step.icon className="w-7 h-7 text-primary" />
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center mx-auto mb-4">
+                      {step.num}
+                    </div>
+                    <h3 className="font-bold text-base sm:text-lg mb-3">{step.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </div>
 
-          <motion.div className="text-center mt-10" variants={fadeUp}>
+          <motion.div className="text-center" variants={fadeUp}>
             <Button size="lg" asChild>
               <a href="/apply">
                 Apply Now — Takes 3 Minutes
@@ -270,7 +166,7 @@ function HowItWorks() {
 function QualifySection() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({ businessType: "", volume: "", currentProcessor: "", name: "", phone: "", email: "", businessName: "" });
-  const [result, setResult] = useState<"qualified" | "contact" | null>(null);
+  const [result, setResult] = useState<"bundle" | "custom" | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const businessTypes = [
@@ -279,45 +175,45 @@ function QualifySection() {
   ];
 
   const volumes = [
-    { label: "Under $5K/month", value: "under-5k", qualifies: false },
-    { label: "$5K – $10K/month", value: "5k-10k", qualifies: false },
-    { label: "$10K – $25K/month", value: "10k-25k", qualifies: true },
-    { label: "$25K – $50K/month", value: "25k-50k", qualifies: true },
-    { label: "$50K – $100K/month", value: "50k-100k", qualifies: true },
-    { label: "$100K+/month", value: "100k-plus", qualifies: true },
+    { label: "Under $5K/month", value: "under-5k", bundle: false },
+    { label: "$5K – $10K/month", value: "5k-10k", bundle: false },
+    { label: "$10K – $25K/month", value: "10k-25k", bundle: true },
+    { label: "$25K – $50K/month", value: "25k-50k", bundle: true },
+    { label: "$50K – $100K/month", value: "50k-100k", bundle: true },
+    { label: "$100K+/month", value: "100k-plus", bundle: true },
   ];
 
   const processors = [
     "Square", "Clover", "Toast", "Heartland", "Bank Processor", "Not sure", "Other",
   ];
 
-  const submitForm = async (qualified: boolean) => {
+  const submitForm = async (isBundle: boolean) => {
     setSubmitting(true);
     try {
       await fetch("/api/contact-leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          businessName: answers.businessName || `${answers.businessType} - Equipment Qualification`,
+          businessName: answers.businessName || `${answers.businessType} - Equipment Setup`,
           contactName: answers.name,
           phone: answers.phone,
           email: answers.email,
-          plan: qualified ? "free-equipment-qualified" : "free-equipment-under-volume",
+          plan: isBundle ? "full-bundle-setup" : "starter-setup",
           monthlyProcessing: answers.volume,
           bestContactTime: "anytime",
           highRisk: false,
         }),
       });
     } catch (e) {}
-    setResult(qualified ? "qualified" : "contact");
+    setResult(isBundle ? "bundle" : "custom");
     setSubmitting(false);
   };
 
   const progressPercent = Math.min((step / 4) * 100, 100);
 
-  if (result === "qualified") {
+  if (result === "bundle") {
     return (
-      <section className="py-16 sm:py-24" id="qualify">
+      <section className="py-16 sm:py-24" id="equipment">
         <div className="max-w-xl mx-auto px-4">
           <Card className="border-primary/30 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
@@ -325,16 +221,16 @@ function QualifySection() {
               <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-5">
                 <Check className="w-10 h-10 text-primary" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold mb-2 text-primary">You Qualify! 🤙</h2>
-              <p className="text-lg font-semibold text-foreground mb-3">Mahalo! Your business qualifies for a free equipment upgrade.</p>
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-2 text-primary">Your Setup Is Ready! 🤙</h2>
+              <p className="text-lg font-semibold text-foreground mb-3">Mahalo! You're all set for a full equipment bundle — on us.</p>
               <p className="text-muted-foreground mb-6">
-                One of our local team members will reach out within 24 hours to get your new POS system set up — at no cost.
+                One of our local team members will reach out within 24 hours to get your terminal, signage, and training scheduled.
               </p>
               <div className="grid grid-cols-3 gap-3 mb-6">
                 {[
-                  { label: "Equipment", value: "FREE" },
-                  { label: "Setup", value: "FREE" },
-                  { label: "Monthly Fees", value: "$0" },
+                  { label: "Terminal", value: "FREE" },
+                  { label: "Setup & Training", value: "FREE" },
+                  { label: "Monthly Fees", value: "$15" },
                 ].map((item) => (
                   <div key={item.label} className="bg-primary/5 rounded-lg p-3">
                     <div className="text-lg font-extrabold text-primary">{item.value}</div>
@@ -342,7 +238,7 @@ function QualifySection() {
                   </div>
                 ))}
               </div>
-              <img src="/images/pos-equipment.jpeg" alt="Free POS equipment" className="w-full max-w-xs mx-auto rounded-xl mb-4" />
+              <img src="/images/pos-equipment.jpeg" alt="POS terminal bundle" className="w-full max-w-xs mx-auto rounded-xl mb-4" />
             </CardContent>
           </Card>
         </div>
@@ -350,21 +246,21 @@ function QualifySection() {
     );
   }
 
-  if (result === "contact") {
+  if (result === "custom") {
     return (
-      <section className="py-16 sm:py-24" id="qualify">
+      <section className="py-16 sm:py-24" id="equipment">
         <div className="max-w-xl mx-auto px-4">
-          <Card className="border-chart-4/30 overflow-hidden">
+          <Card className="border-primary/20 overflow-hidden">
             <CardContent className="p-8 sm:p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-chart-4/15 flex items-center justify-center mx-auto mb-5">
-                <Phone className="w-8 h-8 text-chart-4" />
+              <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-5">
+                <Phone className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">We'll Be In Touch!</h2>
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">We'll Build Your Setup! 🤙</h2>
               <p className="text-muted-foreground mb-4">
-                Your business may still qualify for reduced-cost equipment or special pricing. One of our Hawaii team members will contact you within 24 hours to discuss your options.
+                Every business is different — our local team will put together the right equipment package and pricing for your volume. We'll be in touch within 24 hours.
               </p>
               <p className="text-sm text-foreground font-medium">
-                We work with businesses of all sizes — there's a plan for everyone.
+                We work with businesses of all sizes. There's always a setup that fits.
               </p>
             </CardContent>
           </Card>
@@ -376,20 +272,20 @@ function QualifySection() {
   const inputClass = "flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary";
 
   return (
-    <section className="py-16 sm:py-24 relative" id="qualify">
+    <section className="py-16 sm:py-24 relative" id="equipment">
       <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <div className="text-center mb-8">
             <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
               <Sparkles className="w-3 h-3 mr-1" />
-              Free Equipment Upgrade
+              Equipment & Setup
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Does your business qualify for{" "}
-              <span className="text-primary">free equipment?</span>
+              Find the right setup{" "}
+              <span className="text-primary">for your business.</span>
             </h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Answer 4 quick questions to find out. Takes about 30 seconds.
+              Tell us a little about your business and we'll recommend the best terminal and bundle. Takes 30 seconds.
             </p>
           </div>
 
@@ -465,7 +361,7 @@ function QualifySection() {
 
               {step === 3 && (
                 <div>
-                  <p className="text-sm font-semibold text-foreground mb-4">Almost done — where should we send your results?</p>
+                  <p className="text-sm font-semibold text-foreground mb-4">Last step — where should we send your recommendation?</p>
                   <div className="space-y-3">
                     <div>
                       <label className="text-sm font-medium mb-1.5 block">Business Name</label>
@@ -491,13 +387,13 @@ function QualifySection() {
                       disabled={!answers.name || !answers.phone || !answers.email || submitting}
                       onClick={() => {
                         const vol = volumes.find(v => v.value === answers.volume);
-                        submitForm(vol?.qualifies ?? false);
+                        submitForm(vol?.bundle ?? false);
                       }}
                     >
-                      {submitting ? "Checking..." : "See If I Qualify"}
+                      {submitting ? "Building your setup..." : "Get My Recommendation"}
                       {!submitting && <ArrowRight className="w-4 h-4" />}
                     </Button>
-                    <p className="text-[10px] text-muted-foreground text-center">No spam. We'll only contact you about your equipment qualification.</p>
+                    <p className="text-[10px] text-muted-foreground text-center">No spam. We'll reach out with your personalized equipment recommendation.</p>
                   </div>
                 </div>
               )}
@@ -641,11 +537,11 @@ function CompareSection() {
           <path d="M0,60 C300,10 600,50 900,20 C1050,5 1150,30 1200,15 L1200,0 L0,0 Z" fill="hsl(var(--background))" />
         </svg>
       </div>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
           <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 text-background">
-              See how we compare.
+              Why local businesses are switching.
             </h2>
           </motion.div>
 
@@ -655,31 +551,27 @@ function CompareSection() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-background/10">
-                      <th className="text-left p-4 font-semibold text-background/60 w-[22%]"></th>
-                      <th className="text-center p-4 w-[19%] text-background/60 font-semibold">Square</th>
-                      <th className="text-center p-4 w-[19%] text-background/60 font-semibold">Clover Direct</th>
-                      <th className="text-center p-4 w-[19%] text-background/60 font-semibold">OhanaPay</th>
-                      <th className="text-center p-4 w-[21%] bg-primary/20 rounded-t-lg">
+                      <th className="text-left p-4 font-semibold text-background/60 w-[28%]"></th>
+                      <th className="text-center p-4 w-[24%] text-background/60 font-semibold">Square</th>
+                      <th className="text-center p-4 w-[24%] text-background/60 font-semibold">Clover</th>
+                      <th className="text-center p-4 w-[24%] bg-primary/20 rounded-t-lg">
                         <span className="font-bold text-primary">TechSavvy</span>
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {[
-                      { f: "Processing Fees", sq: "2.6–3.5%", cl: "2.3–3.5%", op: "0%", ts: "0%", big: true },
-                      { f: "Monthly Fees", sq: "$0–$60+", cl: "$14.95–$85", op: "$15/mo", ts: "$0", big: true },
-                      { f: "Free Equipment", sq: "No", cl: "No", op: "$10K+ only", ts: "ALL free", big: true },
-                      { f: "Contracts", sq: "No", cl: "Sometimes", op: "No", ts: "Never", big: false },
-                      { f: "Free Custom Website", sq: "No", cl: "No", op: "No", ts: "Yes", big: true },
-                      { f: "AI Statement Analysis", sq: "No", cl: "No", op: "No", ts: "Yes", big: false },
-                      { f: "Partner Referral Program", sq: "No", cl: "No", op: "No", ts: "Yes", big: false },
-                      { f: "Local Hawaii Support", sq: "No", cl: "No", op: "Yes", ts: "Yes", big: false },
+                      { f: "Processing Fees", sq: "2.6–3.5%", cl: "2.3–3.5%", ts: "0%", big: true },
+                      { f: "Monthly Fees", sq: "$0–$60+", cl: "$14.95–$85", ts: "$15", big: true },
+                      { f: "Contracts", sq: "No", cl: "Sometimes", ts: "Never", big: false },
+                      { f: "Setup Time", sq: "Medium", cl: "Medium", ts: "Fast", big: false },
+                      { f: "Hardware Cost", sq: "$$$", cl: "$$$", ts: "Free", big: false },
+                      { f: "Local Hawaii Support", sq: "No", cl: "No", ts: "Yes", big: true },
                     ].map((r, i) => (
                       <tr key={r.f} className={`border-b border-background/10 ${i % 2 ? "bg-background/5" : ""}`}>
                         <td className="p-3 sm:p-4 font-medium text-background/70">{r.f}</td>
                         <td className="p-3 sm:p-4 text-center text-red-300/80">{r.sq}</td>
                         <td className="p-3 sm:p-4 text-center text-red-300/80">{r.cl}</td>
-                        <td className="p-3 sm:p-4 text-center text-background/60">{r.op}</td>
                         <td className={`p-3 sm:p-4 text-center bg-primary/20 ${r.big ? "text-primary font-bold text-base sm:text-lg" : "text-primary font-semibold"}`}>{r.ts}</td>
                       </tr>
                     ))}
@@ -687,7 +579,7 @@ function CompareSection() {
                 </table>
               </div>
               <div className="px-4 py-2 text-[10px] text-background/40 border-t border-background/10">
-                All equipment free during Hawaii launch promotion. Free custom website included for every TechSavvy merchant.
+                All equipment free during Hawaii launch promotion. $15/mo flat fee — no processing fees, no PCI fees, no hidden charges.
               </div>
             </Card>
           </motion.div>
@@ -746,7 +638,7 @@ function WhoWeWorkWith() {
           </div>
           <motion.p className="text-center text-muted-foreground text-sm mt-6" variants={fadeUp}>
             Plus hotels, gas stations, contractors, nonprofits, and more.{" "}
-            <a href="#qualify" className="text-primary font-medium underline underline-offset-2">See if you qualify for free equipment →</a>
+            <a href="#equipment" className="text-primary font-medium underline underline-offset-2">Find your perfect setup →</a>
           </motion.p>
         </motion.div>
       </div>
@@ -821,8 +713,8 @@ function LocalTrustBadges() {
               { name: "Mastercard", svg: <svg className="h-8 sm:h-10" viewBox="0 0 140 32"><circle cx="52" cy="16" r="14" fill="#EB001B" opacity="0.7"/><circle cx="82" cy="16" r="14" fill="#F79E1B" opacity="0.7"/><text x="50" y="38" fontFamily="var(--font-heading)" fontSize="8" fill="currentColor" opacity="0.6"></text></svg> },
               { name: "Amex", svg: <svg className="h-8 sm:h-10" viewBox="0 0 100 32"><text x="5" y="24" fontFamily="var(--font-heading)" fontWeight="800" fontSize="22" fill="currentColor">AMEX</text></svg> },
               { name: "Discover", svg: <svg className="h-8 sm:h-10" viewBox="0 0 130 32"><text x="5" y="24" fontFamily="var(--font-heading)" fontWeight="700" fontSize="22" fill="currentColor">Discover</text></svg> },
-              { name: "Apple Pay", svg: <svg className="h-8 sm:h-10" viewBox="0 0 120 32"><text x="5" y="24" fontFamily="var(--font-heading)" fontWeight="600" fontSize="20" fill="currentColor"> Pay</text></svg> },
-              { name: "Google Pay", svg: <svg className="h-8 sm:h-10" viewBox="0 0 130 32"><text x="5" y="24" fontFamily="var(--font-heading)" fontWeight="600" fontSize="20" fill="currentColor">G Pay</text></svg> },
+              { name: "Apple Pay", svg: <svg className="h-8 sm:h-10" viewBox="0 0 165 40" fill="currentColor"><path d="M28.8 5.8c-1.6 1.9-4.2 3.3-6.7 3.1-.3-2.5.9-5.1 2.4-6.8C26.1.2 28.9-1 31.1-1.2c.3 2.6-.8 5.2-2.3 7zM31.1 8.5c-3.7-.2-6.8 2.1-8.6 2.1-1.7 0-4.4-2-7.2-2-3.7.1-7.1 2.2-9 5.5-3.8 6.6-1 16.4 2.8 21.8 1.8 2.7 4 5.6 6.9 5.5 2.7-.1 3.8-1.8 7.1-1.8 3.3 0 4.2 1.8 7.1 1.7 3-.1 4.8-2.7 6.6-5.4 2.1-3.1 2.9-6 3-6.2-.1 0-5.7-2.2-5.8-8.7-.1-5.4 4.4-8 4.6-8.1-2.5-3.7-6.4-4.2-7.5-4.4z"/><text x="50" y="30" fontFamily="var(--font-heading)" fontWeight="600" fontSize="22">Pay</text></svg> },
+              { name: "Google Pay", svg: <svg className="h-8 sm:h-10" viewBox="0 0 165 40" fill="none"><text x="5" y="30" fontFamily="var(--font-heading)" fontWeight="600" fontSize="22" fill="currentColor">Google</text><text x="110" y="30" fontFamily="var(--font-heading)" fontWeight="400" fontSize="22" fill="currentColor">Pay</text></svg> },
             ].map((brand) => (
               <div key={brand.name} className="flex items-center text-muted-foreground" title={brand.name}>
                 {brand.svg}
@@ -888,14 +780,14 @@ function TestimonialSection() {
 // ─── 10. FAQ — Address fears ────────────────────────────────────────────────
 
 function FAQSection() {
-  const [open, setOpen] = useState<number | null>(null);
+  const [open, setOpen] = useState<number | null>(0);
   const faqs = [
     { q: "Is this actually legal?", a: "Yes — 100% legal in Hawaii and all 50 states. Visa, Mastercard, and the FTC all allow it when properly disclosed. We handle all the compliance and signage for you." },
     { q: "Will my customers get mad about the surcharge?", a: "Most don't even notice. It's the same model gas stations have used for years — cash price vs. card price. It's now standard at restaurants, salons, and retail stores across Hawaii." },
     { q: "Is it hard to switch processors?", a: "Not at all. We handle everything — terminal, programming, signage, training. Most businesses are up and running in 3–7 days. You don't cancel your old processor until you're ready." },
     { q: "How much will I actually save?", a: "That depends on your volume, but most Hawaii businesses save $500–$3,000+ per month. We'll show you your exact number with a free statement analysis — no commitment required." },
     { q: "What if I don't like it?", a: "No contract. No cancellation fee. If it's not working for you, you can leave anytime with zero penalty. We keep businesses by saving them money, not by trapping them." },
-    { q: "Do I have to buy the terminal?", a: "No — right now ALL equipment is free during our Hawaii launch promotion. Pick any terminal or POS system and there's no cost to you. We ship it, set it up, and train your team. Equipment is provided at no charge for the life of your account." },
+    { q: "Do I have to buy the terminal?", a: "If you process $5K+ per month, the terminal is free. We ship it, set it up, and train your team. You don't pay a dime for equipment." },
   ];
 
   return (
@@ -946,14 +838,14 @@ export default function Home() {
   return (
     <Layout>
       <HeroSection />
-      <HowItWorks />
       <SavingsCalculator />
-      <WhoWeWorkWith />
       <CompareSection />
+      <TestimonialSection />
+      <HowItWorks />
+      <WhoWeWorkWith />
       <QualifySection />
       <TrustSection />
       <LocalTrustBadges />
-      <TestimonialSection />
       <FAQSection />
     </Layout>
   );

@@ -109,7 +109,7 @@ export default function IslandPage() {
             <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
               <Button size="lg" className="px-8" asChild>
                 <a href="/statement-review">
-                  Free AI Statement Analysis
+                  Free Statement Analysis
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </Button>
@@ -155,7 +155,7 @@ export default function IslandPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 "$0 processing fees — forever",
-                "$0 monthly fees",
+                "$15/mo flat fee",
                 "Free terminal for qualifying businesses",
                 "No contracts — cancel anytime",
                 "Next-day deposits",
@@ -205,7 +205,7 @@ export default function IslandPage() {
                 Ready to stop losing money on {island.name}?
               </h2>
               <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-                Mahalo for considering TechSavvy. Get your free AI statement analysis and see exactly how much you'll keep.
+                Mahalo for considering TechSavvy. Get your free statement analysis and see exactly how much you'll keep.
               </p>
               <Button size="lg" className="px-8" asChild>
                 <a href="/statement-review">

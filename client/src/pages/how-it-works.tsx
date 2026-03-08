@@ -87,7 +87,7 @@ export default function HowItWorksPage() {
       description: "From the moment you go live, processing fees are no longer your problem. Card customers see a small surcharge at the terminal. Cash customers pay the listed price. Either way, you keep every single dollar. And if it's ever not working for you — walk away anytime. No contract. No cancellation fee.",
       details: [
         "Zero processing fees from day one — and every day after",
-        "No monthly fees, no PCI fees, no hidden charges",
+        "Just a flat $15/mo — no PCI fees, no hidden charges",
         "No contract — stay because you want to, not because you have to",
       ],
       icon: DollarSign,
@@ -116,7 +116,7 @@ export default function HowItWorksPage() {
   const pricingFAQs = [
     { q: "Are there any contracts or sign-up fees?", a: "No contracts, no sign-up fees, no hidden costs. Simple, transparent pricing. You can cancel anytime with zero penalties." },
     { q: "Is the equipment really free?", a: "Yes — during our Hawaii launch promotion, all equipment is free. Terminals and POS systems are provided at no cost for the life of your account. Equipment remains TechSavvy property and is returned if you ever leave the program." },
-    { q: "Are there any monthly fees?", a: "TechSavvy charges zero monthly fees — no statement fees, no PCI fees, no gateway fees, no batch fees. Note: Clover POS devices have a separate monthly software fee billed by Clover ($19.99–$84.99/mo depending on plan). Our Valor terminals have zero monthly fees." },
+    { q: "Are there any monthly fees?", a: "TechSavvy charges a flat $15/month — that's it. No processing fees, no PCI fees, no gateway fees, no batch fees, no hidden charges. Note: Clover POS devices have a separate monthly software fee billed by Clover ($19.99–$84.99/mo depending on plan). Our Valor VP100 terminal has no additional monthly fees beyond the $15." },
     { q: "What about interchange fees — don't I still pay those?", a: "With Cash Back, the surcharge covers the interchange and processing costs entirely. You keep 100% of your sale amount. That's the whole point — zero fees to you." },
     { q: "What if I want to leave TechSavvy?", a: "No problem. There's no contract and no cancellation fee. Simply return the equipment and you're done. We keep merchants by delivering value, not by trapping them." },
   ];
@@ -268,7 +268,7 @@ export default function HowItWorksPage() {
                   See exactly what you're losing.
                 </h2>
                 <p className="text-muted-foreground mb-3 max-w-lg mx-auto">
-                  Upload your processing statement and our AI will analyze it in under 60 seconds — showing you every hidden fee, your true effective rate, and exactly how much you'd save with TechSavvy.
+                  Upload your processing statement and we'll break down every line — interchange markups, PCI fees, batch fees, statement fees, junk charges — most merchants are paying 8–15 hidden fees on top of processing. We show you what each one costs and where we save you money.
                 </p>
                 <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
                   Free. No commitment. No one will call you unless you ask.
@@ -276,7 +276,7 @@ export default function HowItWorksPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Button size="lg" className="px-8" asChild>
                     <Link href="/statement-review">
-                      Try the Free AI Statement Analysis
+                      Try the Free Statement Analysis
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </Button>

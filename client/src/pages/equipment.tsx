@@ -152,13 +152,13 @@ export default function EquipmentPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card className="border-red-500/20 bg-red-500/5">
                 <CardContent className="p-5">
-                  <p className="text-xs font-bold text-red-400 mb-2">Competitors</p>
+                  <p className="text-xs font-bold text-red-400 mb-2">OhanaPay & Others</p>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <p>Free equipment <span className="text-red-400 font-medium">only if you process $10K+/mo</span></p>
-                    <p>Hidden <span className="text-red-400 font-medium">$15/mo platform fee</span></p>
-                    <p>No free website or digital marketing</p>
-                    <p>No AI tools for statement analysis</p>
+                    <p>$15/mo fee <span className="text-red-400 font-medium">+ still pay processing fees on some plans</span></p>
+                    <p>No statement analysis tools</p>
                     <p>No referral partner income program</p>
+                    <p>Limited equipment selection</p>
                   </div>
                 </CardContent>
               </Card>
@@ -167,10 +167,10 @@ export default function EquipmentPage() {
                   <p className="text-xs font-bold text-primary mb-2">TechSavvy Hawaii</p>
                   <div className="space-y-2 text-sm">
                     <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">ALL equipment free</span> — no volume requirement</span></p>
-                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">$0 monthly fees</span> — not $15, not $5, zero</span></p>
-                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Free custom website</span> for your business</span></p>
-                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">AI statement analysis</span> shows exact savings</span></p>
-                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Referral program</span> — earn from every merchant you send</span></p>
+                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">$15/mo flat</span> — zero processing fees on top</span></p>
+                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Statement analysis</span> exposes hidden fees you're paying</span></p>
+                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Referral program</span> — earn 50% on every merchant you send</span></p>
+                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Choose any device</span> — Clover, Valor, Pax</span></p>
                   </div>
                 </CardContent>
               </Card>

@@ -166,7 +166,7 @@ export default function IndustryPage() {
             <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
               <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
                 <a href="/statement-review">
-                  Get Your Free AI Analysis
+                  Get Your Free Analysis
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </Button>
@@ -268,7 +268,7 @@ export default function IndustryPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Button size="lg" className="px-8" asChild>
                   <a href="/statement-review">
-                    Free AI Statement Analysis
+                    Free Statement Analysis
                     <ArrowRight className="w-4 h-4" />
                   </a>
                 </Button>

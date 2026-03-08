@@ -156,7 +156,7 @@ export default function FreeGuidesPage() {
               <Link href="/statement-review">
                 <Button size="lg" className="gap-2">
                   <Upload className="w-4 h-4" />
-                  Free AI Statement Review
+                  Free Statement Review
                 </Button>
               </Link>
               <Link href="/contact">
@@ -339,7 +339,7 @@ export default function FreeGuidesPage() {
         </div>
       </section>
 
-      {/* AI Statement Review CTA */}
+      {/* Statement Review CTA */}
       <section className="py-12 px-4">
         <div className="container mx-auto max-w-3xl">
           <motion.div
@@ -365,7 +365,7 @@ export default function FreeGuidesPage() {
                       <Link href="/statement-review">
                         <Button size="lg" className="gap-2 font-bold">
                           <Upload className="w-4 h-4" />
-                          Free AI Analysis
+                          Free Analysis
                         </Button>
                       </Link>
                       <Link href="/contact">

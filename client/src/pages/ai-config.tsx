@@ -1540,7 +1540,7 @@ function LeadsTab() {
             <p className="text-xs font-semibold">Launch Promo — All Equipment FREE</p>
             <p className="text-[10px] text-muted-foreground">
               <span className="text-primary font-medium">ALL terminals & POS systems FREE</span> for new merchants during Hawaii launch • 
-              Zero processing fees • No contracts • No monthly fees
+              Zero processing fees • No contracts • $15/mo flat
             </p>
           </div>
         </CardContent>
