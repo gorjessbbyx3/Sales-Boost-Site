@@ -13,13 +13,13 @@ import { useSEO } from "@/hooks/useSEO";
 // ─── Equipment Data ───────────────────────────────────────────────
 
 const CLOVER_DEVICES = [
-  { name: "Cloverstation Solo", price: 1500, img: null, desc: "Full countertop POS with touchscreen", freeWith10k: true },
-  { name: "Cloverstation Solo Bundle", price: 1800, img: null, desc: "Solo + printer + cash drawer", freeWith10k: true },
-  { name: "Clover Station Duo 2 LTE", price: 1900, img: null, desc: "Dual-screen with customer display", freeWith10k: true },
-  { name: "Clover Mini", price: 750, img: null, desc: "Compact countertop POS", freeWith10k: true },
-  { name: "Clover Flex", price: 550, img: null, desc: "Portable wireless terminal", freeWith10k: false },
+  { name: "Cloverstation Solo", price: 1500, img: "/images/equipment/clover-station-solo.png", desc: "Full countertop POS with touchscreen", freeWith10k: true },
+  { name: "Cloverstation Solo Bundle", price: 1800, img: "/images/equipment/clover-station-solo.png", desc: "Solo + printer + cash drawer", freeWith10k: true },
+  { name: "Clover Station Duo 2 LTE", price: 1900, img: "/images/equipment/clover-station-duo.png", desc: "Dual-screen with customer display", freeWith10k: true },
+  { name: "Clover Mini", price: 750, img: "/images/equipment/clover-mini.jpg", desc: "Compact countertop POS", freeWith10k: true },
+  { name: "Clover Flex", price: 550, img: "/images/equipment/clover-flex.webp", desc: "Portable wireless terminal", freeWith10k: false },
   { name: "Clover Go Card Reader", price: 180, img: null, desc: "Mobile card reader for on-the-go", freeWith10k: false },
-  { name: "Clover Kiosk", price: 3800, img: null, desc: "Self-service kiosk for QSR", freeWith10k: true },
+  { name: "Clover Kiosk", price: 3800, img: "/images/equipment/clover-kiosk.jpg", desc: "Self-service kiosk for QSR", freeWith10k: true },
 ];
 
 const CLOVER_PLANS = [
@@ -30,20 +30,20 @@ const CLOVER_PLANS = [
 ];
 
 const TERMINALS = [
-  { name: "Valor VP100", price: 0, desc: "FREE with every account", highlight: true, tag: "FREE" },
-  { name: "Valor VL100", price: 195, desc: "Budget countertop" },
-  { name: "Valor VL100 (BT)", price: 295, desc: "Bluetooth-enabled" },
-  { name: "Valor VP500", price: 320, desc: "Smart touchscreen" },
-  { name: "Valor VL300", price: 190, desc: "Countertop terminal" },
-  { name: "Dejavoo P1", price: 225, desc: "Compact terminal" },
-  { name: "Dejavoo Z8", price: 215, desc: "Countertop terminal" },
-  { name: "Dejavoo QD4", price: 340, desc: "Smart terminal" },
-  { name: "Dejavoo QD2", price: 412, desc: "Premium smart terminal" },
-  { name: "FD150 Terminal", price: 330, desc: "First Data terminal" },
-  { name: "Pax S920", price: 325, desc: "Portable wireless" },
-  { name: "Pax S80", price: 189, desc: "Budget countertop" },
-  { name: "Pax A920", price: 320, desc: "Android smart terminal" },
-  { name: "Pax A920 Pro", price: 360, desc: "Android upgraded" },
+  { name: "Valor VP100", price: 0, img: "/images/equipment/valor-vp100.jpg", desc: "FREE with every account", highlight: true, tag: "FREE" },
+  { name: "Valor VL100", price: 195, img: "/images/equipment/valor-vl300.jpg", desc: "Budget countertop" },
+  { name: "Valor VL100 (BT)", price: 295, img: "/images/equipment/valor-vl300.jpg", desc: "Bluetooth-enabled" },
+  { name: "Valor VP500", price: 320, img: "/images/equipment/valor-vp550.jpg", desc: "Smart touchscreen" },
+  { name: "Valor VL300", price: 190, img: "/images/equipment/valor-vl300.jpg", desc: "Countertop terminal" },
+  { name: "Dejavoo P1", price: 225, img: "/images/equipment/dejavoo-p1.webp", desc: "Compact terminal" },
+  { name: "Dejavoo Z8", price: 215, img: "/images/equipment/dejavoo-p8.jpg", desc: "Countertop terminal" },
+  { name: "Dejavoo QD4", price: 340, img: null, desc: "Smart terminal" },
+  { name: "Dejavoo QD2", price: 412, img: null, desc: "Premium smart terminal" },
+  { name: "FD150 Terminal", price: 330, img: null, desc: "First Data terminal" },
+  { name: "Pax S920", price: 325, img: null, desc: "Portable wireless" },
+  { name: "Pax S80", price: 189, img: "/images/equipment/pax-a80.jpg", desc: "Budget countertop" },
+  { name: "Pax A920", price: 320, img: "/images/equipment/pax-a920.webp", desc: "Android smart terminal" },
+  { name: "Pax A920 Pro", price: 360, img: "/images/equipment/pax-a920-pro.webp", desc: "Android upgraded" },
 ];
 
 const PIN_PADS = [
@@ -70,11 +70,16 @@ const GATEWAYS = [
 
 // ─── Components ──────────────────────────────────────────────────
 
-function EquipmentCard({ name, price, desc, highlight, tag, freeWith10k }: {
-  name: string; price: number; desc?: string; highlight?: boolean; tag?: string; freeWith10k?: boolean;
+function EquipmentCard({ name, price, desc, highlight, tag, freeWith10k, img }: {
+  name: string; price: number; desc?: string; highlight?: boolean; tag?: string; freeWith10k?: boolean; img?: string | null;
 }) {
   return (
     <Card className={`overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5 ${highlight ? "ring-2 ring-primary border-primary/30 bg-primary/5" : "border-border/50"}`}>
+      {img && (
+        <div className="w-full h-36 bg-white flex items-center justify-center p-4 border-b border-border/30">
+          <img src={img} alt={name} className="max-h-full max-w-full object-contain" loading="lazy" />
+        </div>
+      )}
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div>
