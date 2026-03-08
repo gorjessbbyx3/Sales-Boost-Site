@@ -142,55 +142,6 @@ export default function EquipmentPage() {
         </div>
       </section>
 
-      {/* Why TechSavvy Over the Competition */}
-      <section className="py-10 sm:py-14 bg-card/50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <div className="text-center mb-8">
-              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight mb-2">Other processors say "free." Here's the fine print they won't tell you.</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card className="border-red-500/20 bg-red-500/5">
-                <CardContent className="p-5">
-                  <p className="text-xs font-bold text-red-400 mb-2">OhanaPay & Others</p>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <p>Free equipment <span className="text-red-400 font-medium">only if you process $10K+/mo</span></p>
-                    <p><span className="text-red-400 font-medium">Hidden fees</span> buried in fine print</p>
-                    <p>No statement analysis tools</p>
-                    <p>No referral partner income program</p>
-                    <p>Limited equipment selection</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-primary/30 bg-primary/5 ring-2 ring-primary/20 sm:scale-105">
-                <CardContent className="p-5">
-                  <p className="text-xs font-bold text-primary mb-2">TechSavvy Hawaii</p>
-                  <div className="space-y-2 text-sm">
-                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">ALL equipment free</span> — no volume requirement</span></p>
-                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Zero processing fees</span> — keep 100% of every sale</span></p>
-                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Statement analysis</span> exposes hidden fees you're paying</span></p>
-                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Referral program</span> — earn 50% on every merchant you send</span></p>
-                    <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary shrink-0" /><span><span className="font-semibold">Choose any device</span> — Clover, Valor, Pax</span></p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-red-500/20 bg-red-500/5">
-                <CardContent className="p-5">
-                  <p className="text-xs font-bold text-red-400 mb-2">Big processors (Square, Clover, etc.)</p>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <p><span className="text-red-400 font-medium">2.6–3.5% processing fees</span> on every swipe</p>
-                    <p><span className="text-red-400 font-medium">$14.95–$85/mo</span> software fees</p>
-                    <p>Equipment costs <span className="text-red-400 font-medium">$500–$1,900</span></p>
-                    <p>No local Hawaii support</p>
-                    <p>Long-term contracts with some</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* Recommended by Business Type */}
       <section className="py-12 sm:py-16 bg-card/50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">

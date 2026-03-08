@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Sparkles,
   Heart,
+  Users,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
@@ -187,12 +188,12 @@ export default function ApplyPage() {
               {[
                 "Free POS terminal or card reader",
                 "0% credit card processing fees",
-                "No monthly or hidden charges",
+                "No contracts — ever",
                 "Free setup & installation",
-                "Free merchant website",
-                "Local Hawai'i support team",
                 "Compliant cash discount program",
+                "Local Hawai'i support team",
                 "Next-day deposits available",
+                "Free equipment upgrade options",
               ].map((item) => (
                 <div key={item} className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
@@ -205,6 +206,24 @@ export default function ApplyPage() {
                 Claim Your Free Setup
                 <ArrowRight className="w-4 h-4" />
               </a>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Referral Program CTA */}
+      <section className="pb-16 sm:pb-24">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <div className="rounded-2xl border border-border/50 bg-card p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+              <Users className="w-6 h-6 text-emerald-500" />
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <h3 className="font-bold text-base mb-1">Know other business owners?</h3>
+              <p className="text-sm text-muted-foreground">Join our referral partner program and earn <span className="text-foreground font-semibold">50% of our revenue</span> on every merchant you send our way — paid monthly, for life.</p>
+            </div>
+            <Button variant="outline" className="shrink-0" asChild>
+              <a href="/refer">Learn More <ArrowRight className="w-4 h-4" /></a>
             </Button>
           </div>
         </div>
