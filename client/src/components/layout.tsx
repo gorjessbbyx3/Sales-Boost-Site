@@ -28,8 +28,7 @@ function Navbar() {
 
   const links = [
     { label: "How It Works", href: "/how-it-works" },
-    { label: "Equipment", href: "/equipment" },
-    { label: "Try Free", href: "/pricing" },
+    { label: "Free Equipment", href: "/equipment" },
     { label: "High-Risk", href: "/high-risk" },
     { label: "FAQ", href: "/how-it-works#faq" },
   ];

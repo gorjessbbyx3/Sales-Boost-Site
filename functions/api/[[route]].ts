@@ -932,16 +932,53 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // ─── PARTNER PROGRAM ROUTES (program.techsavvyhawaii.com) ──────
 
+    // POST /api/partner/register
+    if (path === "/api/partner/register" && method === "POST") {
+      const body: any = await request.json();
+      const { name, email, phone, password, company, payoutMethod, payoutHandle, w9Name, w9BusinessName, w9TaxClassification, w9Address, w9CityStateZip, w9TinType, w9TinLast4, agreementSignature } = body;
+      if (!name || !email || !password) return err("Name, email, and password required");
+      if (password.length < 6) return err("Password must be at least 6 characters");
+      const existing = await env.DB.prepare("SELECT id FROM partner_accounts WHERE email = ?").bind(email.toLowerCase().trim()).first();
+      if (existing) return err("An account with this email already exists", 409);
+      const id = `partner-${genId()}`;
+      const accessCode = genId().slice(0, 8).toUpperCase();
+      const pwHash = await hashPassword(password);
+      const ts = now();
+      const colors = ["#6366f1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4"];
+      const avatarColor = colors[Math.floor(Math.random() * colors.length)];
+      await env.DB.prepare(
+        `INSERT INTO partner_accounts (id, name, email, phone, company, access_code, avatar_color, tier, total_referrals, successful_referrals, total_earned, is_active, last_login, created_at, updated_at, agreement_signature, agreement_agreed_at, payout_method, payout_handle, w9_name, w9_business_name, w9_tax_classification, w9_address, w9_city_state_zip, w9_tin_type, w9_tin_last4, w9_signed_at, password_hash)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'bronze', 0, 0, 0, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(id, name, email.toLowerCase().trim(), phone || "", company || "", accessCode, avatarColor, ts, ts, ts, agreementSignature || "", agreementSignature ? ts : "", payoutMethod || "", payoutHandle || "", w9Name || name, w9BusinessName || "", w9TaxClassification || "", w9Address || "", w9CityStateZip || "", w9TinType || "", w9TinLast4 || "", w9Name ? ts : "", pwHash).run();
+      // Set session cookie and return
+      const partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE id = ?").bind(id).first();
+      const headers = new Headers();
+      headers.set("Set-Cookie", `partner_session=${id}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000`);
+      return new Response(JSON.stringify({ ...mapPartner(partner!), accessCode }), { status: 201, headers: { ...Object.fromEntries(headers.entries()), "Content-Type": "application/json" } });
+    }
+
     // POST /api/partner/login
     if (path === "/api/partner/login" && method === "POST") {
       const body: any = await request.json();
+      // Support both access code and email+password login
       const code = (body.accessCode || "").trim().toUpperCase();
-      if (!code) return err("Access code required");
-      const partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE access_code = ? AND is_active = 1").bind(code).first();
-      if (!partner) return err("Invalid access code", 401);
+      const email = (body.email || "").trim().toLowerCase();
+      const password = body.password || "";
+      let partner: any = null;
+      if (code) {
+        partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE access_code = ? AND is_active = 1").bind(code).first();
+      } else if (email && password) {
+        partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE email = ? AND is_active = 1").bind(email).first();
+        if (partner && partner.password_hash) {
+          const valid = await verifyPassword(password, partner.password_hash as string);
+          if (!valid) partner = null;
+        } else {
+          partner = null;
+        }
+      }
+      if (!partner) return err("Invalid credentials", 401);
       const ts = now();
       await env.DB.prepare("UPDATE partner_accounts SET last_login = ? WHERE id = ?").bind(ts, partner.id).run();
-      // Set partner session cookie
       const headers = new Headers();
       headers.set("Set-Cookie", `partner_session=${partner.id}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000`);
       return new Response(JSON.stringify(mapPartner(partner)), { status: 200, headers: { ...Object.fromEntries(headers.entries()), "Content-Type": "application/json" } });
