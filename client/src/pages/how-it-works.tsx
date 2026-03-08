@@ -76,57 +76,15 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* The Flow — Customer pays → You keep 100% → Next day deposit */}
+      {/* How it works — the receipt */}
       <section className="py-12 sm:py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }}>
-            <motion.div className="text-center mb-10" variants={fadeUp}>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">Here's what happens at checkout</h2>
-            </motion.div>
-
-            {/* 3-step visual flow */}
-            <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto mb-12" variants={fadeUp}>
-              <Card className="border-primary/20 bg-primary/5 text-center">
-                <CardContent className="p-6">
-                  <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-3">
-                    <CreditCard className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="font-bold mb-1">Customer Pays</h3>
-                  <p className="text-xs text-muted-foreground">Card or cash — their choice. Card customers see a small service fee. Cash customers get a discount.</p>
-                </CardContent>
-              </Card>
-              <Card className="border-primary/20 bg-primary/5 text-center">
-                <CardContent className="p-6">
-                  <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-3">
-                    <DollarSign className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="font-bold mb-1">You Keep 100%</h3>
-                  <p className="text-xs text-muted-foreground">The service fee covers all processing costs. You keep the full sale amount — every dollar, every time.</p>
-                </CardContent>
-              </Card>
-              <Card className="border-primary/20 bg-primary/5 text-center">
-                <CardContent className="p-6">
-                  <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-3">
-                    <Building className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="font-bold mb-1">Deposited Next Day</h3>
-                  <p className="text-xs text-muted-foreground">100% of your sales deposited directly into your bank account. Next business day.</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Receipt Comparison — The actual receipt image */}
-      <section className="py-12 sm:py-20 bg-card/50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <div className="text-center mb-8">
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">See it on the receipt</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">Card payments include a small service fee that covers processing. Cash payments get that fee removed as a discount. You keep the full subtotal either way.</p>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">This is what it looks like at checkout</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">Card payments include a small service fee that covers processing. Cash payments get that fee removed as a discount. Either way — you keep 100% of the sale.</p>
             </div>
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-2xl mx-auto">
               <img
                 src="/images/cash-discount-receipt.jpeg"
                 alt="Cash discount receipt comparison — credit card payment with service fee vs cash payment with discount applied"
@@ -134,6 +92,9 @@ export default function HowItWorksPage() {
                 loading="lazy"
               />
             </div>
+            <p className="text-center text-sm text-muted-foreground mt-6 max-w-lg mx-auto">
+              The "Service Fee" covers card processing costs. When your customer pays with cash, that fee is removed as a discount. <span className="text-foreground font-semibold">You keep the full subtotal — every transaction.</span>
+            </p>
           </motion.div>
         </div>
       </section>
