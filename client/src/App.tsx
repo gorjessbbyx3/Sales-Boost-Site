@@ -25,7 +25,6 @@ const ReferralPage = lazy(() => import("@/pages/referral"));
 const ApplyPage = lazy(() => import("@/pages/apply"));
 const EquipmentPage = lazy(() => import("@/pages/equipment"));
 const PartnerProgramPage = lazy(() => import("@/pages/partner-program"));
-const EquipmentPage = lazy(() => import("@/pages/equipment"));
 const IndustryPage = lazy(() => import("@/pages/industry"));
 const IslandPage = lazy(() => import("@/pages/island"));
 

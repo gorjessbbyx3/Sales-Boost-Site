@@ -199,11 +199,6 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/equipment" className="transition-colors hover:text-white" data-testid="link-footer-equipment">
-                  Equipment & POS
-                </Link>
-              </li>
-              <li>
                 <Link href="/refer" className="transition-colors hover:text-primary text-primary/80 font-medium" data-testid="link-footer-refer-biz">
                   Earn Residual Income →
                 </Link>
