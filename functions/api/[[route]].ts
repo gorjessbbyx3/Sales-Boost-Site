@@ -4181,159 +4181,153 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const singleId = body.leadId as string | undefined;
       const limit = Math.min(body.limit || 15, 30);
 
-      // Get leads missing emails
       let leadsToEnrich: any[] = [];
       if (singleId) {
         const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ? AND email = ''").bind(singleId).first();
         if (lead) leadsToEnrich = [lead];
       } else {
-        const { results } = await env.DB.prepare(
-          "SELECT * FROM leads WHERE email = '' AND (business != '' OR name != '') ORDER BY created_at DESC LIMIT ?"
-        ).bind(limit).all();
+        const { results } = await env.DB.prepare("SELECT * FROM leads WHERE email = '' AND (business != '' OR name != '') ORDER BY created_at DESC LIMIT ?").bind(limit).all();
         leadsToEnrich = results || [];
       }
 
       if (leadsToEnrich.length === 0) return json({ enriched: 0, total: 0, results: [], message: "No leads need email enrichment" });
 
+      const JUNK_DOMAINS = ["example.com","sentry.io","wixpress.com","google.com","facebook.com","instagram.com","twitter.com","youtube.com","yelp.com","squarespace.com","wordpress.com","cloudflare.com","amazonaws.com","w3.org","schema.org","jquery.com","googleapis.com","gstatic.com","fbcdn.net","cdnjs.com","gravatar.com","wp.com","apple.com","microsoft.com","linkedin.com","pinterest.com","tiktok.com","tripadvisor.com","opentable.com","doordash.com","ubereats.com","grubhub.com"];
+      const JUNK_PREFIXES = ["noreply","no-reply","donotreply","do-not-reply","mailer-daemon","postmaster","webmaster","support@wix","support@square","info@yelp"];
+      const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+      function extractEmails(text: string): string[] {
+        const raw = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}/g) || [];
+        return raw.filter(e => {
+          const lower = e.toLowerCase();
+          const domain = lower.split("@")[1] || "";
+          if (JUNK_DOMAINS.some(j => domain.includes(j))) return false;
+          if (JUNK_PREFIXES.some(p => lower.startsWith(p))) return false;
+          if (lower.length > 60 || lower.length < 6) return false;
+          return true;
+        }).map(e => e.toLowerCase());
+      }
+
+      async function fetchPage(url: string, timeout = 6000): Promise<string> {
+        try {
+          const r = await fetch(url, { headers: { "User-Agent": UA, "Accept": "text/html" }, signal: AbortSignal.timeout(timeout) });
+          if (!r.ok) return "";
+          return await r.text();
+        } catch { return ""; }
+      }
+
       const results: any[] = [];
-      const JUNK_DOMAINS = ["example.com", "sentry.io", "wixpress.com", "google.com", "facebook.com", "instagram.com", "twitter.com", "youtube.com", "yelp.com", "squarespace.com", "wordpress.com", "cloudflare.com", "amazonaws.com", "w3.org", "schema.org", "jquery.com", "googleapis.com", "gstatic.com", "fbcdn.net", "cdnjs.com", "gravatar.com", "wp.com"];
 
       for (const lead of leadsToEnrich) {
         const business = (lead.business as string || lead.name as string || "").trim();
         if (!business) { results.push({ id: lead.id, business, status: "skipped", reason: "No business name" }); continue; }
 
         let foundEmail = "";
-        let foundWebsite = "";
-        const searchTerms = [`${business} Hawaii email`, `${business} Honolulu contact`];
+        let foundPhone = lead.phone as string || "";
+        let source = "";
 
-        for (const searchTerm of searchTerms) {
-          if (foundEmail) break;
-          try {
-            // Search Google
-            const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(searchTerm)}&num=8`;
-            const gResp = await fetch(googleUrl, {
-              headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html",
-                "Accept-Language": "en-US,en;q=0.9",
-              },
-              signal: AbortSignal.timeout(8000),
-            });
-            if (!gResp.ok) continue;
-            const gHtml = await gResp.text();
+        // STEP 1: Google the business to find their actual website
+        let businessWebsite = "";
+        let facebookUrl = "";
+        let yelpUrl = "";
+        try {
+          const gHtml = await fetchPage(`https://www.google.com/search?q=${encodeURIComponent(business + " Honolulu Hawaii")}&num=10`, 8000);
+          const urlMatches = [...gHtml.matchAll(/href="\/url\?q=([^&"]+)/g)].map(m => { try { return decodeURIComponent(m[1]); } catch { return ""; } }).filter(u => u.startsWith("http"));
+          for (const u of urlMatches) {
+            if (u.includes("facebook.com") && !facebookUrl) { facebookUrl = u; continue; }
+            if (u.includes("yelp.com") && !yelpUrl) { yelpUrl = u; continue; }
+            if (!businessWebsite && !u.includes("google.com") && !u.includes("youtube.com") && !u.includes("wikipedia.org") && !u.includes("instagram.com") && !u.includes("twitter.com") && !u.includes("tripadvisor.com") && !u.includes("doordash.com") && !u.includes("yelp.com") && !u.includes("facebook.com")) {
+              businessWebsite = u;
+            }
+          }
+        } catch {}
 
-            // Extract emails directly from Google results snippets
-            const snippetEmails = gHtml.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/g) || [];
-            for (const e of snippetEmails) {
-              const domain = e.split("@")[1]?.toLowerCase();
-              if (domain && !JUNK_DOMAINS.some(j => domain.includes(j)) && e.length < 60) {
-                foundEmail = e.toLowerCase();
-                break;
-              }
+        // STEP 2: Scrape the business website — homepage + contact/about pages
+        if (businessWebsite) {
+          let baseUrl = "";
+          try { baseUrl = new URL(businessWebsite).origin; } catch {}
+          const pagesToScrape = [businessWebsite];
+          if (baseUrl) { pagesToScrape.push(baseUrl + "/contact", baseUrl + "/about", baseUrl + "/about-us", baseUrl + "/contact-us"); }
+
+          for (const pageUrl of pagesToScrape) {
+            if (foundEmail) break;
+            const html = await fetchPage(pageUrl);
+            if (!html) continue;
+            const mailtoMatches = html.match(/mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6})/gi) || [];
+            for (const m of mailtoMatches) {
+              const emails = extractEmails(m.replace(/^mailto:/i, ""));
+              if (emails.length > 0) { foundEmail = emails[0]; source = "website-mailto"; break; }
             }
             if (foundEmail) break;
-
-            // Extract URLs from Google results to scrape
-            const urlMatches = gHtml.matchAll(/href="\/url\?q=([^&"]+)/g);
-            const pageUrls: string[] = [];
-            for (const m of urlMatches) {
-              try {
-                const url = decodeURIComponent(m[1]);
-                if (url.startsWith("http") && !url.includes("google.com") && !url.includes("youtube.com") && !url.includes("wikipedia.org") && !url.includes("facebook.com") && !url.includes("instagram.com") && !url.includes("twitter.com")) {
-                  pageUrls.push(url);
-                }
-              } catch {}
+            const emails = extractEmails(html);
+            if (emails.length > 0) { foundEmail = emails[0]; source = "website"; break; }
+            if (!foundPhone) {
+              const phones = html.match(/\(?808\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g);
+              if (phones?.[0]) foundPhone = phones[0];
             }
-            // Also try direct hrefs
-            const hrefMatches = gHtml.matchAll(/href="(https?:\/\/(?!www\.google|maps\.google|youtube\.com|facebook\.com|instagram\.com|twitter\.com|wikipedia\.org)[^"]+)"/g);
-            for (const m of hrefMatches) {
-              if (!pageUrls.includes(m[1])) pageUrls.push(m[1]);
-            }
-
-            // Scrape top 4 result pages for emails
-            for (const pageUrl of [...new Set(pageUrls)].slice(0, 4)) {
-              if (foundEmail) break;
-              try {
-                const pResp = await fetch(pageUrl, {
-                  headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-                  signal: AbortSignal.timeout(6000),
-                });
-                if (!pResp.ok) continue;
-                const pHtml = await pResp.text();
-
-                // Extract emails
-                const pageEmails = pHtml.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/g) || [];
-                for (const e of pageEmails) {
-                  const domain = e.split("@")[1]?.toLowerCase();
-                  if (domain && !JUNK_DOMAINS.some(j => domain.includes(j)) && e.length < 60 && !e.includes("noreply") && !e.includes("no-reply") && !e.includes("donotreply")) {
-                    foundEmail = e.toLowerCase();
-                    if (!foundWebsite) {
-                      try { foundWebsite = new URL(pageUrl).origin; } catch {}
-                    }
-                    break;
-                  }
-                }
-
-                // Also try mailto: links
-                if (!foundEmail) {
-                  const mailtoMatches = pHtml.match(/mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})/gi) || [];
-                  for (const m of mailtoMatches) {
-                    const e = m.replace(/^mailto:/i, "").toLowerCase();
-                    const domain = e.split("@")[1];
-                    if (domain && !JUNK_DOMAINS.some(j => domain.includes(j)) && !e.includes("noreply")) {
-                      foundEmail = e;
-                      if (!foundWebsite) { try { foundWebsite = new URL(pageUrl).origin; } catch {} }
-                      break;
-                    }
-                  }
-                }
-
-                // Grab website URL if not set yet (from Yelp biz pages etc.)
-                if (!foundWebsite && pageUrl.includes("yelp.com")) {
-                  const bizUrlMatch = pHtml.match(/href="(https?:\/\/(?!www\.yelp)[^"]+)"[^>]*>.*?Business website/i);
-                  if (bizUrlMatch) foundWebsite = bizUrlMatch[1];
-                }
-              } catch {}
-            }
-          } catch {}
-          // Small delay between searches
-          await new Promise(r => setTimeout(r, 800));
+          }
         }
 
-        // Also try the lead's phone number as a search term if no email yet
-        if (!foundEmail && lead.phone) {
+        // STEP 3: Check Facebook page
+        if (!foundEmail && facebookUrl) {
+          const fbHtml = await fetchPage(facebookUrl);
+          if (fbHtml) {
+            const emails = extractEmails(fbHtml);
+            if (emails.length > 0) { foundEmail = emails[0]; source = "facebook"; }
+            if (!foundPhone) {
+              const phones = fbHtml.match(/\(?808\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g);
+              if (phones?.[0]) foundPhone = phones[0];
+            }
+          }
+        }
+
+        // STEP 4: Check Google Play store listings
+        if (!foundEmail) {
           try {
-            const phoneSearch = `"${lead.phone}" "${business}" email`;
-            const gResp = await fetch(`https://www.google.com/search?q=${encodeURIComponent(phoneSearch)}&num=5`, {
-              headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "Accept": "text/html" },
-              signal: AbortSignal.timeout(6000),
-            });
-            if (gResp.ok) {
-              const gHtml = await gResp.text();
-              const phoneEmails = gHtml.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/g) || [];
-              for (const e of phoneEmails) {
-                const domain = e.split("@")[1]?.toLowerCase();
-                if (domain && !JUNK_DOMAINS.some(j => domain.includes(j)) && e.length < 60) {
-                  foundEmail = e.toLowerCase();
-                  break;
-                }
+            const appHtml = await fetchPage(`https://www.google.com/search?q=${encodeURIComponent(business + " Hawaii site:play.google.com")}&num=3`);
+            const playMatch = appHtml.match(/href="\/url\?q=(https:\/\/play\.google\.com\/store\/apps\/details[^&"]+)/);
+            if (playMatch) {
+              const playHtml = await fetchPage(decodeURIComponent(playMatch[1]));
+              const emails = extractEmails(playHtml);
+              if (emails.length > 0) { foundEmail = emails[0]; source = "google-play"; }
+            }
+          } catch {}
+        }
+
+        // STEP 5: Check Yelp for business website link
+        if (!foundEmail && yelpUrl) {
+          const yelpHtml = await fetchPage(yelpUrl);
+          if (yelpHtml) {
+            const bizLinks = yelpHtml.match(/href="(https?:\/\/(?!www\.yelp)[^"]+)"/g) || [];
+            for (const m of bizLinks) {
+              if (foundEmail) break;
+              const urlMatch = m.match(/href="([^"]+)"/);
+              if (urlMatch?.[1] && !urlMatch[1].includes("yelp") && !urlMatch[1].includes("google")) {
+                const siteHtml = await fetchPage(urlMatch[1]);
+                const emails = extractEmails(siteHtml);
+                if (emails.length > 0) { foundEmail = emails[0]; source = "yelp-website-link"; break; }
               }
             }
-          } catch {}
+            if (!foundPhone) {
+              const phones = yelpHtml.match(/\(?808\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g);
+              if (phones?.[0]) foundPhone = phones[0];
+            }
+          }
         }
 
-        if (foundEmail) {
-          // Update the lead
-          const updates = ["email = ?", "updated_at = ?"];
-          const values = [foundEmail, now()];
+        // Update the lead
+        if (foundEmail || (foundPhone && foundPhone !== lead.phone)) {
+          const updates: string[] = ["updated_at = ?"];
+          const values: any[] = [now()];
+          if (foundEmail) { updates.push("email = ?"); values.push(foundEmail); }
+          if (foundPhone && !lead.phone) { updates.push("phone = ?"); values.push(foundPhone); }
           await env.DB.prepare(`UPDATE leads SET ${updates.join(", ")} WHERE id = ?`).bind(...values, lead.id).run();
-          results.push({ id: lead.id, business, status: "found", email: foundEmail, website: foundWebsite || "" });
+          results.push({ id: lead.id, business, status: foundEmail ? "found" : "phone_only", email: foundEmail, phone: foundPhone, source, website: businessWebsite });
         } else {
-          results.push({ id: lead.id, business, status: "not_found", email: "", website: foundWebsite || "" });
+          results.push({ id: lead.id, business, status: "not_found", email: "", website: businessWebsite, source: "" });
         }
 
-        // Rate limit between leads
-        if (leadsToEnrich.length > 1) await new Promise(r => setTimeout(r, 1200));
+        if (leadsToEnrich.length > 1) await new Promise(r => setTimeout(r, 1500));
       }
 
       const enriched = results.filter(r => r.status === "found").length;
