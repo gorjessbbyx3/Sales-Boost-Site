@@ -3023,7 +3023,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         // Auto Outreach: find NEW unassigned leads older than delay, not already in queue
         if (cfg.auto_outreach_enabled) {
           const { results: newLeads } = await env.DB.prepare(
-            `SELECT l.* FROM leads l WHERE l.status = 'new' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND l.email != '' AND l.created_at < ? AND l.id NOT IN (SELECT lead_id FROM outreach_queue WHERE type = 'initial') ORDER BY l.created_at ASC LIMIT ?`
+            `SELECT l.* FROM leads l WHERE l.status = 'new' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND (l.email != '' OR l.phone != '') AND l.created_at < ? AND l.id NOT IN (SELECT lead_id FROM outreach_queue WHERE type = 'initial') ORDER BY l.created_at ASC LIMIT ?`
           ).bind(hoursAgo, cfg.max_outreach_per_day || 15).all();
           for (const lead of (newLeads || [])) {
             const id = `oq-${genId()}`;
@@ -3032,27 +3032,41 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             const completedItems = checklist.filter((c: any) => c.done).map((c: any) => c.label);
             const checklistContext = completedItems.length > 0 ? `\nInteraction history: ${completedItems.join(", ")}` : "";
             const painContext = lead.pain_points ? `\nKnown pain points: ${lead.pain_points}` : "";
-            const volumeContext = lead.monthly_volume ? `\nMonthly volume: ${lead.monthly_volume}` : "";
-            const processorContext = lead.current_processor ? `\nCurrent processor: ${lead.current_processor}` : "";
+            const hasEmail = !!(lead.email as string);
 
-            // Generate personalized email via AI Worker
-            try {
-              const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
-                method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
-                body: JSON.stringify({ ownerName: lead.name, businessName: business, vertical: lead.vertical, tone: "friendly", context: `Initial outreach to new lead.${checklistContext}${painContext}${volumeContext}${processorContext}` }),
-              });
-              const emailData: any = await workerRes.json();
-              const subject = emailData.subject || `Eliminate Processing Fees for ${business}`;
-              const emailBody = emailData.body || `Hi ${lead.name || "there"},\n\nI'm reaching out from TechSavvy Hawaii. We help businesses like ${business} eliminate credit card processing fees — you keep 100% of every sale.\n\nWould you be open to a quick chat?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
-              const htmlBody = emailBody.replace(/\n/g, "<br>");
-              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, htmlBody, ts, ts).run();
-              queued++;
-            } catch {
-              // Fallback to static template
-              const subject = `Eliminate Processing Fees for ${business}`;
-              const emailBody = `Hi ${lead.name || "there"},\n\nI'm reaching out from TechSavvy Hawaii. We help businesses like ${business} eliminate credit card processing fees entirely — you keep 100% of every sale.\n\nWould you be open to a quick chat about how we could save you money?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
-              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
-              queued++;
+            if (hasEmail) {
+              try {
+                const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
+                  method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+                  body: JSON.stringify({ ownerName: lead.name, businessName: business, vertical: lead.vertical, tone: "friendly", context: `Initial outreach.${checklistContext}${painContext}` }),
+                });
+                const emailData: any = await workerRes.json();
+                const subject = emailData.subject || `Eliminate Processing Fees for ${business}`;
+                const emailBody = emailData.body || `Hi ${lead.name || "there"},\n\nTechSavvy Hawaii here. We help businesses like ${business} eliminate credit card processing fees.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
+                queued++;
+              } catch {
+                const subject = `Eliminate Processing Fees for ${business}`;
+                const emailBody = `Hi ${lead.name || "there"},\n\nTechSavvy Hawaii here. We help businesses like ${business} eliminate credit card processing fees — you keep 100% of every sale.\n\nWorth a quick chat?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
+                queued++;
+              }
+            } else if (lead.phone) {
+              // Phone-only lead: generate SMS draft
+              try {
+                const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/sms", {
+                  method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+                  body: JSON.stringify({ ownerName: lead.name, businessName: business, context: `Initial outreach.${checklistContext}${painContext}`, tone: "friendly" }),
+                });
+                const smsData: any = await workerRes.json();
+                const smsText = smsData.message || `Hi${lead.name ? ` ${lead.name}` : ""}, this is TechSavvy Hawaii. We help businesses like ${business} eliminate credit card processing fees. Worth a quick chat? (808) 767-5460`;
+                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
+                queued++;
+              } catch {
+                const smsText = `Hi${lead.name ? ` ${lead.name}` : ""}, this is TechSavvy Hawaii. We help local businesses eliminate credit card processing fees. Worth a quick chat? (808) 767-5460`;
+                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
+                queued++;
+              }
             }
           }
         }
@@ -3061,7 +3075,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         if (cfg.auto_follow_up_enabled) {
           const maxFollowUps = cfg.max_follow_ups_per_lead || 3;
           const { results: staleLeads } = await env.DB.prepare(
-            `SELECT l.* FROM leads l WHERE l.status = 'contacted' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND l.email != '' AND l.updated_at < ? ORDER BY l.updated_at ASC LIMIT ?`
+            `SELECT l.* FROM leads l WHERE l.status = 'contacted' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND (l.email != '' OR l.phone != '') AND l.updated_at < ? ORDER BY l.updated_at ASC LIMIT ?`
           ).bind(daysAgo, cfg.max_outreach_per_day || 15).all();
           for (const lead of (staleLeads || [])) {
             const { results: existing } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM outreach_queue WHERE lead_id = ? AND type = 'follow_up'").bind(lead.id).all();
@@ -3072,22 +3086,28 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             let checklist: any[] = []; try { checklist = JSON.parse(lead.checklist as string || "[]"); } catch {}
             const completedItems = checklist.filter((c: any) => c.done).map((c: any) => c.label);
             const checklistContext = completedItems.length > 0 ? `Previous interactions: ${completedItems.join(", ")}.` : "";
+            const hasEmail = !!(lead.email as string);
 
-            try {
-              const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
-                method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
-                body: JSON.stringify({ ownerName: lead.name, businessName: business, vertical: lead.vertical, tone: "friendly", context: `Follow-up #${count + 1}. They haven't responded yet. ${checklistContext} ${lead.pain_points ? `Pain points: ${lead.pain_points}` : ""}`.trim() }),
-              });
-              const emailData: any = await workerRes.json();
-              const subject = emailData.subject || `Following up — ${business}`;
-              const emailBody = emailData.body || `Hi ${lead.name || "there"},\n\nJust following up about eliminating processing fees for ${business}.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
-              const htmlBody = emailBody.replace(/\n/g, "<br>");
-              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, htmlBody, ts, ts).run();
-              queued++;
-            } catch {
-              const subject = `Following up — ${business}`;
-              const emailBody = `Hi ${lead.name || "there"},\n\nJust wanted to follow up about eliminating processing fees for ${business}. Our merchants keep 100% of every sale.\n\nWorth a quick look?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
-              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
+            if (hasEmail) {
+              try {
+                const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
+                  method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+                  body: JSON.stringify({ ownerName: lead.name, businessName: business, vertical: lead.vertical, tone: "friendly", context: `Follow-up #${count + 1}. They haven't responded yet. ${checklistContext} ${lead.pain_points ? `Pain points: ${lead.pain_points}` : ""}`.trim() }),
+                });
+                const emailData: any = await workerRes.json();
+                const subject = emailData.subject || `Following up — ${business}`;
+                const emailBody = emailData.body || `Hi ${lead.name || "there"},\n\nJust following up about eliminating processing fees for ${business}.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
+                queued++;
+              } catch {
+                const subject = `Following up — ${business}`;
+                const emailBody = `Hi ${lead.name || "there"},\n\nJust following up about eliminating processing fees for ${business}.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
+                queued++;
+              }
+            } else if (lead.phone) {
+              const smsText = `Hi${lead.name ? ` ${lead.name}` : ""}, just following up from TechSavvy Hawaii about eliminating processing fees for ${business}. Still interested? (808) 767-5460`;
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 Follow-up SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
               queued++;
             }
           }
