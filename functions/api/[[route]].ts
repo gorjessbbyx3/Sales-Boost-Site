@@ -3005,9 +3005,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (path === "/api/autopilot/config" && method === "GET") {
       try {
-        const cfg = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
-        if (!cfg) return json({ id: "default", enabled: false, autoProspectEnabled: false, prospectLocations: "Honolulu, Hawaii", prospectVerticals: "restaurant,retail,salon", maxProspectsPerRun: 10, autoOutreachEnabled: false, outreachDelay: 2, maxOutreachPerDay: 15, autoFollowUpEnabled: false, followUpAfterDays: 3, maxFollowUpsPerLead: 3, autoEnrichEnabled: true, lastRunAt: "", totalProspected: 0, totalEmailed: 0, totalFollowUps: 0, updatedAt: "" });
-        return json(mapAutopilotConfig(cfg));
+        let cfg = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
+        if (!cfg) {
+          await env.DB.prepare("INSERT OR IGNORE INTO autopilot_config (id, enabled, auto_prospect_enabled, prospect_locations, prospect_verticals, max_prospects_per_run, auto_outreach_enabled, outreach_delay_hours, max_outreach_per_day, auto_follow_up_enabled, follow_up_after_days, max_follow_ups_per_lead, auto_enrich_enabled, last_run_at, total_prospected, total_emailed, total_follow_ups, updated_at) VALUES ('default', 0, 0, 'Honolulu, Hawaii', 'restaurant,retail,salon,auto_repair', 10, 0, 2, 15, 0, 3, 3, 1, '', 0, 0, 0, ?)").bind(now()).run();
+          cfg = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
+        }
+        return json(cfg ? mapAutopilotConfig(cfg) : { id: "default", enabled: false, autoProspectEnabled: false, prospectLocations: "Honolulu, Hawaii", prospectVerticals: "restaurant,retail,salon", maxProspectsPerRun: 10, autoOutreachEnabled: false, outreachDelay: 2, maxOutreachPerDay: 15, autoFollowUpEnabled: false, followUpAfterDays: 3, maxFollowUpsPerLead: 3, autoEnrichEnabled: true, lastRunAt: "", totalProspected: 0, totalEmailed: 0, totalFollowUps: 0, updatedAt: "" });
       } catch { return json({ id: "default", enabled: false, autoProspectEnabled: false, prospectLocations: "Honolulu, Hawaii", prospectVerticals: "restaurant,retail,salon", maxProspectsPerRun: 10, autoOutreachEnabled: false, outreachDelay: 2, maxOutreachPerDay: 15, autoFollowUpEnabled: false, followUpAfterDays: 3, maxFollowUpsPerLead: 3, autoEnrichEnabled: true, lastRunAt: "", totalProspected: 0, totalEmailed: 0, totalFollowUps: 0, updatedAt: "" }); }
     }
 
@@ -3018,6 +3021,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const updates: string[] = ["updated_at = ?"]; const values: any[] = [now()];
       for (const [jsKey, dbCol] of Object.entries(fieldMap)) { if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(boolFields.includes(jsKey) ? (body[jsKey] ? 1 : 0) : body[jsKey]); } }
       try {
+        // Ensure default row exists before updating
+        await env.DB.prepare("INSERT OR IGNORE INTO autopilot_config (id, enabled, auto_prospect_enabled, prospect_locations, prospect_verticals, max_prospects_per_run, auto_outreach_enabled, outreach_delay_hours, max_outreach_per_day, auto_follow_up_enabled, follow_up_after_days, max_follow_ups_per_lead, auto_enrich_enabled, last_run_at, total_prospected, total_emailed, total_follow_ups, updated_at) VALUES ('default', 0, 0, 'Honolulu, Hawaii', 'restaurant,retail,salon,auto_repair', 10, 0, 2, 15, 0, 3, 3, 1, '', 0, 0, 0, ?)").bind(now()).run();
         await env.DB.prepare(`UPDATE autopilot_config SET ${updates.join(", ")} WHERE id = 'default'`).bind(...values).run();
         const row = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
         return json(mapAutopilotConfig(row!));
@@ -3026,6 +3031,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (path === "/api/autopilot/toggle" && method === "POST") {
       try {
+        // Ensure default row exists before toggling
+        await env.DB.prepare("INSERT OR IGNORE INTO autopilot_config (id, enabled, auto_prospect_enabled, prospect_locations, prospect_verticals, max_prospects_per_run, auto_outreach_enabled, outreach_delay_hours, max_outreach_per_day, auto_follow_up_enabled, follow_up_after_days, max_follow_ups_per_lead, auto_enrich_enabled, last_run_at, total_prospected, total_emailed, total_follow_ups, updated_at) VALUES ('default', 0, 0, 'Honolulu, Hawaii', 'restaurant,retail,salon,auto_repair', 10, 0, 2, 15, 0, 3, 3, 1, '', 0, 0, 0, ?)").bind(now()).run();
         const cfg = await env.DB.prepare("SELECT enabled FROM autopilot_config WHERE id = 'default'").first();
         const newEnabled = !(cfg?.enabled);
         await env.DB.prepare("UPDATE autopilot_config SET enabled = ?, updated_at = ? WHERE id = 'default'").bind(newEnabled ? 1 : 0, now()).run();
