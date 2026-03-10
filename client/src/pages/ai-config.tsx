@@ -70,6 +70,7 @@ interface Lead {
   nextStepDate: string;
   attachments: Array<{ name: string; url: string }>;
   notes: string;
+  assignedTo: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -1453,11 +1454,13 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
 
 function LeadsTab() {
   const { data: leads = [], refetch } = useQuery<Lead[]>({ queryKey: ["/api/leads"] });
+  const { data: teamMembers = [] } = useQuery<{ id: string; name: string; role: string }[]>({ queryKey: ["/api/team-members"] });
   const [showForm, setShowForm] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<PipelineStage | "all">("all");
   const [filterSource, setFilterSource] = useState<LeadSource | "all">("all");
+  const [filterAssigned, setFilterAssigned] = useState<string>("all");
   const [showRestrictions, setShowRestrictions] = useState(false);
   const { toast } = useToast();
 
@@ -1492,9 +1495,10 @@ function LeadsTab() {
   const filteredLeads = useMemo(() => leads
     .filter((l) => filterStatus === "all" || l.status === filterStatus)
     .filter((l) => filterSource === "all" || l.source === filterSource)
+    .filter((l) => filterAssigned === "all" || (filterAssigned === "autopilot" ? !l.assignedTo : l.assignedTo === filterAssigned))
     .filter((l) => !search || [l.name, l.business, l.email, l.phone, l.currentProcessor].some((f) => f?.toLowerCase().includes(search.toLowerCase())))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-  [leads, filterStatus, filterSource, search]);
+  [leads, filterStatus, filterSource, filterAssigned, search]);
 
   const handleSave = (form: Partial<Lead>) => {
     if (editingLead) updateMutation.mutate({ ...form, id: editingLead.id } as Lead & { id: string });
@@ -1528,6 +1532,14 @@ function LeadsTab() {
           <SelectContent>
             <SelectItem value="all">All Sources</SelectItem>
             {(Object.keys(SOURCE_CONFIG) as LeadSource[]).map((s) => <SelectItem key={s} value={s}>{SOURCE_CONFIG[s].label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterAssigned} onValueChange={setFilterAssigned}>
+          <SelectTrigger className="w-full sm:w-44 h-9"><Users className="w-3.5 h-3.5 mr-1.5" /><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Assignments</SelectItem>
+            <SelectItem value="autopilot">🤖 Autopilot (Unassigned)</SelectItem>
+            {teamMembers.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -1609,33 +1621,44 @@ function LeadsTab() {
                   {lead.painPoints && <p className="text-[10px] text-muted-foreground mt-1">Pain: {lead.painPoints}</p>}
                   {lead.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{lead.notes}</p>}
                 </div>
-                <div className="flex items-center gap-1 shrink-0 self-end sm:self-start">
-                  {!["won", "lost"].includes(lead.status) && (
-                    <Select value={lead.status} onValueChange={(v) => updateMutation.mutate({ id: lead.id, status: v } as any)}>
-                      <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>{(Object.keys(PIPELINE_CONFIG) as PipelineStage[]).map((s) => <SelectItem key={s} value={s} className="text-xs">{PIPELINE_CONFIG[s].short}</SelectItem>)}</SelectContent>
-                    </Select>
-                  )}
-                  {!["won", "lost"].includes(lead.status) && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => convertMutation.mutate(lead)} title="Convert to client"><CheckCircle className="w-3.5 h-3.5" /></Button>
-                  )}
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingLead(lead); setShowForm(true); }}><Edit3 className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(lead.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                <div className="flex flex-col items-end gap-1.5 shrink-0 self-end sm:self-start">
+                  <div className="flex items-center gap-1">
+                    {!["won", "lost"].includes(lead.status) && (
+                      <Select value={lead.status} onValueChange={(v) => updateMutation.mutate({ id: lead.id, status: v } as any)}>
+                        <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>{(Object.keys(PIPELINE_CONFIG) as PipelineStage[]).map((s) => <SelectItem key={s} value={s} className="text-xs">{PIPELINE_CONFIG[s].short}</SelectItem>)}</SelectContent>
+                      </Select>
+                    )}
+                    {!["won", "lost"].includes(lead.status) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => convertMutation.mutate(lead)} title="Convert to client"><CheckCircle className="w-3.5 h-3.5" /></Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingLead(lead); setShowForm(true); }}><Edit3 className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(lead.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </div>
+                  <Select value={lead.assignedTo || "autopilot"} onValueChange={(v) => updateMutation.mutate({ id: lead.id, assignedTo: v === "autopilot" ? "" : v } as any)}>
+                    <SelectTrigger className={`h-6 text-[10px] ${lead.assignedTo ? "w-28 border-blue-500/30 text-blue-400" : "w-28 border-amber-500/30 text-amber-400"}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="autopilot" className="text-xs">🤖 Autopilot</SelectItem>
+                      {teamMembers.map((m) => <SelectItem key={m.id} value={m.id} className="text-xs">{m.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}</div>
       )}
-      <LeadFormDialog open={showForm} onClose={() => { setShowForm(false); setEditingLead(null); }} onSave={handleSave} lead={editingLead} />
+      <LeadFormDialog open={showForm} onClose={() => { setShowForm(false); setEditingLead(null); }} onSave={handleSave} lead={editingLead} teamMembers={teamMembers} />
     </div>
   );
 }
 
-function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClose: () => void; onSave: (form: Partial<Lead>) => void; lead: Lead | null; }) {
+function LeadFormDialog({ open, onClose, onSave, lead, teamMembers = [] }: { open: boolean; onClose: () => void; onSave: (form: Partial<Lead>) => void; lead: Lead | null; teamMembers?: { id: string; name: string; role: string }[] }) {
   const [form, setForm] = useState<Partial<Lead>>({});
   useEffect(() => {
-    if (open) setForm(lead || { name: "", business: "", address: "", phone: "", email: "", decisionMakerName: "", decisionMakerRole: "", bestContactMethod: "phone", package: "terminal", status: "new", source: "direct", vertical: "other", currentProcessor: "", currentEquipment: "", monthlyVolume: "", painPoints: "", nextStep: "", nextStepDate: "", attachments: [], notes: "" });
+    if (open) setForm(lead || { name: "", business: "", address: "", phone: "", email: "", decisionMakerName: "", decisionMakerRole: "", bestContactMethod: "phone", package: "terminal", status: "new", source: "direct", vertical: "other", currentProcessor: "", currentEquipment: "", monthlyVolume: "", painPoints: "", nextStep: "", nextStepDate: "", attachments: [], notes: "", assignedTo: "" });
   }, [open, lead]);
   const set = (key: keyof Lead, value: any) => setForm((p) => ({ ...p, [key]: value }));
   const attachments = (form.attachments || []) as Array<{ name: string; url: string }>;
@@ -1677,6 +1700,13 @@ function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClos
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label className="text-xs">Assigned To</Label>
+              <Select value={form.assignedTo || "autopilot"} onValueChange={(v) => set("assignedTo", v === "autopilot" ? "" : v)}><SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="autopilot">🤖 Autopilot (Auto)</SelectItem>
+                  {teamMembers.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                </SelectContent></Select>
+            </div>
             <div className="space-y-1.5"><Label className="text-xs">Business Vertical</Label>
               <Select value={form.vertical || "other"} onValueChange={(v) => set("vertical", v)}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{(Object.keys(VERTICAL_CONFIG) as Vertical[]).map((v) => <SelectItem key={v} value={v}>{VERTICAL_CONFIG[v]}</SelectItem>)}</SelectContent></Select>

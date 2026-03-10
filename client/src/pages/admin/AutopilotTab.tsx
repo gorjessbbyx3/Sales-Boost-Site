@@ -169,6 +169,17 @@ export default function AutopilotTab() {
         </Card>
       )}
 
+      {/* How it works */}
+      <Card className="border-border/30 bg-muted/30">
+        <CardContent className="p-4">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <span className="font-semibold text-foreground">How Autopilot works:</span> Only <span className="text-amber-400 font-medium">unassigned leads</span> (marked 🤖 Autopilot in the Pipeline) are handled automatically.
+            When you assign a lead to a team member, autopilot stops touching it.
+            Autopilot generates emails into the queue below for your review before sending — nothing goes out without approval.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Config Panels */}
       <div className="grid md:grid-cols-3 gap-4">
         {/* Auto-Outreach */}

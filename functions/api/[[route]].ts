@@ -1296,6 +1296,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         source: "source", vertical: "vertical", currentProcessor: "current_processor",
         currentEquipment: "current_equipment", monthlyVolume: "monthly_volume",
         painPoints: "pain_points", nextStep: "next_step", nextStepDate: "next_step_date", notes: "notes",
+        assignedTo: "assigned_to",
       };
       for (const [jsKey, dbCol] of Object.entries(leadFieldMap)) {
         if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(body[jsKey]); }
@@ -3009,9 +3010,55 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (path === "/api/autopilot/run" && method === "POST") {
       try {
-        const cfg = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
-        return json({ success: true, config: cfg ? mapAutopilotConfig(cfg) : null });
-      } catch { return json({ success: true, config: null }); }
+        await env.DB.prepare("INSERT OR IGNORE INTO autopilot_config (id, enabled, auto_prospect_enabled, prospect_locations, prospect_verticals, max_prospects_per_run, auto_outreach_enabled, outreach_delay_hours, max_outreach_per_day, auto_follow_up_enabled, follow_up_after_days, max_follow_ups_per_lead, auto_enrich_enabled, last_run_at, total_prospected, total_emailed, total_follow_ups, updated_at) VALUES ('default', 0, 0, 'Honolulu, Hawaii', 'restaurant,retail,salon,auto_repair', 10, 0, 2, 15, 0, 3, 3, 1, '', 0, 0, 0, ?)").bind(now()).run();
+        const cfg: any = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
+        if (!cfg?.enabled) return json({ success: false, message: "Autopilot is disabled", queued: 0 });
+
+        let queued = 0;
+        const ts = now();
+        const hoursAgo = new Date(Date.now() - (cfg.outreach_delay_hours || 2) * 3600 * 1000).toISOString();
+        const daysAgo = new Date(Date.now() - (cfg.follow_up_after_days || 3) * 86400 * 1000).toISOString();
+
+        // Auto Outreach: find NEW unassigned leads older than delay, not already in queue
+        if (cfg.auto_outreach_enabled) {
+          const { results: newLeads } = await env.DB.prepare(
+            `SELECT l.* FROM leads l WHERE l.status = 'new' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND l.email != '' AND l.created_at < ? AND l.id NOT IN (SELECT lead_id FROM outreach_queue WHERE type = 'initial') ORDER BY l.created_at ASC LIMIT ?`
+          ).bind(hoursAgo, cfg.max_outreach_per_day || 15).all();
+          for (const lead of (newLeads || [])) {
+            const id = `oq-${genId()}`;
+            const business = (lead.business as string) || (lead.name as string) || "your business";
+            const subject = `Eliminate Processing Fees for ${business}`;
+            const body = `Hi ${lead.name || "there"},\n\nI'm reaching out from TechSavvy Hawaii. We help businesses like ${business} eliminate credit card processing fees entirely — you keep 100% of every sale.\n\nWould you be open to a quick chat about how we could save you money?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+            const htmlBody = body.replace(/\n/g, "<br>");
+            await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, body, htmlBody, ts, ts).run();
+            queued++;
+          }
+        }
+
+        // Auto Follow-Up: find CONTACTED unassigned leads with no recent queue entry
+        if (cfg.auto_follow_up_enabled) {
+          const maxFollowUps = cfg.max_follow_ups_per_lead || 3;
+          const { results: staleLeads } = await env.DB.prepare(
+            `SELECT l.* FROM leads l WHERE l.status = 'contacted' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND l.email != '' AND l.updated_at < ? ORDER BY l.updated_at ASC LIMIT ?`
+          ).bind(daysAgo, cfg.max_outreach_per_day || 15).all();
+          for (const lead of (staleLeads || [])) {
+            const { results: existing } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM outreach_queue WHERE lead_id = ? AND type = 'follow_up'").bind(lead.id).all();
+            const count = (existing?.[0] as any)?.cnt || 0;
+            if (count >= maxFollowUps) continue;
+            const id = `oq-${genId()}`;
+            const business = (lead.business as string) || (lead.name as string) || "your business";
+            const subject = `Following up — ${business}`;
+            const body = `Hi ${lead.name || "there"},\n\nJust wanted to follow up on my earlier note about eliminating processing fees for ${business}. Our merchants are keeping 100% of every sale with zero processing fees.\n\nWorth a quick look? I can show you exactly what you'd save.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+            const htmlBody = body.replace(/\n/g, "<br>");
+            await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, body, htmlBody, ts, ts).run();
+            queued++;
+          }
+        }
+
+        await env.DB.prepare("UPDATE autopilot_config SET last_run_at = ?, updated_at = ? WHERE id = 'default'").bind(ts, ts).run();
+        const updated = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
+        return json({ success: true, queued, config: updated ? mapAutopilotConfig(updated) : null });
+      } catch (e: any) { return err("Autopilot run failed: " + e.message, 500); }
     }
 
     if (path === "/api/autopilot/queue" && method === "GET") {
@@ -4079,6 +4126,7 @@ function mapLead(row: Record<string, unknown>) {
     nextStepDate: row.next_step_date || "",
     attachments: (() => { try { return JSON.parse(row.attachments as string || "[]"); } catch { return []; } })(),
     notes: row.notes,
+    assignedTo: row.assigned_to || "",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
