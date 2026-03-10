@@ -1302,6 +1302,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(body[jsKey]); }
       }
       if (body.attachments !== undefined) { updates.push("attachments = ?"); values.push(JSON.stringify(body.attachments)); }
+      if (body.checklist !== undefined) { updates.push("checklist = ?"); values.push(JSON.stringify(body.checklist)); }
       updates.push("updated_at = ?"); values.push(now());
 
       if (updates.length > 1) {
@@ -3027,11 +3028,32 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           for (const lead of (newLeads || [])) {
             const id = `oq-${genId()}`;
             const business = (lead.business as string) || (lead.name as string) || "your business";
-            const subject = `Eliminate Processing Fees for ${business}`;
-            const body = `Hi ${lead.name || "there"},\n\nI'm reaching out from TechSavvy Hawaii. We help businesses like ${business} eliminate credit card processing fees entirely — you keep 100% of every sale.\n\nWould you be open to a quick chat about how we could save you money?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
-            const htmlBody = body.replace(/\n/g, "<br>");
-            await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, body, htmlBody, ts, ts).run();
-            queued++;
+            let checklist: any[] = []; try { checklist = JSON.parse(lead.checklist as string || "[]"); } catch {}
+            const completedItems = checklist.filter((c: any) => c.done).map((c: any) => c.label);
+            const checklistContext = completedItems.length > 0 ? `\nInteraction history: ${completedItems.join(", ")}` : "";
+            const painContext = lead.pain_points ? `\nKnown pain points: ${lead.pain_points}` : "";
+            const volumeContext = lead.monthly_volume ? `\nMonthly volume: ${lead.monthly_volume}` : "";
+            const processorContext = lead.current_processor ? `\nCurrent processor: ${lead.current_processor}` : "";
+
+            // Generate personalized email via AI Worker
+            try {
+              const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
+                method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+                body: JSON.stringify({ ownerName: lead.name, businessName: business, vertical: lead.vertical, tone: "friendly", context: `Initial outreach to new lead.${checklistContext}${painContext}${volumeContext}${processorContext}` }),
+              });
+              const emailData: any = await workerRes.json();
+              const subject = emailData.subject || `Eliminate Processing Fees for ${business}`;
+              const emailBody = emailData.body || `Hi ${lead.name || "there"},\n\nI'm reaching out from TechSavvy Hawaii. We help businesses like ${business} eliminate credit card processing fees — you keep 100% of every sale.\n\nWould you be open to a quick chat?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+              const htmlBody = emailBody.replace(/\n/g, "<br>");
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, htmlBody, ts, ts).run();
+              queued++;
+            } catch {
+              // Fallback to static template
+              const subject = `Eliminate Processing Fees for ${business}`;
+              const emailBody = `Hi ${lead.name || "there"},\n\nI'm reaching out from TechSavvy Hawaii. We help businesses like ${business} eliminate credit card processing fees entirely — you keep 100% of every sale.\n\nWould you be open to a quick chat about how we could save you money?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
+              queued++;
+            }
           }
         }
 
@@ -3047,11 +3069,27 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             if (count >= maxFollowUps) continue;
             const id = `oq-${genId()}`;
             const business = (lead.business as string) || (lead.name as string) || "your business";
-            const subject = `Following up — ${business}`;
-            const body = `Hi ${lead.name || "there"},\n\nJust wanted to follow up on my earlier note about eliminating processing fees for ${business}. Our merchants are keeping 100% of every sale with zero processing fees.\n\nWorth a quick look? I can show you exactly what you'd save.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
-            const htmlBody = body.replace(/\n/g, "<br>");
-            await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, body, htmlBody, ts, ts).run();
-            queued++;
+            let checklist: any[] = []; try { checklist = JSON.parse(lead.checklist as string || "[]"); } catch {}
+            const completedItems = checklist.filter((c: any) => c.done).map((c: any) => c.label);
+            const checklistContext = completedItems.length > 0 ? `Previous interactions: ${completedItems.join(", ")}.` : "";
+
+            try {
+              const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
+                method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+                body: JSON.stringify({ ownerName: lead.name, businessName: business, vertical: lead.vertical, tone: "friendly", context: `Follow-up #${count + 1}. They haven't responded yet. ${checklistContext} ${lead.pain_points ? `Pain points: ${lead.pain_points}` : ""}`.trim() }),
+              });
+              const emailData: any = await workerRes.json();
+              const subject = emailData.subject || `Following up — ${business}`;
+              const emailBody = emailData.body || `Hi ${lead.name || "there"},\n\nJust following up about eliminating processing fees for ${business}.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+              const htmlBody = emailBody.replace(/\n/g, "<br>");
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, htmlBody, ts, ts).run();
+              queued++;
+            } catch {
+              const subject = `Following up — ${business}`;
+              const emailBody = `Hi ${lead.name || "there"},\n\nJust wanted to follow up about eliminating processing fees for ${business}. Our merchants keep 100% of every sale.\n\nWorth a quick look?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
+              queued++;
+            }
           }
         }
 
@@ -4030,22 +4068,91 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const location = body.location as string;
       if (!query) return err("Query is required.");
 
-      try {
-        const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: `Generate Google search queries (dorks) to find local businesses for merchant services prospecting. Query: "${query}"${location ? ` in ${location}` : ""}. Focus on finding businesses without modern payment processing.\n\nReturn ONLY valid JSON: { "dorks": [{ "query": "search string", "purpose": "why" }], "urls": ["direct URLs to try"] }`,
-            systemPrompt: "You generate Google dork search queries for finding local businesses. Return ONLY valid JSON.",
-          }),
-        });
-        const aiData: any = await workerRes.json();
-        const text = aiData.reply || "";
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { dorks: [], urls: [] };
-        return json({ results: parsed.dorks || [], urls: parsed.urls || [], query, searchedAt: new Date().toISOString() });
-      } catch (e: any) {
-        return json({ results: [], urls: [], query, searchedAt: new Date().toISOString(), error: e.message });
+      const searchQuery = `${query}${location ? ` ${location}` : ""}`;
+      const allProspects: any[] = [];
+      const dorks = [
+        { query: searchQuery, purpose: "Direct search" },
+        { query: `${query} site:yelp.com${location ? ` ${location}` : " Hawaii"}`, purpose: "Yelp listings" },
+      ];
+      const realUrls: string[] = [];
+
+      // Actually fetch Google search results
+      for (const dork of dorks) {
+        try {
+          const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(dork.query)}&num=15`;
+          const resp = await fetch(googleUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "Accept": "text/html,application/xhtml+xml",
+              "Accept-Language": "en-US,en;q=0.9",
+            },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (!resp.ok) continue;
+          const html = await resp.text();
+          // Extract URLs from Google results
+          const urlMatches = html.matchAll(/href="\/url\?q=([^&"]+)/g);
+          for (const m of urlMatches) {
+            try {
+              const url = decodeURIComponent(m[1]);
+              if (url.startsWith("http") && !url.includes("google.com") && !url.includes("youtube.com") && !url.includes("wikipedia.org") && !url.includes("facebook.com")) {
+                realUrls.push(url);
+              }
+            } catch {}
+          }
+          // Also try direct href patterns
+          const hrefMatches = html.matchAll(/href="(https?:\/\/(?!www\.google|maps\.google|support\.google|accounts\.google|translate\.google|webcache\.google|youtube\.com|facebook\.com|wikipedia\.org)[^"]+)"/g);
+          for (const m of hrefMatches) {
+            if (!realUrls.includes(m[1])) realUrls.push(m[1]);
+          }
+        } catch {}
       }
+
+      // Deduplicate and limit
+      const uniqueUrls = [...new Set(realUrls)].slice(0, 20);
+
+      // If we got real URLs, scrape the top ones for business info
+      for (const targetUrl of uniqueUrls.slice(0, 8)) {
+        try {
+          const resp = await fetch(targetUrl, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!resp.ok) continue;
+          const html = await resp.text();
+          const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+          const title = titleMatch?.[1]?.trim() || "";
+
+          // Quick extraction: pull phone, email, address from HTML directly
+          const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+          const phones = cleaned.match(/\(?808\)?[\s.-]?\d{3}[\s.-]?\d{4}/g) || [];
+          const emails = cleaned.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+          const phone = phones[0] || "";
+          const email = (emails.find(e => !e.includes("example") && !e.includes("sentry") && !e.includes("wix") && !e.includes("google")) || "");
+
+          // If it's a Yelp page, extract from the structured content
+          if (targetUrl.includes("yelp.com")) {
+            const bizName = title.replace(/ - Yelp$| \| Yelp$/i, "").replace(/ - .*$/, "").trim();
+            if (bizName && bizName.length > 2) {
+              allProspects.push({ business: bizName, name: "", phone, email, website: targetUrl, address: "", vertical: "other", currentProcessor: "", notes: `Found via Yelp search: ${query}`, _sourceUrl: targetUrl });
+            }
+          } else {
+            // Regular business website
+            const bizName = title.replace(/ \|.*$| -.*$| –.*$/, "").trim() || new URL(targetUrl).hostname.replace("www.", "");
+            if (bizName.length > 2 && bizName.length < 80) {
+              allProspects.push({ business: bizName, name: "", phone, email, website: targetUrl, address: "", vertical: "other", currentProcessor: "", notes: `Found via search: ${query}`, _sourceUrl: targetUrl });
+            }
+          }
+        } catch {}
+      }
+
+      return json({
+        results: dorks,
+        urls: uniqueUrls,
+        prospects: allProspects,
+        query: searchQuery,
+        searchedAt: new Date().toISOString(),
+      });
     }
 
     // POST /api/resources/upload
@@ -4127,6 +4234,7 @@ function mapLead(row: Record<string, unknown>) {
     attachments: (() => { try { return JSON.parse(row.attachments as string || "[]"); } catch { return []; } })(),
     notes: row.notes,
     assignedTo: row.assigned_to || "",
+    checklist: (() => { try { return JSON.parse(row.checklist as string || "[]"); } catch { return []; } })(),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

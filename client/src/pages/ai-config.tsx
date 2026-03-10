@@ -71,6 +71,7 @@ interface Lead {
   attachments: Array<{ name: string; url: string }>;
   notes: string;
   assignedTo: string;
+  checklist: Array<{ label: string; done: boolean; doneAt?: string }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -472,6 +473,21 @@ const MODELS = [
 const CONTACT_METHODS: Record<string, string> = {
   phone: "Phone Call", email: "Email", text: "Text/SMS", "in-person": "In-Person",
 };
+
+const DEFAULT_CHECKLIST = [
+  "Spoke with owner/decision maker",
+  "Left business card with employee",
+  "Dropped off flyer/brochure",
+  "Got current processing statement",
+  "Showed savings estimate",
+  "Discussed cash discount program",
+  "Owner interested — wants follow-up",
+  "Owner said not interested",
+  "Sent intro email",
+  "Sent text message",
+  "Scheduled demo/meeting",
+  "Delivered equipment",
+];
 
 const ACTIVITY_COLORS: Record<string, string> = {
   lead: "bg-blue-400", client: "bg-emerald-400", revenue: "bg-purple-400",
@@ -1620,6 +1636,33 @@ function LeadsTab() {
                   {lead.nextStep && <p className="text-xs text-primary mt-1.5">Next: {lead.nextStep}{lead.nextStepDate ? ` (${lead.nextStepDate})` : ""}</p>}
                   {lead.painPoints && <p className="text-[10px] text-muted-foreground mt-1">Pain: {lead.painPoints}</p>}
                   {lead.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{lead.notes}</p>}
+                  {/* Checklist */}
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {(() => {
+                      const cl: Array<{ label: string; done: boolean; doneAt?: string }> = lead.checklist || [];
+                      const toggleItem = (label: string) => {
+                        const existing = cl.find(c => c.label === label);
+                        let updated;
+                        if (existing) {
+                          updated = cl.map(c => c.label === label ? { ...c, done: !c.done, doneAt: !c.done ? new Date().toISOString() : "" } : c);
+                        } else {
+                          updated = [...cl, { label, done: true, doneAt: new Date().toISOString() }];
+                        }
+                        updateMutation.mutate({ id: lead.id, checklist: updated } as any);
+                      };
+                      return DEFAULT_CHECKLIST.map(label => {
+                        const item = cl.find(c => c.label === label);
+                        const done = item?.done || false;
+                        return (
+                          <button key={label} onClick={() => toggleItem(label)}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border transition-colors ${done ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-transparent border-border/50 text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}>
+                            {done ? <Check className="w-2.5 h-2.5" /> : <span className="w-2.5 h-2.5 rounded-full border border-current inline-block" />}
+                            {label}
+                          </button>
+                        );
+                      });
+                    })()}
+                  </div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 shrink-0 self-end sm:self-start">
                   <div className="flex items-center gap-1">
@@ -5015,26 +5058,11 @@ function ProspectorTab() {
       return r.json();
     },
     onSuccess: (data) => {
-      // Handle various response states
-      if (data.noApiKey) {
-        toast({ title: "No API key configured", description: "Use 'Open in Google' to search manually, then paste URLs into URL Scanner.", variant: "destructive" });
-        return;
-      }
-      if (data.aiFailed) {
-        toast({ title: "Search unavailable", description: data.message || "Use 'Open in Google' to search manually.", variant: "destructive" });
-        return;
-      }
-      if (data.error && data.message) {
-        toast({ title: "Search issue", description: data.message, variant: "destructive" });
-      }
-      if (data.aiGenerated) {
-        toast({ title: "AI-generated prospects", description: "Google was blocked. Results are AI-suggested based on your search criteria." });
-      }
-      const newProspects = (data.results || []).map((p: Prospect) => ({ ...p, _selected: true }));
+      const newProspects = (data.prospects || []).map((p: Prospect) => ({ ...p, _selected: true }));
       setProspects(prev => [...prev, ...newProspects]);
       setDorkUrls(data.urls || []);
-      if (newProspects.length > 0) toast({ title: `Found ${newProspects.length} prospect(s)` });
-      else if (!data.aiGenerated && !data.error) toast({ title: "No results found", description: "Try a different dork query or location" });
+      if (newProspects.length > 0) toast({ title: `Found ${newProspects.length} business(es)`, description: `From ${(data.urls || []).length} URLs searched` });
+      else toast({ title: "No businesses extracted", description: "Try broader search terms or scan specific business directory URLs" });
     },
     onError: (err: Error) => { toast({ title: "Search failed", description: err.message.replace(/^\d+:\s*/, ""), variant: "destructive" }); },
   });
