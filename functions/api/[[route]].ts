@@ -253,9 +253,9 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
 // ─── Allowed AI models ───────────────────────────────────────────────
 
 const ALLOWED_MODELS = [
-  "claude-sonnet-4-20250514",
-  "claude-3-7-sonnet-20250219",
-  "claude-3-5-haiku-20241022",
+  "llama-3.1-8b-instruct",
+  "llama-3.1-70b-instruct",
+  "llama-3.2-3b-instruct",
 ];
 const MAX_HISTORY_LENGTH = 20;
 const MAX_ALLOWED_TOKENS = 4096;
@@ -347,41 +347,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
 
       try {
-        // Try Anthropic first if API key is available
-        const apiKey = env.ANTHROPIC_API_KEY;
-        if (apiKey) {
-          const messages: { role: "user" | "assistant"; content: string }[] = [
-            ...trimmedHistory.map(h => ({ role: h.role as "user" | "assistant", content: h.content })),
-            { role: "user" as const, content: message },
-          ];
-          const safeMaxTokens = Math.min(Number(config.max_tokens) || 1024, MAX_ALLOWED_TOKENS);
-
-          const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": apiKey,
-              "anthropic-version": "2023-06-01",
-            },
-            body: JSON.stringify({
-              model: config.model as string,
-              max_tokens: safeMaxTokens,
-              system: config.system_prompt as string,
-              messages,
-            }),
-          });
-
-          if (anthropicRes.ok) {
-            const anthropicData: any = await anthropicRes.json();
-            const text = (anthropicData.content || [])
-              .filter((block: any) => block.type === "text")
-              .map((block: any) => block.text)
-              .join("");
-            return json({ reply: text });
-          }
-        }
-
-        // Fallback: proxy through AI worker (Cloudflare Workers AI — free)
+        // Route to Cloudflare Worker AI (Llama via mojo-luna-955c)
         const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -3095,8 +3061,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     // ─── AI OPS ─────────────────────────────────────────────────────────
 
     if (path === "/api/ai-ops/recommend" && method === "POST") {
-      const apiKey = env.ANTHROPIC_API_KEY;
-      if (!apiKey) return err("Anthropic API key not configured", 500);
       try {
         const [teamRes, leadRes, taskRes, schedRes, clientRes] = await Promise.all([
           env.DB.prepare("SELECT * FROM team_members").all(), env.DB.prepare("SELECT * FROM leads").all(),
@@ -3109,19 +3073,22 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         const todayStr = new Date().toISOString().split("T")[0];
         const pendingTasks = tasks.filter((t: any) => !t.completed);
         const todaySchedule = schedule.filter((s: any) => s.date === todayStr);
-        const context = `BUSINESS CONTEXT:\n- Company: ${biz?.company_name || "TechSavvy Hawaii"}\n- Processor Partner: ${biz?.processor_partner || "CashSwipe"}\n- Current Phase: ${biz?.current_phase || "onboarding"}\n- Today: ${todayStr}\n\nTEAM:\n${team.map((m: any) => `- ${m.name}: ${m.role} (${m.daily_involvement})`).join("\n")}\n\nSTATE: ${leads.length} leads (${leads.filter((l: any) => !["won","lost"].includes(l.status)).length} active), ${clients.length} clients, ${pendingTasks.length} pending tasks, ${todaySchedule.length} scheduled today\n\nTASKS:\n${pendingTasks.slice(0, 10).map((t: any) => `- [${t.priority}] ${t.title} (due: ${t.due_date || "none"})`).join("\n") || "None"}`;
-        const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 2048, system: `You are the AI Operations Assistant for a merchant services startup. Generate actionable daily recommendations. Return a JSON array. Each item: title, description, assigneeName (team member name), priority ("high"|"medium"|"low"), category ("training"|"outreach"|"admin"|"meeting"|"follow-up"|"development"). Return ONLY valid JSON array.`, messages: [{ role: "user", content: context }] }) });
-        if (!anthropicRes.ok) return err("Failed to generate recommendations", 500);
-        const data: any = await anthropicRes.json();
-        const text = (data.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+        const context = `BUSINESS: ${biz?.company_name || "TechSavvy Hawaii"}, Phase: ${biz?.current_phase || "onboarding"}, Today: ${todayStr}\nTEAM: ${team.map((m: any) => `${m.name} (${m.role})`).join("; ")}\nSTATS: ${leads.length} leads (${leads.filter((l: any) => !["won","lost"].includes(l.status)).length} active), ${clients.length} clients, ${pendingTasks.length} pending tasks, ${todaySchedule.length} scheduled today\nTASKS: ${pendingTasks.slice(0, 10).map((t: any) => `[${t.priority}] ${t.title} (due: ${t.due_date || "none"})`).join("; ") || "None"}`;
+        const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: `Generate 3-5 actionable daily recommendations for the team based on this context:\n${context}\n\nReturn ONLY a JSON array. Each item: { "title": "", "description": "", "assigneeName": "", "priority": "high|medium|low", "category": "training|outreach|admin|meeting|follow-up|development" }`,
+            systemPrompt: "You are an AI Operations Assistant for a merchant services startup. Generate actionable daily recommendations. Return ONLY valid JSON array.",
+          }),
+        });
+        const data: any = await workerRes.json();
+        const text = data.reply || "";
         const jsonMatch = text.match(/\[[\s\S]*\]/);
         return json({ recommendations: jsonMatch ? JSON.parse(jsonMatch[0]) : [], generatedAt: now() });
       } catch (e: any) { return err("Failed: " + e.message, 500); }
     }
 
     if (path === "/api/ai-ops/chat" && method === "POST") {
-      const apiKey = env.ANTHROPIC_API_KEY;
-      if (!apiKey) return err("Anthropic API key not configured", 500);
       const body: any = await request.json();
       if (!body.message) return err("Message required");
       try {
@@ -3132,15 +3099,16 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         let biz: any = null; try { biz = await env.DB.prepare("SELECT * FROM business_info WHERE id = 'default'").first(); } catch {}
         const team = teamRes.results || []; const leads = leadRes.results || [];
         const tasks = taskRes.results || []; const clients = clientRes.results || [];
-        const systemPrompt = `You are the AI Operations Assistant for ${biz?.company_name || "TechSavvy Hawaii"}, a merchant services startup in the ${biz?.current_phase || "onboarding"} phase.\nTEAM: ${team.map((m: any) => `${m.name} (${m.role})`).join("; ")}\nSTATS: ${leads.length} leads, ${clients.length} clients, ${tasks.filter((t: any) => !t.completed).length} pending tasks\nBe concise, actionable, specific.`;
-        const messages: any[] = [];
-        if (Array.isArray(body.history)) { for (const h of body.history.slice(-10)) { if (h.role && h.content) messages.push({ role: h.role, content: h.content.slice(0, 2000) }); } }
-        messages.push({ role: "user", content: body.message });
-        const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1024, system: systemPrompt, messages }) });
-        if (!anthropicRes.ok) return err("Failed to get AI response", 500);
-        const data: any = await anthropicRes.json();
-        const text = (data.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
-        return json({ reply: text });
+        const systemPrompt = `You are the AI Operations Assistant for ${biz?.company_name || "TechSavvy Hawaii"}, a merchant services startup.\nTEAM: ${team.map((m: any) => `${m.name} (${m.role})`).join("; ")}\nSTATS: ${leads.length} leads, ${clients.length} clients, ${tasks.filter((t: any) => !t.completed).length} pending tasks\nBe concise, actionable, specific.`;
+        const history: any[] = [];
+        if (Array.isArray(body.history)) { for (const h of body.history.slice(-10)) { if (h.role && h.content) history.push({ role: h.role, content: h.content.slice(0, 2000) }); } }
+        const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: body.message, history, systemPrompt }),
+        });
+        const data: any = await workerRes.json();
+        if (data.error) return err(data.error, 500);
+        return json({ reply: data.reply || "" });
       } catch (e: any) { return err("Failed: " + e.message, 500); }
     }
 
@@ -3967,9 +3935,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // POST /api/ai-ops/scrape-prospects
     if (path === "/api/ai-ops/scrape-prospects" && method === "POST") {
-      const apiKey = env.ANTHROPIC_API_KEY;
-      if (!apiKey) return err("Anthropic API key not configured.", 500);
-
       const body: any = await request.json();
       const rawUrl = body.url;
       if (!rawUrl) return err("URL is required.");
@@ -3989,20 +3954,18 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           const techStack = detectTechStackSimple(html);
           allTechStacks[targetUrl] = techStack;
 
-          const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 50000);
-          const techContext = techStack.length > 0 ? `\nTECH DETECTED: ${techStack.map((t: any) => `${t.name} (${t.category})`).join(", ")}` : "";
+          const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 4000);
+          const techContext = techStack.length > 0 ? `\nTECH: ${techStack.map((t: any) => t.name).join(", ")}` : "";
 
-          const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+          const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: "claude-sonnet-4-20250514", max_tokens: 4096,
-              system: `Extract ALL business listings from the page. Return ONLY a JSON array. Each item: { "business": "", "name": "", "address": "", "phone": "", "email": "", "website": "", "vertical": "restaurant|retail|salon|auto|medical|services|other", "currentProcessor": "", "notes": "" }. Return [] if none found.${techContext}`,
-              messages: [{ role: "user", content: `Extract from ${targetUrl}:\n\n${cleaned}` }],
+              message: `Extract ALL business listings from this page content. Return ONLY a JSON array. Each: { "business": "", "name": "", "address": "", "phone": "", "email": "", "website": "", "vertical": "restaurant|retail|salon|auto|medical|services|other", "currentProcessor": "", "notes": "" }. Return [] if none.${techContext}\n\nContent from ${targetUrl}:\n${cleaned}`,
+              systemPrompt: "You extract business contact info from web pages. Return ONLY valid JSON arrays.",
             }),
           });
-          const aiData = await aiResp.json() as any;
-          const text = (aiData.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+          const aiData: any = await workerRes.json();
+          const text = aiData.reply || "";
           const jsonMatch = text.match(/\[[\s\S]*\]/);
           const prospects = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
           for (const p of prospects) { p._sourceUrl = targetUrl; p._techStack = techStack; }
@@ -4015,28 +3978,21 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // POST /api/ai-ops/google-dork
     if (path === "/api/ai-ops/google-dork" && method === "POST") {
-      const apiKey = env.ANTHROPIC_API_KEY;
       const body: any = await request.json();
       const query = body.query as string;
       const location = body.location as string;
       if (!query) return err("Query is required.");
 
-      if (!apiKey) {
-        return json({ results: [], urls: [], query, searchedAt: new Date().toISOString(), noApiKey: true, message: "No Anthropic API key. Use 'Open in Google' then paste URLs into URL Scanner." });
-      }
-
       try {
-        const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+        const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-20250514", max_tokens: 2048,
-            system: `Generate Google search queries (dorks) to find local businesses for merchant services prospecting. Return JSON: { "dorks": [{ "query": "search string", "purpose": "why" }], "urls": ["direct URLs to try"] }`,
-            messages: [{ role: "user", content: `Generate dorks for: "${query}"${location ? ` in ${location}` : ""}. Focus on finding businesses without modern payment processing.` }],
+            message: `Generate Google search queries (dorks) to find local businesses for merchant services prospecting. Query: "${query}"${location ? ` in ${location}` : ""}. Focus on finding businesses without modern payment processing.\n\nReturn ONLY valid JSON: { "dorks": [{ "query": "search string", "purpose": "why" }], "urls": ["direct URLs to try"] }`,
+            systemPrompt: "You generate Google dork search queries for finding local businesses. Return ONLY valid JSON.",
           }),
         });
-        const aiData = await aiResp.json() as any;
-        const text = (aiData.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+        const aiData: any = await workerRes.json();
+        const text = aiData.reply || "";
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { dorks: [], urls: [] };
         return json({ results: parsed.dorks || [], urls: parsed.urls || [], query, searchedAt: new Date().toISOString() });

@@ -463,9 +463,9 @@ const REVENUE_TYPES: Record<RevenueEntry["type"], string> = {
 };
 
 const MODELS = [
-  { value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4 (Latest)" },
-  { value: "claude-3-7-sonnet-20250219", label: "Claude 3.7 Sonnet" },
-  { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (Fast)" },
+  { value: "llama-3.1-8b-instruct", label: "Llama 3.1 8B (Default)" },
+  { value: "llama-3.1-70b-instruct", label: "Llama 3.1 70B (Smarter)" },
+  { value: "llama-3.2-3b-instruct", label: "Llama 3.2 3B (Fast)" },
 ];
 
 const CONTACT_METHODS: Record<string, string> = {
@@ -6461,7 +6461,7 @@ function AiSettingsTab() {
   const { toast } = useToast();
   const { data: config, isLoading } = useQuery<AiConfig>({ queryKey: ["/api/ai-config/full"] });
   const [enabled, setEnabled] = useState(false);
-  const [model, setModel] = useState("claude-sonnet-4-20250514");
+  const [model, setModel] = useState("llama-3.1-8b-instruct");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [maxTokens, setMaxTokens] = useState(1024);
