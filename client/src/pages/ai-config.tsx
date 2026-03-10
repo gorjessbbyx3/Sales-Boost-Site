@@ -1521,14 +1521,43 @@ function LeadsTab() {
     else createMutation.mutate(form);
   };
 
+  const enrichMutation = useMutation({
+    mutationFn: async () => { const res = await apiRequest("POST", "/api/ai-ops/enrich-emails", { limit: 20 }); return res.json(); },
+    onSuccess: (data) => {
+      refetch();
+      if (data.enriched > 0) toast({ title: `Found ${data.enriched} email${data.enriched > 1 ? "s" : ""}`, description: `Searched ${data.total} leads — ${data.enriched} enriched, ${data.total - data.enriched} not found` });
+      else toast({ title: "No emails found", description: `Searched ${data.total} leads. Try adding more business details to improve results.` });
+    },
+    onError: (err: Error) => { toast({ title: "Enrichment failed", description: err.message, variant: "destructive" }); },
+  });
+
+  const enrichSingleMutation = useMutation({
+    mutationFn: async (leadId: string) => { const res = await apiRequest("POST", "/api/ai-ops/enrich-emails", { leadId }); return res.json(); },
+    onSuccess: (data) => {
+      refetch();
+      const r = data.results?.[0];
+      if (r?.status === "found") toast({ title: `Found: ${r.email}`, description: r.business });
+      else toast({ title: "No email found", description: "Try adding the business website URL to notes" });
+    },
+  });
+
+  const missingEmailCount = leads.filter(l => !l.email && (l.business || l.name)).length;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold">Lead Pipeline</h2>
-          <p className="text-xs text-muted-foreground">{leads.length} total — {leads.filter((l) => !["won", "lost", "nurture"].includes(l.status)).length} active pipeline</p>
+          <p className="text-xs text-muted-foreground">{leads.length} total — {leads.filter((l) => !["won", "lost", "nurture"].includes(l.status)).length} active pipeline{missingEmailCount > 0 ? ` — ${missingEmailCount} missing email` : ""}</p>
         </div>
-        <Button size="sm" onClick={() => { setEditingLead(null); setShowForm(true); }}><Plus className="w-3.5 h-3.5" />Add Lead</Button>
+        <div className="flex items-center gap-2">
+          {missingEmailCount > 0 && (
+            <Button size="sm" variant="outline" onClick={() => enrichMutation.mutate()} disabled={enrichMutation.isPending}>
+              <Mail className="w-3.5 h-3.5" />{enrichMutation.isPending ? "Finding Emails..." : `Find Emails (${missingEmailCount})`}
+            </Button>
+          )}
+          <Button size="sm" onClick={() => { setEditingLead(null); setShowForm(true); }}><Plus className="w-3.5 h-3.5" />Add Lead</Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2">
@@ -1624,6 +1653,7 @@ function LeadsTab() {
                   <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
                     {lead.phone && <a href={`tel:${lead.phone}`} className="flex items-center gap-1 hover:text-foreground"><Phone className="w-3 h-3" />{lead.phone}</a>}
                     {lead.email && <a href={`mailto:${lead.email}`} className="flex items-center gap-1 hover:text-foreground truncate max-w-[180px] sm:max-w-none"><Mail className="w-3 h-3" />{lead.email}</a>}
+                    {!lead.email && lead.business && <button onClick={() => enrichSingleMutation.mutate(lead.id)} disabled={enrichSingleMutation.isPending} className="flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors"><Mail className="w-3 h-3" /><span className="text-[10px]">{enrichSingleMutation.isPending && enrichSingleMutation.variables === lead.id ? "Searching..." : "Find Email"}</span></button>}
                     {lead.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{lead.address}</span>}
                     {lead.vertical && <span className="text-[10px]">{VERTICAL_CONFIG[lead.vertical] || lead.vertical}</span>}
                     {lead.currentProcessor && <span className="text-[10px]">Processor: {lead.currentProcessor}</span>}
