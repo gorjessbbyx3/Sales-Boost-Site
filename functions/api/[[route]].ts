@@ -4375,108 +4375,92 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
       async function fetchPage(url: string, timeout = 6000): Promise<string> {
         try {
-          const r = await fetch(url, { headers: { "User-Agent": UA, "Accept": "text/html" }, signal: AbortSignal.timeout(timeout) });
+          const r = await fetch(url, { headers: { "User-Agent": UA, "Accept": "text/html,application/xhtml+xml" }, signal: AbortSignal.timeout(timeout), redirect: "follow" });
           if (!r.ok) return "";
+          const ct = r.headers.get("content-type") || "";
+          if (!ct.includes("text/html") && !ct.includes("text/plain") && !ct.includes("application/xhtml")) return "";
           return await r.text();
         } catch { return ""; }
+      }
+
+      function slugify(name: string): string {
+        return name.toLowerCase().replace(/[''`]/g, "").replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      }
+
+      function buildCandidateUrls(business: string): string[] {
+        const slug = slugify(business);
+        const compact = slug.replace(/-/g, "");
+        const urls: string[] = [];
+        // Direct domain guesses
+        for (const domain of [".com", ".net", ".org"]) {
+          urls.push(`https://www.${slug}${domain}`);
+          urls.push(`https://${slug}${domain}`);
+          if (compact !== slug) urls.push(`https://www.${compact}${domain}`);
+        }
+        // Hawaii-specific patterns
+        urls.push(`https://www.${slug}hawaii.com`);
+        urls.push(`https://www.${slug}hi.com`);
+        urls.push(`https://www.${slug}honolulu.com`);
+        // Yelp page (predictable URL pattern)
+        urls.push(`https://www.yelp.com/biz/${slug}-honolulu`);
+        urls.push(`https://www.yelp.com/biz/${slug}-honolulu-2`);
+        // Facebook (predictable URL pattern)
+        urls.push(`https://www.facebook.com/${compact}/`);
+        return urls;
       }
 
       const results: any[] = [];
 
       for (const lead of leadsToEnrich) {
         const business = (lead.business as string || lead.name as string || "").trim();
-        if (!business) { results.push({ id: lead.id, business, status: "skipped", reason: "No business name" }); continue; }
+        if (!business || business.length < 3) { results.push({ id: lead.id, business, status: "skipped", reason: "No business name" }); continue; }
 
         let foundEmail = "";
         let foundPhone = lead.phone as string || "";
         let source = "";
 
-        // STEP 1: Google the business to find their actual website
-        let businessWebsite = "";
-        let facebookUrl = "";
-        let yelpUrl = "";
-        try {
-          const gHtml = await fetchPage(`https://www.google.com/search?q=${encodeURIComponent(business + " Honolulu Hawaii")}&num=10`, 8000);
-          const urlMatches = [...gHtml.matchAll(/href="\/url\?q=([^&"]+)/g)].map(m => { try { return decodeURIComponent(m[1]); } catch { return ""; } }).filter(u => u.startsWith("http"));
-          for (const u of urlMatches) {
-            if (u.includes("facebook.com") && !facebookUrl) { facebookUrl = u; continue; }
-            if (u.includes("yelp.com") && !yelpUrl) { yelpUrl = u; continue; }
-            if (!businessWebsite && !u.includes("google.com") && !u.includes("youtube.com") && !u.includes("wikipedia.org") && !u.includes("instagram.com") && !u.includes("twitter.com") && !u.includes("tripadvisor.com") && !u.includes("doordash.com") && !u.includes("yelp.com") && !u.includes("facebook.com")) {
-              businessWebsite = u;
-            }
+        const candidateUrls = buildCandidateUrls(business);
+
+        for (const url of candidateUrls) {
+          if (foundEmail) break;
+          const html = await fetchPage(url, 5000);
+          if (!html || html.length < 500) continue;
+
+          // Check mailto: links first (most reliable)
+          const mailtoMatches = html.match(/mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6})/gi) || [];
+          for (const m of mailtoMatches) {
+            const emails = extractEmails(m.replace(/^mailto:/i, ""));
+            if (emails.length > 0) { foundEmail = emails[0]; source = url; break; }
           }
-        } catch {}
+          if (foundEmail) break;
 
-        // STEP 2: Scrape the business website — homepage + contact/about pages
-        if (businessWebsite) {
-          let baseUrl = "";
-          try { baseUrl = new URL(businessWebsite).origin; } catch {}
-          const pagesToScrape = [businessWebsite];
-          if (baseUrl) { pagesToScrape.push(baseUrl + "/contact", baseUrl + "/about", baseUrl + "/about-us", baseUrl + "/contact-us"); }
+          // General email extraction
+          const emails = extractEmails(html);
+          if (emails.length > 0) { foundEmail = emails[0]; source = url; break; }
 
-          for (const pageUrl of pagesToScrape) {
-            if (foundEmail) break;
-            const html = await fetchPage(pageUrl);
-            if (!html) continue;
-            const mailtoMatches = html.match(/mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6})/gi) || [];
-            for (const m of mailtoMatches) {
-              const emails = extractEmails(m.replace(/^mailto:/i, ""));
-              if (emails.length > 0) { foundEmail = emails[0]; source = "website-mailto"; break; }
-            }
-            if (foundEmail) break;
-            const emails = extractEmails(html);
-            if (emails.length > 0) { foundEmail = emails[0]; source = "website"; break; }
-            if (!foundPhone) {
-              const phones = html.match(/\(?808\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g);
-              if (phones?.[0]) foundPhone = phones[0];
-            }
+          // Extract phone if missing
+          if (!foundPhone) {
+            const phones = html.match(/\(?808\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g);
+            if (phones?.[0]) foundPhone = phones[0];
           }
-        }
 
-        // STEP 3: Check Facebook page
-        if (!foundEmail && facebookUrl) {
-          const fbHtml = await fetchPage(facebookUrl);
-          if (fbHtml) {
-            const emails = extractEmails(fbHtml);
-            if (emails.length > 0) { foundEmail = emails[0]; source = "facebook"; }
-            if (!foundPhone) {
-              const phones = fbHtml.match(/\(?808\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g);
-              if (phones?.[0]) foundPhone = phones[0];
-            }
-          }
-        }
-
-        // STEP 4: Check Google Play store listings
-        if (!foundEmail) {
-          try {
-            const appHtml = await fetchPage(`https://www.google.com/search?q=${encodeURIComponent(business + " Hawaii site:play.google.com")}&num=3`);
-            const playMatch = appHtml.match(/href="\/url\?q=(https:\/\/play\.google\.com\/store\/apps\/details[^&"]+)/);
-            if (playMatch) {
-              const playHtml = await fetchPage(decodeURIComponent(playMatch[1]));
-              const emails = extractEmails(playHtml);
-              if (emails.length > 0) { foundEmail = emails[0]; source = "google-play"; }
-            }
-          } catch {}
-        }
-
-        // STEP 5: Check Yelp for business website link
-        if (!foundEmail && yelpUrl) {
-          const yelpHtml = await fetchPage(yelpUrl);
-          if (yelpHtml) {
-            const bizLinks = yelpHtml.match(/href="(https?:\/\/(?!www\.yelp)[^"]+)"/g) || [];
-            for (const m of bizLinks) {
-              if (foundEmail) break;
-              const urlMatch = m.match(/href="([^"]+)"/);
-              if (urlMatch?.[1] && !urlMatch[1].includes("yelp") && !urlMatch[1].includes("google")) {
-                const siteHtml = await fetchPage(urlMatch[1]);
-                const emails = extractEmails(siteHtml);
-                if (emails.length > 0) { foundEmail = emails[0]; source = "yelp-website-link"; break; }
+          // If we found a website, also check /contact and /about pages
+          if (url.startsWith("https://www.") && !url.includes("yelp.com") && !url.includes("facebook.com")) {
+            try {
+              const base = new URL(url).origin;
+              for (const subpath of ["/contact", "/about", "/about-us", "/contact-us"]) {
+                if (foundEmail) break;
+                const subHtml = await fetchPage(base + subpath, 4000);
+                if (!subHtml) continue;
+                const subMailto = subHtml.match(/mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6})/gi) || [];
+                for (const m of subMailto) {
+                  const em = extractEmails(m.replace(/^mailto:/i, "")); if (em.length > 0) { foundEmail = em[0]; source = base + subpath; break; }
+                }
+                if (!foundEmail) {
+                  const em = extractEmails(subHtml); if (em.length > 0) { foundEmail = em[0]; source = base + subpath; }
+                }
               }
-            }
-            if (!foundPhone) {
-              const phones = yelpHtml.match(/\(?808\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g);
-              if (phones?.[0]) foundPhone = phones[0];
-            }
+            } catch {}
           }
         }
 
@@ -4487,12 +4471,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           if (foundEmail) { updates.push("email = ?"); values.push(foundEmail); }
           if (foundPhone && !lead.phone) { updates.push("phone = ?"); values.push(foundPhone); }
           await env.DB.prepare(`UPDATE leads SET ${updates.join(", ")} WHERE id = ?`).bind(...values, lead.id).run();
-          results.push({ id: lead.id, business, status: foundEmail ? "found" : "phone_only", email: foundEmail, phone: foundPhone, source, website: businessWebsite });
+          results.push({ id: lead.id, business, status: foundEmail ? "found" : "phone_only", email: foundEmail, phone: foundPhone, source });
         } else {
-          results.push({ id: lead.id, business, status: "not_found", email: "", website: businessWebsite, source: "" });
+          results.push({ id: lead.id, business, status: "not_found", email: "" });
         }
 
-        if (leadsToEnrich.length > 1) await new Promise(r => setTimeout(r, 1500));
+        if (leadsToEnrich.length > 1) await new Promise(r => setTimeout(r, 1000));
       }
 
       const enriched = results.filter(r => r.status === "found").length;
