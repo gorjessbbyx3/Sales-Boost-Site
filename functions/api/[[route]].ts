@@ -1441,6 +1441,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
       if (body.attachments !== undefined) { updates.push("attachments = ?"); values.push(JSON.stringify(body.attachments)); }
       if (body.checklist !== undefined) { updates.push("checklist = ?"); values.push(JSON.stringify(body.checklist)); }
+      if (body.verified !== undefined) { updates.push("verified = ?"); values.push(JSON.stringify(body.verified)); }
       updates.push("updated_at = ?"); values.push(now());
 
       if (updates.length > 1) {
@@ -4809,6 +4810,7 @@ function mapLead(row: Record<string, unknown>) {
     notes: row.notes,
     assignedTo: row.assigned_to || "",
     checklist: (() => { try { return JSON.parse(row.checklist as string || "[]"); } catch { return []; } })(),
+    verified: (() => { try { return JSON.parse(row.verified as string || "{}"); } catch { return {}; } })(),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

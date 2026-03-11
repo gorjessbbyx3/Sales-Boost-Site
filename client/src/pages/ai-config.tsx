@@ -1667,6 +1667,36 @@ function LeadsTab() {
                   {lead.nextStep && <p className="text-xs text-primary mt-1.5">Next: {lead.nextStep}{lead.nextStepDate ? ` (${lead.nextStepDate})` : ""}</p>}
                   {lead.painPoints && <p className="text-[10px] text-muted-foreground mt-1">Pain: {lead.painPoints}</p>}
                   {lead.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{lead.notes}</p>}
+                  {/* Verification badges */}
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {(() => {
+                      const v = (lead as any).verified || {};
+                      const fields: Array<{ key: string; label: string; has: boolean }> = [
+                        { key: "business", label: "Business", has: !!lead.business },
+                        { key: "phone", label: "Phone", has: !!lead.phone },
+                        { key: "email", label: "Email", has: !!lead.email },
+                        { key: "address", label: "Address", has: !!lead.address },
+                        { key: "cashOnly", label: "Cash Only", has: (lead.notes || "").toLowerCase().includes("cash only") },
+                        { key: "acceptsCards", label: "Takes Cards", has: !!(lead.currentProcessor) },
+                      ];
+                      const toggleVerify = (key: string) => {
+                        const updated = { ...v, [key]: !v[key], verifiedAt: new Date().toISOString() };
+                        updateMutation.mutate({ id: lead.id, verified: updated } as any);
+                      };
+                      const visibleFields = fields.filter(f => f.has || v[f.key]);
+                      if (visibleFields.length === 0) return null;
+                      const verifiedCount = visibleFields.filter(f => v[f.key]).length;
+                      return (<>
+                        {verifiedCount > 0 && <span className="text-[9px] text-emerald-400 mr-1">{verifiedCount}/{visibleFields.length} verified</span>}
+                        {visibleFields.map(f => (
+                          <button key={f.key} onClick={() => toggleVerify(f.key)} title={v[f.key] ? `${f.label} verified — click to unverify` : `Click to verify ${f.label}`}
+                            className={`inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[9px] border transition-colors ${v[f.key] ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-amber-500/5 border-amber-500/20 text-amber-400/70 hover:text-amber-300"}`}>
+                            {v[f.key] ? "✓" : "?"} {f.label}
+                          </button>
+                        ))}
+                      </>);
+                    })()}
+                  </div>
                   {/* Checklist */}
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {(() => {

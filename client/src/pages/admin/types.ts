@@ -30,6 +30,9 @@ export interface Lead {
   nextStepDate: string;
   attachments: Array<{ name: string; url: string }>;
   notes: string;
+  assignedTo?: string;
+  checklist?: Array<{ id: string; label: string; done: boolean }>;
+  verified?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
 }
