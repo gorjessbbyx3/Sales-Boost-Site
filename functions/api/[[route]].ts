@@ -3103,7 +3103,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (path === "/api/autopilot/config" && method === "PATCH") {
       const body: any = await request.json();
       const boolFields = ["enabled", "autoProspectEnabled", "autoOutreachEnabled", "autoFollowUpEnabled", "autoEnrichEnabled"];
-      const fieldMap: Record<string, string> = { enabled: "enabled", autoProspectEnabled: "auto_prospect_enabled", prospectLocations: "prospect_locations", prospectVerticals: "prospect_verticals", maxProspectsPerRun: "max_prospects_per_run", autoOutreachEnabled: "auto_outreach_enabled", outreachDelay: "outreach_delay_hours", maxOutreachPerDay: "max_outreach_per_day", autoFollowUpEnabled: "auto_follow_up_enabled", followUpAfterDays: "follow_up_after_days", maxFollowUpsPerLead: "max_follow_ups_per_lead", autoEnrichEnabled: "auto_enrich_enabled" };
+      const fieldMap: Record<string, string> = { enabled: "enabled", autoProspectEnabled: "auto_prospect_enabled", prospectLocations: "prospect_locations", prospectVerticals: "prospect_verticals", maxProspectsPerRun: "max_prospects_per_run", autoOutreachEnabled: "auto_outreach_enabled", outreachDelay: "outreach_delay_hours", maxOutreachPerDay: "max_outreach_per_day", autoFollowUpEnabled: "auto_follow_up_enabled", followUpAfterDays: "follow_up_after_days", maxFollowUpsPerLead: "max_follow_ups_per_lead", autoEnrichEnabled: "auto_enrich_enabled", outreachEmailEnabled: "outreach_email_enabled", outreachSmsEnabled: "outreach_sms_enabled" };
       const updates: string[] = ["updated_at = ?"]; const values: any[] = [now()];
       for (const [jsKey, dbCol] of Object.entries(fieldMap)) { if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(boolFields.includes(jsKey) ? (body[jsKey] ? 1 : 0) : body[jsKey]); } }
       try {
@@ -3137,11 +3137,19 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         const ts = now();
         const hoursAgo = new Date(Date.now() - (cfg.outreach_delay_hours || 2) * 3600 * 1000).toISOString();
         const daysAgo = new Date(Date.now() - (cfg.follow_up_after_days || 3) * 86400 * 1000).toISOString();
+        const emailEnabled = cfg.outreach_email_enabled !== 0;
+        const smsEnabled = cfg.outreach_sms_enabled !== 0;
+
+        // Build contact filter based on enabled channels
+        let contactFilter = "0=1"; // nothing enabled = match nothing
+        if (emailEnabled && smsEnabled) contactFilter = "(l.email != '' OR l.phone != '')";
+        else if (emailEnabled) contactFilter = "l.email != ''";
+        else if (smsEnabled) contactFilter = "l.phone != ''";
 
         // Auto Outreach: find NEW unassigned leads older than delay, not already in queue
-        if (cfg.auto_outreach_enabled) {
+        if (cfg.auto_outreach_enabled && (emailEnabled || smsEnabled)) {
           const { results: newLeads } = await env.DB.prepare(
-            `SELECT l.* FROM leads l WHERE l.status = 'new' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND (l.email != '' OR l.phone != '') AND l.created_at < ? AND l.id NOT IN (SELECT lead_id FROM outreach_queue WHERE type = 'initial') ORDER BY l.created_at ASC LIMIT ?`
+            `SELECT l.* FROM leads l WHERE l.status = 'new' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND ${contactFilter} AND l.created_at < ? AND l.id NOT IN (SELECT lead_id FROM outreach_queue WHERE type = 'initial') ORDER BY l.created_at ASC LIMIT ?`
           ).bind(hoursAgo, cfg.max_outreach_per_day || 15).all();
           for (const lead of (newLeads || [])) {
             const id = `oq-${genId()}`;
@@ -3152,7 +3160,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             const painContext = lead.pain_points ? `\nKnown pain points: ${lead.pain_points}` : "";
             const hasEmail = !!(lead.email as string);
 
-            if (hasEmail) {
+            if (hasEmail && emailEnabled) {
               try {
                 const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
                   method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
@@ -3169,8 +3177,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
                 queued++;
               }
-            } else if (lead.phone) {
-              // Phone-only lead: generate SMS draft
+            } else if (lead.phone && smsEnabled) {
               try {
                 const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/sms", {
                   method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
@@ -3190,10 +3197,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         }
 
         // Auto Follow-Up: find CONTACTED unassigned leads with no recent queue entry
-        if (cfg.auto_follow_up_enabled) {
+        if (cfg.auto_follow_up_enabled && (emailEnabled || smsEnabled)) {
           const maxFollowUps = cfg.max_follow_ups_per_lead || 3;
           const { results: staleLeads } = await env.DB.prepare(
-            `SELECT l.* FROM leads l WHERE l.status = 'contacted' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND (l.email != '' OR l.phone != '') AND l.updated_at < ? ORDER BY l.updated_at ASC LIMIT ?`
+            `SELECT l.* FROM leads l WHERE l.status = 'contacted' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND ${contactFilter} AND l.updated_at < ? ORDER BY l.updated_at ASC LIMIT ?`
           ).bind(daysAgo, cfg.max_outreach_per_day || 15).all();
           for (const lead of (staleLeads || [])) {
             const { results: existing } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM outreach_queue WHERE lead_id = ? AND type = 'follow_up'").bind(lead.id).all();
@@ -3206,7 +3213,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             const checklistContext = completedItems.length > 0 ? `Previous interactions: ${completedItems.join(", ")}.` : "";
             const hasEmail = !!(lead.email as string);
 
-            if (hasEmail) {
+            if (hasEmail && emailEnabled) {
               try {
                 const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
                   method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
@@ -3223,7 +3230,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
                 queued++;
               }
-            } else if (lead.phone) {
+            } else if (lead.phone && smsEnabled) {
               const smsText = `Hi${lead.name ? ` ${lead.name}` : ""}, just following up from TechSavvy Hawaii about eliminating processing fees for ${business}. Still interested? (808) 767-5460`;
               await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 Follow-up SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
               queued++;
@@ -4770,7 +4777,7 @@ function mapBusinessInfo(row: Record<string, unknown>) {
 }
 
 function mapAutopilotConfig(row: Record<string, unknown>) {
-  return { id: row.id, enabled: !!row.enabled, autoProspectEnabled: !!row.auto_prospect_enabled, prospectLocations: row.prospect_locations || "Honolulu, Hawaii", prospectVerticals: row.prospect_verticals || "restaurant,retail,salon", maxProspectsPerRun: row.max_prospects_per_run || 10, autoOutreachEnabled: !!row.auto_outreach_enabled, outreachDelay: row.outreach_delay_hours || 2, maxOutreachPerDay: row.max_outreach_per_day || 15, autoFollowUpEnabled: !!row.auto_follow_up_enabled, followUpAfterDays: row.follow_up_after_days || 3, maxFollowUpsPerLead: row.max_follow_ups_per_lead || 3, autoEnrichEnabled: !!row.auto_enrich_enabled, lastRunAt: row.last_run_at || "", totalProspected: row.total_prospected || 0, totalEmailed: row.total_emailed || 0, totalFollowUps: row.total_follow_ups || 0, updatedAt: row.updated_at || "" };
+  return { id: row.id, enabled: !!row.enabled, autoProspectEnabled: !!row.auto_prospect_enabled, prospectLocations: row.prospect_locations || "Honolulu, Hawaii", prospectVerticals: row.prospect_verticals || "restaurant,retail,salon", maxProspectsPerRun: row.max_prospects_per_run || 10, autoOutreachEnabled: !!row.auto_outreach_enabled, outreachDelay: row.outreach_delay_hours || 2, maxOutreachPerDay: row.max_outreach_per_day || 15, autoFollowUpEnabled: !!row.auto_follow_up_enabled, followUpAfterDays: row.follow_up_after_days || 3, maxFollowUpsPerLead: row.max_follow_ups_per_lead || 3, autoEnrichEnabled: !!row.auto_enrich_enabled, outreachEmailEnabled: row.outreach_email_enabled !== 0, outreachSmsEnabled: row.outreach_sms_enabled !== 0, lastRunAt: row.last_run_at || "", totalProspected: row.total_prospected || 0, totalEmailed: row.total_emailed || 0, totalFollowUps: row.total_follow_ups || 0, updatedAt: row.updated_at || "" };
 }
 
 // ─── PDF text extraction (lightweight, works in Workers runtime) ──────

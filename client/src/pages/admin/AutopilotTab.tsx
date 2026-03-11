@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Zap, Play, Pause, RefreshCw, Mail, Clock, Send, Eye,
+  Zap, Play, Pause, RefreshCw, Mail, Clock, Send, Eye, Phone,
   SkipForward, Trash2, Bot, Sparkles, TrendingUp, AlertTriangle,
   CheckCircle, XCircle, Loader2, RotateCw,
 } from "lucide-react";
@@ -30,6 +30,8 @@ interface AutopilotConfig {
   followUpAfterDays: number;
   maxFollowUpsPerLead: number;
   autoEnrichEnabled: boolean;
+  outreachEmailEnabled: boolean;
+  outreachSmsEnabled: boolean;
   lastRunAt: string;
   totalProspected: number;
   totalEmailed: number;
@@ -199,7 +201,21 @@ export default function AutopilotTab() {
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4 space-y-3">
-            <p className="text-[10px] text-muted-foreground">AI writes unique emails for each new lead. No templates — every email is personalized to their business, processor, and vertical.</p>
+            <p className="text-[10px] text-muted-foreground">AI writes unique emails & SMS for each new lead. No templates — every message is personalized to their business, processor, and vertical.</p>
+            <div className="rounded-md border border-border/30 p-2.5 space-y-2">
+              <p className="text-[10px] font-medium text-muted-foreground">Outreach Channels</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2"><Mail className="w-3 h-3 text-blue-400" /><span className="text-xs">Emails</span></div>
+                <Switch checked={c?.outreachEmailEnabled !== false} onCheckedChange={(v) => updateConfig.mutate({ outreachEmailEnabled: v })} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2"><Phone className="w-3 h-3 text-emerald-400" /><span className="text-xs">SMS Drafts</span></div>
+                <Switch checked={c?.outreachSmsEnabled !== false} onCheckedChange={(v) => updateConfig.mutate({ outreachSmsEnabled: v })} />
+              </div>
+              {!c?.outreachEmailEnabled && !c?.outreachSmsEnabled && (
+                <p className="text-[10px] text-amber-400">Both channels are off — autopilot won't generate any messages.</p>
+              )}
+            </div>
             <div>
               <Label className="text-[10px]">Delay after lead created (hours)</Label>
               <Input type="number" className="h-7 text-xs" value={c?.outreachDelay ?? 2}
