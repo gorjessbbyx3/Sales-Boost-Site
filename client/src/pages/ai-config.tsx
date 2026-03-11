@@ -354,6 +354,7 @@ interface EmailMessage {
   resendId: string;
   status: string;
   sentAt: string;
+  aiTags?: string[];
 }
 
 interface EmailStats {
@@ -5732,6 +5733,31 @@ function InboxTab() {
     enabled: !!selectedThread,
   });
 
+  const [recordingMsg, setRecordingMsg] = useState<string | null>(null);
+  const [recordType, setRecordType] = useState<"invoice" | "payment">("invoice");
+  const [recordAmount, setRecordAmount] = useState("");
+  const [recordInvNum, setRecordInvNum] = useState("");
+  const [recordClient, setRecordClient] = useState("");
+  const [recordDueDate, setRecordDueDate] = useState("");
+  const [recordNotes, setRecordNotes] = useState("");
+
+  const recordFinanceMut = useMutation({
+    mutationFn: async (msgId: string) => {
+      const r = await apiRequest("POST", `/api/email/messages/${msgId}/record-finance`, {
+        type: recordType, amount: recordAmount, invoiceNumber: recordInvNum,
+        clientName: recordClient, dueDate: recordDueDate, notes: recordNotes,
+      });
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setRecordingMsg(null);
+      refetchDetail();
+      toast({ title: data.type === "invoice" ? "Invoice recorded" : "Payment recorded", description: `$${recordAmount} from ${recordClient}` });
+      setRecordAmount(""); setRecordInvNum(""); setRecordClient(""); setRecordDueDate(""); setRecordNotes("");
+    },
+    onError: (err: Error) => toast({ title: "Failed to record", description: err.message, variant: "destructive" }),
+  });
+
   useEffect(() => {
     if (emailConfig) {
       setCfgEnabled(emailConfig.enabled);
@@ -5989,6 +6015,84 @@ function InboxTab() {
                   <div className="text-sm prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: msg.htmlBody }} />
                 ) : (
                   <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                )}
+
+                {/* AI Detection Banner */}
+                {msg.direction === "inbound" && msg.aiTags && msg.aiTags.length > 0 && !msg.aiTags.includes("recorded") && (
+                  <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-400" />
+                        <span className="text-xs font-medium text-amber-300">
+                          AI Detected: {msg.aiTags.filter(t => t !== "recorded").map(t => t === "invoice" ? "📄 Invoice" : t === "payment" ? "💰 Payment" : t === "subscription" ? "🔄 Subscription" : t === "refund" ? "↩️ Refund" : t).join(", ")}
+                        </span>
+                      </div>
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] border-amber-500/30 text-amber-300 hover:bg-amber-500/20" onClick={() => {
+                        setRecordingMsg(recordingMsg === msg.id ? null : msg.id);
+                        setRecordType(msg.aiTags?.includes("payment") ? "payment" : "invoice");
+                        setRecordClient(msg.fromName || msg.fromEmail || "");
+                        // Try to extract amount from body
+                        const amtMatch = (msg.body || "").match(/\$[\d,]+\.?\d{0,2}/g);
+                        if (amtMatch) { const largest = amtMatch.map(a => parseFloat(a.replace(/[$,]/g, ""))).sort((a, b) => b - a)[0]; setRecordAmount(largest.toString()); }
+                        // Try to extract invoice number
+                        const invMatch = (msg.body || "").match(/(?:invoice|inv)[#\s:\-]*([A-Z0-9\-]{2,20})/i);
+                        if (invMatch) setRecordInvNum(invMatch[1].trim());
+                      }}>
+                        <DollarSign className="w-3 h-3 mr-1" />Record in Finances
+                      </Button>
+                    </div>
+
+                    {recordingMsg === msg.id && (
+                      <div className="mt-3 pt-3 border-t border-amber-500/20 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Type</Label>
+                            <Select value={recordType} onValueChange={(v: "invoice" | "payment") => setRecordType(v)}>
+                              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="invoice">Invoice (Unpaid)</SelectItem>
+                                <SelectItem value="payment">Payment (Received)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Amount ($)</Label>
+                            <Input value={recordAmount} onChange={(e) => setRecordAmount(e.target.value)} placeholder="0.00" className="h-7 text-xs" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">From / Client</Label>
+                            <Input value={recordClient} onChange={(e) => setRecordClient(e.target.value)} placeholder="Company name" className="h-7 text-xs" />
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">{recordType === "invoice" ? "Invoice #" : "Reference #"}</Label>
+                            <Input value={recordInvNum} onChange={(e) => setRecordInvNum(e.target.value)} placeholder="INV-001" className="h-7 text-xs" />
+                          </div>
+                        </div>
+                        {recordType === "invoice" && (
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Due Date</Label>
+                            <Input type="date" value={recordDueDate} onChange={(e) => setRecordDueDate(e.target.value)} className="h-7 text-xs" />
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Button size="sm" className="h-7 text-xs" disabled={!recordAmount || recordFinanceMut.isPending} onClick={() => recordFinanceMut.mutate(msg.id)}>
+                            {recordFinanceMut.isPending ? "Saving..." : recordType === "invoice" ? "Save Invoice" : "Record Payment"}
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setRecordingMsg(null)}>Cancel</Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Already recorded indicator */}
+                {msg.aiTags?.includes("recorded") && (
+                  <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-400">
+                    <CheckCircle className="w-3 h-3" />
+                    <span>Recorded in finances</span>
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -661,7 +661,125 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, ?, ?, ?, ?, '', 'received', ?)"
       ).bind(msgId, tid, fromEmail, fromName, to || "contact@techsavvyhawaii.com", subject || "", text || "", html || "", ts).run();
 
+      // AI Classification: detect invoices, payments, receipts
+      try {
+        const content = ((subject || "") + " " + (text || "")).toLowerCase();
+        const tags: string[] = [];
+        const extractedData: Record<string, string> = {};
+
+        // Invoice detection
+        if (/invoice|inv[#\s\-]?\d|bill\s?(for|to|#)|amount\s?due|balance\s?due|please\s?pay|payment\s?due|remit/i.test(content)) tags.push("invoice");
+        // Payment/receipt detection
+        if (/payment\s?(received|confirmed|processed|complete)|receipt|paid|transaction\s?(id|#|complete)|thank\s?you\s?for\s?your\s?payment/i.test(content)) tags.push("payment");
+        // Subscription/recurring
+        if (/subscription|recurring|monthly\s?(charge|payment|fee)|renewal|auto[- ]?pay/i.test(content)) tags.push("subscription");
+        // Refund
+        if (/refund|credit\s?(applied|issued|memo)|money\s?back/i.test(content)) tags.push("refund");
+
+        // Extract dollar amounts
+        const amountMatches = content.match(/\$[\d,]+\.?\d{0,2}/g);
+        if (amountMatches && amountMatches.length > 0) {
+          const largest = amountMatches.map(a => parseFloat(a.replace(/[$,]/g, ""))).sort((a, b) => b - a)[0];
+          extractedData.amount = largest.toString();
+        }
+        // Extract invoice numbers
+        const invNumMatch = content.match(/(?:invoice|inv)[#\s:\-]*([A-Z0-9\-]{2,20})/i);
+        if (invNumMatch) extractedData.invoiceNumber = invNumMatch[1].trim();
+        // Extract due dates
+        const dueDateMatch = content.match(/(?:due|by|before)[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+        if (dueDateMatch) extractedData.dueDate = dueDateMatch[1];
+
+        if (tags.length > 0) {
+          const tagData = JSON.stringify(tags);
+          await env.DB.prepare("UPDATE email_messages SET ai_tags = ? WHERE id = ?").bind(tagData, msgId).run();
+          // Store extracted financial data in thread tags for the frontend
+          if (Object.keys(extractedData).length > 0) {
+            try { await env.DB.prepare("UPDATE email_threads SET source = ? WHERE id = ?").bind(JSON.stringify({ ...JSON.parse("{}"), aiDetected: tags, extractedData }), tid).run(); } catch {}
+          }
+        }
+
+        // For ambiguous emails, also try AI classification via worker
+        if (tags.length === 0 && (content.includes("$") || content.includes("total") || content.includes("charge") || content.includes("fee"))) {
+          try {
+            const classifyRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/classify", {
+              method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+              body: JSON.stringify({ text: (subject + "\n" + (text || "")).slice(0, 1000) }),
+            });
+            const classifyData: any = await classifyRes.json();
+            if (classifyData.tags && Array.isArray(classifyData.tags) && classifyData.tags.length > 0) {
+              await env.DB.prepare("UPDATE email_messages SET ai_tags = ? WHERE id = ?").bind(JSON.stringify(classifyData.tags), msgId).run();
+            }
+          } catch {}
+        }
+      } catch { /* classification is non-critical */ }
+
       return json({ success: true, threadId: tid });
+    }
+
+    // POST /api/email/messages/:id/record-finance — create invoice/payment from detected email
+    if (method === "POST") {
+      const rfMatch = path.match(/^\/api\/email\/messages\/([^/]+)\/record-finance$/);
+      if (rfMatch) {
+        const msgId = rfMatch[1];
+        const msg = await env.DB.prepare("SELECT * FROM email_messages WHERE id = ?").bind(msgId).first();
+        if (!msg) return err("Message not found", 404);
+        const body: any = await request.json();
+        const ts = now();
+        const id = genId();
+        const recordType = body.type || "invoice"; // "invoice" or "payment"
+
+        if (recordType === "invoice") {
+          await env.DB.prepare(
+            "INSERT INTO invoices (id, invoice_number, client_name, amount, status, due_date, notes, file_url, file_name, created_at, updated_at) VALUES (?, ?, ?, ?, 'pending', ?, ?, '', '', ?, ?)"
+          ).bind(
+            id,
+            body.invoiceNumber || "",
+            body.clientName || (msg.from_name as string) || (msg.from_email as string) || "",
+            parseFloat(body.amount) || 0,
+            body.dueDate || "",
+            `Auto-detected from email: ${msg.subject}\nFrom: ${msg.from_email}\n\n${body.notes || ""}`.trim(),
+            ts, ts
+          ).run();
+          // Mark the message as recorded
+          try {
+            let tags: string[] = []; try { tags = JSON.parse(msg.ai_tags as string || "[]"); } catch {}
+            if (!tags.includes("recorded")) tags.push("recorded");
+            await env.DB.prepare("UPDATE email_messages SET ai_tags = ? WHERE id = ?").bind(JSON.stringify(tags), msgId).run();
+          } catch {}
+          const row = await env.DB.prepare("SELECT * FROM invoices WHERE id = ?").bind(id).first();
+          return json({ success: true, type: "invoice", record: row });
+        }
+
+        // For payment records, mark an existing invoice as paid or create a record
+        if (recordType === "payment") {
+          // Try to find matching invoice
+          if (body.invoiceId) {
+            await env.DB.prepare("UPDATE invoices SET status = 'paid', paid_date = ?, notes = notes || ?, updated_at = ? WHERE id = ?")
+              .bind(ts, `\nPayment confirmed via email from ${msg.from_email}`, ts, body.invoiceId).run();
+          } else {
+            // Create as a paid invoice record
+            await env.DB.prepare(
+              "INSERT INTO invoices (id, invoice_number, client_name, amount, status, due_date, paid_date, notes, file_url, file_name, created_at, updated_at) VALUES (?, ?, ?, ?, 'paid', '', ?, ?, '', '', ?, ?)"
+            ).bind(
+              id,
+              body.invoiceNumber || "",
+              body.clientName || (msg.from_name as string) || "",
+              parseFloat(body.amount) || 0,
+              ts,
+              `Payment detected from email: ${msg.subject}\nFrom: ${msg.from_email}\n\n${body.notes || ""}`.trim(),
+              ts, ts
+            ).run();
+          }
+          try {
+            let tags: string[] = []; try { tags = JSON.parse(msg.ai_tags as string || "[]"); } catch {}
+            if (!tags.includes("recorded")) tags.push("recorded");
+            await env.DB.prepare("UPDATE email_messages SET ai_tags = ? WHERE id = ?").bind(JSON.stringify(tags), msgId).run();
+          } catch {}
+          return json({ success: true, type: "payment" });
+        }
+
+        return err("Invalid type", 400);
+      }
     }
 
     // POST /api/leads/public (public lead from website contact form)
@@ -4537,6 +4655,7 @@ function mapMessage(row: Record<string, unknown>) {
     resendId: row.resend_id || "",
     status: row.status,
     sentAt: row.sent_at,
+    aiTags: (() => { try { return JSON.parse(row.ai_tags as string || "[]"); } catch { return []; } })(),
   };
 }
 
