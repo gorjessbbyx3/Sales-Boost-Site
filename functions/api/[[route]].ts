@@ -817,6 +817,26 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json({ success: true }, 201);
     }
 
+    // POST /api/linkinbio/track (public — no auth)
+    if (path === "/api/linkinbio/track" && method === "POST") {
+      try {
+        const body: any = await request.json();
+        const id = genId();
+        await env.DB.prepare("INSERT INTO linkinbio_clicks (id, link, offer, referrer, ts) VALUES (?, ?, ?, ?, ?)").bind(id, body.link || "", body.offer || "", body.referrer || "", body.ts || now()).run();
+      } catch {}
+      return json({ ok: true });
+    }
+
+    // POST /api/campaigns/redeem (public — offer code lookup)
+    if (path === "/api/campaigns/redeem" && method === "POST") {
+      const body: any = await request.json();
+      const code = (body.code || "").toUpperCase().trim();
+      if (!code) return err("Missing offer code", 400);
+      const camp = await env.DB.prepare("SELECT * FROM campaigns WHERE UPPER(offer_code) = ?").bind(code).first();
+      if (!camp) return json({ valid: false, message: "Offer code not found" });
+      return json({ valid: true, campaignName: camp.name, offerCode: camp.offer_code, campaignId: camp.id });
+    }
+
     // POST /api/statement-review/analyze (public — file upload for AI analysis)
     if (path === "/api/statement-review/analyze" && method === "POST") {
       try {
@@ -3163,40 +3183,112 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             const ownerName = (lead.name as string) || "";
             const isCashOnly = ((lead.notes as string) || "").toLowerCase().includes("cash only");
             const processor = (lead.current_processor as string) || "";
+            const notes = (lead.notes as string) || "";
+            const volume = (lead.monthly_volume as string) || "";
+            const address = (lead.address as string) || "";
 
-            // Build personalized subject + body
+            // === SALES PSYCHOLOGY ENGINE ===
+            // Principles: Reciprocity (give value first), Social Proof (others like you),
+            // Loss Aversion (what you're losing > what you'd gain), Curiosity Gap (open loops),
+            // Commitment/Consistency (small yes → big yes), Authority (data + expertise)
+
             function buildOutreach() {
               const firstName = ownerName.split(" ")[0] || "";
               const greeting = firstName || "there";
-              // Vertical-specific hooks
-              const hooks: Record<string, string> = {
-                restaurant: "I know restaurant margins are tight — every dollar counts. What if you could keep 100% of every card transaction?",
-                salon: "Between booth rent, products, and overhead, salon owners deserve to keep every penny they earn.",
-                retail: "Retail is competitive enough without giving 3% of every sale to your processor.",
-                auto_repair: "Auto repair tickets run $200-$800+ — that's $6-$24 per job going to your processor.",
-                other: "Small business owners work too hard to give away 2-4% of every sale to a card processor.",
-              };
-              const hook = hooks[vertical] || hooks.other;
+              const neighborhood = address.match(/Kaimuki|Kapahulu|Kalihi|Chinatown|Moiliili|McCully|Waikiki|Kahala|Kakaako|Manoa|Downtown|Hawaii Kai|Kailua|Aina Haina/i)?.[0] || "";
 
-              // Cash-only specific pitch
+              // === DEEP VERTICAL KNOWLEDGE ===
+              const verticalInsight: Record<string, { painPoints: string; metrics: string; hook: string; objectionPreempt: string; seasonalNote: string }> = {
+                restaurant: {
+                  painPoints: "Food costs are up 15-20% since 2023. Labor's expensive in Hawaii. Your margins are probably 3-8% on a good month — and your processor is taking 2.5-3.5% of every card transaction on top of that.",
+                  metrics: "The average restaurant in Honolulu processes $15-40K/month in cards. At typical rates, that's $400-$1,400/month going to your processor — money that could cover a part-time employee or a month of produce.",
+                  hook: "What if the biggest controllable expense on your P&L just disappeared?",
+                  objectionPreempt: "You might be thinking 'my customers won't like a surcharge.' Here's the thing — studies show 85% of customers don't change behavior when a small service fee is clearly disclosed. They expect it, like tipping.",
+                  seasonalNote: "With tourist season ramping up, your card volume goes up — which means your processing fees go up too. Unless they're zero.",
+                },
+                salon: {
+                  painPoints: "Between chair rent, product costs, insurance, and continuing education, salon owners are some of the hardest-working entrepreneurs I know. The last thing you need is giving away 2-3% of every service.",
+                  metrics: "A busy salon chair generates $4-8K/month. If 70% is card transactions, you're paying $80-170/month per chair to your processor. For a 4-chair salon, that's $320-$680/month — the cost of a premium product line.",
+                  hook: "What would you do with an extra $400-600/month? New product line? Marketing? Just keeping more of what you already earn?",
+                  objectionPreempt: "Most salons worry about client perception. But the cash discount is actually a benefit — cash-paying clients get a discount, and the posted price includes the service fee. It's transparent and legal in all 50 states.",
+                  seasonalNote: "Wedding season and prom season mean higher ticket services — which means even bigger savings.",
+                },
+                auto_repair: {
+                  painPoints: "Your average ticket is $200-$800+. At 2.5-3% processing, that's $5-$24 per job going to Visa and Mastercard. On a busy week, that adds up to hundreds.",
+                  metrics: "An auto shop processing $20-50K/month in cards is paying $500-$1,750/month in processing fees. That's the cost of a lift payment, or specialty tools, or advertising — just gone.",
+                  hook: "You charge for every part, every hour of labor, every diagnostic — but you're giving away 3% of all of it to your card processor for free. That math doesn't work.",
+                  objectionPreempt: "Customers paying $600 for a brake job won't blink at a small service fee — they expect it. It's like the 'shop supplies' line item everyone already accepts.",
+                  seasonalNote: "Car AC season is coming — high-ticket repairs mean even bigger savings.",
+                },
+                retail: {
+                  painPoints: "Retail margins are razor-thin in Hawaii with high rent and shipping costs for inventory. Every percentage point matters.",
+                  metrics: "If you're doing $10-30K/month in card sales, processing eats $250-$900/month. That's inventory you can't stock, advertising you can't run, or improvements you can't make.",
+                  hook: "Your competitors are figuring out how to keep more of every sale. Are you?",
+                  objectionPreempt: "Big box stores absorb processing fees because they negotiate down to 1.5%. Small businesses can't do that — but you can eliminate fees entirely.",
+                  seasonalNote: "Holiday shopping season will spike your volume — zero fees means you keep every dollar of that spike.",
+                },
+                other: {
+                  painPoints: "Most small business owners don't realize processing fees are their 2nd or 3rd largest controllable expense — right behind rent and payroll.",
+                  metrics: "The average small business pays $500-$1,500/month in processing fees. Over a year, that's $6,000-$18,000 — real money that could go back into your business.",
+                  hook: "What if I told you there's a way to accept every card, tap, and mobile wallet — and pay zero processing fees?",
+                  objectionPreempt: "I know it sounds too good to be true. It's simple economics: the cardholder covers a small convenience fee for using their card, and you keep 100% of your listed price.",
+                  seasonalNote: "",
+                },
+              };
+
+              const vi = verticalInsight[vertical] || verticalInsight.other;
+
+              // === CASH-ONLY BUSINESSES — DIFFERENT PSYCHOLOGY ===
+              // These businesses have OPTED OUT of cards. The angle is: "you're leaving money on the table"
+              // Use Loss Aversion + Data
               if (isCashOnly) {
-                const subj = `${business} — accept cards without paying a penny`;
-                const body = `Hi ${greeting},\n\nI noticed ${business} is currently cash only. I totally respect that — but here's something worth knowing.\n\nWith TechSavvy Hawaii, you can start accepting credit cards, Apple Pay, and Google Pay with absolutely zero processing fees. The way it works is simple: card-paying customers cover a small service fee, and you keep 100% of the sale.\n\nWe provide the terminal for free, there are no monthly fees, and no contracts. It's risk-free.\n\n${processor ? `I know you've probably avoided card processing because of the fees other companies charge. We're different — we're local and we don't charge processing fees, period.` : "You'd be surprised how many customers walk away when they see 'cash only' — especially tourists."}\n\nWould you be open to a 5-minute chat? I can swing by the shop or we can talk on the phone — whatever's easier.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+                const cashOnlyStats: Record<string, string> = {
+                  restaurant: "Studies show 60-70% of dining transactions in Hawaii are card/mobile pay. A cash-only restaurant is potentially turning away 2 out of every 3 customers — especially tourists who rarely carry cash.",
+                  salon: "80% of salon clients prefer paying by card. Cash-only salons lose walk-ins who don't have an ATM nearby.",
+                  retail: "Impulse purchases increase 20-30% when customers can use cards. Cash creates a 'pain of paying' that reduces spending.",
+                  auto_repair: "Nobody carries $600 cash for a brake job. Cash-only auto shops lose jobs to competitors who take cards.",
+                  other: "78% of Americans prefer card or mobile payment. Cash-only businesses lose an average of 30% of potential customers.",
+                };
+                const stat = cashOnlyStats[vertical] || cashOnlyStats.other;
+
+                const subj = firstName
+                  ? `${firstName} — what if ${business} could take cards without paying a dime?`
+                  : `${business} — the zero-cost way to accept cards`;
+                const body = `Hi ${greeting},\n\n${stat}\n\nI'm not saying cash is bad — but what if you could accept cards, Apple Pay, and Google Pay without it costing you anything?\n\nWith TechSavvy Hawaii's cash discount program:\n• Card customers pay a small service fee (like a convenience charge)\n• You keep 100% of your listed price\n• The terminal is free — no lease, no purchase\n• No monthly fees, no contracts, cancel anytime\n• Setup takes about 10 minutes\n\nYou literally have nothing to lose and everything to gain. More customers, bigger tickets, same profit margin.\n\n${neighborhood ? `I'm in the ${neighborhood} area regularly and ` : "I"}would love to swing by ${business} for 5 minutes to show you how it works. No pressure, no commitment — just information.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
                 return { subject: subj, body };
               }
 
-              // Processor-specific angles
+              // === PROCESSOR-SPECIFIC INTELLIGENCE ===
+              // Use competitive knowledge to find wedge issues
+              const processorIntel: Record<string, { weakness: string; switchAngle: string }> = {
+                square: { weakness: "Square's flat 2.6%+10¢ seems simple, but run the math on $15K/month — that's $400+/month. And their customer support is notoriously slow with no local presence.", switchAngle: "Square's great for starting out. But once you're doing real volume, their rates quietly become the most expensive option. Most Square merchants I talk to are shocked when they see their actual monthly total." },
+                clover: { weakness: "Clover locks you into their ecosystem with equipment leases ($50-100/month) PLUS processing fees (2.3-3.5%). You're paying twice.", switchAngle: "The Clover hardware is nice, but you're paying $600-$1,200/year just to lease it — and that's before processing fees. What if the hardware was free AND the fees were zero?" },
+                toast: { weakness: "Toast takes 2.49%+15¢ on every transaction AND charges $69-$165/month for software. That's $1,000-$2,000+/month on a busy restaurant.", switchAngle: "Toast is popular, but their total cost of ownership is one of the highest in the industry. Between platform fees and processing, restaurants are paying $12,000-$24,000/year. That's a chef's salary." },
+                stripe: { weakness: "Stripe's 2.9%+30¢ is one of the highest rates in the industry. On a $50 ticket, you're paying $1.75 — on $15K/month that's over $500.", switchAngle: "Stripe's great for online, but for in-person transactions you're overpaying. Their pricing model is built for tech companies, not local businesses." },
+                heartland: { weakness: "Heartland's contracts are notoriously hard to get out of, with early termination fees up to $295.", switchAngle: "If you're locked into a Heartland contract, let's look at the math — the ETF might pay for itself in 2 months of savings." },
+              };
+
               let processorAngle = "";
               if (processor) {
                 const p = processor.toLowerCase();
-                if (p.includes("square")) processorAngle = "I've helped a few businesses switch from Square — most were surprised to see how much they were actually paying in fees once they looked at the monthly total.";
-                else if (p.includes("clover")) processorAngle = "Clover's great hardware, but the processing fees add up fast. What if you could keep using your setup and just eliminate those fees?";
-                else if (p.includes("toast")) processorAngle = "Toast is popular with restaurants, but those processing fees on every ticket eat into your margins. There's a better way.";
-                else processorAngle = `I noticed you're currently with ${processor}. Have you ever looked at what you're actually paying in total monthly fees?`;
+                for (const [key, intel] of Object.entries(processorIntel)) {
+                  if (p.includes(key)) { processorAngle = intel.switchAngle; break; }
+                }
+                if (!processorAngle) processorAngle = `Have you looked at your statement recently? Most business owners I work with don't realize how much they're actually paying until we run the numbers together.`;
               }
 
-              const subj = firstName ? `${firstName} — quick question about ${business}` : `Quick question for ${business}`;
-              const body = `Hi ${greeting},\n\nI'm with TechSavvy Hawaii, and I work with local ${vertical === "restaurant" ? "restaurants" : vertical === "salon" ? "salons" : "businesses"} here on the island.\n\n${hook}\n\nWe offer a program where your processing fees drop to literally zero. Card-paying customers cover a small service fee, you keep every dollar. Free terminal, no monthly fees, no contracts.\n\n${processorAngle ? processorAngle + "\n\n" : ""}${completedItems.length > 0 ? `I noticed we've already connected — ${completedItems[0].toLowerCase()}. ` : ""}Would it be worth a quick 5-minute conversation to see if it makes sense for ${business}?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+              // === SUBJECT LINE — CURIOSITY GAP + PERSONALIZATION ===
+              const subjects = [
+                firstName ? `${firstName}, quick question about ${business}` : `Quick question for ${business}`,
+                firstName ? `${firstName} — this number might surprise you` : `${business} — this number might surprise you`,
+                `The fee your ${vertical === "restaurant" ? "restaurant" : "business"} doesn't need to pay`,
+                firstName ? `${firstName}, what are you paying per swipe?` : `What is ${business} paying per swipe?`,
+              ];
+              const subj = subjects[Math.floor(Math.random() * subjects.length)];
+
+              // === BODY — OPEN WITH INSIGHT, NOT A PITCH ===
+              // Sales psychology: lead with value/education, not "I'm from X company"
+              const body = `Hi ${greeting},\n\n${vi.hook}\n\n${vi.painPoints}\n\nI'm with TechSavvy Hawaii. We work with local ${vertical === "restaurant" ? "restaurants" : vertical === "salon" ? "salons" : vertical === "auto_repair" ? "auto shops" : "businesses"} across Oahu, and we've found a way to make processing fees disappear — legally and permanently.\n\nHere's the short version: your listed prices stay the same. Customers who pay by card cover a small, clearly-disclosed service fee (the average is about 3.5%). Cash customers get a discount. You keep 100% of every sale.\n\nFree terminal. No monthly fees. No contracts. No catch.\n\n${processorAngle ? processorAngle + "\n\n" : ""}${vi.objectionPreempt}\n\n${completedItems.length > 0 ? `Since we've already connected (${completedItems[0].toLowerCase()}), I'd love to ` : "Would you be open to a "}quick 5-minute conversation? I can ${neighborhood ? `swing by ${business} in ${neighborhood}` : "stop by"} or hop on a call — whatever's easiest.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
               return { subject: subj, body };
             }
 
@@ -3207,8 +3299,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             } else if (lead.phone && smsEnabled) {
               const firstName = ownerName.split(" ")[0] || "";
               const smsText = isCashOnly
-                ? `Hi${firstName ? ` ${firstName}` : ""}, this is TechSavvy Hawaii. Noticed ${business} is cash only — we can get you accepting cards for free (zero processing fees, free terminal). Worth a quick chat? (808) 767-5460`
-                : `Hi${firstName ? ` ${firstName}` : ""}, this is TechSavvy Hawaii. We help local businesses like ${business} eliminate credit card processing fees completely. Interested in 5 min to hear how? (808) 767-5460`;
+                ? `Hi${firstName ? ` ${firstName}` : ""}, TechSavvy Hawaii here. ${business} could accept cards + Apple Pay with zero processing fees — free terminal, no contracts. 78% of customers prefer cards. Worth 5 min? (808) 767-5460`
+                : `Hi${firstName ? ` ${firstName}` : ""}, quick Q: what are you paying per swipe at ${business}? We help local businesses eliminate that cost entirely. Free setup, no contracts. (808) 767-5460`;
               await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
               queued++;
             }
@@ -3235,22 +3327,32 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             const greeting = firstName || "there";
             const vertical = (lead.vertical as string) || "other";
 
-            // Follow-up varies by attempt number
+            // === FOLLOW-UP PSYCHOLOGY SEQUENCE ===
+            // 1: Loss Aversion (show what they're losing)
+            // 2: Social Proof (others like them have switched)
+            // 3: Curiosity + Free Value (offer free statement analysis)
+            // 4: Scarcity + Urgency (limited local promo)
+            // 5: Breakup (respect + open door — triggers fear of missing out)
             const followUpTemplates = [
-              // Follow-up #1: Value stat
               {
-                subject: `${firstName || business} — one stat that might change your mind`,
-                body: `Hi ${greeting},\n\nI reached out recently about TechSavvy Hawaii. I know you're busy running ${business}, so I'll keep this short.\n\nOne number: the average ${vertical === "restaurant" ? "restaurant" : "local business"} pays $800-$2,400/month in credit card processing fees. Our merchants pay $0.\n\nThat's not a typo — our cash discount program means you keep 100% of every sale. The card-paying customer covers a small service fee.\n\n${completedItems.length > 0 ? `When we last connected, we ${completedItems[0].toLowerCase()}. ` : ""}If you'd like to see what you're currently paying vs what you'd pay with us, I can do a free statement analysis in about 5 minutes.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+                subject: `${firstName || "Hey"} — you paid your processor $${volume ? Math.round(parseFloat(volume.replace(/[^0-9.]/g, "")) * 0.028) : "500"}+ last month`,
+                body: `Hi ${greeting},\n\nI wanted to share a quick number with you.\n\n${vertical === "restaurant" ? "The average Honolulu restaurant pays $800-$1,400/month in credit card processing fees" : vertical === "salon" ? "A 4-chair salon typically pays $400-$800/month in processing fees" : vertical === "auto_repair" ? "An auto shop doing $30K/month in cards pays roughly $750-$1,050 in processing fees" : "The average small business pays $500-$1,500/month in processing fees"}. Over a year, that's ${vertical === "restaurant" ? "$10,000-$17,000" : vertical === "auto_repair" ? "$9,000-$12,600" : "$6,000-$18,000"} — gone.\n\nOur merchants pay $0. Not reduced fees. Not "low" fees. Zero.\n\nI don't expect you to take my word for it. If you send me a copy of your most recent processing statement, I'll do a free 5-minute analysis and show you the exact dollar amount you'd save. No obligation, no sales pitch — just math.\n\n${completedItems.length > 0 ? `We've already chatted (${completedItems[0].toLowerCase()}) so you know I'm not just another cold email. ` : ""}Would that be worth 5 minutes?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
               },
-              // Follow-up #2: Social proof
               {
-                subject: `Other ${vertical === "restaurant" ? "restaurants" : "businesses"} in Honolulu are making the switch`,
-                body: `Hi ${greeting},\n\nJust a quick note — we've been helping local businesses across Honolulu switch to zero-fee processing, and the feedback has been great.\n\nThe #1 thing they say: "I wish I'd done this sooner."\n\nNo contracts, free terminal, and you keep every dollar of every sale. The setup takes about 10 minutes.\n\nIf you've been thinking about it, I'm happy to answer any questions. No pressure at all.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+                subject: `How ${vertical === "restaurant" ? "other Honolulu restaurants are" : vertical === "salon" ? "salons in your area are" : "local businesses are"} keeping more revenue`,
+                body: `Hi ${greeting},\n\nI've been helping local businesses across Oahu switch to zero-fee processing, and there's a pattern I keep seeing:\n\nEvery single one says the same thing: "Why didn't I do this sooner?"\n\nHere's what the switch looks like in practice:\n• Day 1: We drop off a free terminal and set it up (10 minutes)\n• Day 2: Your first card transaction processes — you keep 100%\n• Month 1: You see the full impact on your bottom line\n• Month 2+: That money compounds. Some owners put it back into marketing, some into inventory, some just take home more profit.\n\nNo contract means if you don't love it, you hand back the terminal and walk away. But nobody has.\n\n${neighborhood ? `I work with several businesses in ${neighborhood} and ` : "I "}would love to show you how it works in person. 5 minutes.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
               },
-              // Follow-up #3: Breakup email
               {
-                subject: `Last note from me, ${greeting}`,
-                body: `Hi ${greeting},\n\nI've reached out a couple times about saving ${business} money on credit card processing, and I totally understand if the timing isn't right.\n\nI won't keep bugging you — but if you ever want to see what zero processing fees looks like for ${business}, my door's always open. No contracts, no commitment, just a conversation.\n\nWishing you and ${business} all the best.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+                subject: `Free statement analysis for ${business} — no strings`,
+                body: `Hi ${greeting},\n\nI know I've reached out before, and I respect your time. So let me offer something concrete instead of another pitch.\n\nI'll analyze your current processing statement for free. No commitment, no obligation. Here's what you'll learn:\n\n• Your true effective rate (it's almost always higher than what your rep told you)\n• Hidden fees you might not know about (PCI non-compliance, batch fees, "technology" fees)\n• The exact dollar amount you'd save monthly with zero-fee processing\n• Whether your current contract has an early termination fee (and if the savings cover it)\n\nJust snap a photo of your most recent statement and text it to me at (808) 767-5460, or reply to this email. I'll have the analysis back to you within 24 hours.\n\nWorst case, you learn something about your current setup. Best case, you find an extra $500-$1,500/month.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+              },
+              {
+                subject: `${firstName || greeting} — we're doing something special for local businesses this month`,
+                body: `Hi ${greeting},\n\nQuick heads up — TechSavvy Hawaii is running a local launch promotion right now for Honolulu businesses:\n\n• Free Valor VP100 terminal (normally a $300+ value)\n• Free POS system for businesses processing $10K+/month\n• Free custom website for all new merchants\n• Zero processing fees — forever, not just a promo period\n• No contract — ever\n\nWe're a local company and we're building our merchant base on the island. That's why we can offer this — we want ${business} to be one of our first success stories.\n\nThis isn't a limited-time pressure tactic — these are our standard terms. But I did want to make sure you knew about the free POS and website, since those aren't something we'll always offer.\n\nWorth a quick conversation?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+              },
+              {
+                subject: `Closing the loop, ${greeting}`,
+                body: `Hi ${greeting},\n\nI've reached out a few times about helping ${business} with processing fees, and I completely understand if now isn't the right time. Running a ${vertical === "restaurant" ? "restaurant" : vertical === "salon" ? "salon" : vertical === "auto_repair" ? "shop" : "business"} is demanding, and the last thing you need is another person in your inbox.\n\nSo this will be my last email. But I want you to have my number in case anything changes: (808) 767-5460.\n\nA few scenarios where it might make sense to reach out:\n• Your current processor raises rates (they usually do annually)\n• You're frustrated with customer support\n• You get a statement that makes you say "wait, I'm paying HOW much?"\n• You're curious about the cash discount model\n\nNo pressure. No expiration. Just a local company that's here when you're ready.\n\nWishing ${business} continued success.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
               },
             ];
 
@@ -3261,9 +3363,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
               queued++;
             } else if (lead.phone && smsEnabled) {
               const smsTexts = [
-                `Hi${firstName ? ` ${firstName}` : ""}, following up from TechSavvy Hawaii. Did you know the avg business pays $800+/mo in card fees? Our merchants pay $0. Worth 5 min? (808) 767-5460`,
-                `Hi${firstName ? ` ${firstName}` : ""}, other local businesses in Honolulu are switching to zero processing fees. No contracts, free terminal. Still interested? (808) 767-5460`,
-                `Hi${firstName ? ` ${firstName}` : ""}, last note from TechSavvy Hawaii. If you ever want to explore zero processing fees for ${business}, reach out anytime. (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, did you know ${business} probably pays $500+/mo in card fees? I can show you the exact number — free statement analysis, no strings. Text me your statement. (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, local businesses switching to zero processing fees are saving $6K-18K/year. Free terminal, no contracts. Want to see the math for ${business}? (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, free statement analysis for ${business} — snap a photo of your latest processing statement and text it to me. I'll show you exactly what you'd save. (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, TechSavvy Hawaii launch promo: free terminal + free POS + free website for local merchants. Zero processing fees forever. Worth a look? (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, last note from TechSavvy Hawaii. If processing fees ever bug you, I'm here: (808) 767-5460. Wishing ${business} all the best.`,
               ];
               const smsText = smsTexts[Math.min(count, smsTexts.length - 1)];
               await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 Follow-up SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
@@ -4525,6 +4629,114 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       await env.DB.prepare(`INSERT INTO resources (id, title, description, category, type, url, thumbnail_url, sort_order, featured, published, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?, ?)`)
         .bind(id, body.title || "", body.description || "", body.category || "guide", body.type || "link", body.url || "", body.thumbnailUrl || "", ts, ts).run();
       return json({ id, title: body.title, url: body.url, createdAt: ts }, 201);
+    }
+
+    // ─── CAMPAIGNS (Direct Mail + Marketing Tracking) ────────────────
+
+    if (path === "/api/campaigns" && method === "GET") {
+      const { results } = await env.DB.prepare("SELECT * FROM campaigns ORDER BY created_at DESC").all();
+      return json((results || []).map((c: any) => ({ id: c.id, name: c.name, type: c.type, status: c.status, offerCode: c.offer_code, contentUrl: c.content_url, contentName: c.content_name, targetCount: c.target_count, sentCount: c.sent_count, responseCount: c.response_count, notes: c.notes, createdAt: c.created_at, updatedAt: c.updated_at })));
+    }
+
+    if (path === "/api/campaigns" && method === "POST") {
+      const body: any = await request.json();
+      const id = genId();
+      const ts = now();
+      const offerCode = body.offerCode || `TSH-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      await env.DB.prepare("INSERT INTO campaigns (id, name, type, status, offer_code, content_url, content_name, target_count, sent_count, response_count, notes, created_at, updated_at) VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, 0, 0, ?, ?, ?)").bind(id, body.name || "", body.type || "direct_mail", offerCode, body.contentUrl || "", body.contentName || "", body.targetCount || 0, body.notes || "", ts, ts).run();
+      const row = await env.DB.prepare("SELECT * FROM campaigns WHERE id = ?").bind(id).first();
+      return json(row, 201);
+    }
+
+    const campMatch = path.match(/^\/api\/campaigns\/([^/]+)$/);
+    if (campMatch && method === "GET") {
+      const camp = await env.DB.prepare("SELECT * FROM campaigns WHERE id = ?").bind(campMatch[1]).first();
+      if (!camp) return err("Not found", 404);
+      const { results: recipients } = await env.DB.prepare("SELECT * FROM campaign_recipients WHERE campaign_id = ? ORDER BY created_at DESC").bind(campMatch[1]).all();
+      return json({ ...camp, offerCode: camp.offer_code, contentUrl: camp.content_url, contentName: camp.content_name, targetCount: camp.target_count, sentCount: camp.sent_count, responseCount: camp.response_count, recipients: (recipients || []).map((r: any) => ({ id: r.id, leadId: r.lead_id, name: r.name, business: r.business, address: r.address, sentAt: r.sent_at, responded: !!r.responded, responseDate: r.response_date, responseType: r.response_type, offerRedeemed: !!r.offer_redeemed, notes: r.notes, createdAt: r.created_at })) });
+    }
+
+    if (campMatch && method === "PATCH") {
+      const body: any = await request.json();
+      const updates: string[] = ["updated_at = ?"];
+      const values: any[] = [now()];
+      if (body.name !== undefined) { updates.push("name = ?"); values.push(body.name); }
+      if (body.status !== undefined) { updates.push("status = ?"); values.push(body.status); }
+      if (body.offerCode !== undefined) { updates.push("offer_code = ?"); values.push(body.offerCode); }
+      if (body.contentUrl !== undefined) { updates.push("content_url = ?"); values.push(body.contentUrl); }
+      if (body.contentName !== undefined) { updates.push("content_name = ?"); values.push(body.contentName); }
+      if (body.notes !== undefined) { updates.push("notes = ?"); values.push(body.notes); }
+      await env.DB.prepare(`UPDATE campaigns SET ${updates.join(", ")} WHERE id = ?`).bind(...values, campMatch[1]).run();
+      return json({ success: true });
+    }
+
+    if (campMatch && method === "DELETE") {
+      await env.DB.prepare("DELETE FROM campaign_recipients WHERE campaign_id = ?").bind(campMatch[1]).run();
+      await env.DB.prepare("DELETE FROM campaigns WHERE id = ?").bind(campMatch[1]).run();
+      return json({ success: true });
+    }
+
+    // Add recipients to campaign (from pipeline leads or manual)
+    const campRecipMatch = path.match(/^\/api\/campaigns\/([^/]+)\/recipients$/);
+    if (campRecipMatch && method === "POST") {
+      const body: any = await request.json();
+      const campaignId = campRecipMatch[1];
+      const ts = now();
+      let added = 0;
+
+      if (body.leadIds && Array.isArray(body.leadIds)) {
+        for (const lid of body.leadIds) {
+          const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(lid).first();
+          if (!lead) continue;
+          const id = genId();
+          await env.DB.prepare("INSERT INTO campaign_recipients (id, campaign_id, lead_id, name, business, address, sent_at, responded, response_date, response_type, offer_redeemed, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, '', 0, '', '', 0, '', ?)").bind(id, campaignId, lid, lead.name || "", lead.business || "", lead.address || "", ts).run();
+          added++;
+        }
+      } else if (body.name || body.business) {
+        const id = genId();
+        await env.DB.prepare("INSERT INTO campaign_recipients (id, campaign_id, lead_id, name, business, address, sent_at, responded, response_date, response_type, offer_redeemed, notes, created_at) VALUES (?, ?, '', ?, ?, ?, '', 0, '', '', 0, '', ?)").bind(id, campaignId, body.name || "", body.business || "", body.address || "", ts).run();
+        added++;
+      }
+
+      // Update counts
+      const { results: countRes } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM campaign_recipients WHERE campaign_id = ?").bind(campaignId).all();
+      const total = (countRes?.[0] as any)?.cnt || 0;
+      await env.DB.prepare("UPDATE campaigns SET target_count = ?, updated_at = ? WHERE id = ?").bind(total, ts, campaignId).run();
+      return json({ success: true, added, total });
+    }
+
+    // Mark campaign as sent
+    const campSendMatch = path.match(/^\/api\/campaigns\/([^/]+)\/send$/);
+    if (campSendMatch && method === "POST") {
+      const ts = now();
+      await env.DB.prepare("UPDATE campaign_recipients SET sent_at = ? WHERE campaign_id = ? AND sent_at = ''").bind(ts, campSendMatch[1]).run();
+      const { results: countRes } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM campaign_recipients WHERE campaign_id = ? AND sent_at != ''").bind(campSendMatch[1]).all();
+      const sentCount = (countRes?.[0] as any)?.cnt || 0;
+      await env.DB.prepare("UPDATE campaigns SET status = 'sent', sent_count = ?, updated_at = ? WHERE id = ?").bind(sentCount, ts, campSendMatch[1]).run();
+      return json({ success: true, sentCount });
+    }
+
+    // Log a response / redemption for a campaign recipient
+    const campRespMatch = path.match(/^\/api\/campaigns\/recipients\/([^/]+)\/respond$/);
+    if (campRespMatch && method === "POST") {
+      const body: any = await request.json();
+      const ts = now();
+      await env.DB.prepare("UPDATE campaign_recipients SET responded = 1, response_date = ?, response_type = ?, offer_redeemed = ?, notes = ? WHERE id = ?").bind(ts, body.responseType || "inquiry", body.offerRedeemed ? 1 : 0, body.notes || "", campRespMatch[1]).run();
+      // Update campaign response count
+      const recip = await env.DB.prepare("SELECT campaign_id FROM campaign_recipients WHERE id = ?").bind(campRespMatch[1]).first();
+      if (recip) {
+        const { results: countRes } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM campaign_recipients WHERE campaign_id = ? AND responded = 1").bind(recip.campaign_id).all();
+        await env.DB.prepare("UPDATE campaigns SET response_count = ?, updated_at = ? WHERE id = ?").bind((countRes?.[0] as any)?.cnt || 0, ts, recip.campaign_id).run();
+      }
+      return json({ success: true });
+    }
+
+    // Track offer code redemption handled in public section above
+
+    if (path === "/api/linkinbio/stats" && method === "GET") {
+      const { results } = await env.DB.prepare("SELECT link, COUNT(*) as clicks FROM linkinbio_clicks GROUP BY link ORDER BY clicks DESC").all();
+      const { results: total } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM linkinbio_clicks").all();
+      return json({ total: (total?.[0] as any)?.cnt || 0, byLink: results || [] });
     }
 
     // ─── CATCH-ALL ──────────────────────────────────────────────────────
