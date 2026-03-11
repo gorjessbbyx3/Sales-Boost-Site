@@ -336,14 +336,16 @@ export default function AutopilotTab() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {item.status === "ready" && (
+                      {item.body && (
                         <>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpandedItem(isExpanded ? null : item.id)} title="Preview">
                             <Eye className="w-3 h-3" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => sendMut.mutate(item.id)} title="Send now" disabled={sendMut.isPending}>
-                            <Send className="w-3 h-3" />
-                          </Button>
+                          {item.status !== "sent" && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => sendMut.mutate(item.id)} title="Send now" disabled={sendMut.isPending}>
+                              <Send className="w-3 h-3" />
+                            </Button>
+                          )}
                         </>
                       )}
                       {(item.status === "pending" || item.status === "ready" || item.status === "failed") && (

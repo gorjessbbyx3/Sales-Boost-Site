@@ -3159,39 +3159,58 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             const checklistContext = completedItems.length > 0 ? `\nInteraction history: ${completedItems.join(", ")}` : "";
             const painContext = lead.pain_points ? `\nKnown pain points: ${lead.pain_points}` : "";
             const hasEmail = !!(lead.email as string);
+            const vertical = (lead.vertical as string) || "other";
+            const ownerName = (lead.name as string) || "";
+            const isCashOnly = ((lead.notes as string) || "").toLowerCase().includes("cash only");
+            const processor = (lead.current_processor as string) || "";
+
+            // Build personalized subject + body
+            function buildOutreach() {
+              const firstName = ownerName.split(" ")[0] || "";
+              const greeting = firstName || "there";
+              // Vertical-specific hooks
+              const hooks: Record<string, string> = {
+                restaurant: "I know restaurant margins are tight — every dollar counts. What if you could keep 100% of every card transaction?",
+                salon: "Between booth rent, products, and overhead, salon owners deserve to keep every penny they earn.",
+                retail: "Retail is competitive enough without giving 3% of every sale to your processor.",
+                auto_repair: "Auto repair tickets run $200-$800+ — that's $6-$24 per job going to your processor.",
+                other: "Small business owners work too hard to give away 2-4% of every sale to a card processor.",
+              };
+              const hook = hooks[vertical] || hooks.other;
+
+              // Cash-only specific pitch
+              if (isCashOnly) {
+                const subj = `${business} — accept cards without paying a penny`;
+                const body = `Hi ${greeting},\n\nI noticed ${business} is currently cash only. I totally respect that — but here's something worth knowing.\n\nWith TechSavvy Hawaii, you can start accepting credit cards, Apple Pay, and Google Pay with absolutely zero processing fees. The way it works is simple: card-paying customers cover a small service fee, and you keep 100% of the sale.\n\nWe provide the terminal for free, there are no monthly fees, and no contracts. It's risk-free.\n\n${processor ? `I know you've probably avoided card processing because of the fees other companies charge. We're different — we're local and we don't charge processing fees, period.` : "You'd be surprised how many customers walk away when they see 'cash only' — especially tourists."}\n\nWould you be open to a 5-minute chat? I can swing by the shop or we can talk on the phone — whatever's easier.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+                return { subject: subj, body };
+              }
+
+              // Processor-specific angles
+              let processorAngle = "";
+              if (processor) {
+                const p = processor.toLowerCase();
+                if (p.includes("square")) processorAngle = "I've helped a few businesses switch from Square — most were surprised to see how much they were actually paying in fees once they looked at the monthly total.";
+                else if (p.includes("clover")) processorAngle = "Clover's great hardware, but the processing fees add up fast. What if you could keep using your setup and just eliminate those fees?";
+                else if (p.includes("toast")) processorAngle = "Toast is popular with restaurants, but those processing fees on every ticket eat into your margins. There's a better way.";
+                else processorAngle = `I noticed you're currently with ${processor}. Have you ever looked at what you're actually paying in total monthly fees?`;
+              }
+
+              const subj = firstName ? `${firstName} — quick question about ${business}` : `Quick question for ${business}`;
+              const body = `Hi ${greeting},\n\nI'm with TechSavvy Hawaii, and I work with local ${vertical === "restaurant" ? "restaurants" : vertical === "salon" ? "salons" : "businesses"} here on the island.\n\n${hook}\n\nWe offer a program where your processing fees drop to literally zero. Card-paying customers cover a small service fee, you keep every dollar. Free terminal, no monthly fees, no contracts.\n\n${processorAngle ? processorAngle + "\n\n" : ""}${completedItems.length > 0 ? `I noticed we've already connected — ${completedItems[0].toLowerCase()}. ` : ""}Would it be worth a quick 5-minute conversation to see if it makes sense for ${business}?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+              return { subject: subj, body };
+            }
 
             if (hasEmail && emailEnabled) {
-              try {
-                const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
-                  method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
-                  body: JSON.stringify({ ownerName: lead.name, businessName: business, vertical: lead.vertical, tone: "friendly", context: `Initial outreach.${checklistContext}${painContext}` }),
-                });
-                const emailData: any = await workerRes.json();
-                const subject = emailData.subject || `Eliminate Processing Fees for ${business}`;
-                const emailBody = emailData.body || `Hi ${lead.name || "there"},\n\nTechSavvy Hawaii here. We help businesses like ${business} eliminate credit card processing fees.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
-                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
-                queued++;
-              } catch {
-                const subject = `Eliminate Processing Fees for ${business}`;
-                const emailBody = `Hi ${lead.name || "there"},\n\nTechSavvy Hawaii here. We help businesses like ${business} eliminate credit card processing fees — you keep 100% of every sale.\n\nWorth a quick chat?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
-                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
-                queued++;
-              }
+              const msg = buildOutreach();
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, msg.subject, msg.body, msg.body.replace(/\n/g, "<br>"), ts, ts).run();
+              queued++;
             } else if (lead.phone && smsEnabled) {
-              try {
-                const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/sms", {
-                  method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
-                  body: JSON.stringify({ ownerName: lead.name, businessName: business, context: `Initial outreach.${checklistContext}${painContext}`, tone: "friendly" }),
-                });
-                const smsData: any = await workerRes.json();
-                const smsText = smsData.message || `Hi${lead.name ? ` ${lead.name}` : ""}, this is TechSavvy Hawaii. We help businesses like ${business} eliminate credit card processing fees. Worth a quick chat? (808) 767-5460`;
-                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
-                queued++;
-              } catch {
-                const smsText = `Hi${lead.name ? ` ${lead.name}` : ""}, this is TechSavvy Hawaii. We help local businesses eliminate credit card processing fees. Worth a quick chat? (808) 767-5460`;
-                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
-                queued++;
-              }
+              const firstName = ownerName.split(" ")[0] || "";
+              const smsText = isCashOnly
+                ? `Hi${firstName ? ` ${firstName}` : ""}, this is TechSavvy Hawaii. Noticed ${business} is cash only — we can get you accepting cards for free (zero processing fees, free terminal). Worth a quick chat? (808) 767-5460`
+                : `Hi${firstName ? ` ${firstName}` : ""}, this is TechSavvy Hawaii. We help local businesses like ${business} eliminate credit card processing fees completely. Interested in 5 min to hear how? (808) 767-5460`;
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
+              queued++;
             }
           }
         }
@@ -3212,26 +3231,41 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             const completedItems = checklist.filter((c: any) => c.done).map((c: any) => c.label);
             const checklistContext = completedItems.length > 0 ? `Previous interactions: ${completedItems.join(", ")}.` : "";
             const hasEmail = !!(lead.email as string);
+            const firstName = ((lead.name as string) || "").split(" ")[0] || "";
+            const greeting = firstName || "there";
+            const vertical = (lead.vertical as string) || "other";
+
+            // Follow-up varies by attempt number
+            const followUpTemplates = [
+              // Follow-up #1: Value stat
+              {
+                subject: `${firstName || business} — one stat that might change your mind`,
+                body: `Hi ${greeting},\n\nI reached out recently about TechSavvy Hawaii. I know you're busy running ${business}, so I'll keep this short.\n\nOne number: the average ${vertical === "restaurant" ? "restaurant" : "local business"} pays $800-$2,400/month in credit card processing fees. Our merchants pay $0.\n\nThat's not a typo — our cash discount program means you keep 100% of every sale. The card-paying customer covers a small service fee.\n\n${completedItems.length > 0 ? `When we last connected, we ${completedItems[0].toLowerCase()}. ` : ""}If you'd like to see what you're currently paying vs what you'd pay with us, I can do a free statement analysis in about 5 minutes.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+              },
+              // Follow-up #2: Social proof
+              {
+                subject: `Other ${vertical === "restaurant" ? "restaurants" : "businesses"} in Honolulu are making the switch`,
+                body: `Hi ${greeting},\n\nJust a quick note — we've been helping local businesses across Honolulu switch to zero-fee processing, and the feedback has been great.\n\nThe #1 thing they say: "I wish I'd done this sooner."\n\nNo contracts, free terminal, and you keep every dollar of every sale. The setup takes about 10 minutes.\n\nIf you've been thinking about it, I'm happy to answer any questions. No pressure at all.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+              },
+              // Follow-up #3: Breakup email
+              {
+                subject: `Last note from me, ${greeting}`,
+                body: `Hi ${greeting},\n\nI've reached out a couple times about saving ${business} money on credit card processing, and I totally understand if the timing isn't right.\n\nI won't keep bugging you — but if you ever want to see what zero processing fees looks like for ${business}, my door's always open. No contracts, no commitment, just a conversation.\n\nWishing you and ${business} all the best.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+              },
+            ];
+
+            const template = followUpTemplates[Math.min(count, followUpTemplates.length - 1)];
 
             if (hasEmail && emailEnabled) {
-              try {
-                const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
-                  method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
-                  body: JSON.stringify({ ownerName: lead.name, businessName: business, vertical: lead.vertical, tone: "friendly", context: `Follow-up #${count + 1}. They haven't responded yet. ${checklistContext} ${lead.pain_points ? `Pain points: ${lead.pain_points}` : ""}`.trim() }),
-                });
-                const emailData: any = await workerRes.json();
-                const subject = emailData.subject || `Following up — ${business}`;
-                const emailBody = emailData.body || `Hi ${lead.name || "there"},\n\nJust following up about eliminating processing fees for ${business}.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
-                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
-                queued++;
-              } catch {
-                const subject = `Following up — ${business}`;
-                const emailBody = `Hi ${lead.name || "there"},\n\nJust following up about eliminating processing fees for ${business}.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
-                await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, subject, emailBody, emailBody.replace(/\n/g, "<br>"), ts, ts).run();
-                queued++;
-              }
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, template.subject, template.body, template.body.replace(/\n/g, "<br>"), ts, ts).run();
+              queued++;
             } else if (lead.phone && smsEnabled) {
-              const smsText = `Hi${lead.name ? ` ${lead.name}` : ""}, just following up from TechSavvy Hawaii about eliminating processing fees for ${business}. Still interested? (808) 767-5460`;
+              const smsTexts = [
+                `Hi${firstName ? ` ${firstName}` : ""}, following up from TechSavvy Hawaii. Did you know the avg business pays $800+/mo in card fees? Our merchants pay $0. Worth 5 min? (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, other local businesses in Honolulu are switching to zero processing fees. No contracts, free terminal. Still interested? (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, last note from TechSavvy Hawaii. If you ever want to explore zero processing fees for ${business}, reach out anytime. (808) 767-5460`,
+              ];
+              const smsText = smsTexts[Math.min(count, smsTexts.length - 1)];
               await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 Follow-up SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
               queued++;
             }
