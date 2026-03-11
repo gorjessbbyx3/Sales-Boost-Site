@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -82,6 +83,10 @@ export default function AutopilotTab() {
 
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [rewriteItem, setRewriteItem] = useState<string | null>(null);
+  const [rewriteTone, setRewriteTone] = useState("friendly");
+  const [rewriteLength, setRewriteLength] = useState("medium");
+  const [rewriteInstructions, setRewriteInstructions] = useState("");
 
   const updateConfig = useMutation({
     mutationFn: async (data: Partial<AutopilotConfig>) => { const r = await apiRequest("PATCH", "/api/autopilot/config", data); return r.json(); },
@@ -99,8 +104,11 @@ export default function AutopilotTab() {
   });
 
   const regenerateMut = useMutation({
-    mutationFn: async (id: string) => { const r = await apiRequest("POST", `/api/autopilot/queue/${id}/regenerate`); return r.json(); },
-    onSuccess: () => { refetchQueue(); toast({ title: "Email regenerated" }); },
+    mutationFn: async (params: { id: string; tone?: string; length?: string; instructions?: string }) => {
+      const r = await apiRequest("POST", `/api/autopilot/queue/${params.id}/regenerate`, { tone: params.tone || "friendly", length: params.length || "medium", instructions: params.instructions || "" });
+      return r.json();
+    },
+    onSuccess: () => { refetchQueue(); toast({ title: "Email rewritten" }); },
   });
 
   const sendMut = useMutation({
@@ -323,8 +331,8 @@ export default function AutopilotTab() {
                         </>
                       )}
                       {(item.status === "pending" || item.status === "ready" || item.status === "failed") && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => regenerateMut.mutate(item.id)} title="Regenerate" disabled={regenerateMut.isPending}>
-                          <RotateCw className={`w-3 h-3 ${regenerateMut.isPending ? "animate-spin" : ""}`} />
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setRewriteItem(rewriteItem === item.id ? null : item.id); setRewriteTone("friendly"); setRewriteLength("medium"); setRewriteInstructions(""); }} title="Rewrite with AI" disabled={regenerateMut.isPending}>
+                          <RotateCw className={`w-3 h-3 ${regenerateMut.isPending && regenerateMut.variables?.id === item.id ? "animate-spin" : ""}`} />
                         </Button>
                       )}
                       {item.status !== "sent" && (
@@ -344,6 +352,52 @@ export default function AutopilotTab() {
                       <div className="text-xs font-medium mb-1">Subject: {item.subject}</div>
                       <div className="text-xs text-muted-foreground whitespace-pre-wrap bg-muted/30 rounded p-3 max-h-48 overflow-y-auto">
                         {item.body}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Rewrite panel */}
+                  {rewriteItem === item.id && (
+                    <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
+                      {item.body && (
+                        <div>
+                          <div className="text-[10px] text-muted-foreground mb-1 font-medium">Current message:</div>
+                          <div className="text-xs text-muted-foreground whitespace-pre-wrap bg-muted/30 rounded p-2.5 max-h-32 overflow-y-auto">{item.body}</div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Tone</Label>
+                          <Select value={rewriteTone} onValueChange={setRewriteTone}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="friendly">Friendly</SelectItem>
+                              <SelectItem value="professional">Professional</SelectItem>
+                              <SelectItem value="casual">Casual</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Length</Label>
+                          <Select value={rewriteLength} onValueChange={setRewriteLength}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="short">Short (2-3 sentences)</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="long">Long (detailed)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Custom instructions (optional)</Label>
+                        <Textarea value={rewriteInstructions} onChange={(e) => setRewriteInstructions(e.target.value)} placeholder='e.g. "Mention their Yelp reviews" or "Ask about their current processor"' className="text-xs h-16 resize-none" />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="text-xs h-7" onClick={() => { regenerateMut.mutate({ id: item.id, tone: rewriteTone, length: rewriteLength, instructions: rewriteInstructions }); setRewriteItem(null); }} disabled={regenerateMut.isPending}>
+                          <Sparkles className="w-3 h-3 mr-1" />Rewrite
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setRewriteItem(null)}>Cancel</Button>
                       </div>
                     </div>
                   )}

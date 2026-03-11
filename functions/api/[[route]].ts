@@ -3153,7 +3153,47 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           }
           return err("Send failed", 500);
         }
-        if (action === "regenerate") { await env.DB.prepare("UPDATE outreach_queue SET status = 'pending' WHERE id = ?").bind(id).run(); const row = await env.DB.prepare("SELECT * FROM outreach_queue WHERE id = ?").bind(id).first(); return json(row); }
+        if (action === "regenerate") {
+          const item = await env.DB.prepare("SELECT * FROM outreach_queue WHERE id = ?").bind(id).first();
+          if (!item) return err("Not found", 404);
+          const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(item.lead_id).first();
+          const business = (lead?.business as string) || (lead?.name as string) || "the business";
+          let checklist: any[] = []; try { checklist = JSON.parse(lead?.checklist as string || "[]"); } catch {}
+          const completedItems = checklist.filter((c: any) => c.done).map((c: any) => c.label);
+          const body: any = await request.json().catch(() => ({}));
+          const instructions = body.instructions || "";
+          const tone = body.tone || "friendly";
+          const length = body.length || "medium";
+
+          const lengthGuide = length === "short" ? "Keep it under 50 words. 2-3 sentences max." : length === "long" ? "Write 150-200 words. Include specific details and a clear value proposition." : "Write 75-100 words. Concise but complete.";
+          const toneGuide = tone === "professional" ? "Formal and polished. No slang." : tone === "casual" ? "Very casual, like texting a friend. Use 'hey' not 'hello'." : "Warm and approachable. Friendly but not too casual.";
+          const customNote = instructions ? `\nAdditional instructions: ${instructions}` : "";
+          const checklistContext = completedItems.length > 0 ? `\nPrevious interactions: ${completedItems.join(", ")}` : "";
+          const isFollowUp = (item.type as string) === "follow_up";
+
+          try {
+            const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
+              method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+              body: JSON.stringify({
+                ownerName: lead?.name || "",
+                businessName: business,
+                vertical: lead?.vertical || "other",
+                tone,
+                context: `${isFollowUp ? "Follow-up email — they haven't responded yet." : "Initial outreach to new lead."} ${toneGuide} ${lengthGuide}${checklistContext}${lead?.pain_points ? `\nPain points: ${lead.pain_points}` : ""}${customNote}`,
+              }),
+            });
+            const emailData: any = await workerRes.json();
+            const newSubject = emailData.subject || item.subject;
+            const newBody = emailData.body || item.body;
+            await env.DB.prepare("UPDATE outreach_queue SET subject = ?, body = ?, html_body = ?, status = 'pending' WHERE id = ?").bind(newSubject, newBody, newBody.replace(/\n/g, "<br>"), id).run();
+            const row = await env.DB.prepare("SELECT * FROM outreach_queue WHERE id = ?").bind(id).first();
+            return json(row);
+          } catch {
+            await env.DB.prepare("UPDATE outreach_queue SET status = 'pending' WHERE id = ?").bind(id).run();
+            const row = await env.DB.prepare("SELECT * FROM outreach_queue WHERE id = ?").bind(id).first();
+            return json(row);
+          }
+        }
       } catch (e: any) { return err(e.message, 500); }
     }
 
