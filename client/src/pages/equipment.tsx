@@ -6,6 +6,7 @@ import {
   Gift,
   Check,
   ArrowRight,
+  Calendar,
   Monitor,
   Smartphone,
   Wifi,
@@ -289,7 +290,7 @@ function ProductCard({ product }: { product: Product }) {
               className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px]"
             >
               <Gift className="w-3 h-3 mr-1" />
-              Free with program
+              Free for qualifying merchants
             </Badge>
           </div>
         )}
@@ -377,7 +378,7 @@ export default function EquipmentPage() {
                 className="mb-4 text-primary border-primary/30 bg-primary/5"
               >
                 <Gift className="w-3 h-3 mr-1.5" />
-                Free equipment with our cash discount program
+                Free equipment for qualifying merchants
               </Badge>
             </motion.div>
 
@@ -395,9 +396,7 @@ export default function EquipmentPage() {
               className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-6"
               variants={fadeUp}
             >
-              When you join our cash discount program, we don't just eliminate
-              your processing fees — we give you the equipment to do it. Browse
-              our terminals, POS systems, and gateways below.
+              For merchants processing $5K+/month, we pay for a brand new terminal or POS system and provide hands-on tech support whenever you need it. In Hawai'i, we set it up at your location in person. Anywhere else, we connect live via Zoom, Discord, AnyDesk, or your preferred platform. No more 1-800 numbers or paying someone to figure it out.
             </motion.p>
 
             <motion.div
@@ -405,9 +404,9 @@ export default function EquipmentPage() {
               variants={fadeUp}
             >
               {[
-                { icon: Gift, text: "Free terminal or POS" },
+                { icon: Gift, text: "Free for qualifying merchants" },
                 { icon: Sparkles, text: "Zero processing fees" },
-                { icon: ShieldCheck, text: "100% compliant program" },
+                { icon: ShieldCheck, text: "In-person or live remote support" },
               ].map((p) => (
                 <div
                   key={p.text}
@@ -471,7 +470,7 @@ export default function EquipmentPage() {
               How You Get Your Free Equipment
             </h2>
             <p className="text-muted-foreground">
-              Three simple steps — we handle the rest
+              Three simple steps — qualifying merchants get set up at no cost
             </p>
           </div>
 
@@ -493,9 +492,9 @@ export default function EquipmentPage() {
               },
               {
                 step: "3",
-                title: "Receive Your Gift",
+                title: "We Come to You",
                 description:
-                  "We ship your free terminal and set up your cash discount program. Start saving immediately.",
+                  "We deliver your brand new equipment, walk you through setup (in person in Hawai'i or live via Zoom/AnyDesk), and handle all the tech — so you never have to.",
                 icon: Gift,
               },
             ].map((s) => (
@@ -523,24 +522,23 @@ export default function EquipmentPage() {
           <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-background to-emerald-500/10 border border-primary/20 p-8 sm:p-12 text-center">
             <Gift className="w-12 h-12 text-primary mx-auto mb-4" />
             <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">
-              Ready to Unwrap Your Savings?
+              See If You Qualify for Free Equipment
             </h2>
             <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              Apply now and receive your free equipment, zero processing fees,
-              and a compliant cash discount program — all at no cost to you.
+              Merchants processing $5K+/month get a new terminal at no cost. $10K+/month? You could qualify for a full POS system. Plus zero processing fees and hands-on support — in person or via Zoom, Discord, and AnyDesk.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button size="lg" asChild>
                 <Link href="/apply">
                   <Gift className="w-4 h-4" />
-                  Claim Your Free Equipment
+                  Apply Now
                 </Link>
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <a href="tel:+18087675460">
-                  <Phone className="w-4 h-4" />
-                  Call (808) 767-5460
-                </a>
+                <Link href="/schedule">
+                  <Calendar className="w-4 h-4" />
+                  Book a Free Meeting
+                </Link>
               </Button>
             </div>
           </div>

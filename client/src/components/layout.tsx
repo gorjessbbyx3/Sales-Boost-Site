@@ -29,8 +29,8 @@ function Navbar() {
   const links = [
     { label: "How It Works", href: "/how-it-works" },
     { label: "Equipment", href: "/equipment" },
-    { label: "Try Free", href: "/pricing" },
-    { label: "High-Risk", href: "/high-risk" },
+    { label: "Compare", href: "/compare" },
+    { label: "Blog", href: "/blog" },
     { label: "FAQ", href: "/faq" },
   ];
 
@@ -147,13 +147,14 @@ function Footer() {
         playsInline
         className="absolute inset-0 w-full h-full object-cover"
         src="/videos/footer-bg.mp4"
+        aria-label="TechSavvy Hawaii footer background"
       />
       <div className="absolute inset-0 bg-black/75" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
           <div className="col-span-2 md:col-span-1">
             <p className="text-xs sm:text-sm text-white/70 leading-relaxed max-w-sm mb-3">
-              Hawai'i's trusted payment processing company. Our gift to local businesses: zero fees, free equipment, no contracts, and local support.
+              Qualifying merchants get free equipment, zero processing fees, and hands-on tech support — in person in Hawai'i or live via Zoom, Discord & AnyDesk nationwide. No contracts, no catches.
             </p>
             <div className="space-y-2.5 text-sm text-white/60">
               <a href="tel:+18087675460" className="flex items-center gap-2 transition-colors hover:text-white">
@@ -210,8 +211,18 @@ function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-white">Quick Links</h4>
             <ul className="space-y-3 text-sm text-white/60">
               <li>
-                <Link href="/how-it-works" className="transition-colors hover:text-white" data-testid="link-footer-how">
-                  How It Works
+                <Link href="/about" className="transition-colors hover:text-white" data-testid="link-footer-about">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog" className="transition-colors hover:text-white" data-testid="link-footer-blog">
+                  Blog & Resources
+                </Link>
+              </li>
+              <li>
+                <Link href="/compare" className="transition-colors hover:text-white" data-testid="link-footer-compare">
+                  Compare Processors
                 </Link>
               </li>
               <li>
@@ -225,18 +236,8 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/connect" className="transition-colors hover:text-white" data-testid="link-footer-connect">
-                  Connect With Us
-                </Link>
-              </li>
-              <li>
                 <Link href="/refer" className="transition-colors hover:text-primary text-primary/80 font-medium" data-testid="link-footer-refer">
                   Refer a Business & Earn
-                </Link>
-              </li>
-              <li>
-                <Link href="/" className="transition-colors hover:text-white" data-testid="link-footer-top">
-                  Home
                 </Link>
               </li>
             </ul>
@@ -282,6 +283,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const exitShown = useRef(false);
 
   useEffect(() => {
+    // Desktop: mouse leaves viewport
     const handleMouseLeave = (e: MouseEvent) => {
       if (e.clientY <= 0 && !exitShown.current) {
         exitShown.current = true;
@@ -289,7 +291,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       }
     };
     document.addEventListener("mouseleave", handleMouseLeave);
-    return () => document.removeEventListener("mouseleave", handleMouseLeave);
+
+    // Mobile: detect scroll-up after scrolling 60%+ down the page
+    let lastScrollY = 0;
+    let maxScrollY = 0;
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const pageHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = pageHeight > 0 ? scrollY / pageHeight : 0;
+
+      if (scrollY > maxScrollY) maxScrollY = scrollY;
+
+      // Trigger if: scrolled past 60%, now scrolling up significantly, on mobile
+      if (
+        !exitShown.current &&
+        window.innerWidth < 768 &&
+        maxScrollY / pageHeight > 0.6 &&
+        scrollY < lastScrollY - 100
+      ) {
+        exitShown.current = true;
+        setShowExit(true);
+      }
+      lastScrollY = scrollY;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   return (

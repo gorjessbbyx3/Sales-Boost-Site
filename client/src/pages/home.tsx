@@ -6,7 +6,7 @@ import {
   Check, ArrowRight, ChevronDown, DollarSign, TrendingUp, Star,
   Phone, MapPin, Sparkles, Calculator, ShieldCheck,
   AlertTriangle, Users, Building2, Utensils, Car, Scissors, Heart,
-  Zap, Clock, X, Gift,
+  Zap, Clock, X, Gift, Video, Play,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
@@ -54,7 +54,7 @@ function HeroSection() {
             <motion.div variants={fadeUp}>
               <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5 mb-4">
                 <Gift className="w-3 h-3 mr-1" />
-                Our gift to Hawai'i businesses: zero processing fees + free equipment
+                Qualifying businesses get a free equipment upgrade + zero processing fees
               </Badge>
             </motion.div>
 
@@ -64,15 +64,15 @@ function HeroSection() {
             </motion.h1>
 
             <motion.p className="text-base sm:text-lg text-muted-foreground mb-4 max-w-2xl mx-auto leading-relaxed" variants={fadeUp}>
-              We want to give your business the gift of keeping 100% of every sale — with a compliant cash discount program, free equipment, and zero fees. Not surcharging. Just savings.
+              If your business qualifies, we'll pay for a brand new terminal or POS system, eliminate your processing fees, and handle all the tech support. In Hawai'i? We come to you in person. Anywhere else? We connect via Zoom, Discord, AnyDesk, or whatever platform you prefer.
             </motion.p>
 
             {/* Supporting bullets */}
             <motion.div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mb-8" variants={fadeUp}>
               {[
-                "Free POS terminal",
+                "Free equipment for qualifying merchants",
                 "Zero processing fees",
-                "Free merchant website",
+                "In-person or live remote support",
               ].map((item) => (
                 <div key={item} className="flex items-center gap-1.5">
                   <Check className="w-4 h-4 text-primary flex-shrink-0" />
@@ -271,12 +271,12 @@ function ProblemSection() {
               That's money you earned — going straight to the credit card companies.
             </p>
             <p className="text-muted-foreground mb-4">
-              What if someone handed you a way to keep all of it?
+              What if you could eliminate those fees entirely — and get new equipment paid for if you qualify?
             </p>
             <Button variant="outline" size="sm" asChild>
               <a href="/equipment">
                 <Gift className="w-3.5 h-3.5" />
-                See what we're giving you — free
+                See equipment you could get — free
               </a>
             </Button>
           </motion.div>
@@ -302,16 +302,16 @@ function WhySection() {
               <span className="text-primary">TechSavvy Hawai'i</span>
             </h2>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-5">
-              Local Hawai'i businesses are losing thousands every year simply for accepting payments. We built TechSavvy Hawai'i to change that — with a fully compliant cash discount program that eliminates processing fees entirely.
+              We started TechSavvy because we genuinely believe no business should lose thousands a year just for accepting card payments. If we can help you keep more of what you earn — whether that's covering the next company outing, eliminating your processing fees, or just being there when something goes wrong — that's what aloha is all about. When you let us into your corner, we're not just a vendor — we're part of your team. You help us grow by trusting us, and we help you grow by making sure every dollar stays where it belongs. Let us help you, so you can help us, help you.
             </p>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-8">
-              We're not a mainland company with a 1-800 number. We're local. When you call, a real person from Hawai'i picks up. When you need help, someone comes to your business — not an email bot.
+              If you're in Hawai'i, we'd love to come set things up in person. Anywhere else in the country, we're just a Zoom, Discord, or AnyDesk call away — whatever works best for you. Either way, we're here and happy to help.
             </p>
             <div className="space-y-4">
               {[
-                { icon: MapPin, text: "Keep local money local" },
-                { icon: Heart, text: "Help small businesses survive and thrive" },
-                { icon: Zap, text: "Eliminate unnecessary middlemen" },
+                { icon: Gift, text: "Free equipment upgrade for qualifying businesses" },
+                { icon: MapPin, text: "In-person (Hawai'i) or live remote support nationwide" },
+                { icon: Heart, text: "You support us, we invest right back in you" },
               ].map((item) => (
                 <div key={item.text} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -325,9 +325,9 @@ function WhySection() {
           <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
             <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 p-8 sm:p-12 text-center">
               <MapPin className="w-14 h-14 text-primary mx-auto mb-4" />
-              <div className="text-2xl font-bold text-foreground mb-2">Locally Owned & Operated</div>
-              <div className="text-muted-foreground mb-4">Honolulu, O'ahu · Serving all islands</div>
-              <p className="text-sm text-muted-foreground mb-6">Our reputation in the community is everything. That's why we never lock you in a contract — we earn your business every single month.</p>
+              <div className="text-2xl font-bold text-foreground mb-2">Based in Honolulu. Serving Nationwide.</div>
+              <div className="text-muted-foreground mb-4">In-person in Hawai'i · Live remote support everywhere else</div>
+              <p className="text-sm text-muted-foreground mb-6">In Hawai'i, we come to you. Everywhere else, we connect via Zoom, Discord, AnyDesk, or your preferred platform. Our reputation is everything — that's why we never lock you in a contract.</p>
               <Button size="lg" variant="outline" asChild>
                 <a href="tel:8087675460">
                   <Phone className="w-4 h-4" />
@@ -350,8 +350,8 @@ function HowItWorks() {
   const steps = [
     {
       num: "1",
-      title: "We gift you a free terminal",
-      desc: "Quick application, fast approval. We give you a free POS terminal or card reader — our gift to your business. Our local team handles installation, signage, and training.",
+      title: "Apply & get approved",
+      desc: "Quick application, fast approval. Qualifying businesses ($5K+/month volume) receive a brand new terminal or POS system at no cost. We handle setup, signage, and staff training — in person or via live remote session.",
       icon: Gift,
     },
     {
@@ -421,9 +421,9 @@ function ComparisonSection() {
     { feature: "Processing Fees", traditional: "2.6–4%", techsavvy: "$0", highlight: true },
     { feature: "Monthly Fees", traditional: "$14.95–$85+", techsavvy: "$0", highlight: true },
     { feature: "Website Included", traditional: "No", techsavvy: "Yes — Free", highlight: false },
-    { feature: "Local Support", traditional: "Rare / Call Center", techsavvy: "Yes — Hawai'i Team", highlight: true },
+    { feature: "Hands-On Support", traditional: "Rare / Call Center", techsavvy: "In Person + Live Remote", highlight: true },
     { feature: "Contract Lock-in", traditional: "Often 3+ years", techsavvy: "Never", highlight: false },
-    { feature: "Equipment Cost", traditional: "$300–$800+", techsavvy: "Free — Our Gift", highlight: true },
+    { feature: "Equipment Cost", traditional: "$300–$800+", techsavvy: "Free*", highlight: true },
     { feature: "Next-Day Funding", traditional: "Sometimes", techsavvy: "Yes", highlight: false },
   ];
 
@@ -638,6 +638,29 @@ function TestimonialSection() {
               </motion.div>
             ))}
           </div>
+
+          {/* Video testimonial CTA */}
+          <motion.div className="mt-8" variants={fadeUp}>
+            <Card className="border-primary/15 bg-gradient-to-r from-primary/5 to-emerald-500/5">
+              <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Video className="w-8 h-8 text-primary" />
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <h3 className="font-bold text-lg mb-1">Are you a TechSavvy merchant?</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Share your experience in a quick video and get featured on our site. We'd love to hear how much you're saving.
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" className="shrink-0" asChild>
+                  <a href="mailto:contact@techsavvyhawaii.com?subject=Video%20Testimonial&body=I'd%20like%20to%20share%20my%20TechSavvy%20experience!">
+                    Share Your Story
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
       </div>
     </section>
@@ -712,11 +735,11 @@ function FinalCTA() {
         >
           <Gift className="w-12 h-12 text-primary mx-auto mb-4" />
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-5">
-            We Want to{" "}
-            <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">Give You This</span>
+            Let Us{" "}
+            <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">Invest in Your Business</span>
           </h2>
           <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-xl mx-auto">
-            Free equipment. Zero processing fees. No contracts. Our gift to your business — because Hawai'i businesses deserve to keep every dollar they earn.
+            Qualifying merchants get new equipment at no cost, zero processing fees, and hands-on tech support — in person in Hawai'i, or live via Zoom, Discord, or AnyDesk anywhere else. No contracts, no catches.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
