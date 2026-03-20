@@ -1,0 +1,13 @@
+name = "mojo-luna-955c"
+compatibility_date = "2024-12-01"
+main = "worker-entry.ts"
+
+[assets]
+directory = "./dist/public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "savvy-admin"
+database_id = "1bbb0cdc-f9c3-4043-baad-48f9a7caa16e"

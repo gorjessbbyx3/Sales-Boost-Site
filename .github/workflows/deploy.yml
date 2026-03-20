@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare Workers
 on:
   push:
     branches: [main]
@@ -18,12 +18,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build frontend
         run: npm run build
 
-      - name: Deploy to Cloudflare Pages
+      - name: Remove _redirects (SPA handled by wrangler config)
+        run: rm -f dist/public/_redirects
+
+      - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist/public --project-name=mojo-luna-955c --commit-hash=${{ github.sha }}
+          command: deploy --config wrangler-workers.toml
