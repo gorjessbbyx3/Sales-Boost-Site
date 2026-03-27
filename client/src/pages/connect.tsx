@@ -339,178 +339,51 @@ function AIChatSection() {
 }
 
 function ScheduleCallSection() {
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    preferredDate: "",
-    preferredTime: "",
-    topic: "",
-  });
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await apiRequest("POST", "/api/contact-leads", {
-        businessName: formData.topic || "Schedule a Call",
-        contactName: formData.name,
-        phone: formData.phone,
-        email: formData.email,
-        plan: "consultation",
-        highRisk: false,
-        monthlyProcessing: "unknown",
-        bestContactTime: formData.preferredTime || "anytime",
-      });
-    } catch {
-    }
-    setSubmitting(false);
-    setSubmitted(true);
-  };
-
-  const set = (field: string, value: string) =>
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://assets.calendly.com/assets/external/widget.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
 
   return (
     <section className="py-12 sm:py-20 relative" data-testid="section-schedule-call">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-card/30 to-transparent" />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
-              <Calendar className="w-3 h-3 mr-1.5" />
-              Don't miss out
-            </Badge>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-4">
-              You're Still Paying Processing Fees?
-            </h2>
-            <p className="text-muted-foreground text-sm sm:text-base mb-6 leading-relaxed">
-              Every day without our cash discount program is another day you're giving away 3–4% of every sale. Let us show you how much you're leaving on the table — and how to keep it all.
-            </p>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+            <Calendar className="w-3 h-3 mr-1.5" />
+            Book a Time That Works for You
+          </Badge>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">
+            Let's Sit Down Together
+          </h2>
+          <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+            Pick a time and we'll meet — in person if you're in Hawai'i, or via Zoom, Discord, AnyDesk, or your preferred platform anywhere else. We can answer questions, walk through the numbers, or fill out the merchant application together. No pressure, just a conversation.
+          </p>
+        </motion.div>
 
-            <div className="space-y-4">
-              {[
-                { icon: CheckCircle, text: "Find out exactly how much you're losing every month" },
-                { icon: CheckCircle, text: "Get a free terminal shipped to your door" },
-                { icon: CheckCircle, text: "No commitment — just see what you're missing" },
-                { icon: CheckCircle, text: "Most businesses are saving within a week" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-2.5">
-                  <item.icon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <span className="text-sm text-foreground/80">{item.text}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <Card className="overflow-visible border-primary/10">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary/5 to-transparent" />
-              <CardContent className="p-5 sm:p-6 relative">
-                {submitted ? (
-                  <div className="text-center py-8">
-                    <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-4">
-                      <Calendar className="w-7 h-7 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold text-foreground mb-2" data-testid="text-schedule-success">Call Scheduled!</h3>
-                    <p className="text-sm text-muted-foreground">
-                      We'll reach out at your preferred time. Mahalo!
-                    </p>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="space-y-4" data-testid="form-schedule-call">
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-foreground">Your Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={(e) => set("name", e.target.value)}
-                        placeholder="John Doe"
-                        className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-                        data-testid="input-schedule-name"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Phone</label>
-                        <input
-                          type="tel"
-                          required
-                          value={formData.phone}
-                          onChange={(e) => set("phone", e.target.value)}
-                          placeholder="(808) 555-1234"
-                          className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-                          data-testid="input-schedule-phone"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Email</label>
-                        <input
-                          type="email"
-                          required
-                          value={formData.email}
-                          onChange={(e) => set("email", e.target.value)}
-                          placeholder="you@business.com"
-                          className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-                          data-testid="input-schedule-email"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-foreground">Best Time to Call</label>
-                      <select
-                        required
-                        value={formData.preferredTime}
-                        onChange={(e) => set("preferredTime", e.target.value)}
-                        className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-                        data-testid="select-schedule-time"
-                      >
-                        <option value="">Select a time...</option>
-                        <option value="morning">Morning (8am - 12pm)</option>
-                        <option value="afternoon">Afternoon (12pm - 4pm)</option>
-                        <option value="evening">Evening (4pm - 6pm)</option>
-                        <option value="anytime">Anytime</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-foreground">What Would You Like to Discuss?</label>
-                      <select
-                        value={formData.topic}
-                        onChange={(e) => set("topic", e.target.value)}
-                        className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-                        data-testid="select-schedule-topic"
-                      >
-                        <option value="">Select a topic...</option>
-                        <option value="Zero-Fee Processing">Zero-Fee Payment Processing</option>
-                        <option value="Cash Back">Cash Back Information</option>
-                        <option value="Online Presence">Building My Online Presence</option>
-                        <option value="High-Risk Account">High-Risk Merchant Account</option>
-                        <option value="Premium Website">Premium Website Package</option>
-                        <option value="Custom Software">Custom Software Solutions</option>
-                        <option value="General Questions">General Questions</option>
-                      </select>
-                    </div>
-                    <Button type="submit" size="lg" className="w-full" disabled={submitting} data-testid="button-schedule-submit">
-                      {submitting ? "Scheduling..." : "Show Me What I'm Missing"}
-                      {!submitting && <ArrowRight className="w-4 h-4" />}
-                    </Button>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Card className="overflow-hidden border-primary/15">
+            <CardContent className="p-0">
+              <div
+                className="calendly-inline-widget"
+                data-url="https://calendly.com/robertsn-techsavvyhawaii/30min?hide_gdpr_banner=1&background_color=0a0a0a&text_color=fafafa&primary_color=16a34a"
+                style={{ minWidth: "320px", height: "700px" }}
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </section>
   );

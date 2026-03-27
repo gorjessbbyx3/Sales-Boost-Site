@@ -761,6 +761,29 @@ function TestimonialSection() {
               </motion.div>
             ))}
           </div>
+
+          {/* Video testimonial CTA */}
+          <motion.div className="mt-8" variants={fadeUp}>
+            <Card className="border-primary/15 bg-gradient-to-r from-primary/5 to-emerald-500/5">
+              <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Video className="w-8 h-8 text-primary" />
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <h3 className="font-bold text-lg mb-1">Are you a TechSavvy merchant?</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Share your experience in a quick video and get featured on our site. We'd love to hear how much you're saving.
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" className="shrink-0" asChild>
+                  <a href="mailto:contact@techsavvyhawaii.com?subject=Video%20Testimonial&body=I'd%20like%20to%20share%20my%20TechSavvy%20experience!">
+                    Share Your Story
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
       </div>
     </section>
