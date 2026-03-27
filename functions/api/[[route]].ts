@@ -253,9 +253,9 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
 // ─── Allowed AI models ───────────────────────────────────────────────
 
 const ALLOWED_MODELS = [
-  "claude-sonnet-4-20250514",
-  "claude-3-7-sonnet-20250219",
-  "claude-3-5-haiku-20241022",
+  "llama-3.1-8b-instruct",
+  "llama-3.1-70b-instruct",
+  "llama-3.2-3b-instruct",
 ];
 const MAX_HISTORY_LENGTH = 20;
 const MAX_ALLOWED_TOKENS = 4096;
@@ -347,41 +347,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
 
       try {
-        // Try Anthropic first if API key is available
-        const apiKey = env.ANTHROPIC_API_KEY;
-        if (apiKey) {
-          const messages: { role: "user" | "assistant"; content: string }[] = [
-            ...trimmedHistory.map(h => ({ role: h.role as "user" | "assistant", content: h.content })),
-            { role: "user" as const, content: message },
-          ];
-          const safeMaxTokens = Math.min(Number(config.max_tokens) || 1024, MAX_ALLOWED_TOKENS);
-
-          const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": apiKey,
-              "anthropic-version": "2023-06-01",
-            },
-            body: JSON.stringify({
-              model: config.model as string,
-              max_tokens: safeMaxTokens,
-              system: config.system_prompt as string,
-              messages,
-            }),
-          });
-
-          if (anthropicRes.ok) {
-            const anthropicData: any = await anthropicRes.json();
-            const text = (anthropicData.content || [])
-              .filter((block: any) => block.type === "text")
-              .map((block: any) => block.text)
-              .join("");
-            return json({ reply: text });
-          }
-        }
-
-        // Fallback: proxy through AI worker (Cloudflare Workers AI — free)
+        // Route to Cloudflare Worker AI (Llama via mojo-luna-955c)
         const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -695,7 +661,125 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'inbound', ?, ?, ?, ?, ?, ?, '', 'received', ?)"
       ).bind(msgId, tid, fromEmail, fromName, to || "contact@techsavvyhawaii.com", subject || "", text || "", html || "", ts).run();
 
+      // AI Classification: detect invoices, payments, receipts
+      try {
+        const content = ((subject || "") + " " + (text || "")).toLowerCase();
+        const tags: string[] = [];
+        const extractedData: Record<string, string> = {};
+
+        // Invoice detection
+        if (/invoice|inv[#\s\-]?\d|bill\s?(for|to|#)|amount\s?due|balance\s?due|please\s?pay|payment\s?due|remit/i.test(content)) tags.push("invoice");
+        // Payment/receipt detection
+        if (/payment\s?(received|confirmed|processed|complete)|receipt|paid|transaction\s?(id|#|complete)|thank\s?you\s?for\s?your\s?payment/i.test(content)) tags.push("payment");
+        // Subscription/recurring
+        if (/subscription|recurring|monthly\s?(charge|payment|fee)|renewal|auto[- ]?pay/i.test(content)) tags.push("subscription");
+        // Refund
+        if (/refund|credit\s?(applied|issued|memo)|money\s?back/i.test(content)) tags.push("refund");
+
+        // Extract dollar amounts
+        const amountMatches = content.match(/\$[\d,]+\.?\d{0,2}/g);
+        if (amountMatches && amountMatches.length > 0) {
+          const largest = amountMatches.map(a => parseFloat(a.replace(/[$,]/g, ""))).sort((a, b) => b - a)[0];
+          extractedData.amount = largest.toString();
+        }
+        // Extract invoice numbers
+        const invNumMatch = content.match(/(?:invoice|inv)[#\s:\-]*([A-Z0-9\-]{2,20})/i);
+        if (invNumMatch) extractedData.invoiceNumber = invNumMatch[1].trim();
+        // Extract due dates
+        const dueDateMatch = content.match(/(?:due|by|before)[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+        if (dueDateMatch) extractedData.dueDate = dueDateMatch[1];
+
+        if (tags.length > 0) {
+          const tagData = JSON.stringify(tags);
+          await env.DB.prepare("UPDATE email_messages SET ai_tags = ? WHERE id = ?").bind(tagData, msgId).run();
+          // Store extracted financial data in thread tags for the frontend
+          if (Object.keys(extractedData).length > 0) {
+            try { await env.DB.prepare("UPDATE email_threads SET source = ? WHERE id = ?").bind(JSON.stringify({ ...JSON.parse("{}"), aiDetected: tags, extractedData }), tid).run(); } catch {}
+          }
+        }
+
+        // For ambiguous emails, also try AI classification via worker
+        if (tags.length === 0 && (content.includes("$") || content.includes("total") || content.includes("charge") || content.includes("fee"))) {
+          try {
+            const classifyRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/classify", {
+              method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+              body: JSON.stringify({ text: (subject + "\n" + (text || "")).slice(0, 1000) }),
+            });
+            const classifyData: any = await classifyRes.json();
+            if (classifyData.tags && Array.isArray(classifyData.tags) && classifyData.tags.length > 0) {
+              await env.DB.prepare("UPDATE email_messages SET ai_tags = ? WHERE id = ?").bind(JSON.stringify(classifyData.tags), msgId).run();
+            }
+          } catch {}
+        }
+      } catch { /* classification is non-critical */ }
+
       return json({ success: true, threadId: tid });
+    }
+
+    // POST /api/email/messages/:id/record-finance — create invoice/payment from detected email
+    if (method === "POST") {
+      const rfMatch = path.match(/^\/api\/email\/messages\/([^/]+)\/record-finance$/);
+      if (rfMatch) {
+        const msgId = rfMatch[1];
+        const msg = await env.DB.prepare("SELECT * FROM email_messages WHERE id = ?").bind(msgId).first();
+        if (!msg) return err("Message not found", 404);
+        const body: any = await request.json();
+        const ts = now();
+        const id = genId();
+        const recordType = body.type || "invoice"; // "invoice" or "payment"
+
+        if (recordType === "invoice") {
+          await env.DB.prepare(
+            "INSERT INTO invoices (id, invoice_number, client_name, amount, status, due_date, notes, file_url, file_name, created_at, updated_at) VALUES (?, ?, ?, ?, 'pending', ?, ?, '', '', ?, ?)"
+          ).bind(
+            id,
+            body.invoiceNumber || "",
+            body.clientName || (msg.from_name as string) || (msg.from_email as string) || "",
+            parseFloat(body.amount) || 0,
+            body.dueDate || "",
+            `Auto-detected from email: ${msg.subject}\nFrom: ${msg.from_email}\n\n${body.notes || ""}`.trim(),
+            ts, ts
+          ).run();
+          // Mark the message as recorded
+          try {
+            let tags: string[] = []; try { tags = JSON.parse(msg.ai_tags as string || "[]"); } catch {}
+            if (!tags.includes("recorded")) tags.push("recorded");
+            await env.DB.prepare("UPDATE email_messages SET ai_tags = ? WHERE id = ?").bind(JSON.stringify(tags), msgId).run();
+          } catch {}
+          const row = await env.DB.prepare("SELECT * FROM invoices WHERE id = ?").bind(id).first();
+          return json({ success: true, type: "invoice", record: row });
+        }
+
+        // For payment records, mark an existing invoice as paid or create a record
+        if (recordType === "payment") {
+          // Try to find matching invoice
+          if (body.invoiceId) {
+            await env.DB.prepare("UPDATE invoices SET status = 'paid', paid_date = ?, notes = notes || ?, updated_at = ? WHERE id = ?")
+              .bind(ts, `\nPayment confirmed via email from ${msg.from_email}`, ts, body.invoiceId).run();
+          } else {
+            // Create as a paid invoice record
+            await env.DB.prepare(
+              "INSERT INTO invoices (id, invoice_number, client_name, amount, status, due_date, paid_date, notes, file_url, file_name, created_at, updated_at) VALUES (?, ?, ?, ?, 'paid', '', ?, ?, '', '', ?, ?)"
+            ).bind(
+              id,
+              body.invoiceNumber || "",
+              body.clientName || (msg.from_name as string) || "",
+              parseFloat(body.amount) || 0,
+              ts,
+              `Payment detected from email: ${msg.subject}\nFrom: ${msg.from_email}\n\n${body.notes || ""}`.trim(),
+              ts, ts
+            ).run();
+          }
+          try {
+            let tags: string[] = []; try { tags = JSON.parse(msg.ai_tags as string || "[]"); } catch {}
+            if (!tags.includes("recorded")) tags.push("recorded");
+            await env.DB.prepare("UPDATE email_messages SET ai_tags = ? WHERE id = ?").bind(JSON.stringify(tags), msgId).run();
+          } catch {}
+          return json({ success: true, type: "payment" });
+        }
+
+        return err("Invalid type", 400);
+      }
     }
 
     // POST /api/leads/public (public lead from website contact form)
@@ -731,6 +815,26 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       } catch { /* non-critical */ }
 
       return json({ success: true }, 201);
+    }
+
+    // POST /api/linkinbio/track (public — no auth)
+    if (path === "/api/linkinbio/track" && method === "POST") {
+      try {
+        const body: any = await request.json();
+        const id = genId();
+        await env.DB.prepare("INSERT INTO linkinbio_clicks (id, link, offer, referrer, ts) VALUES (?, ?, ?, ?, ?)").bind(id, body.link || "", body.offer || "", body.referrer || "", body.ts || now()).run();
+      } catch {}
+      return json({ ok: true });
+    }
+
+    // POST /api/campaigns/redeem (public — offer code lookup)
+    if (path === "/api/campaigns/redeem" && method === "POST") {
+      const body: any = await request.json();
+      const code = (body.code || "").toUpperCase().trim();
+      if (!code) return err("Missing offer code", 400);
+      const camp = await env.DB.prepare("SELECT * FROM campaigns WHERE UPPER(offer_code) = ?").bind(code).first();
+      if (!camp) return json({ valid: false, message: "Offer code not found" });
+      return json({ valid: true, campaignName: camp.name, offerCode: camp.offer_code, campaignId: camp.id });
     }
 
     // POST /api/statement-review/analyze (public — file upload for AI analysis)
@@ -932,16 +1036,53 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // ─── PARTNER PROGRAM ROUTES (program.techsavvyhawaii.com) ──────
 
+    // POST /api/partner/register
+    if (path === "/api/partner/register" && method === "POST") {
+      const body: any = await request.json();
+      const { name, email, phone, password, company, payoutMethod, payoutHandle, w9Name, w9BusinessName, w9TaxClassification, w9Address, w9CityStateZip, w9TinType, w9TinLast4, agreementSignature } = body;
+      if (!name || !email || !password) return err("Name, email, and password required");
+      if (password.length < 6) return err("Password must be at least 6 characters");
+      const existing = await env.DB.prepare("SELECT id FROM partner_accounts WHERE email = ?").bind(email.toLowerCase().trim()).first();
+      if (existing) return err("An account with this email already exists", 409);
+      const id = `partner-${genId()}`;
+      const accessCode = genId().slice(0, 8).toUpperCase();
+      const pwHash = await hashPassword(password);
+      const ts = now();
+      const colors = ["#6366f1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4"];
+      const avatarColor = colors[Math.floor(Math.random() * colors.length)];
+      await env.DB.prepare(
+        `INSERT INTO partner_accounts (id, name, email, phone, company, access_code, avatar_color, tier, total_referrals, successful_referrals, total_earned, is_active, last_login, created_at, updated_at, agreement_signature, agreement_agreed_at, payout_method, payout_handle, w9_name, w9_business_name, w9_tax_classification, w9_address, w9_city_state_zip, w9_tin_type, w9_tin_last4, w9_signed_at, password_hash)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'bronze', 0, 0, 0, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(id, name, email.toLowerCase().trim(), phone || "", company || "", accessCode, avatarColor, ts, ts, ts, agreementSignature || "", agreementSignature ? ts : "", payoutMethod || "", payoutHandle || "", w9Name || name, w9BusinessName || "", w9TaxClassification || "", w9Address || "", w9CityStateZip || "", w9TinType || "", w9TinLast4 || "", w9Name ? ts : "", pwHash).run();
+      // Set session cookie and return
+      const partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE id = ?").bind(id).first();
+      const headers = new Headers();
+      headers.set("Set-Cookie", `partner_session=${id}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000`);
+      return new Response(JSON.stringify({ ...mapPartner(partner!), accessCode }), { status: 201, headers: { ...Object.fromEntries(headers.entries()), "Content-Type": "application/json" } });
+    }
+
     // POST /api/partner/login
     if (path === "/api/partner/login" && method === "POST") {
       const body: any = await request.json();
+      // Support both access code and email+password login
       const code = (body.accessCode || "").trim().toUpperCase();
-      if (!code) return err("Access code required");
-      const partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE access_code = ? AND is_active = 1").bind(code).first();
-      if (!partner) return err("Invalid access code", 401);
+      const email = (body.email || "").trim().toLowerCase();
+      const password = body.password || "";
+      let partner: any = null;
+      if (code) {
+        partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE access_code = ? AND is_active = 1").bind(code).first();
+      } else if (email && password) {
+        partner = await env.DB.prepare("SELECT * FROM partner_accounts WHERE email = ? AND is_active = 1").bind(email).first();
+        if (partner && partner.password_hash) {
+          const valid = await verifyPassword(password, partner.password_hash as string);
+          if (!valid) partner = null;
+        } else {
+          partner = null;
+        }
+      }
+      if (!partner) return err("Invalid credentials", 401);
       const ts = now();
       await env.DB.prepare("UPDATE partner_accounts SET last_login = ? WHERE id = ?").bind(ts, partner.id).run();
-      // Set partner session cookie
       const headers = new Headers();
       headers.set("Set-Cookie", `partner_session=${partner.id}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000`);
       return new Response(JSON.stringify(mapPartner(partner)), { status: 200, headers: { ...Object.fromEntries(headers.entries()), "Content-Type": "application/json" } });
@@ -1293,11 +1434,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         source: "source", vertical: "vertical", currentProcessor: "current_processor",
         currentEquipment: "current_equipment", monthlyVolume: "monthly_volume",
         painPoints: "pain_points", nextStep: "next_step", nextStepDate: "next_step_date", notes: "notes",
+        assignedTo: "assigned_to",
       };
       for (const [jsKey, dbCol] of Object.entries(leadFieldMap)) {
         if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(body[jsKey]); }
       }
       if (body.attachments !== undefined) { updates.push("attachments = ?"); values.push(JSON.stringify(body.attachments)); }
+      if (body.checklist !== undefined) { updates.push("checklist = ?"); values.push(JSON.stringify(body.checklist)); }
+      if (body.verified !== undefined) { updates.push("verified = ?"); values.push(JSON.stringify(body.verified)); }
       updates.push("updated_at = ?"); values.push(now());
 
       if (updates.length > 1) {
@@ -2968,19 +3112,24 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (path === "/api/autopilot/config" && method === "GET") {
       try {
-        const cfg = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
-        if (!cfg) return json({ id: "default", enabled: false, autoProspectEnabled: false, prospectLocations: "Honolulu, Hawaii", prospectVerticals: "restaurant,retail,salon", maxProspectsPerRun: 10, autoOutreachEnabled: false, outreachDelay: 2, maxOutreachPerDay: 15, autoFollowUpEnabled: false, followUpAfterDays: 3, maxFollowUpsPerLead: 3, autoEnrichEnabled: true, lastRunAt: "", totalProspected: 0, totalEmailed: 0, totalFollowUps: 0, updatedAt: "" });
-        return json(mapAutopilotConfig(cfg));
+        let cfg = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
+        if (!cfg) {
+          await env.DB.prepare("INSERT OR IGNORE INTO autopilot_config (id, enabled, auto_prospect_enabled, prospect_locations, prospect_verticals, max_prospects_per_run, auto_outreach_enabled, outreach_delay_hours, max_outreach_per_day, auto_follow_up_enabled, follow_up_after_days, max_follow_ups_per_lead, auto_enrich_enabled, last_run_at, total_prospected, total_emailed, total_follow_ups, updated_at) VALUES ('default', 0, 0, 'Honolulu, Hawaii', 'restaurant,retail,salon,auto_repair', 10, 0, 2, 15, 0, 3, 3, 1, '', 0, 0, 0, ?)").bind(now()).run();
+          cfg = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
+        }
+        return json(cfg ? mapAutopilotConfig(cfg) : { id: "default", enabled: false, autoProspectEnabled: false, prospectLocations: "Honolulu, Hawaii", prospectVerticals: "restaurant,retail,salon", maxProspectsPerRun: 10, autoOutreachEnabled: false, outreachDelay: 2, maxOutreachPerDay: 15, autoFollowUpEnabled: false, followUpAfterDays: 3, maxFollowUpsPerLead: 3, autoEnrichEnabled: true, lastRunAt: "", totalProspected: 0, totalEmailed: 0, totalFollowUps: 0, updatedAt: "" });
       } catch { return json({ id: "default", enabled: false, autoProspectEnabled: false, prospectLocations: "Honolulu, Hawaii", prospectVerticals: "restaurant,retail,salon", maxProspectsPerRun: 10, autoOutreachEnabled: false, outreachDelay: 2, maxOutreachPerDay: 15, autoFollowUpEnabled: false, followUpAfterDays: 3, maxFollowUpsPerLead: 3, autoEnrichEnabled: true, lastRunAt: "", totalProspected: 0, totalEmailed: 0, totalFollowUps: 0, updatedAt: "" }); }
     }
 
     if (path === "/api/autopilot/config" && method === "PATCH") {
       const body: any = await request.json();
       const boolFields = ["enabled", "autoProspectEnabled", "autoOutreachEnabled", "autoFollowUpEnabled", "autoEnrichEnabled"];
-      const fieldMap: Record<string, string> = { enabled: "enabled", autoProspectEnabled: "auto_prospect_enabled", prospectLocations: "prospect_locations", prospectVerticals: "prospect_verticals", maxProspectsPerRun: "max_prospects_per_run", autoOutreachEnabled: "auto_outreach_enabled", outreachDelay: "outreach_delay_hours", maxOutreachPerDay: "max_outreach_per_day", autoFollowUpEnabled: "auto_follow_up_enabled", followUpAfterDays: "follow_up_after_days", maxFollowUpsPerLead: "max_follow_ups_per_lead", autoEnrichEnabled: "auto_enrich_enabled" };
+      const fieldMap: Record<string, string> = { enabled: "enabled", autoProspectEnabled: "auto_prospect_enabled", prospectLocations: "prospect_locations", prospectVerticals: "prospect_verticals", maxProspectsPerRun: "max_prospects_per_run", autoOutreachEnabled: "auto_outreach_enabled", outreachDelay: "outreach_delay_hours", maxOutreachPerDay: "max_outreach_per_day", autoFollowUpEnabled: "auto_follow_up_enabled", followUpAfterDays: "follow_up_after_days", maxFollowUpsPerLead: "max_follow_ups_per_lead", autoEnrichEnabled: "auto_enrich_enabled", outreachEmailEnabled: "outreach_email_enabled", outreachSmsEnabled: "outreach_sms_enabled" };
       const updates: string[] = ["updated_at = ?"]; const values: any[] = [now()];
       for (const [jsKey, dbCol] of Object.entries(fieldMap)) { if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(boolFields.includes(jsKey) ? (body[jsKey] ? 1 : 0) : body[jsKey]); } }
       try {
+        // Ensure default row exists before updating
+        await env.DB.prepare("INSERT OR IGNORE INTO autopilot_config (id, enabled, auto_prospect_enabled, prospect_locations, prospect_verticals, max_prospects_per_run, auto_outreach_enabled, outreach_delay_hours, max_outreach_per_day, auto_follow_up_enabled, follow_up_after_days, max_follow_ups_per_lead, auto_enrich_enabled, last_run_at, total_prospected, total_emailed, total_follow_ups, updated_at) VALUES ('default', 0, 0, 'Honolulu, Hawaii', 'restaurant,retail,salon,auto_repair', 10, 0, 2, 15, 0, 3, 3, 1, '', 0, 0, 0, ?)").bind(now()).run();
         await env.DB.prepare(`UPDATE autopilot_config SET ${updates.join(", ")} WHERE id = 'default'`).bind(...values).run();
         const row = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
         return json(mapAutopilotConfig(row!));
@@ -2989,6 +3138,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (path === "/api/autopilot/toggle" && method === "POST") {
       try {
+        // Ensure default row exists before toggling
+        await env.DB.prepare("INSERT OR IGNORE INTO autopilot_config (id, enabled, auto_prospect_enabled, prospect_locations, prospect_verticals, max_prospects_per_run, auto_outreach_enabled, outreach_delay_hours, max_outreach_per_day, auto_follow_up_enabled, follow_up_after_days, max_follow_ups_per_lead, auto_enrich_enabled, last_run_at, total_prospected, total_emailed, total_follow_ups, updated_at) VALUES ('default', 0, 0, 'Honolulu, Hawaii', 'restaurant,retail,salon,auto_repair', 10, 0, 2, 15, 0, 3, 3, 1, '', 0, 0, 0, ?)").bind(now()).run();
         const cfg = await env.DB.prepare("SELECT enabled FROM autopilot_config WHERE id = 'default'").first();
         const newEnabled = !(cfg?.enabled);
         await env.DB.prepare("UPDATE autopilot_config SET enabled = ?, updated_at = ? WHERE id = 'default'").bind(newEnabled ? 1 : 0, now()).run();
@@ -2999,9 +3150,237 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (path === "/api/autopilot/run" && method === "POST") {
       try {
-        const cfg = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
-        return json({ success: true, config: cfg ? mapAutopilotConfig(cfg) : null });
-      } catch { return json({ success: true, config: null }); }
+        await env.DB.prepare("INSERT OR IGNORE INTO autopilot_config (id, enabled, auto_prospect_enabled, prospect_locations, prospect_verticals, max_prospects_per_run, auto_outreach_enabled, outreach_delay_hours, max_outreach_per_day, auto_follow_up_enabled, follow_up_after_days, max_follow_ups_per_lead, auto_enrich_enabled, last_run_at, total_prospected, total_emailed, total_follow_ups, updated_at) VALUES ('default', 0, 0, 'Honolulu, Hawaii', 'restaurant,retail,salon,auto_repair', 10, 0, 2, 15, 0, 3, 3, 1, '', 0, 0, 0, ?)").bind(now()).run();
+        const cfg: any = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
+        if (!cfg?.enabled) return json({ success: false, message: "Autopilot is disabled", queued: 0 });
+
+        let queued = 0;
+        const ts = now();
+        const hoursAgo = new Date(Date.now() - (cfg.outreach_delay_hours || 2) * 3600 * 1000).toISOString();
+        const daysAgo = new Date(Date.now() - (cfg.follow_up_after_days || 3) * 86400 * 1000).toISOString();
+        const emailEnabled = cfg.outreach_email_enabled !== 0;
+        const smsEnabled = cfg.outreach_sms_enabled !== 0;
+
+        // Build contact filter based on enabled channels
+        let contactFilter = "0=1"; // nothing enabled = match nothing
+        if (emailEnabled && smsEnabled) contactFilter = "(l.email != '' OR l.phone != '')";
+        else if (emailEnabled) contactFilter = "l.email != ''";
+        else if (smsEnabled) contactFilter = "l.phone != ''";
+
+        // Auto Outreach: find NEW unassigned leads older than delay, not already in queue
+        if (cfg.auto_outreach_enabled && (emailEnabled || smsEnabled)) {
+          const { results: newLeads } = await env.DB.prepare(
+            `SELECT l.* FROM leads l WHERE l.status = 'new' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND ${contactFilter} AND l.created_at < ? AND l.id NOT IN (SELECT lead_id FROM outreach_queue WHERE type = 'initial') ORDER BY l.created_at ASC LIMIT ?`
+          ).bind(hoursAgo, cfg.max_outreach_per_day || 15).all();
+          for (const lead of (newLeads || [])) {
+            const id = `oq-${genId()}`;
+            const business = (lead.business as string) || (lead.name as string) || "your business";
+            let checklist: any[] = []; try { checklist = JSON.parse(lead.checklist as string || "[]"); } catch {}
+            const completedItems = checklist.filter((c: any) => c.done).map((c: any) => c.label);
+            const checklistContext = completedItems.length > 0 ? `\nInteraction history: ${completedItems.join(", ")}` : "";
+            const painContext = lead.pain_points ? `\nKnown pain points: ${lead.pain_points}` : "";
+            const hasEmail = !!(lead.email as string);
+            const vertical = (lead.vertical as string) || "other";
+            const ownerName = (lead.name as string) || "";
+            const isCashOnly = ((lead.notes as string) || "").toLowerCase().includes("cash only");
+            const processor = (lead.current_processor as string) || "";
+            const notes = (lead.notes as string) || "";
+            const volume = (lead.monthly_volume as string) || "";
+            const address = (lead.address as string) || "";
+
+            // === SALES PSYCHOLOGY ENGINE ===
+            // Principles: Reciprocity (give value first), Social Proof (others like you),
+            // Loss Aversion (what you're losing > what you'd gain), Curiosity Gap (open loops),
+            // Commitment/Consistency (small yes → big yes), Authority (data + expertise)
+
+            function buildOutreach() {
+              const firstName = ownerName.split(" ")[0] || "";
+              const greeting = firstName || "there";
+              const neighborhood = address.match(/Kaimuki|Kapahulu|Kalihi|Chinatown|Moiliili|McCully|Waikiki|Kahala|Kakaako|Manoa|Downtown|Hawaii Kai|Kailua|Aina Haina/i)?.[0] || "";
+
+              // === DEEP VERTICAL KNOWLEDGE ===
+              const verticalInsight: Record<string, { painPoints: string; metrics: string; hook: string; objectionPreempt: string; seasonalNote: string }> = {
+                restaurant: {
+                  painPoints: "Food costs are up 15-20% since 2023. Labor's expensive in Hawaii. Your margins are probably 3-8% on a good month — and your processor is taking 2.5-3.5% of every card transaction on top of that.",
+                  metrics: "The average restaurant in Honolulu processes $15-40K/month in cards. At typical rates, that's $400-$1,400/month going to your processor — money that could cover a part-time employee or a month of produce.",
+                  hook: "What if the biggest controllable expense on your P&L just disappeared?",
+                  objectionPreempt: "You might be thinking 'my customers won't like a surcharge.' Here's the thing — studies show 85% of customers don't change behavior when a small service fee is clearly disclosed. They expect it, like tipping.",
+                  seasonalNote: "With tourist season ramping up, your card volume goes up — which means your processing fees go up too. Unless they're zero.",
+                },
+                salon: {
+                  painPoints: "Between chair rent, product costs, insurance, and continuing education, salon owners are some of the hardest-working entrepreneurs I know. The last thing you need is giving away 2-3% of every service.",
+                  metrics: "A busy salon chair generates $4-8K/month. If 70% is card transactions, you're paying $80-170/month per chair to your processor. For a 4-chair salon, that's $320-$680/month — the cost of a premium product line.",
+                  hook: "What would you do with an extra $400-600/month? New product line? Marketing? Just keeping more of what you already earn?",
+                  objectionPreempt: "Most salons worry about client perception. But the cash discount is actually a benefit — cash-paying clients get a discount, and the posted price includes the service fee. It's transparent and legal in all 50 states.",
+                  seasonalNote: "Wedding season and prom season mean higher ticket services — which means even bigger savings.",
+                },
+                auto_repair: {
+                  painPoints: "Your average ticket is $200-$800+. At 2.5-3% processing, that's $5-$24 per job going to Visa and Mastercard. On a busy week, that adds up to hundreds.",
+                  metrics: "An auto shop processing $20-50K/month in cards is paying $500-$1,750/month in processing fees. That's the cost of a lift payment, or specialty tools, or advertising — just gone.",
+                  hook: "You charge for every part, every hour of labor, every diagnostic — but you're giving away 3% of all of it to your card processor for free. That math doesn't work.",
+                  objectionPreempt: "Customers paying $600 for a brake job won't blink at a small service fee — they expect it. It's like the 'shop supplies' line item everyone already accepts.",
+                  seasonalNote: "Car AC season is coming — high-ticket repairs mean even bigger savings.",
+                },
+                retail: {
+                  painPoints: "Retail margins are razor-thin in Hawaii with high rent and shipping costs for inventory. Every percentage point matters.",
+                  metrics: "If you're doing $10-30K/month in card sales, processing eats $250-$900/month. That's inventory you can't stock, advertising you can't run, or improvements you can't make.",
+                  hook: "Your competitors are figuring out how to keep more of every sale. Are you?",
+                  objectionPreempt: "Big box stores absorb processing fees because they negotiate down to 1.5%. Small businesses can't do that — but you can eliminate fees entirely.",
+                  seasonalNote: "Holiday shopping season will spike your volume — zero fees means you keep every dollar of that spike.",
+                },
+                other: {
+                  painPoints: "Most small business owners don't realize processing fees are their 2nd or 3rd largest controllable expense — right behind rent and payroll.",
+                  metrics: "The average small business pays $500-$1,500/month in processing fees. Over a year, that's $6,000-$18,000 — real money that could go back into your business.",
+                  hook: "What if I told you there's a way to accept every card, tap, and mobile wallet — and pay zero processing fees?",
+                  objectionPreempt: "I know it sounds too good to be true. It's simple economics: the cardholder covers a small convenience fee for using their card, and you keep 100% of your listed price.",
+                  seasonalNote: "",
+                },
+              };
+
+              const vi = verticalInsight[vertical] || verticalInsight.other;
+
+              // === CASH-ONLY BUSINESSES — DIFFERENT PSYCHOLOGY ===
+              // These businesses have OPTED OUT of cards. The angle is: "you're leaving money on the table"
+              // Use Loss Aversion + Data
+              if (isCashOnly) {
+                const cashOnlyStats: Record<string, string> = {
+                  restaurant: "Studies show 60-70% of dining transactions in Hawaii are card/mobile pay. A cash-only restaurant is potentially turning away 2 out of every 3 customers — especially tourists who rarely carry cash.",
+                  salon: "80% of salon clients prefer paying by card. Cash-only salons lose walk-ins who don't have an ATM nearby.",
+                  retail: "Impulse purchases increase 20-30% when customers can use cards. Cash creates a 'pain of paying' that reduces spending.",
+                  auto_repair: "Nobody carries $600 cash for a brake job. Cash-only auto shops lose jobs to competitors who take cards.",
+                  other: "78% of Americans prefer card or mobile payment. Cash-only businesses lose an average of 30% of potential customers.",
+                };
+                const stat = cashOnlyStats[vertical] || cashOnlyStats.other;
+
+                const subj = firstName
+                  ? `${firstName} — what if ${business} could take cards without paying a dime?`
+                  : `${business} — the zero-cost way to accept cards`;
+                const body = `Hi ${greeting},\n\n${stat}\n\nI'm not saying cash is bad — but what if you could accept cards, Apple Pay, and Google Pay without it costing you anything?\n\nWith TechSavvy Hawaii's cash discount program:\n• Card customers pay a small service fee (like a convenience charge)\n• You keep 100% of your listed price\n• The terminal is free — no lease, no purchase\n• No monthly fees, no contracts, cancel anytime\n• Setup takes about 10 minutes\n\nYou literally have nothing to lose and everything to gain. More customers, bigger tickets, same profit margin.\n\n${neighborhood ? `I'm in the ${neighborhood} area regularly and ` : "I"}would love to swing by ${business} for 5 minutes to show you how it works. No pressure, no commitment — just information.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+                return { subject: subj, body };
+              }
+
+              // === PROCESSOR-SPECIFIC INTELLIGENCE ===
+              // Use competitive knowledge to find wedge issues
+              const processorIntel: Record<string, { weakness: string; switchAngle: string }> = {
+                square: { weakness: "Square's flat 2.6%+10¢ seems simple, but run the math on $15K/month — that's $400+/month. And their customer support is notoriously slow with no local presence.", switchAngle: "Square's great for starting out. But once you're doing real volume, their rates quietly become the most expensive option. Most Square merchants I talk to are shocked when they see their actual monthly total." },
+                clover: { weakness: "Clover locks you into their ecosystem with equipment leases ($50-100/month) PLUS processing fees (2.3-3.5%). You're paying twice.", switchAngle: "The Clover hardware is nice, but you're paying $600-$1,200/year just to lease it — and that's before processing fees. What if the hardware was free AND the fees were zero?" },
+                toast: { weakness: "Toast takes 2.49%+15¢ on every transaction AND charges $69-$165/month for software. That's $1,000-$2,000+/month on a busy restaurant.", switchAngle: "Toast is popular, but their total cost of ownership is one of the highest in the industry. Between platform fees and processing, restaurants are paying $12,000-$24,000/year. That's a chef's salary." },
+                stripe: { weakness: "Stripe's 2.9%+30¢ is one of the highest rates in the industry. On a $50 ticket, you're paying $1.75 — on $15K/month that's over $500.", switchAngle: "Stripe's great for online, but for in-person transactions you're overpaying. Their pricing model is built for tech companies, not local businesses." },
+                heartland: { weakness: "Heartland's contracts are notoriously hard to get out of, with early termination fees up to $295.", switchAngle: "If you're locked into a Heartland contract, let's look at the math — the ETF might pay for itself in 2 months of savings." },
+              };
+
+              let processorAngle = "";
+              if (processor) {
+                const p = processor.toLowerCase();
+                for (const [key, intel] of Object.entries(processorIntel)) {
+                  if (p.includes(key)) { processorAngle = intel.switchAngle; break; }
+                }
+                if (!processorAngle) processorAngle = `Have you looked at your statement recently? Most business owners I work with don't realize how much they're actually paying until we run the numbers together.`;
+              }
+
+              // === SUBJECT LINE — CURIOSITY GAP + PERSONALIZATION ===
+              const subjects = [
+                firstName ? `${firstName}, quick question about ${business}` : `Quick question for ${business}`,
+                firstName ? `${firstName} — this number might surprise you` : `${business} — this number might surprise you`,
+                `The fee your ${vertical === "restaurant" ? "restaurant" : "business"} doesn't need to pay`,
+                firstName ? `${firstName}, what are you paying per swipe?` : `What is ${business} paying per swipe?`,
+              ];
+              const subj = subjects[Math.floor(Math.random() * subjects.length)];
+
+              // === BODY — OPEN WITH INSIGHT, NOT A PITCH ===
+              // Sales psychology: lead with value/education, not "I'm from X company"
+              const body = `Hi ${greeting},\n\n${vi.hook}\n\n${vi.painPoints}\n\nI'm with TechSavvy Hawaii. We work with local ${vertical === "restaurant" ? "restaurants" : vertical === "salon" ? "salons" : vertical === "auto_repair" ? "auto shops" : "businesses"} across Oahu, and we've found a way to make processing fees disappear — legally and permanently.\n\nHere's the short version: your listed prices stay the same. Customers who pay by card cover a small, clearly-disclosed service fee (the average is about 3.5%). Cash customers get a discount. You keep 100% of every sale.\n\nFree terminal. No monthly fees. No contracts. No catch.\n\n${processorAngle ? processorAngle + "\n\n" : ""}${vi.objectionPreempt}\n\n${completedItems.length > 0 ? `Since we've already connected (${completedItems[0].toLowerCase()}), I'd love to ` : "Would you be open to a "}quick 5-minute conversation? I can ${neighborhood ? `swing by ${business} in ${neighborhood}` : "stop by"} or hop on a call — whatever's easiest.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`;
+              return { subject: subj, body };
+            }
+
+            if (hasEmail && emailEnabled) {
+              const msg = buildOutreach();
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, msg.subject, msg.body, msg.body.replace(/\n/g, "<br>"), ts, ts).run();
+              queued++;
+            } else if (lead.phone && smsEnabled) {
+              const firstName = ownerName.split(" ")[0] || "";
+              const smsText = isCashOnly
+                ? `Hi${firstName ? ` ${firstName}` : ""}, TechSavvy Hawaii here. ${business} could accept cards + Apple Pay with zero processing fees — free terminal, no contracts. 78% of customers prefer cards. Worth 5 min? (808) 767-5460`
+                : `Hi${firstName ? ` ${firstName}` : ""}, quick Q: what are you paying per swipe at ${business}? We help local businesses eliminate that cost entirely. Free setup, no contracts. (808) 767-5460`;
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'initial', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
+              queued++;
+            }
+          }
+        }
+
+        // Auto Follow-Up: find CONTACTED unassigned leads with no recent queue entry
+        if (cfg.auto_follow_up_enabled && (emailEnabled || smsEnabled)) {
+          const maxFollowUps = cfg.max_follow_ups_per_lead || 3;
+          const { results: staleLeads } = await env.DB.prepare(
+            `SELECT l.* FROM leads l WHERE l.status = 'contacted' AND (l.assigned_to = '' OR l.assigned_to IS NULL) AND ${contactFilter} AND l.updated_at < ? ORDER BY l.updated_at ASC LIMIT ?`
+          ).bind(daysAgo, cfg.max_outreach_per_day || 15).all();
+          for (const lead of (staleLeads || [])) {
+            const { results: existing } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM outreach_queue WHERE lead_id = ? AND type = 'follow_up'").bind(lead.id).all();
+            const count = (existing?.[0] as any)?.cnt || 0;
+            if (count >= maxFollowUps) continue;
+            const id = `oq-${genId()}`;
+            const business = (lead.business as string) || (lead.name as string) || "your business";
+            let checklist: any[] = []; try { checklist = JSON.parse(lead.checklist as string || "[]"); } catch {}
+            const completedItems = checklist.filter((c: any) => c.done).map((c: any) => c.label);
+            const checklistContext = completedItems.length > 0 ? `Previous interactions: ${completedItems.join(", ")}.` : "";
+            const hasEmail = !!(lead.email as string);
+            const firstName = ((lead.name as string) || "").split(" ")[0] || "";
+            const greeting = firstName || "there";
+            const vertical = (lead.vertical as string) || "other";
+
+            // === FOLLOW-UP PSYCHOLOGY SEQUENCE ===
+            // 1: Loss Aversion (show what they're losing)
+            // 2: Social Proof (others like them have switched)
+            // 3: Curiosity + Free Value (offer free statement analysis)
+            // 4: Scarcity + Urgency (limited local promo)
+            // 5: Breakup (respect + open door — triggers fear of missing out)
+            const followUpTemplates = [
+              {
+                subject: `${firstName || "Hey"} — you paid your processor $${volume ? Math.round(parseFloat(volume.replace(/[^0-9.]/g, "")) * 0.028) : "500"}+ last month`,
+                body: `Hi ${greeting},\n\nI wanted to share a quick number with you.\n\n${vertical === "restaurant" ? "The average Honolulu restaurant pays $800-$1,400/month in credit card processing fees" : vertical === "salon" ? "A 4-chair salon typically pays $400-$800/month in processing fees" : vertical === "auto_repair" ? "An auto shop doing $30K/month in cards pays roughly $750-$1,050 in processing fees" : "The average small business pays $500-$1,500/month in processing fees"}. Over a year, that's ${vertical === "restaurant" ? "$10,000-$17,000" : vertical === "auto_repair" ? "$9,000-$12,600" : "$6,000-$18,000"} — gone.\n\nOur merchants pay $0. Not reduced fees. Not "low" fees. Zero.\n\nI don't expect you to take my word for it. If you send me a copy of your most recent processing statement, I'll do a free 5-minute analysis and show you the exact dollar amount you'd save. No obligation, no sales pitch — just math.\n\n${completedItems.length > 0 ? `We've already chatted (${completedItems[0].toLowerCase()}) so you know I'm not just another cold email. ` : ""}Would that be worth 5 minutes?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+              },
+              {
+                subject: `How ${vertical === "restaurant" ? "other Honolulu restaurants are" : vertical === "salon" ? "salons in your area are" : "local businesses are"} keeping more revenue`,
+                body: `Hi ${greeting},\n\nI've been helping local businesses across Oahu switch to zero-fee processing, and there's a pattern I keep seeing:\n\nEvery single one says the same thing: "Why didn't I do this sooner?"\n\nHere's what the switch looks like in practice:\n• Day 1: We drop off a free terminal and set it up (10 minutes)\n• Day 2: Your first card transaction processes — you keep 100%\n• Month 1: You see the full impact on your bottom line\n• Month 2+: That money compounds. Some owners put it back into marketing, some into inventory, some just take home more profit.\n\nNo contract means if you don't love it, you hand back the terminal and walk away. But nobody has.\n\n${neighborhood ? `I work with several businesses in ${neighborhood} and ` : "I "}would love to show you how it works in person. 5 minutes.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+              },
+              {
+                subject: `Free statement analysis for ${business} — no strings`,
+                body: `Hi ${greeting},\n\nI know I've reached out before, and I respect your time. So let me offer something concrete instead of another pitch.\n\nI'll analyze your current processing statement for free. No commitment, no obligation. Here's what you'll learn:\n\n• Your true effective rate (it's almost always higher than what your rep told you)\n• Hidden fees you might not know about (PCI non-compliance, batch fees, "technology" fees)\n• The exact dollar amount you'd save monthly with zero-fee processing\n• Whether your current contract has an early termination fee (and if the savings cover it)\n\nJust snap a photo of your most recent statement and text it to me at (808) 767-5460, or reply to this email. I'll have the analysis back to you within 24 hours.\n\nWorst case, you learn something about your current setup. Best case, you find an extra $500-$1,500/month.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+              },
+              {
+                subject: `${firstName || greeting} — we're doing something special for local businesses this month`,
+                body: `Hi ${greeting},\n\nQuick heads up — TechSavvy Hawaii is running a local launch promotion right now for Honolulu businesses:\n\n• Free Valor VP100 terminal (normally a $300+ value)\n• Free POS system for businesses processing $10K+/month\n• Free custom website for all new merchants\n• Zero processing fees — forever, not just a promo period\n• No contract — ever\n\nWe're a local company and we're building our merchant base on the island. That's why we can offer this — we want ${business} to be one of our first success stories.\n\nThis isn't a limited-time pressure tactic — these are our standard terms. But I did want to make sure you knew about the free POS and website, since those aren't something we'll always offer.\n\nWorth a quick conversation?\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+              },
+              {
+                subject: `Closing the loop, ${greeting}`,
+                body: `Hi ${greeting},\n\nI've reached out a few times about helping ${business} with processing fees, and I completely understand if now isn't the right time. Running a ${vertical === "restaurant" ? "restaurant" : vertical === "salon" ? "salon" : vertical === "auto_repair" ? "shop" : "business"} is demanding, and the last thing you need is another person in your inbox.\n\nSo this will be my last email. But I want you to have my number in case anything changes: (808) 767-5460.\n\nA few scenarios where it might make sense to reach out:\n• Your current processor raises rates (they usually do annually)\n• You're frustrated with customer support\n• You get a statement that makes you say "wait, I'm paying HOW much?"\n• You're curious about the cash discount model\n\nNo pressure. No expiration. Just a local company that's here when you're ready.\n\nWishing ${business} continued success.\n\nMahalo,\nTechSavvy Hawaii\n(808) 767-5460`,
+              },
+            ];
+
+            const template = followUpTemplates[Math.min(count, followUpTemplates.length - 1)];
+
+            if (hasEmail && emailEnabled) {
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, template.subject, template.body, template.body.replace(/\n/g, "<br>"), ts, ts).run();
+              queued++;
+            } else if (lead.phone && smsEnabled) {
+              const smsTexts = [
+                `Hi${firstName ? ` ${firstName}` : ""}, did you know ${business} probably pays $500+/mo in card fees? I can show you the exact number — free statement analysis, no strings. Text me your statement. (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, local businesses switching to zero processing fees are saving $6K-18K/year. Free terminal, no contracts. Want to see the math for ${business}? (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, free statement analysis for ${business} — snap a photo of your latest processing statement and text it to me. I'll show you exactly what you'd save. (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, TechSavvy Hawaii launch promo: free terminal + free POS + free website for local merchants. Zero processing fees forever. Worth a look? (808) 767-5460`,
+                `Hi${firstName ? ` ${firstName}` : ""}, last note from TechSavvy Hawaii. If processing fees ever bug you, I'm here: (808) 767-5460. Wishing ${business} all the best.`,
+              ];
+              const smsText = smsTexts[Math.min(count, smsTexts.length - 1)];
+              await env.DB.prepare("INSERT INTO outreach_queue (id, lead_id, type, status, subject, body, html_body, scheduled_for, created_at) VALUES (?, ?, 'follow_up', 'pending', ?, ?, ?, ?, ?)").bind(id, lead.id, `📱 Follow-up SMS → ${business} (${lead.phone})`, smsText, `<p><strong>📱 Text to ${lead.phone}:</strong></p><p>${smsText}</p>`, ts, ts).run();
+              queued++;
+            }
+          }
+        }
+
+        await env.DB.prepare("UPDATE autopilot_config SET last_run_at = ?, updated_at = ? WHERE id = 'default'").bind(ts, ts).run();
+        const updated = await env.DB.prepare("SELECT * FROM autopilot_config WHERE id = 'default'").first();
+        return json({ success: true, queued, config: updated ? mapAutopilotConfig(updated) : null });
+      } catch (e: any) { return err("Autopilot run failed: " + e.message, 500); }
     }
 
     if (path === "/api/autopilot/queue" && method === "GET") {
@@ -3038,7 +3417,47 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           }
           return err("Send failed", 500);
         }
-        if (action === "regenerate") { await env.DB.prepare("UPDATE outreach_queue SET status = 'pending' WHERE id = ?").bind(id).run(); const row = await env.DB.prepare("SELECT * FROM outreach_queue WHERE id = ?").bind(id).first(); return json(row); }
+        if (action === "regenerate") {
+          const item = await env.DB.prepare("SELECT * FROM outreach_queue WHERE id = ?").bind(id).first();
+          if (!item) return err("Not found", 404);
+          const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(item.lead_id).first();
+          const business = (lead?.business as string) || (lead?.name as string) || "the business";
+          let checklist: any[] = []; try { checklist = JSON.parse(lead?.checklist as string || "[]"); } catch {}
+          const completedItems = checklist.filter((c: any) => c.done).map((c: any) => c.label);
+          const body: any = await request.json().catch(() => ({}));
+          const instructions = body.instructions || "";
+          const tone = body.tone || "friendly";
+          const length = body.length || "medium";
+
+          const lengthGuide = length === "short" ? "Keep it under 50 words. 2-3 sentences max." : length === "long" ? "Write 150-200 words. Include specific details and a clear value proposition." : "Write 75-100 words. Concise but complete.";
+          const toneGuide = tone === "professional" ? "Formal and polished. No slang." : tone === "casual" ? "Very casual, like texting a friend. Use 'hey' not 'hello'." : "Warm and approachable. Friendly but not too casual.";
+          const customNote = instructions ? `\nAdditional instructions: ${instructions}` : "";
+          const checklistContext = completedItems.length > 0 ? `\nPrevious interactions: ${completedItems.join(", ")}` : "";
+          const isFollowUp = (item.type as string) === "follow_up";
+
+          try {
+            const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/email", {
+              method: "POST", headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY || "" },
+              body: JSON.stringify({
+                ownerName: lead?.name || "",
+                businessName: business,
+                vertical: lead?.vertical || "other",
+                tone,
+                context: `${isFollowUp ? "Follow-up email — they haven't responded yet." : "Initial outreach to new lead."} ${toneGuide} ${lengthGuide}${checklistContext}${lead?.pain_points ? `\nPain points: ${lead.pain_points}` : ""}${customNote}`,
+              }),
+            });
+            const emailData: any = await workerRes.json();
+            const newSubject = emailData.subject || item.subject;
+            const newBody = emailData.body || item.body;
+            await env.DB.prepare("UPDATE outreach_queue SET subject = ?, body = ?, html_body = ?, status = 'pending' WHERE id = ?").bind(newSubject, newBody, newBody.replace(/\n/g, "<br>"), id).run();
+            const row = await env.DB.prepare("SELECT * FROM outreach_queue WHERE id = ?").bind(id).first();
+            return json(row);
+          } catch {
+            await env.DB.prepare("UPDATE outreach_queue SET status = 'pending' WHERE id = ?").bind(id).run();
+            const row = await env.DB.prepare("SELECT * FROM outreach_queue WHERE id = ?").bind(id).first();
+            return json(row);
+          }
+        }
       } catch (e: any) { return err(e.message, 500); }
     }
 
@@ -3051,8 +3470,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     // ─── AI OPS ─────────────────────────────────────────────────────────
 
     if (path === "/api/ai-ops/recommend" && method === "POST") {
-      const apiKey = env.ANTHROPIC_API_KEY;
-      if (!apiKey) return err("Anthropic API key not configured", 500);
       try {
         const [teamRes, leadRes, taskRes, schedRes, clientRes] = await Promise.all([
           env.DB.prepare("SELECT * FROM team_members").all(), env.DB.prepare("SELECT * FROM leads").all(),
@@ -3065,19 +3482,22 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         const todayStr = new Date().toISOString().split("T")[0];
         const pendingTasks = tasks.filter((t: any) => !t.completed);
         const todaySchedule = schedule.filter((s: any) => s.date === todayStr);
-        const context = `BUSINESS CONTEXT:\n- Company: ${biz?.company_name || "TechSavvy Hawaii"}\n- Processor Partner: ${biz?.processor_partner || "CashSwipe"}\n- Current Phase: ${biz?.current_phase || "onboarding"}\n- Today: ${todayStr}\n\nTEAM:\n${team.map((m: any) => `- ${m.name}: ${m.role} (${m.daily_involvement})`).join("\n")}\n\nSTATE: ${leads.length} leads (${leads.filter((l: any) => !["won","lost"].includes(l.status)).length} active), ${clients.length} clients, ${pendingTasks.length} pending tasks, ${todaySchedule.length} scheduled today\n\nTASKS:\n${pendingTasks.slice(0, 10).map((t: any) => `- [${t.priority}] ${t.title} (due: ${t.due_date || "none"})`).join("\n") || "None"}`;
-        const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 2048, system: `You are the AI Operations Assistant for a merchant services startup. Generate actionable daily recommendations. Return a JSON array. Each item: title, description, assigneeName (team member name), priority ("high"|"medium"|"low"), category ("training"|"outreach"|"admin"|"meeting"|"follow-up"|"development"). Return ONLY valid JSON array.`, messages: [{ role: "user", content: context }] }) });
-        if (!anthropicRes.ok) return err("Failed to generate recommendations", 500);
-        const data: any = await anthropicRes.json();
-        const text = (data.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+        const context = `BUSINESS: ${biz?.company_name || "TechSavvy Hawaii"}, Phase: ${biz?.current_phase || "onboarding"}, Today: ${todayStr}\nTEAM: ${team.map((m: any) => `${m.name} (${m.role})`).join("; ")}\nSTATS: ${leads.length} leads (${leads.filter((l: any) => !["won","lost"].includes(l.status)).length} active), ${clients.length} clients, ${pendingTasks.length} pending tasks, ${todaySchedule.length} scheduled today\nTASKS: ${pendingTasks.slice(0, 10).map((t: any) => `[${t.priority}] ${t.title} (due: ${t.due_date || "none"})`).join("; ") || "None"}`;
+        const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: `Generate 3-5 actionable daily recommendations for the team based on this context:\n${context}\n\nReturn ONLY a JSON array. Each item: { "title": "", "description": "", "assigneeName": "", "priority": "high|medium|low", "category": "training|outreach|admin|meeting|follow-up|development" }`,
+            systemPrompt: "You are an AI Operations Assistant for a merchant services startup. Generate actionable daily recommendations. Return ONLY valid JSON array.",
+          }),
+        });
+        const data: any = await workerRes.json();
+        const text = data.reply || "";
         const jsonMatch = text.match(/\[[\s\S]*\]/);
         return json({ recommendations: jsonMatch ? JSON.parse(jsonMatch[0]) : [], generatedAt: now() });
       } catch (e: any) { return err("Failed: " + e.message, 500); }
     }
 
     if (path === "/api/ai-ops/chat" && method === "POST") {
-      const apiKey = env.ANTHROPIC_API_KEY;
-      if (!apiKey) return err("Anthropic API key not configured", 500);
       const body: any = await request.json();
       if (!body.message) return err("Message required");
       try {
@@ -3088,15 +3508,16 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         let biz: any = null; try { biz = await env.DB.prepare("SELECT * FROM business_info WHERE id = 'default'").first(); } catch {}
         const team = teamRes.results || []; const leads = leadRes.results || [];
         const tasks = taskRes.results || []; const clients = clientRes.results || [];
-        const systemPrompt = `You are the AI Operations Assistant for ${biz?.company_name || "TechSavvy Hawaii"}, a merchant services startup in the ${biz?.current_phase || "onboarding"} phase.\nTEAM: ${team.map((m: any) => `${m.name} (${m.role})`).join("; ")}\nSTATS: ${leads.length} leads, ${clients.length} clients, ${tasks.filter((t: any) => !t.completed).length} pending tasks\nBe concise, actionable, specific.`;
-        const messages: any[] = [];
-        if (Array.isArray(body.history)) { for (const h of body.history.slice(-10)) { if (h.role && h.content) messages.push({ role: h.role, content: h.content.slice(0, 2000) }); } }
-        messages.push({ role: "user", content: body.message });
-        const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1024, system: systemPrompt, messages }) });
-        if (!anthropicRes.ok) return err("Failed to get AI response", 500);
-        const data: any = await anthropicRes.json();
-        const text = (data.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
-        return json({ reply: text });
+        const systemPrompt = `You are the AI Operations Assistant for ${biz?.company_name || "TechSavvy Hawaii"}, a merchant services startup.\nTEAM: ${team.map((m: any) => `${m.name} (${m.role})`).join("; ")}\nSTATS: ${leads.length} leads, ${clients.length} clients, ${tasks.filter((t: any) => !t.completed).length} pending tasks\nBe concise, actionable, specific.`;
+        const history: any[] = [];
+        if (Array.isArray(body.history)) { for (const h of body.history.slice(-10)) { if (h.role && h.content) history.push({ role: h.role, content: h.content.slice(0, 2000) }); } }
+        const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: body.message, history, systemPrompt }),
+        });
+        const data: any = await workerRes.json();
+        if (data.error) return err(data.error, 500);
+        return json({ reply: data.reply || "" });
       } catch (e: any) { return err("Failed: " + e.message, 500); }
     }
 
@@ -3923,9 +4344,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // POST /api/ai-ops/scrape-prospects
     if (path === "/api/ai-ops/scrape-prospects" && method === "POST") {
-      const apiKey = env.ANTHROPIC_API_KEY;
-      if (!apiKey) return err("Anthropic API key not configured.", 500);
-
       const body: any = await request.json();
       const rawUrl = body.url;
       if (!rawUrl) return err("URL is required.");
@@ -3945,20 +4363,18 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           const techStack = detectTechStackSimple(html);
           allTechStacks[targetUrl] = techStack;
 
-          const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 50000);
-          const techContext = techStack.length > 0 ? `\nTECH DETECTED: ${techStack.map((t: any) => `${t.name} (${t.category})`).join(", ")}` : "";
+          const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 4000);
+          const techContext = techStack.length > 0 ? `\nTECH: ${techStack.map((t: any) => t.name).join(", ")}` : "";
 
-          const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+          const workerRes = await fetch("https://mojo-luna-955c.gorjessbbyx3.workers.dev/chat", {
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: "claude-sonnet-4-20250514", max_tokens: 4096,
-              system: `Extract ALL business listings from the page. Return ONLY a JSON array. Each item: { "business": "", "name": "", "address": "", "phone": "", "email": "", "website": "", "vertical": "restaurant|retail|salon|auto|medical|services|other", "currentProcessor": "", "notes": "" }. Return [] if none found.${techContext}`,
-              messages: [{ role: "user", content: `Extract from ${targetUrl}:\n\n${cleaned}` }],
+              message: `Extract ALL business listings from this page content. Return ONLY a JSON array. Each: { "business": "", "name": "", "address": "", "phone": "", "email": "", "website": "", "vertical": "restaurant|retail|salon|auto|medical|services|other", "currentProcessor": "", "notes": "" }. Return [] if none.${techContext}\n\nContent from ${targetUrl}:\n${cleaned}`,
+              systemPrompt: "You extract business contact info from web pages. Return ONLY valid JSON arrays.",
             }),
           });
-          const aiData = await aiResp.json() as any;
-          const text = (aiData.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+          const aiData: any = await workerRes.json();
+          const text = aiData.reply || "";
           const jsonMatch = text.match(/\[[\s\S]*\]/);
           const prospects = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
           for (const p of prospects) { p._sourceUrl = targetUrl; p._techStack = techStack; }
@@ -3971,34 +4387,239 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // POST /api/ai-ops/google-dork
     if (path === "/api/ai-ops/google-dork" && method === "POST") {
-      const apiKey = env.ANTHROPIC_API_KEY;
       const body: any = await request.json();
       const query = body.query as string;
       const location = body.location as string;
       if (!query) return err("Query is required.");
 
-      if (!apiKey) {
-        return json({ results: [], urls: [], query, searchedAt: new Date().toISOString(), noApiKey: true, message: "No Anthropic API key. Use 'Open in Google' then paste URLs into URL Scanner." });
+      const searchQuery = `${query}${location ? ` ${location}` : ""}`;
+      const allProspects: any[] = [];
+      const dorks = [
+        { query: searchQuery, purpose: "Direct search" },
+        { query: `${query} site:yelp.com${location ? ` ${location}` : " Hawaii"}`, purpose: "Yelp listings" },
+      ];
+      const realUrls: string[] = [];
+
+      // Actually fetch Google search results
+      for (const dork of dorks) {
+        try {
+          const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(dork.query)}&num=15`;
+          const resp = await fetch(googleUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "Accept": "text/html,application/xhtml+xml",
+              "Accept-Language": "en-US,en;q=0.9",
+            },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (!resp.ok) continue;
+          const html = await resp.text();
+          // Extract URLs from Google results
+          const urlMatches = html.matchAll(/href="\/url\?q=([^&"]+)/g);
+          for (const m of urlMatches) {
+            try {
+              const url = decodeURIComponent(m[1]);
+              if (url.startsWith("http") && !url.includes("google.com") && !url.includes("youtube.com") && !url.includes("wikipedia.org") && !url.includes("facebook.com")) {
+                realUrls.push(url);
+              }
+            } catch {}
+          }
+          // Also try direct href patterns
+          const hrefMatches = html.matchAll(/href="(https?:\/\/(?!www\.google|maps\.google|support\.google|accounts\.google|translate\.google|webcache\.google|youtube\.com|facebook\.com|wikipedia\.org)[^"]+)"/g);
+          for (const m of hrefMatches) {
+            if (!realUrls.includes(m[1])) realUrls.push(m[1]);
+          }
+        } catch {}
       }
 
-      try {
-        const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514", max_tokens: 2048,
-            system: `Generate Google search queries (dorks) to find local businesses for merchant services prospecting. Return JSON: { "dorks": [{ "query": "search string", "purpose": "why" }], "urls": ["direct URLs to try"] }`,
-            messages: [{ role: "user", content: `Generate dorks for: "${query}"${location ? ` in ${location}` : ""}. Focus on finding businesses without modern payment processing.` }],
-          }),
-        });
-        const aiData = await aiResp.json() as any;
-        const text = (aiData.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { dorks: [], urls: [] };
-        return json({ results: parsed.dorks || [], urls: parsed.urls || [], query, searchedAt: new Date().toISOString() });
-      } catch (e: any) {
-        return json({ results: [], urls: [], query, searchedAt: new Date().toISOString(), error: e.message });
+      // Deduplicate and limit
+      const uniqueUrls = [...new Set(realUrls)].slice(0, 20);
+
+      // If we got real URLs, scrape the top ones for business info
+      for (const targetUrl of uniqueUrls.slice(0, 8)) {
+        try {
+          const resp = await fetch(targetUrl, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!resp.ok) continue;
+          const html = await resp.text();
+          const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+          const title = titleMatch?.[1]?.trim() || "";
+
+          // Quick extraction: pull phone, email, address from HTML directly
+          const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+          const phones = cleaned.match(/\(?808\)?[\s.-]?\d{3}[\s.-]?\d{4}/g) || [];
+          const emails = cleaned.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+          const phone = phones[0] || "";
+          const email = (emails.find(e => !e.includes("example") && !e.includes("sentry") && !e.includes("wix") && !e.includes("google")) || "");
+
+          // If it's a Yelp page, extract from the structured content
+          if (targetUrl.includes("yelp.com")) {
+            const bizName = title.replace(/ - Yelp$| \| Yelp$/i, "").replace(/ - .*$/, "").trim();
+            if (bizName && bizName.length > 2) {
+              allProspects.push({ business: bizName, name: "", phone, email, website: targetUrl, address: "", vertical: "other", currentProcessor: "", notes: `Found via Yelp search: ${query}`, _sourceUrl: targetUrl });
+            }
+          } else {
+            // Regular business website
+            const bizName = title.replace(/ \|.*$| -.*$| –.*$/, "").trim() || new URL(targetUrl).hostname.replace("www.", "");
+            if (bizName.length > 2 && bizName.length < 80) {
+              allProspects.push({ business: bizName, name: "", phone, email, website: targetUrl, address: "", vertical: "other", currentProcessor: "", notes: `Found via search: ${query}`, _sourceUrl: targetUrl });
+            }
+          }
+        } catch {}
       }
+
+      return json({
+        results: dorks,
+        urls: uniqueUrls,
+        prospects: allProspects,
+        query: searchQuery,
+        searchedAt: new Date().toISOString(),
+      });
+    }
+
+    // POST /api/ai-ops/enrich-emails — find missing emails for pipeline leads
+    if (path === "/api/ai-ops/enrich-emails" && method === "POST") {
+      const body: any = await request.json();
+      const singleId = body.leadId as string | undefined;
+      const limit = Math.min(body.limit || 15, 30);
+
+      let leadsToEnrich: any[] = [];
+      if (singleId) {
+        const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ? AND email = ''").bind(singleId).first();
+        if (lead) leadsToEnrich = [lead];
+      } else {
+        const { results } = await env.DB.prepare("SELECT * FROM leads WHERE email = '' AND (business != '' OR name != '') ORDER BY created_at DESC LIMIT ?").bind(limit).all();
+        leadsToEnrich = results || [];
+      }
+
+      if (leadsToEnrich.length === 0) return json({ enriched: 0, total: 0, results: [], message: "No leads need email enrichment" });
+
+      const JUNK_DOMAINS = ["example.com","sentry.io","wixpress.com","google.com","facebook.com","instagram.com","twitter.com","youtube.com","yelp.com","squarespace.com","wordpress.com","cloudflare.com","amazonaws.com","w3.org","schema.org","jquery.com","googleapis.com","gstatic.com","fbcdn.net","cdnjs.com","gravatar.com","wp.com","apple.com","microsoft.com","linkedin.com","pinterest.com","tiktok.com","tripadvisor.com","opentable.com","doordash.com","ubereats.com","grubhub.com"];
+      const JUNK_PREFIXES = ["noreply","no-reply","donotreply","do-not-reply","mailer-daemon","postmaster","webmaster","support@wix","support@square","info@yelp"];
+      const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+      function extractEmails(text: string): string[] {
+        const raw = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}/g) || [];
+        return raw.filter(e => {
+          const lower = e.toLowerCase();
+          const domain = lower.split("@")[1] || "";
+          if (JUNK_DOMAINS.some(j => domain.includes(j))) return false;
+          if (JUNK_PREFIXES.some(p => lower.startsWith(p))) return false;
+          if (lower.length > 60 || lower.length < 6) return false;
+          return true;
+        }).map(e => e.toLowerCase());
+      }
+
+      async function fetchPage(url: string, timeout = 6000): Promise<string> {
+        try {
+          const r = await fetch(url, { headers: { "User-Agent": UA, "Accept": "text/html,application/xhtml+xml" }, signal: AbortSignal.timeout(timeout), redirect: "follow" });
+          if (!r.ok) return "";
+          const ct = r.headers.get("content-type") || "";
+          if (!ct.includes("text/html") && !ct.includes("text/plain") && !ct.includes("application/xhtml")) return "";
+          return await r.text();
+        } catch { return ""; }
+      }
+
+      function slugify(name: string): string {
+        return name.toLowerCase().replace(/[''`]/g, "").replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      }
+
+      function buildCandidateUrls(business: string): string[] {
+        const slug = slugify(business);
+        const compact = slug.replace(/-/g, "");
+        const urls: string[] = [];
+        // Direct domain guesses
+        for (const domain of [".com", ".net", ".org"]) {
+          urls.push(`https://www.${slug}${domain}`);
+          urls.push(`https://${slug}${domain}`);
+          if (compact !== slug) urls.push(`https://www.${compact}${domain}`);
+        }
+        // Hawaii-specific patterns
+        urls.push(`https://www.${slug}hawaii.com`);
+        urls.push(`https://www.${slug}hi.com`);
+        urls.push(`https://www.${slug}honolulu.com`);
+        // Yelp page (predictable URL pattern)
+        urls.push(`https://www.yelp.com/biz/${slug}-honolulu`);
+        urls.push(`https://www.yelp.com/biz/${slug}-honolulu-2`);
+        // Facebook (predictable URL pattern)
+        urls.push(`https://www.facebook.com/${compact}/`);
+        return urls;
+      }
+
+      const results: any[] = [];
+
+      for (const lead of leadsToEnrich) {
+        const business = (lead.business as string || lead.name as string || "").trim();
+        if (!business || business.length < 3) { results.push({ id: lead.id, business, status: "skipped", reason: "No business name" }); continue; }
+
+        let foundEmail = "";
+        let foundPhone = lead.phone as string || "";
+        let source = "";
+
+        const candidateUrls = buildCandidateUrls(business);
+
+        for (const url of candidateUrls) {
+          if (foundEmail) break;
+          const html = await fetchPage(url, 5000);
+          if (!html || html.length < 500) continue;
+
+          // Check mailto: links first (most reliable)
+          const mailtoMatches = html.match(/mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6})/gi) || [];
+          for (const m of mailtoMatches) {
+            const emails = extractEmails(m.replace(/^mailto:/i, ""));
+            if (emails.length > 0) { foundEmail = emails[0]; source = url; break; }
+          }
+          if (foundEmail) break;
+
+          // General email extraction
+          const emails = extractEmails(html);
+          if (emails.length > 0) { foundEmail = emails[0]; source = url; break; }
+
+          // Extract phone if missing
+          if (!foundPhone) {
+            const phones = html.match(/\(?808\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g);
+            if (phones?.[0]) foundPhone = phones[0];
+          }
+
+          // If we found a website, also check /contact and /about pages
+          if (url.startsWith("https://www.") && !url.includes("yelp.com") && !url.includes("facebook.com")) {
+            try {
+              const base = new URL(url).origin;
+              for (const subpath of ["/contact", "/about", "/about-us", "/contact-us"]) {
+                if (foundEmail) break;
+                const subHtml = await fetchPage(base + subpath, 4000);
+                if (!subHtml) continue;
+                const subMailto = subHtml.match(/mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6})/gi) || [];
+                for (const m of subMailto) {
+                  const em = extractEmails(m.replace(/^mailto:/i, "")); if (em.length > 0) { foundEmail = em[0]; source = base + subpath; break; }
+                }
+                if (!foundEmail) {
+                  const em = extractEmails(subHtml); if (em.length > 0) { foundEmail = em[0]; source = base + subpath; }
+                }
+              }
+            } catch {}
+          }
+        }
+
+        // Update the lead
+        if (foundEmail || (foundPhone && foundPhone !== lead.phone)) {
+          const updates: string[] = ["updated_at = ?"];
+          const values: any[] = [now()];
+          if (foundEmail) { updates.push("email = ?"); values.push(foundEmail); }
+          if (foundPhone && !lead.phone) { updates.push("phone = ?"); values.push(foundPhone); }
+          await env.DB.prepare(`UPDATE leads SET ${updates.join(", ")} WHERE id = ?`).bind(...values, lead.id).run();
+          results.push({ id: lead.id, business, status: foundEmail ? "found" : "phone_only", email: foundEmail, phone: foundPhone, source });
+        } else {
+          results.push({ id: lead.id, business, status: "not_found", email: "" });
+        }
+
+        if (leadsToEnrich.length > 1) await new Promise(r => setTimeout(r, 1000));
+      }
+
+      const enriched = results.filter(r => r.status === "found").length;
+      return json({ enriched, total: leadsToEnrich.length, results, completedAt: now() });
     }
 
     // POST /api/resources/upload
@@ -4009,6 +4630,114 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       await env.DB.prepare(`INSERT INTO resources (id, title, description, category, type, url, thumbnail_url, sort_order, featured, published, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?, ?)`)
         .bind(id, body.title || "", body.description || "", body.category || "guide", body.type || "link", body.url || "", body.thumbnailUrl || "", ts, ts).run();
       return json({ id, title: body.title, url: body.url, createdAt: ts }, 201);
+    }
+
+    // ─── CAMPAIGNS (Direct Mail + Marketing Tracking) ────────────────
+
+    if (path === "/api/campaigns" && method === "GET") {
+      const { results } = await env.DB.prepare("SELECT * FROM campaigns ORDER BY created_at DESC").all();
+      return json((results || []).map((c: any) => ({ id: c.id, name: c.name, type: c.type, status: c.status, offerCode: c.offer_code, contentUrl: c.content_url, contentName: c.content_name, targetCount: c.target_count, sentCount: c.sent_count, responseCount: c.response_count, notes: c.notes, createdAt: c.created_at, updatedAt: c.updated_at })));
+    }
+
+    if (path === "/api/campaigns" && method === "POST") {
+      const body: any = await request.json();
+      const id = genId();
+      const ts = now();
+      const offerCode = body.offerCode || `TSH-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      await env.DB.prepare("INSERT INTO campaigns (id, name, type, status, offer_code, content_url, content_name, target_count, sent_count, response_count, notes, created_at, updated_at) VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, 0, 0, ?, ?, ?)").bind(id, body.name || "", body.type || "direct_mail", offerCode, body.contentUrl || "", body.contentName || "", body.targetCount || 0, body.notes || "", ts, ts).run();
+      const row = await env.DB.prepare("SELECT * FROM campaigns WHERE id = ?").bind(id).first();
+      return json(row, 201);
+    }
+
+    const campMatch = path.match(/^\/api\/campaigns\/([^/]+)$/);
+    if (campMatch && method === "GET") {
+      const camp = await env.DB.prepare("SELECT * FROM campaigns WHERE id = ?").bind(campMatch[1]).first();
+      if (!camp) return err("Not found", 404);
+      const { results: recipients } = await env.DB.prepare("SELECT * FROM campaign_recipients WHERE campaign_id = ? ORDER BY created_at DESC").bind(campMatch[1]).all();
+      return json({ ...camp, offerCode: camp.offer_code, contentUrl: camp.content_url, contentName: camp.content_name, targetCount: camp.target_count, sentCount: camp.sent_count, responseCount: camp.response_count, recipients: (recipients || []).map((r: any) => ({ id: r.id, leadId: r.lead_id, name: r.name, business: r.business, address: r.address, sentAt: r.sent_at, responded: !!r.responded, responseDate: r.response_date, responseType: r.response_type, offerRedeemed: !!r.offer_redeemed, notes: r.notes, createdAt: r.created_at })) });
+    }
+
+    if (campMatch && method === "PATCH") {
+      const body: any = await request.json();
+      const updates: string[] = ["updated_at = ?"];
+      const values: any[] = [now()];
+      if (body.name !== undefined) { updates.push("name = ?"); values.push(body.name); }
+      if (body.status !== undefined) { updates.push("status = ?"); values.push(body.status); }
+      if (body.offerCode !== undefined) { updates.push("offer_code = ?"); values.push(body.offerCode); }
+      if (body.contentUrl !== undefined) { updates.push("content_url = ?"); values.push(body.contentUrl); }
+      if (body.contentName !== undefined) { updates.push("content_name = ?"); values.push(body.contentName); }
+      if (body.notes !== undefined) { updates.push("notes = ?"); values.push(body.notes); }
+      await env.DB.prepare(`UPDATE campaigns SET ${updates.join(", ")} WHERE id = ?`).bind(...values, campMatch[1]).run();
+      return json({ success: true });
+    }
+
+    if (campMatch && method === "DELETE") {
+      await env.DB.prepare("DELETE FROM campaign_recipients WHERE campaign_id = ?").bind(campMatch[1]).run();
+      await env.DB.prepare("DELETE FROM campaigns WHERE id = ?").bind(campMatch[1]).run();
+      return json({ success: true });
+    }
+
+    // Add recipients to campaign (from pipeline leads or manual)
+    const campRecipMatch = path.match(/^\/api\/campaigns\/([^/]+)\/recipients$/);
+    if (campRecipMatch && method === "POST") {
+      const body: any = await request.json();
+      const campaignId = campRecipMatch[1];
+      const ts = now();
+      let added = 0;
+
+      if (body.leadIds && Array.isArray(body.leadIds)) {
+        for (const lid of body.leadIds) {
+          const lead = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(lid).first();
+          if (!lead) continue;
+          const id = genId();
+          await env.DB.prepare("INSERT INTO campaign_recipients (id, campaign_id, lead_id, name, business, address, sent_at, responded, response_date, response_type, offer_redeemed, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, '', 0, '', '', 0, '', ?)").bind(id, campaignId, lid, lead.name || "", lead.business || "", lead.address || "", ts).run();
+          added++;
+        }
+      } else if (body.name || body.business) {
+        const id = genId();
+        await env.DB.prepare("INSERT INTO campaign_recipients (id, campaign_id, lead_id, name, business, address, sent_at, responded, response_date, response_type, offer_redeemed, notes, created_at) VALUES (?, ?, '', ?, ?, ?, '', 0, '', '', 0, '', ?)").bind(id, campaignId, body.name || "", body.business || "", body.address || "", ts).run();
+        added++;
+      }
+
+      // Update counts
+      const { results: countRes } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM campaign_recipients WHERE campaign_id = ?").bind(campaignId).all();
+      const total = (countRes?.[0] as any)?.cnt || 0;
+      await env.DB.prepare("UPDATE campaigns SET target_count = ?, updated_at = ? WHERE id = ?").bind(total, ts, campaignId).run();
+      return json({ success: true, added, total });
+    }
+
+    // Mark campaign as sent
+    const campSendMatch = path.match(/^\/api\/campaigns\/([^/]+)\/send$/);
+    if (campSendMatch && method === "POST") {
+      const ts = now();
+      await env.DB.prepare("UPDATE campaign_recipients SET sent_at = ? WHERE campaign_id = ? AND sent_at = ''").bind(ts, campSendMatch[1]).run();
+      const { results: countRes } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM campaign_recipients WHERE campaign_id = ? AND sent_at != ''").bind(campSendMatch[1]).all();
+      const sentCount = (countRes?.[0] as any)?.cnt || 0;
+      await env.DB.prepare("UPDATE campaigns SET status = 'sent', sent_count = ?, updated_at = ? WHERE id = ?").bind(sentCount, ts, campSendMatch[1]).run();
+      return json({ success: true, sentCount });
+    }
+
+    // Log a response / redemption for a campaign recipient
+    const campRespMatch = path.match(/^\/api\/campaigns\/recipients\/([^/]+)\/respond$/);
+    if (campRespMatch && method === "POST") {
+      const body: any = await request.json();
+      const ts = now();
+      await env.DB.prepare("UPDATE campaign_recipients SET responded = 1, response_date = ?, response_type = ?, offer_redeemed = ?, notes = ? WHERE id = ?").bind(ts, body.responseType || "inquiry", body.offerRedeemed ? 1 : 0, body.notes || "", campRespMatch[1]).run();
+      // Update campaign response count
+      const recip = await env.DB.prepare("SELECT campaign_id FROM campaign_recipients WHERE id = ?").bind(campRespMatch[1]).first();
+      if (recip) {
+        const { results: countRes } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM campaign_recipients WHERE campaign_id = ? AND responded = 1").bind(recip.campaign_id).all();
+        await env.DB.prepare("UPDATE campaigns SET response_count = ?, updated_at = ? WHERE id = ?").bind((countRes?.[0] as any)?.cnt || 0, ts, recip.campaign_id).run();
+      }
+      return json({ success: true });
+    }
+
+    // Track offer code redemption handled in public section above
+
+    if (path === "/api/linkinbio/stats" && method === "GET") {
+      const { results } = await env.DB.prepare("SELECT link, COUNT(*) as clicks FROM linkinbio_clicks GROUP BY link ORDER BY clicks DESC").all();
+      const { results: total } = await env.DB.prepare("SELECT COUNT(*) as cnt FROM linkinbio_clicks").all();
+      return json({ total: (total?.[0] as any)?.cnt || 0, byLink: results || [] });
     }
 
     // ─── CATCH-ALL ──────────────────────────────────────────────────────
@@ -4079,6 +4808,9 @@ function mapLead(row: Record<string, unknown>) {
     nextStepDate: row.next_step_date || "",
     attachments: (() => { try { return JSON.parse(row.attachments as string || "[]"); } catch { return []; } })(),
     notes: row.notes,
+    assignedTo: row.assigned_to || "",
+    checklist: (() => { try { return JSON.parse(row.checklist as string || "[]"); } catch { return []; } })(),
+    verified: (() => { try { return JSON.parse(row.verified as string || "{}"); } catch { return {}; } })(),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -4162,6 +4894,7 @@ function mapMessage(row: Record<string, unknown>) {
     resendId: row.resend_id || "",
     status: row.status,
     sentAt: row.sent_at,
+    aiTags: (() => { try { return JSON.parse(row.ai_tags as string || "[]"); } catch { return []; } })(),
   };
 }
 
@@ -4276,7 +5009,7 @@ function mapBusinessInfo(row: Record<string, unknown>) {
 }
 
 function mapAutopilotConfig(row: Record<string, unknown>) {
-  return { id: row.id, enabled: !!row.enabled, autoProspectEnabled: !!row.auto_prospect_enabled, prospectLocations: row.prospect_locations || "Honolulu, Hawaii", prospectVerticals: row.prospect_verticals || "restaurant,retail,salon", maxProspectsPerRun: row.max_prospects_per_run || 10, autoOutreachEnabled: !!row.auto_outreach_enabled, outreachDelay: row.outreach_delay_hours || 2, maxOutreachPerDay: row.max_outreach_per_day || 15, autoFollowUpEnabled: !!row.auto_follow_up_enabled, followUpAfterDays: row.follow_up_after_days || 3, maxFollowUpsPerLead: row.max_follow_ups_per_lead || 3, autoEnrichEnabled: !!row.auto_enrich_enabled, lastRunAt: row.last_run_at || "", totalProspected: row.total_prospected || 0, totalEmailed: row.total_emailed || 0, totalFollowUps: row.total_follow_ups || 0, updatedAt: row.updated_at || "" };
+  return { id: row.id, enabled: !!row.enabled, autoProspectEnabled: !!row.auto_prospect_enabled, prospectLocations: row.prospect_locations || "Honolulu, Hawaii", prospectVerticals: row.prospect_verticals || "restaurant,retail,salon", maxProspectsPerRun: row.max_prospects_per_run || 10, autoOutreachEnabled: !!row.auto_outreach_enabled, outreachDelay: row.outreach_delay_hours || 2, maxOutreachPerDay: row.max_outreach_per_day || 15, autoFollowUpEnabled: !!row.auto_follow_up_enabled, followUpAfterDays: row.follow_up_after_days || 3, maxFollowUpsPerLead: row.max_follow_ups_per_lead || 3, autoEnrichEnabled: !!row.auto_enrich_enabled, outreachEmailEnabled: row.outreach_email_enabled !== 0, outreachSmsEnabled: row.outreach_sms_enabled !== 0, lastRunAt: row.last_run_at || "", totalProspected: row.total_prospected || 0, totalEmailed: row.total_emailed || 0, totalFollowUps: row.total_follow_ups || 0, updatedAt: row.updated_at || "" };
 }
 
 // ─── PDF text extraction (lightweight, works in Workers runtime) ──────

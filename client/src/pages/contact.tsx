@@ -52,7 +52,7 @@ const faqs: FAQ[] = [
   },
   {
     q: "What are the pricing options?",
-    a: "It's simple: $0 processing fees, $0 monthly fees, no contracts. Qualifying businesses ($10K+/month) get a free terminal. We set everything up at no cost. Your ongoing cost with TechSavvy is $0.",
+    a: "It's simple: $0 processing fees, no contracts, free equipment. We handle the entire setup at no cost to you. You stop paying credit card processing fees from day one.",
     category: "pricing",
   },
   {
@@ -87,7 +87,7 @@ const faqs: FAQ[] = [
   },
   {
     q: "Do I need a minimum sales volume?",
-    a: "Yes \u2014 we require a minimum of $5,000-$10,000 in monthly processing volume to qualify. This ensures the zero-fee model delivers meaningful savings for your business.",
+    a: "We work with businesses of all sizes. Whether you process $3,000 or $300,000 a month, our cash discount program eliminates your processing fees. The more volume you do, the more you save.",
     category: "processing",
   },
   {
@@ -441,7 +441,7 @@ function TestimonialsSection() {
       name: "Sarah L.",
       business: "Island Beauty Lounge",
       location: "Honolulu, HI",
-      text: "TechSavvy set everything up in one afternoon. I started saving money from day one and the whole process was seamless. Can't believe there are no monthly fees.",
+      text: "TechSavvy set everything up in one afternoon. I started saving money from day one and the whole process was seamless. Best decision I made for my business this year.",
       rating: 5,
     },
     {

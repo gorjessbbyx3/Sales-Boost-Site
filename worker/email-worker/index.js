@@ -119,7 +119,7 @@ export default {
     // Extract sender info
     const nameMatch = from.match(/^([^<]+)</);
     const senderName = nameMatch ? nameMatch[1].trim() : from.split("@")[0];
-    const senderEmail = from.match(/<([^>]+)>/) ? from.match(/<([^>]+)>/)[1] : from;
+    const senderEmail = (from.match(/<([^>]+)>/) ? from.match(/<([^>]+)>/)[1] : from).toLowerCase();
 
     // Classify via AI Worker
     let classification = {
@@ -155,8 +155,8 @@ export default {
     // Determine folder
     const folder = classification.intent === "spam" ? "spam" : "inbox";
 
-    // Determine which email account received this
-    const emailAccount = to || "contact@techsavvyhawaii.com";
+    // Determine which email account received this (always lowercase for consistency)
+    const emailAccount = (to || "contact@techsavvyhawaii.com").toLowerCase();
 
     // Log ALL emails to D1 (including spam — goes to spam folder)
     if (env.DB) {

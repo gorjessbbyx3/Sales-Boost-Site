@@ -1,547 +1,277 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  Gift,
-  Check,
-  ArrowRight,
-  Calendar,
-  Monitor,
-  Smartphone,
-  Wifi,
-  CreditCard,
-  Globe,
-  Printer,
-  Star,
-  ShieldCheck,
-  Sparkles,
-  Phone,
-  ChevronRight,
+  ArrowRight, Check, Phone, CreditCard, Monitor, Gift, Flame,
+  ShieldCheck, MapPin, UtensilsCrossed, ShoppingBag, Scissors, Truck, Star, Clock,
 } from "lucide-react";
-import { useRef, useState } from "react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import Layout from "@/components/layout";
 import { useSEO } from "@/hooks/useSEO";
-import { Link } from "wouter";
 
-// ─── Product Data ───────────────────────────────────────────────────────
-
-type Product = {
-  name: string;
-  description: string;
-  features: string[];
-  monthlyRate?: string;
-  price?: string;
-  popular?: boolean;
-  freeWithProgram?: boolean;
-};
-
-const TERMINALS: Product[] = [
+const FEATURED_DEVICES = [
   {
-    name: "Valor VL550",
-    description:
-      "5.5\" touchscreen terminal with built-in printer. Ideal for countertop businesses — restaurants, retail, salons.",
-    features: [
-      "5.5\" HD touchscreen",
-      "Built-in thermal printer",
-      "Tap, chip & swipe",
-      "Wi-Fi & Ethernet",
-      "Cash discount ready",
-    ],
-    monthlyRate: "$40/mo",
-    popular: true,
-    freeWithProgram: true,
-  },
-  {
-    name: "Valor VP550",
-    description:
-      "Android-powered smart POS terminal. Runs apps, manages inventory, and processes payments all in one device.",
-    features: [
-      "Android OS",
-      "App marketplace",
-      "Built-in camera & scanner",
-      "4G + Wi-Fi",
-      "Cash discount built-in",
-    ],
-    monthlyRate: "$40/mo",
-    freeWithProgram: true,
-  },
-  {
-    name: "PAX A920",
-    description:
-      "Portable smart terminal with 5\" touchscreen. Perfect for mobile businesses, food trucks, and delivery.",
-    features: [
-      "5\" touchscreen display",
-      "Portable & wireless",
-      "Built-in printer",
-      "4G LTE + Wi-Fi + Bluetooth",
-      "Long-lasting battery",
-    ],
-    price: "$379",
-    monthlyRate: "$40/mo",
-    freeWithProgram: true,
-  },
-  {
-    name: "PAX A80",
-    description:
-      "Compact countertop terminal. Small footprint, big performance — great for tight spaces and quick transactions.",
-    features: [
-      "Compact countertop design",
-      "Fast transaction speed",
-      "Tap, chip & swipe",
-      "Ethernet + Wi-Fi",
-      "Built-in printer",
-    ],
-    price: "$265",
-    monthlyRate: "$40/mo",
-    freeWithProgram: true,
-  },
-  {
-    name: "PAX A920 Pro",
-    description:
-      "Upgraded smart terminal with faster processor and larger battery. Built for high-volume businesses.",
-    features: [
-      "Enhanced performance",
-      "Larger battery capacity",
-      "5\" HD touchscreen",
-      "All connectivity options",
-      "Android apps supported",
-    ],
-    price: "$400",
-    monthlyRate: "$40/mo",
-    freeWithProgram: true,
-  },
-  {
-    name: "FD150 Terminal",
-    description:
-      "Reliable, no-frills countertop terminal. Straightforward and dependable for everyday card acceptance.",
-    features: [
-      "Simple countertop setup",
-      "Fast processing",
-      "EMV chip & magnetic stripe",
-      "Ethernet connected",
-      "Built-in printer",
-    ],
-    monthlyRate: "$40/mo",
-    freeWithProgram: true,
-  },
-];
-
-const POS_SYSTEMS: Product[] = [
-  {
-    name: "Clover Flex",
-    description:
-      "Handheld POS with ~6\" touchscreen, built-in printer, camera scanner, and receipt printing. Take payments anywhere in your store.",
-    features: [
-      "6\" touchscreen",
-      "Built-in printer & scanner",
-      "Portable & wireless",
-      "Clover app marketplace",
-      "Inventory management",
-      "Employee management",
-    ],
-    monthlyRate: "$73/mo",
-    popular: true,
-    freeWithProgram: true,
+    name: "Valor VP100",
+    retail: "$195",
+    img: "/images/equipment/valor-vp100.png",
+    desc: "Countertop terminal with EMV chip, contactless tap, and swipe. Built-in receipt printer. Perfect for any business that just needs to accept cards.",
+    best: "Food trucks, small shops, service pros",
+    features: ["EMV chip + tap + swipe", "Built-in receipt printer", "Cash discount ready", "Countertop or wireless"],
   },
   {
     name: "Clover Mini",
-    description:
-      "8\" touchscreen countertop POS. Compact but powerful — perfect for restaurants and retail shops that need a full POS experience.",
-    features: [
-      "8\" HD touchscreen",
-      "Countertop design",
-      "Full Clover app suite",
-      "Built-in receipt printer",
-      "Table management (restaurants)",
-      "Customer-facing display option",
-    ],
-    monthlyRate: "$73/mo",
-    freeWithProgram: true,
+    retail: "$750",
+    img: "/images/equipment/clover-mini.jpg",
+    desc: "Compact 8\" touchscreen POS with the full Clover ecosystem. Inventory, employee management, loyalty — in a small package.",
+    best: "Salons, spas, cafes, boutiques",
+    features: ["8\" HD touchscreen", "Full Clover App Market", "Inventory tracking", "Employee management"],
   },
   {
-    name: "Clover Station Solo",
-    description:
-      "14\" HD touchscreen full POS station. The flagship Clover system — ideal for high-volume restaurants, bars, and retail stores.",
-    features: [
-      "14\" HD touchscreen",
-      "Full POS workstation",
-      "Cash drawer compatible",
-      "Kitchen printer support",
-      "Advanced reporting",
-      "Multi-employee support",
-    ],
-    monthlyRate: "$145–$195/mo",
-    popular: true,
-    freeWithProgram: true,
+    name: "Clover Flex",
+    retail: "$550",
+    img: "/images/equipment/clover-flex.webp",
+    desc: "Take payments anywhere — tableside, curbside, at events. Wireless with built-in printer, camera, and barcode scanner.",
+    best: "Restaurants, food trucks, delivery",
+    features: ["Wireless / LTE", "Built-in printer + camera", "Tableside payments", "Barcode scanner"],
   },
   {
-    name: "KORONA POS Bundle",
-    description:
-      "Complete POS system bundle with touchscreen, cash drawer, and receipt printer. Ideal for retail and quick-service restaurants.",
-    features: [
-      "Full touchscreen POS",
-      "Cash drawer included",
-      "Receipt printer included",
-      "Cloud-based management",
-      "Real-time reporting",
-      "Multi-location support",
-    ],
-    freeWithProgram: true,
+    name: "Cloverstation Solo",
+    retail: "$1,500",
+    img: "/images/equipment/clover-station-solo.png",
+    desc: "Full countertop POS with 14\" HD display, receipt printer, and cash drawer. The complete system for serious businesses.",
+    best: "Retail stores, restaurants, high-volume",
+    features: ["14\" HD touchscreen", "Receipt printer + cash drawer", "Full inventory & reporting", "Fingerprint login"],
   },
   {
-    name: "KORONA Dual-Screen POS",
-    description:
-      "Dual-screen POS system with customer-facing display. Perfect for retail environments where customers want to see their order.",
-    features: [
-      "Dual-screen setup",
-      "Customer-facing display",
-      "Touch interface",
-      "Inventory tracking",
-      "Loyalty program built-in",
-      "Cloud reporting",
-    ],
-    freeWithProgram: true,
+    name: "Clover Station Duo",
+    retail: "$1,900",
+    img: "/images/equipment/clover-station-duo.png",
+    desc: "Dual-screen POS — your screen plus a customer-facing display for payments and tips. The premium restaurant and retail setup.",
+    best: "Full-service restaurants, bars, retail",
+    features: ["14\" merchant + 8\" customer screen", "Customer-facing payments", "Table management + tips", "Full-service restaurant ready"],
+  },
+  {
+    name: "Pax A920",
+    retail: "$320",
+    img: "/images/equipment/pax-a920.webp",
+    desc: "Android smart terminal with 5\" touchscreen. Versatile mid-range option with Wi-Fi and 4G for businesses that want flexibility.",
+    best: "Multi-location, mobile businesses",
+    features: ["5\" touchscreen", "Android OS", "Wi-Fi + 4G", "Built-in printer + camera"],
   },
 ];
 
-const GATEWAYS: Product[] = [
+const BUSINESS_SETUPS = [
   {
-    name: "NMI Gateway",
-    description:
-      "Industry-leading payment gateway for e-commerce and online businesses. Accept payments on your website with secure tokenization.",
-    features: [
-      "Online payment acceptance",
-      "Recurring billing",
-      "Virtual terminal",
-      "Tokenization & security",
-      "Developer-friendly API",
-      "Shopping cart integrations",
-    ],
-    freeWithProgram: true,
+    icon: UtensilsCrossed,
+    name: "Restaurant / Bar",
+    color: "text-orange-500",
+    bg: "bg-orange-500/10 border-orange-500/20",
+    recommended: "Clover Station Duo",
+    why: "Dual screen for servers and customers, table management, tip adjustments, kitchen tickets. Add a Clover Flex for tableside payments.",
+    savings: "Typically saves $800–$2,000/mo in processing fees",
   },
   {
-    name: "Valor Gateway",
-    description:
-      "Full-featured payment gateway with cash discount support. Manage online and in-store payments from one dashboard.",
-    features: [
-      "Cash discount compatible",
-      "Unified dashboard",
-      "Invoice management",
-      "Recurring payments",
-      "Multi-location support",
-      "Real-time reporting",
-    ],
-    freeWithProgram: true,
-  },
-];
-
-const CATEGORIES = [
-  {
-    id: "terminals",
-    label: "Terminals",
-    icon: CreditCard,
-    description: "Countertop & wireless card readers",
-    products: TERMINALS,
+    icon: ShoppingBag,
+    name: "Retail / Convenience",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10 border-blue-500/20",
+    recommended: "Cloverstation Solo",
+    why: "14\" screen for quick checkout, barcode scanning, full inventory management. Add a cash drawer and barcode scanner for the full setup.",
+    savings: "Typically saves $500–$1,500/mo in processing fees",
   },
   {
-    id: "pos",
-    label: "POS Systems",
-    icon: Monitor,
-    description: "Full point-of-sale solutions",
-    products: POS_SYSTEMS,
+    icon: Scissors,
+    name: "Salon / Spa / Service",
+    color: "text-pink-500",
+    bg: "bg-pink-500/10 border-pink-500/20",
+    recommended: "Clover Mini",
+    why: "Small footprint fits any reception desk. Appointment tracking, customer profiles, and loyalty rewards built in.",
+    savings: "Typically saves $300–$800/mo in processing fees",
   },
   {
-    id: "gateways",
-    label: "Gateways",
-    icon: Globe,
-    description: "Online & e-commerce payments",
-    products: GATEWAYS,
+    icon: Truck,
+    name: "Food Truck / Mobile",
+    color: "text-green-500",
+    bg: "bg-green-500/10 border-green-500/20",
+    recommended: "Valor VP100 or Clover Flex",
+    why: "Wireless terminal goes anywhere. The VP100 keeps it simple with zero monthly software fees. Upgrade to Clover Flex if you need a full mobile POS.",
+    savings: "Typically saves $200–$600/mo in processing fees",
   },
 ];
-
-// ─── Components ─────────────────────────────────────────────────────────
-
-function ProductCard({ product }: { product: Product }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-50px" });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 24 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.4 }}
-    >
-      <Card className="h-full border-border/50 hover:border-primary/30 transition-all hover:shadow-lg group relative overflow-hidden">
-        {product.popular && (
-          <div className="absolute top-3 right-3">
-            <Badge className="bg-primary text-primary-foreground text-[10px]">
-              <Star className="w-3 h-3 mr-1" />
-              Popular
-            </Badge>
-          </div>
-        )}
-        {product.freeWithProgram && (
-          <div className="absolute top-3 left-3">
-            <Badge
-              variant="outline"
-              className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px]"
-            >
-              <Gift className="w-3 h-3 mr-1" />
-              Free for qualifying merchants
-            </Badge>
-          </div>
-        )}
-
-        <CardContent className="p-6 pt-12 flex flex-col h-full">
-          <h3 className="text-lg font-bold mb-2">{product.name}</h3>
-          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-            {product.description}
-          </p>
-
-          <div className="space-y-2 mb-6 flex-1">
-            {product.features.map((f) => (
-              <div key={f} className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-                <span className="text-xs text-muted-foreground">{f}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="border-t border-border/50 pt-4 mt-auto">
-            {product.monthlyRate && (
-              <div className="flex items-baseline gap-2 mb-3">
-                <span className="text-lg font-bold text-primary">
-                  {product.monthlyRate}
-                </span>
-                {product.price && (
-                  <span className="text-xs text-muted-foreground">
-                    or {product.price} to own
-                  </span>
-                )}
-              </div>
-            )}
-            <Button size="sm" className="w-full" asChild>
-              <Link href="/apply">
-                Get This Free
-                <Gift className="w-3.5 h-3.5" />
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
-
-// ─── Page ───────────────────────────────────────────────────────────────
 
 export default function EquipmentPage() {
   useSEO({
-    title:
-      "Free POS Terminals & Equipment | Card Processing Machines | TechSavvy Hawaii",
-    description:
-      "Get free POS terminals, Clover systems, card readers, and payment gateways with our cash discount program. Zero fees, free equipment — our gift to Hawaii businesses.",
-    keywords:
-      "free POS terminal Hawaii, free credit card machine, Clover POS Hawaii, payment terminal, card reader Hawaii, point of sale system, free card processing equipment, PAX terminal, Valor terminal, NMI gateway, cash discount terminal",
+    title: "FREE Payment Equipment — Launch Promo | TechSavvy Hawaii",
+    description: "Limited time: ALL equipment is FREE when you switch to TechSavvy Hawaii. Clover POS, Valor terminals, Pax — no cost to you. Zero processing fees, no contracts. Hawaii's best deal.",
+    keywords: "free payment terminal Hawaii, free Clover POS Hawaii, free POS system, free merchant equipment Honolulu",
     canonical: "https://techsavvyhawaii.com/equipment",
-    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
-    jsonLd: {
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      name: "Free POS Terminals & Equipment — TechSavvy Hawaii",
-      url: "https://techsavvyhawaii.com/equipment",
-      description:
-        "Browse free POS terminals, Clover systems, and payment gateways available through our cash discount program in Hawaii.",
-      isPartOf: { "@id": "https://techsavvyhawaii.com/#website" },
-    },
   });
-
-  const [activeCategory, setActiveCategory] = useState("terminals");
-  const activeCat = CATEGORIES.find((c) => c.id === activeCategory)!;
 
   return (
     <Layout>
       {/* Hero */}
-      <section className="pt-24 sm:pt-32 pb-10 sm:pb-14">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.div variants={fadeUp}>
-              <Badge
-                variant="outline"
-                className="mb-4 text-primary border-primary/30 bg-primary/5"
-              >
-                <Gift className="w-3 h-3 mr-1.5" />
-                Free equipment for qualifying merchants
+      <section className="relative py-14 sm:py-20 overflow-hidden">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="text-center max-w-3xl mx-auto">
+            <motion.div className="flex items-center justify-center gap-2 mb-4" variants={fadeUp}>
+              <Badge className="bg-red-500 text-white border-red-500 text-xs px-3 py-1">
+                <Flame className="w-3 h-3 mr-1" /> Limited Time Launch Offer
               </Badge>
             </motion.div>
-
-            <motion.h1
-              className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] mb-4"
-              variants={fadeUp}
-            >
-              Your New Equipment —{" "}
-              <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">
-                On Us
-              </span>
+            <motion.h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.1] mb-4" variants={fadeUp}>
+              All equipment is{" "}
+              <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">FREE.</span>
             </motion.h1>
-
-            <motion.p
-              className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-6"
-              variants={fadeUp}
-            >
-              For merchants processing $5K+/month, we pay for a brand new terminal or POS system and provide hands-on tech support whenever you need it. In Hawai'i, we set it up at your location in person. Anywhere else, we connect live via Zoom, Discord, AnyDesk, or your preferred platform. No more 1-800 numbers or paying someone to figure it out.
+            <motion.p className="text-base sm:text-lg text-muted-foreground mb-3 max-w-xl mx-auto" variants={fadeUp}>
+              We're launching in Hawaii and want to earn your business. Pick any terminal or POS system below — <span className="text-foreground font-semibold">it's on us</span>. No catch, no lease payments, no upfront cost.
             </motion.p>
-
-            <motion.div
-              className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mb-2"
-              variants={fadeUp}
-            >
-              {[
-                { icon: Gift, text: "Free for qualifying merchants" },
-                { icon: Sparkles, text: "Zero processing fees" },
-                { icon: ShieldCheck, text: "In-person or live remote support" },
-              ].map((p) => (
-                <div
-                  key={p.text}
-                  className="flex items-center gap-1.5 text-sm font-medium"
-                >
-                  <p.icon className="w-4 h-4 text-primary" />
-                  <span>{p.text}</span>
-                </div>
-              ))}
+            <motion.p className="text-sm text-muted-foreground/70 mb-8 max-w-md mx-auto flex items-center justify-center gap-1.5" variants={fadeUp}>
+              <Clock className="w-3.5 h-3.5" /> Offer available while supplies last
+            </motion.p>
+            <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
+              <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
+                <a href="/apply">Claim Your Free Equipment <ArrowRight className="w-4 h-4" /></a>
+              </Button>
+              <Button variant="outline" size="lg" className="text-base px-6 py-6 w-full sm:w-auto" asChild>
+                <a href="tel:8087675460"><Phone className="w-4 h-4" /> (808) 767-5460</a>
+              </Button>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Category Tabs */}
-      <section className="pb-16 sm:pb-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          {/* Tab bar */}
-          <div className="flex justify-center mb-10">
-            <div className="inline-flex bg-muted/50 rounded-xl p-1.5 gap-1">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    activeCategory === cat.id
-                      ? "bg-background shadow-md text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <cat.icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{cat.label}</span>
-                  <span className="sm:hidden">{cat.label.split(" ")[0]}</span>
-                </button>
-              ))}
+      {/* Recommended by Business Type */}
+      <section className="py-12 sm:py-16 bg-card/50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
+            <motion.div className="text-center mb-10" variants={fadeUp}>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Not sure what you need?</h2>
+              <p className="text-muted-foreground">Here's what we recommend based on your business</p>
+            </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {BUSINESS_SETUPS.map((biz) => {
+                const Icon = biz.icon;
+                return (
+                  <motion.div key={biz.name} variants={fadeUp}>
+                    <Card className="h-full border-border/50 hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className={`w-10 h-10 rounded-lg ${biz.bg} flex items-center justify-center`}>
+                            <Icon className={`w-5 h-5 ${biz.color}`} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold">{biz.name}</h3>
+                            <p className="text-xs text-muted-foreground">We recommend: <span className="font-semibold text-foreground">{biz.recommended}</span></p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3">{biz.why}</p>
+                        <div className="text-xs flex items-center gap-1.5 text-primary font-medium"><Star className="w-3 h-3" />{biz.savings}</div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </div>
-          </div>
-
-          {/* Category description */}
-          <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-extrabold mb-2">
-              {activeCat.label}
-            </h2>
-            <p className="text-muted-foreground">{activeCat.description}</p>
-          </div>
-
-          {/* Product grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activeCat.products.map((product) => (
-              <ProductCard key={product.name} product={product} />
-            ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* How It Works Mini */}
-      <section className="pb-16 sm:pb-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl sm:text-3xl font-extrabold mb-2">
-              How You Get Your Free Equipment
-            </h2>
-            <p className="text-muted-foreground">
-              Three simple steps — qualifying merchants get set up at no cost
-            </p>
-          </div>
+      {/* Equipment Cards */}
+      <section className="py-12 sm:py-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
+            <motion.div className="text-center mb-10" variants={fadeUp}>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Pick your equipment</h2>
+              <p className="text-muted-foreground">All free during our launch promotion. No upfront cost, no lease payments.</p>
+            </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {FEATURED_DEVICES.map((device) => (
+                <motion.div key={device.name} variants={fadeUp}>
+                  <Card className="h-full overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5 border-border/50">
+                    {device.img && (
+                      <div className="w-full h-44 bg-white flex items-center justify-center p-6 border-b border-border/30">
+                        <img src={device.img} alt={device.name} className="max-h-full max-w-full object-contain" loading="lazy" />
+                      </div>
+                    )}
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="font-bold text-base">{device.name}</h3>
+                        <Badge className="shrink-0 bg-primary text-primary-foreground">FREE</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-2xl font-extrabold text-primary">$0</span>
+                        <span className="text-sm text-muted-foreground line-through">{device.retail}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2 leading-relaxed">{device.desc}</p>
+                      <p className="text-[11px] text-primary/80 font-medium mb-3">Best for: {device.best}</p>
+                      <div className="space-y-1.5">
+                        {device.features.map(f => (
+                          <div key={f} className="flex items-center gap-1.5 text-xs"><Check className="w-3 h-3 text-primary shrink-0" />{f}</div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                step: "1",
-                title: "Apply Online",
-                description:
-                  "Fill out the merchant agreement. Takes about 5 minutes.",
-                icon: Smartphone,
-              },
-              {
-                step: "2",
-                title: "Get Approved",
-                description:
-                  "We review your application and approve within 24–48 hours.",
-                icon: ShieldCheck,
-              },
-              {
-                step: "3",
-                title: "We Come to You",
-                description:
-                  "We deliver your brand new equipment, walk you through setup (in person in Hawai'i or live via Zoom/AnyDesk), and handle all the tech — so you never have to.",
-                icon: Gift,
-              },
-            ].map((s) => (
-              <Card key={s.step} className="border-border/50 text-center">
-                <CardContent className="p-6">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <span className="text-sm font-bold text-primary">
-                      {s.step}
-                    </span>
-                  </div>
-                  <h3 className="font-bold mb-2">{s.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {s.description}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      {/* Clover Software Note */}
+      <section className="py-10 sm:py-14 bg-card/50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <Card className="border-border/50">
+              <CardContent className="p-6 sm:p-8">
+                <h3 className="font-bold text-lg mb-3">Good to know: Clover monthly software</h3>
+                <p className="text-sm text-muted-foreground mb-4">Clover devices include a monthly software plan billed by Clover (not us). This powers the POS features like inventory, menus, and employee management. The Valor VP100 has no monthly software fees at all.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div className="flex justify-between p-3 rounded-lg bg-muted/50"><span>Lite Bundle</span><span className="font-semibold">$19.99/mo</span></div>
+                  <div className="flex justify-between p-3 rounded-lg bg-muted/50"><span>Retail / Quick Service</span><span className="font-semibold">$54.99/mo</span></div>
+                  <div className="flex justify-between p-3 rounded-lg bg-muted/50"><span>Full-Service Restaurant</span><span className="font-semibold">$84.99/mo</span></div>
+                  <div className="flex justify-between p-3 rounded-lg bg-muted/50"><span>Cash Discount Add-on</span><span className="font-semibold">$19.99/device</span></div>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-3">These are Clover's fees, not ours. We don't charge monthly fees — ever.</p>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="pb-16 sm:pb-24">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-background to-emerald-500/10 border border-primary/20 p-8 sm:p-12 text-center">
-            <Gift className="w-12 h-12 text-primary mx-auto mb-4" />
-            <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">
-              See If You Qualify for Free Equipment
-            </h2>
-            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              Merchants processing $5K+/month get a new terminal at no cost. $10K+/month? You could qualify for a full POS system. Plus zero processing fees and hands-on support — in person or via Zoom, Discord, and AnyDesk.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button size="lg" asChild>
-                <Link href="/apply">
-                  <Gift className="w-4 h-4" />
-                  Apply Now
-                </Link>
+      <section className="py-16 sm:py-24 relative">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+            <motion.div variants={fadeUp}>
+              <Badge className="bg-red-500 text-white border-red-500 text-xs px-3 py-1 mb-4">
+                <Flame className="w-3 h-3 mr-1" /> Launch Promo — Limited Time
+              </Badge>
+            </motion.div>
+            <motion.h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4" variants={fadeUp}>
+              Free equipment. Zero fees. No catch.
+            </motion.h2>
+            <motion.p className="text-muted-foreground mb-8 max-w-lg mx-auto" variants={fadeUp}>
+              Apply in 3 minutes, pick your equipment, and we'll ship it to your door. Start keeping 100% of your sales.
+            </motion.p>
+            <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3" variants={fadeUp}>
+              <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
+                <a href="/apply">Claim Your Free Equipment <ArrowRight className="w-4 h-4" /></a>
               </Button>
-              <Button variant="outline" size="lg" asChild>
-                <Link href="/schedule">
-                  <Calendar className="w-4 h-4" />
-                  Book a Free Meeting
-                </Link>
+              <Button variant="outline" size="lg" className="text-base px-6 py-6 w-full sm:w-auto" asChild>
+                <a href="tel:8087675460"><Phone className="w-4 h-4" /> (808) 767-5460</a>
               </Button>
-            </div>
-          </div>
+            </motion.div>
+            <motion.div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground" variants={fadeUp}>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" />No Contracts</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" />No Monthly Fees</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" />All Equipment Free</span>
+              <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary" />Honolulu, HI</span>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
     </Layout>

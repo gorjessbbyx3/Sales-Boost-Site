@@ -123,9 +123,9 @@ interface ClassroomDoc {
 // ─── Config ──────────────────────────────────────────────────────────
 
 const TIER_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Star; min: number; payout: string; volume: string }> = {
-  starter:   { label: "Partner",  color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Star,   min: 0, payout: "50% of profit",  volume: "All accounts" },
-  connector: { label: "Partner",  color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Star,   min: 0, payout: "50% of profit",  volume: "All accounts" },
-  pro:       { label: "Partner",  color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Star,   min: 0, payout: "50% of profit",  volume: "All accounts" },
+  starter:   { label: "Partner",  color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Star,   min: 0, payout: "50% of revenue",  volume: "All accounts" },
+  connector: { label: "Partner",  color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Star,   min: 0, payout: "50% of revenue",  volume: "All accounts" },
+  pro:       { label: "Partner",  color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Star,   min: 0, payout: "50% of revenue",  volume: "All accounts" },
 };
 
 const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof BookOpen; color: string }> = {
@@ -1357,7 +1357,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
                       </tbody>
                     </table>
                   </div>
-                  <p className="text-xs text-zinc-500 mt-2">You earn 50% of TechSavvy's net profit on every merchant you refer. Paid monthly, for life. No tiers, no caps, no volume requirements.</p>
+                  <p className="text-xs text-zinc-500 mt-2">You earn 50% of TechSavvy's net revenue on every merchant you refer. Paid monthly on the 15th, for life. No tiers, no caps, no volume requirements.</p>
                 </div>
 
                 {/* Section 5 */}
@@ -1389,7 +1389,7 @@ function ProgramDashboard({ partner, onLogout }: { partner: Partner; onLogout: (
                 {/* Section 6 */}
                 <div>
                   <p className="text-xs font-bold text-white uppercase tracking-wider mb-2">5. Term & Termination</p>
-                  <p className="text-zinc-400 text-sm">This agreement is ongoing and may be terminated by either party with 30 days written notice. Residual payments for merchants referred before termination will continue for as long as those accounts remain active with TechSavvy.</p>
+                  <p className="text-zinc-400 text-sm">This agreement is ongoing and may be terminated by either party with 30 days written notice. Upon termination, residual payments for previously referred merchants will continue for 90 days, after which they will cease.</p>
                 </div>
 
               </div>

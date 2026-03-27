@@ -28,10 +28,8 @@ function Navbar() {
 
   const links = [
     { label: "How It Works", href: "/how-it-works" },
-    { label: "Equipment", href: "/equipment" },
-    { label: "Compare", href: "/compare" },
-    { label: "Blog", href: "/blog" },
-    { label: "FAQ", href: "/faq" },
+    { label: "Free Equipment", href: "/equipment" },
+    { label: "High-Risk", href: "/high-risk" },
   ];
 
   return (
@@ -78,7 +76,7 @@ function Navbar() {
             </Button>
             <Button size="sm" asChild>
               <Link href="/statement-review" data-testid="link-nav-statement-analysis">
-                AI Statement Analysis
+                Statement Analysis
                 <ArrowRight className="w-3 h-3" />
               </Link>
             </Button>
@@ -119,7 +117,7 @@ function Navbar() {
             </Button>
             <Button size="sm" asChild className="w-full">
               <Link href="/statement-review" data-testid="link-mobile-statement-analysis" onClick={() => setMobileOpen(false)}>
-                AI Statement Analysis
+                Statement Analysis
               </Link>
             </Button>
             <a
@@ -216,8 +214,8 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/blog" className="transition-colors hover:text-white" data-testid="link-footer-blog">
-                  Blog & Resources
+                <Link href="/how-it-works#faq" className="transition-colors hover:text-white" data-testid="link-footer-faq">
+                  FAQ
                 </Link>
               </li>
               <li>
@@ -345,7 +343,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               href="/statement-review"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-semibold px-6 py-3 text-sm hover:bg-primary/90 transition-colors w-full"
             >
-              Get My Free AI Analysis
+              Get My Free Analysis
               <ArrowRight className="w-4 h-4" />
             </a>
             <p className="text-[10px] text-muted-foreground mt-3">Free. No commitment. Takes 60 seconds.</p>

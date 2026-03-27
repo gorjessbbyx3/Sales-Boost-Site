@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TechSavvy Hawaii — Links</title>
+<meta name="description" content="Zero processing fees for Hawaii businesses. Free terminal, no contracts.">
+<meta property="og:title" content="TechSavvy Hawaii — Zero Processing Fees">
+<meta property="og:description" content="Keep 100% of every sale. Free terminal, no monthly fees, no contracts.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e17;--card:#111827;--border:#1e293b;--emerald:#10b981;--emerald-glow:#10b98133;--text:#e2e8f0;--muted:#94a3b8;--white:#fff}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem 3rem;position:relative;overflow-x:hidden}
+body::before{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 20%,#10b98110 0%,transparent 50%),radial-gradient(circle at 70% 80%,#3b82f610 0%,transparent 50%);pointer-events:none;z-index:0}
+.container{max-width:420px;width:100%;position:relative;z-index:1}
+
+/* Profile */
+.profile{text-align:center;margin-bottom:2rem}
+.avatar{width:96px;height:96px;border-radius:50%;border:3px solid var(--emerald);padding:3px;margin:0 auto 1rem;position:relative}
+.avatar::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1px solid var(--emerald-glow);animation:pulse-ring 2s ease-out infinite}
+.avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;background:var(--card)}
+.avatar-placeholder{width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--emerald),#3b82f6);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--white)}
+h1{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:0.25rem}
+h1 span{background:linear-gradient(135deg,var(--emerald),#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tagline{color:var(--muted);font-size:0.85rem;line-height:1.4}
+.location{display:inline-flex;align-items:center;gap:4px;color:var(--emerald);font-size:0.75rem;font-weight:500;margin-top:0.5rem}
+.location svg{width:12px;height:12px}
+
+/* Stats bar */
+.stats{display:flex;justify-content:center;gap:2rem;margin-bottom:2rem;padding:0.75rem;background:var(--card);border:1px solid var(--border);border-radius:12px}
+.stat{text-align:center}
+.stat-value{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--emerald)}
+.stat-label{font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
+
+/* Links */
+.links{display:flex;flex-direction:column;gap:0.75rem;margin-bottom:2rem}
+.link{display:flex;align-items:center;gap:0.75rem;padding:0.875rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:var(--text);transition:all 0.2s ease;position:relative;overflow:hidden}
+.link:hover{border-color:var(--emerald);transform:translateY(-2px);box-shadow:0 8px 25px -5px var(--emerald-glow)}
+.link:active{transform:translateY(0)}
+.link-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem}
+.link-icon.green{background:linear-gradient(135deg,#10b981,#059669)}
+.link-icon.blue{background:linear-gradient(135deg,#3b82f6,#2563eb)}
+.link-icon.purple{background:linear-gradient(135deg,#8b5cf6,#7c3aed)}
+.link-icon.amber{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.link-icon.rose{background:linear-gradient(135deg,#f43f5e,#e11d48)}
+.link-icon.cyan{background:linear-gradient(135deg,#06b6d4,#0891b2)}
+.link-text{flex:1}
+.link-title{font-weight:600;font-size:0.9rem;line-height:1.2}
+.link-desc{font-size:0.7rem;color:var(--muted);margin-top:2px}
+.link-arrow{color:var(--muted);transition:transform 0.2s}
+.link:hover .link-arrow{transform:translateX(3px);color:var(--emerald)}
+
+/* Promo banner */
+.promo{background:linear-gradient(135deg,var(--emerald),#059669);border-radius:14px;padding:1.25rem;text-align:center;margin-bottom:2rem;position:relative;overflow:hidden}
+.promo::before{content:'';position:absolute;top:-50%;right:-30%;width:120px;height:120px;background:rgba(255,255,255,0.08);border-radius:50%}
+.promo-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.8;margin-bottom:0.25rem}
+.promo h2{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;color:var(--white);margin-bottom:0.25rem}
+.promo p{font-size:0.8rem;color:rgba(255,255,255,0.85);line-height:1.4}
+
+/* Offer code tracker — appends UTM on click */
+.link[data-offer]::after{content:attr(data-offer);position:absolute;right:40px;top:50%;transform:translateY(-50%);background:var(--emerald);color:var(--bg);font-size:0.6rem;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:0.05em}
+
+/* Footer */
+.footer{text-align:center;margin-top:auto}
+.footer p{font-size:0.65rem;color:var(--muted)}
+.footer a{color:var(--emerald);text-decoration:none}
+
+.social{display:flex;justify-content:center;gap:1rem;margin-bottom:1rem}
+.social a{width:36px;height:36px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none;transition:all 0.2s;font-size:0.8rem}
+.social a:hover{border-color:var(--emerald);color:var(--emerald);transform:scale(1.1)}
+
+@keyframes pulse-ring{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.3)}}
+@keyframes fade-up{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+.container>*{animation:fade-up 0.5s ease backwards}
+.container>*:nth-child(2){animation-delay:0.1s}
+.container>*:nth-child(3){animation-delay:0.15s}
+.container>*:nth-child(4){animation-delay:0.2s}
+.container>*:nth-child(5){animation-delay:0.25s}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="profile">
+    <div class="avatar"><div class="avatar-placeholder">TS</div></div>
+    <h1>Tech<span>Savvy</span> Hawaii</h1>
+    <p class="tagline">Zero processing fees for local businesses.<br>Keep 100% of every sale.</p>
+    <span class="location"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Honolulu, Oahu</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-value">$0</div><div class="stat-label">Processing Fees</div></div>
+    <div class="stat"><div class="stat-value">FREE</div><div class="stat-label">Terminal</div></div>
+    <div class="stat"><div class="stat-value">ZERO</div><div class="stat-label">Contracts</div></div>
+  </div>
+
+  <div class="promo">
+    <div class="promo-label">Hawaii Launch Special</div>
+    <h2>Free Terminal + Free POS</h2>
+    <p>Free VP100 terminal for all new merchants. Free POS system for businesses processing $10K+/month.</p>
+  </div>
+
+  <div class="links">
+    <a href="https://techsavvyhawaii.com" class="link" data-track="website">
+      <div class="link-icon green">🌐</div>
+      <div class="link-text"><div class="link-title">Visit Our Website</div><div class="link-desc">Learn how zero-fee processing works</div></div>
+      <span class="link-arrow">→</span>
+    </a>
+    <a href="https://techsavvyhawaii.com/how-it-works" class="link" data-track="how-it-works">
+      <div class="link-icon blue">💡</div>
+      <div class="link-text"><div class="link-title">How It Works</div><div class="link-desc">Cash discount program explained in 60 seconds</div></div>
+      <span class="link-arrow">→</span>
+    </a>
+    <a href="https://techsavvyhawaii.com/equipment" class="link" data-track="equipment">
+      <div class="link-icon purple">📟</div>
+      <div class="link-text"><div class="link-title">Free Equipment</div><div class="link-desc">Valor VP100, Clover, Pax terminals — all free</div></div>
+      <span class="link-arrow">→</span>
+    </a>
+    <a href="https://techsavvyhawaii.com/apply" class="link" data-track="apply">
+      <div class="link-icon amber">📝</div>
+      <div class="link-text"><div class="link-title">Get Started — Apply Now</div><div class="link-desc">5-minute application, approved in 24hrs</div></div>
+      <span class="link-arrow">→</span>
+    </a>
+    <a href="https://techsavvyhawaii.com/refer" class="link" data-track="referral">
+      <div class="link-icon rose">🤝</div>
+      <div class="link-text"><div class="link-title">Referral Program — Earn 50%</div><div class="link-desc">Earn 50% of our revenue for every merchant you refer</div></div>
+      <span class="link-arrow">→</span>
+    </a>
+    <a href="tel:8087675460" class="link" data-track="call">
+      <div class="link-icon cyan">📱</div>
+      <div class="link-text"><div class="link-title">Call / Text Us</div><div class="link-desc">(808) 767-5460 — we answer every call</div></div>
+      <span class="link-arrow">→</span>
+    </a>
+  </div>
+
+  <div class="social">
+    <a href="https://instagram.com/techsavvyhawaii" title="Instagram">📸</a>
+    <a href="https://facebook.com/techsavvyhawaii" title="Facebook">👤</a>
+    <a href="mailto:contact@techsavvyhawaii.com" title="Email">✉️</a>
+  </div>
+
+  <div class="footer">
+    <p>© 2026 TechSavvy Hawaii · <a href="https://techsavvyhawaii.com">techsavvyhawaii.com</a></p>
+  </div>
+
+</div>
+
+<!-- Click tracking — sends to /api/linkinbio/track -->
+<script>
+document.querySelectorAll('.link[data-track]').forEach(el => {
+  el.addEventListener('click', function(e) {
+    const track = this.dataset.track;
+    const offer = this.dataset.offer || '';
+    const url = new URL(this.href);
+    // Append UTM params
+    if (!url.searchParams.has('utm_source')) {
+      url.searchParams.set('utm_source', 'linkinbio');
+      url.searchParams.set('utm_medium', 'social');
+      url.searchParams.set('utm_campaign', track);
+      if (offer) url.searchParams.set('utm_content', offer);
+    }
+    this.href = url.toString();
+    // Fire tracking beacon
+    try { navigator.sendBeacon('/api/linkinbio/track', JSON.stringify({ link: track, offer, ts: new Date().toISOString() })); } catch {}
+  });
+});
+</script>
+</body>
+</html>

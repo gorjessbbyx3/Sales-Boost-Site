@@ -21,7 +21,7 @@ function ServicesSection() {
     {
       icon: CreditCard,
       title: "Zero-Fee Processing",
-      description: "Keep 100% of every sale. No processing fees, no monthly fees, and no contracts.",
+      description: "Keep 100% of every sale. No processing fees, no contracts.",
     },
     {
       icon: Globe,
@@ -94,14 +94,14 @@ export default function ServicesPage() {
   const jsonLd = useMemo(() => ({
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "name": "Payment Processing & Website Design Services",
-    "description": "Full range of business services: zero-fee payment processing, high-risk merchant accounts, online payment gateway, POS systems, and free business website design.",
+    "name": "Payment Processing Payment Processing & Website Design Services Business Services",
+    "description": "Full range of business services: zero-fee payment processing, high-risk merchant accounts, online payment gateway, POS systems, and website design.",
     "url": "https://techsavvyhawaii.com/services"
   }), []);
 
   useSEO({
-    title: "Payment Processing & Website Design Services | TechSavvy Hawaii",
-    description: "Full range of business services: zero-fee payment processing, credit card processing, high-risk merchant accounts, online payment gateway, POS systems, contactless payments, and free business website design. No processing fees, no monthly fees, no contracts. Same-day setup.",
+    title: "Payment Processing Payment Processing & Website Design Services Business Services | TechSavvy Hawaii",
+    description: "Full range of business services: zero-fee payment processing, credit card processing, high-risk merchant accounts, online payment gateway, POS systems, contactless payments, and website design. No processing fees, no contracts. Free equipment. Same-day setup.",
     keywords: "payment processing services, merchant services, credit card processing services, business payment solutions, POS system services, high risk merchant services, online payment services, payment gateway services, website design services, business web design, e-commerce solutions, contactless payment services, mobile payment solutions, payment terminal services, merchant account services",
     canonical: "https://techsavvyhawaii.com/services",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",

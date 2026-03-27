@@ -70,6 +70,8 @@ interface Lead {
   nextStepDate: string;
   attachments: Array<{ name: string; url: string }>;
   notes: string;
+  assignedTo: string;
+  checklist: Array<{ label: string; done: boolean; doneAt?: string }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -352,6 +354,7 @@ interface EmailMessage {
   resendId: string;
   status: string;
   sentAt: string;
+  aiTags?: string[];
 }
 
 interface EmailStats {
@@ -463,14 +466,29 @@ const REVENUE_TYPES: Record<RevenueEntry["type"], string> = {
 };
 
 const MODELS = [
-  { value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4 (Latest)" },
-  { value: "claude-3-7-sonnet-20250219", label: "Claude 3.7 Sonnet" },
-  { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (Fast)" },
+  { value: "llama-3.1-8b-instruct", label: "Llama 3.1 8B (Default)" },
+  { value: "llama-3.1-70b-instruct", label: "Llama 3.1 70B (Smarter)" },
+  { value: "llama-3.2-3b-instruct", label: "Llama 3.2 3B (Fast)" },
 ];
 
 const CONTACT_METHODS: Record<string, string> = {
   phone: "Phone Call", email: "Email", text: "Text/SMS", "in-person": "In-Person",
 };
+
+const DEFAULT_CHECKLIST = [
+  "Spoke with owner/decision maker",
+  "Left business card with employee",
+  "Dropped off flyer/brochure",
+  "Got current processing statement",
+  "Showed savings estimate",
+  "Discussed cash discount program",
+  "Owner interested — wants follow-up",
+  "Owner said not interested",
+  "Sent intro email",
+  "Sent text message",
+  "Scheduled demo/meeting",
+  "Delivered equipment",
+];
 
 const ACTIVITY_COLORS: Record<string, string> = {
   lead: "bg-blue-400", client: "bg-emerald-400", revenue: "bg-purple-400",
@@ -1453,11 +1471,13 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
 
 function LeadsTab() {
   const { data: leads = [], refetch } = useQuery<Lead[]>({ queryKey: ["/api/leads"] });
+  const { data: teamMembers = [] } = useQuery<{ id: string; name: string; role: string }[]>({ queryKey: ["/api/team-members"] });
   const [showForm, setShowForm] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<PipelineStage | "all">("all");
   const [filterSource, setFilterSource] = useState<LeadSource | "all">("all");
+  const [filterAssigned, setFilterAssigned] = useState<string>("all");
   const [showRestrictions, setShowRestrictions] = useState(false);
   const { toast } = useToast();
 
@@ -1492,23 +1512,53 @@ function LeadsTab() {
   const filteredLeads = useMemo(() => leads
     .filter((l) => filterStatus === "all" || l.status === filterStatus)
     .filter((l) => filterSource === "all" || l.source === filterSource)
+    .filter((l) => filterAssigned === "all" || (filterAssigned === "autopilot" ? !l.assignedTo : l.assignedTo === filterAssigned))
     .filter((l) => !search || [l.name, l.business, l.email, l.phone, l.currentProcessor].some((f) => f?.toLowerCase().includes(search.toLowerCase())))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-  [leads, filterStatus, filterSource, search]);
+  [leads, filterStatus, filterSource, filterAssigned, search]);
 
   const handleSave = (form: Partial<Lead>) => {
     if (editingLead) updateMutation.mutate({ ...form, id: editingLead.id } as Lead & { id: string });
     else createMutation.mutate(form);
   };
 
+  const enrichMutation = useMutation({
+    mutationFn: async () => { const res = await apiRequest("POST", "/api/ai-ops/enrich-emails", { limit: 20 }); return res.json(); },
+    onSuccess: (data) => {
+      refetch();
+      if (data.enriched > 0) toast({ title: `Found ${data.enriched} email${data.enriched > 1 ? "s" : ""}`, description: `Searched ${data.total} leads — ${data.enriched} enriched, ${data.total - data.enriched} not found` });
+      else toast({ title: "No emails found", description: `Searched ${data.total} leads. Try adding more business details to improve results.` });
+    },
+    onError: (err: Error) => { toast({ title: "Enrichment failed", description: err.message, variant: "destructive" }); },
+  });
+
+  const enrichSingleMutation = useMutation({
+    mutationFn: async (leadId: string) => { const res = await apiRequest("POST", "/api/ai-ops/enrich-emails", { leadId }); return res.json(); },
+    onSuccess: (data) => {
+      refetch();
+      const r = data.results?.[0];
+      if (r?.status === "found") toast({ title: `Found: ${r.email}`, description: r.business });
+      else toast({ title: "No email found", description: "Try adding the business website URL to notes" });
+    },
+  });
+
+  const missingEmailCount = leads.filter(l => !l.email && (l.business || l.name)).length;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold">Lead Pipeline</h2>
-          <p className="text-xs text-muted-foreground">{leads.length} total — {leads.filter((l) => !["won", "lost", "nurture"].includes(l.status)).length} active pipeline</p>
+          <p className="text-xs text-muted-foreground">{leads.length} total — {leads.filter((l) => !["won", "lost", "nurture"].includes(l.status)).length} active pipeline{missingEmailCount > 0 ? ` — ${missingEmailCount} missing email` : ""}</p>
         </div>
-        <Button size="sm" onClick={() => { setEditingLead(null); setShowForm(true); }}><Plus className="w-3.5 h-3.5" />Add Lead</Button>
+        <div className="flex items-center gap-2">
+          {missingEmailCount > 0 && (
+            <Button size="sm" variant="outline" onClick={() => enrichMutation.mutate()} disabled={enrichMutation.isPending}>
+              <Mail className="w-3.5 h-3.5" />{enrichMutation.isPending ? "Finding Emails..." : `Find Emails (${missingEmailCount})`}
+            </Button>
+          )}
+          <Button size="sm" onClick={() => { setEditingLead(null); setShowForm(true); }}><Plus className="w-3.5 h-3.5" />Add Lead</Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2">
@@ -1530,6 +1580,14 @@ function LeadsTab() {
             {(Object.keys(SOURCE_CONFIG) as LeadSource[]).map((s) => <SelectItem key={s} value={s}>{SOURCE_CONFIG[s].label}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={filterAssigned} onValueChange={setFilterAssigned}>
+          <SelectTrigger className="w-full sm:w-44 h-9"><Users className="w-3.5 h-3.5 mr-1.5" /><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Assignments</SelectItem>
+            <SelectItem value="autopilot">🤖 Autopilot (Unassigned)</SelectItem>
+            {teamMembers.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Equipment Offer Banner */}
@@ -1537,11 +1595,10 @@ function LeadsTab() {
         <CardContent className="p-3 flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-primary/15 flex items-center justify-center shrink-0"><CreditCard className="w-4 h-4 text-primary" /></div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold">Current Offers — OhanaPay Price Match</p>
+            <p className="text-xs font-semibold">Launch Promo — All Equipment FREE</p>
             <p className="text-[10px] text-muted-foreground">
-              <span className="text-primary font-medium">FREE Valor VP100 terminal</span> for all new merchants • 
-              <span className="text-primary font-medium"> FREE POS system</span> (Clover/Pax) for merchants processing <span className="font-medium">$10k+/mo</span> • 
-              Zero processing fees • No contracts
+              <span className="text-primary font-medium">ALL terminals & POS systems FREE</span> for new merchants during Hawaii launch • 
+              Zero processing fees • No contracts • Free equipment
             </p>
           </div>
         </CardContent>
@@ -1597,6 +1654,7 @@ function LeadsTab() {
                   <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
                     {lead.phone && <a href={`tel:${lead.phone}`} className="flex items-center gap-1 hover:text-foreground"><Phone className="w-3 h-3" />{lead.phone}</a>}
                     {lead.email && <a href={`mailto:${lead.email}`} className="flex items-center gap-1 hover:text-foreground truncate max-w-[180px] sm:max-w-none"><Mail className="w-3 h-3" />{lead.email}</a>}
+                    {!lead.email && lead.business && <button onClick={() => enrichSingleMutation.mutate(lead.id)} disabled={enrichSingleMutation.isPending} className="flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors"><Mail className="w-3 h-3" /><span className="text-[10px]">{enrichSingleMutation.isPending && enrichSingleMutation.variables === lead.id ? "Searching..." : "Find Email"}</span></button>}
                     {lead.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{lead.address}</span>}
                     {lead.vertical && <span className="text-[10px]">{VERTICAL_CONFIG[lead.vertical] || lead.vertical}</span>}
                     {lead.currentProcessor && <span className="text-[10px]">Processor: {lead.currentProcessor}</span>}
@@ -1609,34 +1667,102 @@ function LeadsTab() {
                   {lead.nextStep && <p className="text-xs text-primary mt-1.5">Next: {lead.nextStep}{lead.nextStepDate ? ` (${lead.nextStepDate})` : ""}</p>}
                   {lead.painPoints && <p className="text-[10px] text-muted-foreground mt-1">Pain: {lead.painPoints}</p>}
                   {lead.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{lead.notes}</p>}
+                  {/* Verification badges */}
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {(() => {
+                      const v = (lead as any).verified || {};
+                      const fields: Array<{ key: string; label: string; has: boolean }> = [
+                        { key: "business", label: "Business", has: !!lead.business },
+                        { key: "phone", label: "Phone", has: !!lead.phone },
+                        { key: "email", label: "Email", has: !!lead.email },
+                        { key: "address", label: "Address", has: !!lead.address },
+                        { key: "cashOnly", label: "Cash Only", has: (lead.notes || "").toLowerCase().includes("cash only") },
+                        { key: "acceptsCards", label: "Takes Cards", has: !!(lead.currentProcessor) },
+                      ];
+                      const toggleVerify = (key: string) => {
+                        const updated = { ...v, [key]: !v[key], verifiedAt: new Date().toISOString() };
+                        updateMutation.mutate({ id: lead.id, verified: updated } as any);
+                      };
+                      const visibleFields = fields.filter(f => f.has || v[f.key]);
+                      if (visibleFields.length === 0) return null;
+                      const verifiedCount = visibleFields.filter(f => v[f.key]).length;
+                      return (<>
+                        {verifiedCount > 0 && <span className="text-[9px] text-emerald-400 mr-1">{verifiedCount}/{visibleFields.length} verified</span>}
+                        {visibleFields.map(f => (
+                          <button key={f.key} onClick={() => toggleVerify(f.key)} title={v[f.key] ? `${f.label} verified — click to unverify` : `Click to verify ${f.label}`}
+                            className={`inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[9px] border transition-colors ${v[f.key] ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-amber-500/5 border-amber-500/20 text-amber-400/70 hover:text-amber-300"}`}>
+                            {v[f.key] ? "✓" : "?"} {f.label}
+                          </button>
+                        ))}
+                      </>);
+                    })()}
+                  </div>
+                  {/* Checklist */}
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {(() => {
+                      const cl: Array<{ label: string; done: boolean; doneAt?: string }> = lead.checklist || [];
+                      const toggleItem = (label: string) => {
+                        const existing = cl.find(c => c.label === label);
+                        let updated;
+                        if (existing) {
+                          updated = cl.map(c => c.label === label ? { ...c, done: !c.done, doneAt: !c.done ? new Date().toISOString() : "" } : c);
+                        } else {
+                          updated = [...cl, { label, done: true, doneAt: new Date().toISOString() }];
+                        }
+                        updateMutation.mutate({ id: lead.id, checklist: updated } as any);
+                      };
+                      return DEFAULT_CHECKLIST.map(label => {
+                        const item = cl.find(c => c.label === label);
+                        const done = item?.done || false;
+                        return (
+                          <button key={label} onClick={() => toggleItem(label)}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border transition-colors ${done ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-transparent border-border/50 text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}>
+                            {done ? <Check className="w-2.5 h-2.5" /> : <span className="w-2.5 h-2.5 rounded-full border border-current inline-block" />}
+                            {label}
+                          </button>
+                        );
+                      });
+                    })()}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0 self-end sm:self-start">
-                  {!["won", "lost"].includes(lead.status) && (
-                    <Select value={lead.status} onValueChange={(v) => updateMutation.mutate({ id: lead.id, status: v } as any)}>
-                      <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>{(Object.keys(PIPELINE_CONFIG) as PipelineStage[]).map((s) => <SelectItem key={s} value={s} className="text-xs">{PIPELINE_CONFIG[s].short}</SelectItem>)}</SelectContent>
-                    </Select>
-                  )}
-                  {!["won", "lost"].includes(lead.status) && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => convertMutation.mutate(lead)} title="Convert to client"><CheckCircle className="w-3.5 h-3.5" /></Button>
-                  )}
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingLead(lead); setShowForm(true); }}><Edit3 className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(lead.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                <div className="flex flex-col items-end gap-1.5 shrink-0 self-end sm:self-start">
+                  <div className="flex items-center gap-1">
+                    {!["won", "lost"].includes(lead.status) && (
+                      <Select value={lead.status} onValueChange={(v) => updateMutation.mutate({ id: lead.id, status: v } as any)}>
+                        <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>{(Object.keys(PIPELINE_CONFIG) as PipelineStage[]).map((s) => <SelectItem key={s} value={s} className="text-xs">{PIPELINE_CONFIG[s].short}</SelectItem>)}</SelectContent>
+                      </Select>
+                    )}
+                    {!["won", "lost"].includes(lead.status) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => convertMutation.mutate(lead)} title="Convert to client"><CheckCircle className="w-3.5 h-3.5" /></Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingLead(lead); setShowForm(true); }}><Edit3 className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(lead.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </div>
+                  <Select value={lead.assignedTo || "autopilot"} onValueChange={(v) => updateMutation.mutate({ id: lead.id, assignedTo: v === "autopilot" ? "" : v } as any)}>
+                    <SelectTrigger className={`h-6 text-[10px] ${lead.assignedTo ? "w-28 border-blue-500/30 text-blue-400" : "w-28 border-amber-500/30 text-amber-400"}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="autopilot" className="text-xs">🤖 Autopilot</SelectItem>
+                      {teamMembers.map((m) => <SelectItem key={m.id} value={m.id} className="text-xs">{m.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}</div>
       )}
-      <LeadFormDialog open={showForm} onClose={() => { setShowForm(false); setEditingLead(null); }} onSave={handleSave} lead={editingLead} />
+      <LeadFormDialog open={showForm} onClose={() => { setShowForm(false); setEditingLead(null); }} onSave={handleSave} lead={editingLead} teamMembers={teamMembers} />
     </div>
   );
 }
 
-function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClose: () => void; onSave: (form: Partial<Lead>) => void; lead: Lead | null; }) {
+function LeadFormDialog({ open, onClose, onSave, lead, teamMembers = [] }: { open: boolean; onClose: () => void; onSave: (form: Partial<Lead>) => void; lead: Lead | null; teamMembers?: { id: string; name: string; role: string }[] }) {
   const [form, setForm] = useState<Partial<Lead>>({});
   useEffect(() => {
-    if (open) setForm(lead || { name: "", business: "", address: "", phone: "", email: "", decisionMakerName: "", decisionMakerRole: "", bestContactMethod: "phone", package: "terminal", status: "new", source: "direct", vertical: "other", currentProcessor: "", currentEquipment: "", monthlyVolume: "", painPoints: "", nextStep: "", nextStepDate: "", attachments: [], notes: "" });
+    if (open) setForm(lead || { name: "", business: "", address: "", phone: "", email: "", decisionMakerName: "", decisionMakerRole: "", bestContactMethod: "phone", package: "terminal", status: "new", source: "direct", vertical: "other", currentProcessor: "", currentEquipment: "", monthlyVolume: "", painPoints: "", nextStep: "", nextStepDate: "", attachments: [], notes: "", assignedTo: "" });
   }, [open, lead]);
   const set = (key: keyof Lead, value: any) => setForm((p) => ({ ...p, [key]: value }));
   const attachments = (form.attachments || []) as Array<{ name: string; url: string }>;
@@ -1678,6 +1804,13 @@ function LeadFormDialog({ open, onClose, onSave, lead }: { open: boolean; onClos
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label className="text-xs">Assigned To</Label>
+              <Select value={form.assignedTo || "autopilot"} onValueChange={(v) => set("assignedTo", v === "autopilot" ? "" : v)}><SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="autopilot">🤖 Autopilot (Auto)</SelectItem>
+                  {teamMembers.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                </SelectContent></Select>
+            </div>
             <div className="space-y-1.5"><Label className="text-xs">Business Vertical</Label>
               <Select value={form.vertical || "other"} onValueChange={(v) => set("vertical", v)}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{(Object.keys(VERTICAL_CONFIG) as Vertical[]).map((v) => <SelectItem key={v} value={v}>{VERTICAL_CONFIG[v]}</SelectItem>)}</SelectContent></Select>
@@ -4986,26 +5119,11 @@ function ProspectorTab() {
       return r.json();
     },
     onSuccess: (data) => {
-      // Handle various response states
-      if (data.noApiKey) {
-        toast({ title: "No API key configured", description: "Use 'Open in Google' to search manually, then paste URLs into URL Scanner.", variant: "destructive" });
-        return;
-      }
-      if (data.aiFailed) {
-        toast({ title: "Search unavailable", description: data.message || "Use 'Open in Google' to search manually.", variant: "destructive" });
-        return;
-      }
-      if (data.error && data.message) {
-        toast({ title: "Search issue", description: data.message, variant: "destructive" });
-      }
-      if (data.aiGenerated) {
-        toast({ title: "AI-generated prospects", description: "Google was blocked. Results are AI-suggested based on your search criteria." });
-      }
-      const newProspects = (data.results || []).map((p: Prospect) => ({ ...p, _selected: true }));
+      const newProspects = (data.prospects || []).map((p: Prospect) => ({ ...p, _selected: true }));
       setProspects(prev => [...prev, ...newProspects]);
       setDorkUrls(data.urls || []);
-      if (newProspects.length > 0) toast({ title: `Found ${newProspects.length} prospect(s)` });
-      else if (!data.aiGenerated && !data.error) toast({ title: "No results found", description: "Try a different dork query or location" });
+      if (newProspects.length > 0) toast({ title: `Found ${newProspects.length} business(es)`, description: `From ${(data.urls || []).length} URLs searched` });
+      else toast({ title: "No businesses extracted", description: "Try broader search terms or scan specific business directory URLs" });
     },
     onError: (err: Error) => { toast({ title: "Search failed", description: err.message.replace(/^\d+:\s*/, ""), variant: "destructive" }); },
   });
@@ -5645,6 +5763,31 @@ function InboxTab() {
     enabled: !!selectedThread,
   });
 
+  const [recordingMsg, setRecordingMsg] = useState<string | null>(null);
+  const [recordType, setRecordType] = useState<"invoice" | "payment">("invoice");
+  const [recordAmount, setRecordAmount] = useState("");
+  const [recordInvNum, setRecordInvNum] = useState("");
+  const [recordClient, setRecordClient] = useState("");
+  const [recordDueDate, setRecordDueDate] = useState("");
+  const [recordNotes, setRecordNotes] = useState("");
+
+  const recordFinanceMut = useMutation({
+    mutationFn: async (msgId: string) => {
+      const r = await apiRequest("POST", `/api/email/messages/${msgId}/record-finance`, {
+        type: recordType, amount: recordAmount, invoiceNumber: recordInvNum,
+        clientName: recordClient, dueDate: recordDueDate, notes: recordNotes,
+      });
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setRecordingMsg(null);
+      refetchDetail();
+      toast({ title: data.type === "invoice" ? "Invoice recorded" : "Payment recorded", description: `$${recordAmount} from ${recordClient}` });
+      setRecordAmount(""); setRecordInvNum(""); setRecordClient(""); setRecordDueDate(""); setRecordNotes("");
+    },
+    onError: (err: Error) => toast({ title: "Failed to record", description: err.message, variant: "destructive" }),
+  });
+
   useEffect(() => {
     if (emailConfig) {
       setCfgEnabled(emailConfig.enabled);
@@ -5902,6 +6045,84 @@ function InboxTab() {
                   <div className="text-sm prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: msg.htmlBody }} />
                 ) : (
                   <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                )}
+
+                {/* AI Detection Banner */}
+                {msg.direction === "inbound" && msg.aiTags && msg.aiTags.length > 0 && !msg.aiTags.includes("recorded") && (
+                  <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-400" />
+                        <span className="text-xs font-medium text-amber-300">
+                          AI Detected: {msg.aiTags.filter(t => t !== "recorded").map(t => t === "invoice" ? "📄 Invoice" : t === "payment" ? "💰 Payment" : t === "subscription" ? "🔄 Subscription" : t === "refund" ? "↩️ Refund" : t).join(", ")}
+                        </span>
+                      </div>
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] border-amber-500/30 text-amber-300 hover:bg-amber-500/20" onClick={() => {
+                        setRecordingMsg(recordingMsg === msg.id ? null : msg.id);
+                        setRecordType(msg.aiTags?.includes("payment") ? "payment" : "invoice");
+                        setRecordClient(msg.fromName || msg.fromEmail || "");
+                        // Try to extract amount from body
+                        const amtMatch = (msg.body || "").match(/\$[\d,]+\.?\d{0,2}/g);
+                        if (amtMatch) { const largest = amtMatch.map(a => parseFloat(a.replace(/[$,]/g, ""))).sort((a, b) => b - a)[0]; setRecordAmount(largest.toString()); }
+                        // Try to extract invoice number
+                        const invMatch = (msg.body || "").match(/(?:invoice|inv)[#\s:\-]*([A-Z0-9\-]{2,20})/i);
+                        if (invMatch) setRecordInvNum(invMatch[1].trim());
+                      }}>
+                        <DollarSign className="w-3 h-3 mr-1" />Record in Finances
+                      </Button>
+                    </div>
+
+                    {recordingMsg === msg.id && (
+                      <div className="mt-3 pt-3 border-t border-amber-500/20 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Type</Label>
+                            <Select value={recordType} onValueChange={(v: "invoice" | "payment") => setRecordType(v)}>
+                              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="invoice">Invoice (Unpaid)</SelectItem>
+                                <SelectItem value="payment">Payment (Received)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Amount ($)</Label>
+                            <Input value={recordAmount} onChange={(e) => setRecordAmount(e.target.value)} placeholder="0.00" className="h-7 text-xs" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">From / Client</Label>
+                            <Input value={recordClient} onChange={(e) => setRecordClient(e.target.value)} placeholder="Company name" className="h-7 text-xs" />
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">{recordType === "invoice" ? "Invoice #" : "Reference #"}</Label>
+                            <Input value={recordInvNum} onChange={(e) => setRecordInvNum(e.target.value)} placeholder="INV-001" className="h-7 text-xs" />
+                          </div>
+                        </div>
+                        {recordType === "invoice" && (
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Due Date</Label>
+                            <Input type="date" value={recordDueDate} onChange={(e) => setRecordDueDate(e.target.value)} className="h-7 text-xs" />
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Button size="sm" className="h-7 text-xs" disabled={!recordAmount || recordFinanceMut.isPending} onClick={() => recordFinanceMut.mutate(msg.id)}>
+                            {recordFinanceMut.isPending ? "Saving..." : recordType === "invoice" ? "Save Invoice" : "Record Payment"}
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setRecordingMsg(null)}>Cancel</Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Already recorded indicator */}
+                {msg.aiTags?.includes("recorded") && (
+                  <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-400">
+                    <CheckCircle className="w-3 h-3" />
+                    <span>Recorded in finances</span>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -6462,7 +6683,7 @@ function AiSettingsTab() {
   const { toast } = useToast();
   const { data: config, isLoading } = useQuery<AiConfig>({ queryKey: ["/api/ai-config/full"] });
   const [enabled, setEnabled] = useState(false);
-  const [model, setModel] = useState("claude-sonnet-4-20250514");
+  const [model, setModel] = useState("llama-3.1-8b-instruct");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [maxTokens, setMaxTokens] = useState(1024);
