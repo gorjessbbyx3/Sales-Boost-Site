@@ -31,6 +31,7 @@ const SchedulePage = lazy(() => import("@/pages/schedule"));
 const PartnerProgramPage = lazy(() => import("@/pages/partner-program"));
 const IndustryPage = lazy(() => import("@/pages/industry"));
 const IslandPage = lazy(() => import("@/pages/island"));
+const CalculatorPage = lazy(() => import("@/pages/calculator"));
 
 const isAdminSubdomain = window.location.hostname.startsWith("admin.");
 const isProgramSubdomain = window.location.hostname.startsWith("program.");
@@ -69,6 +70,7 @@ function MainRouter() {
           <Route path="/about" component={AboutPage} />
           <Route path="/compare" component={ComparePage} />
           <Route path="/schedule" component={SchedulePage} />
+          <Route path="/calculator" component={CalculatorPage} />
           <Route path="/industries/:industry" component={IndustryPage} />
           <Route path="/locations/:island" component={IslandPage} />
           <Route component={NotFound} />
