@@ -210,9 +210,9 @@ export default function HowItWorksPage() {
                     </Link>
                   </Button>
                   <Button variant="outline" size="lg" asChild>
-                    <a href="tel:8087675460">
+                    <a href="tel:8883535532">
                       <Phone className="w-4 h-4" />
-                      Call (808) 767-5460
+                      Call (888) 353-5532
                     </a>
                   </Button>
                 </div>

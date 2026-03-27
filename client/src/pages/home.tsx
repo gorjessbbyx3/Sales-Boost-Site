@@ -329,9 +329,9 @@ function WhySection() {
               <div className="text-muted-foreground mb-4">In-person in Hawai'i · Live remote support everywhere else</div>
               <p className="text-sm text-muted-foreground mb-6">In Hawai'i, we come to you. Everywhere else, we connect via Zoom, Discord, AnyDesk, or your preferred platform. Our reputation is everything — that's why we never lock you in a contract.</p>
               <Button size="lg" variant="outline" asChild>
-                <a href="tel:8087675460">
+                <a href="tel:8883535532">
                   <Phone className="w-4 h-4" />
-                  (808) 767-5460
+                  (888) 353-5532
                 </a>
               </Button>
             </div>

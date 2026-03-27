@@ -66,7 +66,7 @@ export default function PartnerAgreementPage() {
     } catch {
       toast({
         title: "Submission failed",
-        description: "Please try again or call us at (808) 767-5460.",
+        description: "Please try again or call us at (888) 353-5532.",
         variant: "destructive",
       });
     } finally {
@@ -304,7 +304,7 @@ export default function PartnerAgreementPage() {
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
-                  Questions? Call us at (808) 767-5460 or email contact@techsavvyhawaii.com
+                  Questions? Call us at (888) 353-5532 or email contact@techsavvyhawaii.com
                 </p>
               </form>
             </CardContent>

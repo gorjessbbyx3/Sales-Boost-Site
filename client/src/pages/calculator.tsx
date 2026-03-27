@@ -263,7 +263,7 @@ export default function CalculatorPage() {
               {status === "error" && (
                 <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
                   <AlertCircle className="w-4 h-4 shrink-0" />
-                  Something went wrong. Please try again or call (808) 767-5460.
+                  Something went wrong. Please try again or call (888) 353-5532.
                 </div>
               )}
 

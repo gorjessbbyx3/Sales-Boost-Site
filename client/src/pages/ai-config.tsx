@@ -4549,7 +4549,7 @@ function TeamTab() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">Company Name</Label><Input value={bizForm.companyName || ""} onChange={(e) => { setBizForm(f => ({ ...f, companyName: e.target.value })); setBizDirty(true); }} placeholder="TechSavvy Hawaii LLC" /></div>
             <div className="space-y-1.5"><Label className="text-xs">DBA (Doing Business As)</Label><Input value={bizForm.dba || ""} onChange={(e) => { setBizForm(f => ({ ...f, dba: e.target.value })); setBizDirty(true); }} placeholder="TechSavvy" /></div>
-            <div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={bizForm.phone || ""} onChange={(e) => { setBizForm(f => ({ ...f, phone: e.target.value })); setBizDirty(true); }} placeholder="808-767-5460" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={bizForm.phone || ""} onChange={(e) => { setBizForm(f => ({ ...f, phone: e.target.value })); setBizDirty(true); }} placeholder="888-353-5532" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={bizForm.email || ""} onChange={(e) => { setBizForm(f => ({ ...f, email: e.target.value })); setBizDirty(true); }} placeholder="contact@techsavvyhawaii.com" /></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-xs">Address</Label><Input value={bizForm.address || ""} onChange={(e) => { setBizForm(f => ({ ...f, address: e.target.value })); setBizDirty(true); }} placeholder="Honolulu, HI" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Website</Label><Input value={bizForm.website || ""} onChange={(e) => { setBizForm(f => ({ ...f, website: e.target.value })); setBizDirty(true); }} /></div>
@@ -5933,7 +5933,7 @@ function InboxTab() {
               <Button size="sm" disabled={!replyBody.trim() || sendMutation.isPending} onClick={() => sendMutation.mutate({
                 to: threadDetail.contactEmail,
                 subject: `Re: ${threadDetail.subject}`,
-                html: `<p>${replyBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | ${composeFromAccount}</p></div>`,
+                html: `<p>${replyBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(888) 353-5532 | ${composeFromAccount}</p></div>`,
                 threadId: threadDetail.id,
                 ...(composeFromAccount !== "contact@techsavvyhawaii.com" ? { fromAlias: composeFromAccount } : {}),
               } as any)}><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send Reply"}</Button>
@@ -6238,7 +6238,7 @@ function InboxTab() {
             <Button variant="outline" onClick={() => setShowCompose(false)}>Cancel</Button>
             <Button disabled={!composeTo || !composeSubject || !composeBody || sendMutation.isPending} onClick={() => sendMutation.mutate({
               to: composeTo, subject: composeSubject,
-              html: `<p>${composeBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | ${composeFromAccount}</p></div>`,
+              html: `<p>${composeBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(888) 353-5532 | ${composeFromAccount}</p></div>`,
               ...(composeFromAccount !== "contact@techsavvyhawaii.com" ? { fromAlias: composeFromAccount } : {}),
             } as any)}><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send"}</Button>
           </DialogFooter>

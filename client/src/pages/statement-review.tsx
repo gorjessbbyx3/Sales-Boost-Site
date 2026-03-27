@@ -207,7 +207,7 @@ export default function StatementReviewPage() {
     } catch {
       toast({
         title: "Send failed",
-        description: "Please try again or call us at (808) 767-5460.",
+        description: "Please try again or call us at (888) 353-5532.",
         variant: "destructive",
       });
     } finally {
@@ -758,8 +758,8 @@ export default function StatementReviewPage() {
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Button size="lg" className="h-12 px-8 font-semibold" asChild>
-              <a href="tel:+18087675460">
-                📞 (808) 767-5460
+              <a href="tel:+18883535532">
+                📞 (888) 353-5532
               </a>
             </Button>
             <Button variant="outline" size="lg" className="h-12 px-8 font-semibold" asChild>

@@ -23,7 +23,7 @@ export default function AboutPage() {
       name: "TechSavvy Hawaii",
       url: "https://techsavvyhawaii.com",
       address: { "@type": "PostalAddress", streetAddress: "1917 S King St", addressLocality: "Honolulu", addressRegion: "HI", postalCode: "96826" },
-      telephone: "+18087675460",
+      telephone: "+18883535532",
       email: "contact@techsavvyhawaii.com",
       areaServed: "Hawaii",
     },
@@ -201,9 +201,9 @@ export default function AboutPage() {
                 </Link>
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <a href="tel:+18087675460">
+                <a href="tel:+18883535532">
                   <Phone className="w-4 h-4" />
-                  (808) 767-5460
+                  (888) 353-5532
                 </a>
               </Button>
             </div>

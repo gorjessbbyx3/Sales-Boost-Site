@@ -169,7 +169,7 @@ export default function ApplyPage() {
             </div>
             <div className="flex items-center gap-1.5">
               <Phone className="w-4 h-4 text-primary" />
-              <span>Questions? Call (808) 767-5460</span>
+              <span>Questions? Call (888) 353-5532</span>
             </div>
           </div>
         </div>

@@ -114,9 +114,9 @@ export default function IslandPage() {
                 </a>
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <a href="tel:8087675460">
+                <a href="tel:8883535532">
                   <Phone className="w-4 h-4" />
-                  (808) 767-5460
+                  (888) 353-5532
                 </a>
               </Button>
             </motion.div>

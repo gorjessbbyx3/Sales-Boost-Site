@@ -123,11 +123,11 @@ function Navbar() {
               </Link>
             </Button>
             <a
-              href="tel:+18087675460"
+              href="tel:+18883535532"
               className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <Phone className="w-4 h-4 text-primary" />
-              (808) 767-5460
+              (888) 353-5532
             </a>
           </div>
         </div>
@@ -157,9 +157,9 @@ function Footer() {
               Qualifying merchants get free equipment, zero processing fees, and hands-on tech support — in person in Hawai'i or live via Zoom, Discord & AnyDesk nationwide. No contracts, no catches.
             </p>
             <div className="space-y-2.5 text-sm text-white/60">
-              <a href="tel:+18087675460" className="flex items-center gap-2 transition-colors hover:text-white">
+              <a href="tel:+18883535532" className="flex items-center gap-2 transition-colors hover:text-white">
                 <Phone className="w-3.5 h-3.5 text-primary" />
-                <span>(808) 767-5460</span>
+                <span>(888) 353-5532</span>
               </a>
               <a href="mailto:contact@techsavvyhawaii.com" className="flex items-center gap-2 transition-colors hover:text-white">
                 <Mail className="w-3.5 h-3.5 text-primary" />

@@ -84,7 +84,7 @@ function ConnectHero() {
             variants={fadeUp}
           >
             <a
-              href="tel:+18087675460"
+              href="tel:+18883535532"
               className="flex items-center gap-3 p-4 rounded-lg border border-primary/10 bg-card/50 hover:border-primary/30 transition-colors"
               data-testid="link-connect-phone"
             >
@@ -93,7 +93,7 @@ function ConnectHero() {
               </div>
               <div className="text-left">
                 <div className="text-xs text-muted-foreground">Call Us</div>
-                <div className="text-sm font-semibold text-foreground">(808) 767-5460</div>
+                <div className="text-sm font-semibold text-foreground">(888) 353-5532</div>
               </div>
             </a>
             <a
@@ -164,7 +164,7 @@ function AIChatSection() {
     } catch {
       setMessages([
         ...newMessages,
-        { role: "assistant", content: "Sorry, I encountered an error. Please try again or call us at (808) 767-5460." },
+        { role: "assistant", content: "Sorry, I encountered an error. Please try again or call us at (888) 353-5532." },
       ]);
     } finally {
       setIsLoading(false);
@@ -327,7 +327,7 @@ function AIChatSection() {
               </div>
               {!config?.enabled && (
                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                  AI chat is currently offline. Please call us at (808) 767-5460 or email contact@techsavvyhawaii.com
+                  AI chat is currently offline. Please call us at (888) 353-5532 or email contact@techsavvyhawaii.com
                 </p>
               )}
             </div>

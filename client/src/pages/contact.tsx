@@ -298,9 +298,9 @@ function FAQSection() {
               </Link>
             </Button>
             <Button size="sm" asChild>
-              <a href="tel:+18087675460" data-testid="link-faq-call">
+              <a href="tel:+18883535532" data-testid="link-faq-call">
                 <Phone className="w-3 h-3" />
-                Call (808) 767-5460
+                Call (888) 353-5532
               </a>
             </Button>
           </div>
@@ -621,7 +621,7 @@ function ContactSection() {
           viewport={{ once: true, margin: "-50px" }}
         >
           <motion.a
-            href="tel:+18087675460"
+            href="tel:+18883535532"
             className="flex items-center gap-3 p-4 rounded-lg border border-primary/10 bg-card/50 hover:border-primary/30 transition-colors"
             variants={fadeUp}
             data-testid="link-contact-phone"
@@ -631,7 +631,7 @@ function ContactSection() {
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Call Us</div>
-              <div className="text-sm font-semibold text-foreground">(808) 767-5460</div>
+              <div className="text-sm font-semibold text-foreground">(888) 353-5532</div>
             </div>
           </motion.a>
           <motion.a
