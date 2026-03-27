@@ -182,6 +182,25 @@ function LeadMagnetLanding({ slug }: { slug: string }) {
     } catch {
       // Still redirect — form submission is best-effort
     }
+    // Also fire n8n webhook for Airtable + automation pipeline
+    try {
+      await fetch("https://n8n.realconnect.online/webhook/techsavvy-intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          business_name: formData.businessName,
+          business_type: formData.businessType,
+          lead_source: `guide-${slug}`,
+          lead_magnet: magnet.title,
+          submitted_at: new Date().toISOString(),
+          page_url: window.location.href,
+        }),
+      });
+    } catch {
+      // Non-blocking — don't stop redirect if webhook fails
+    }
     setSubmitting(false);
     navigate("/free/thank-you");
   };

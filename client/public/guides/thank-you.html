@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Got It! | TechSavvy Hawaii</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 520px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 50px 40px;
+            text-align: center;
+        }
+        .checkmark {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 38px;
+            animation: pop 0.4s ease-out;
+        }
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        h1 { font-size: 28px; margin-bottom: 12px; color: #1a1a2e; }
+        .message { font-size: 16px; color: #555; margin-bottom: 28px; }
+        .next-steps {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 22px;
+            text-align: left;
+            margin-bottom: 28px;
+        }
+        .next-steps h3 { font-size: 15px; margin-bottom: 14px; color: #1a1a2e; font-weight: 700; }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .step:last-child { margin-bottom: 0; }
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .step-text { font-size: 14px; color: #555; padding-top: 2px; }
+        .cta-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 8px;
+        }
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .cta-btn.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            box-shadow: none;
+        }
+        .cta-btn.secondary:hover { background: #f0f4ff; }
+        .cta-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+        .contact { margin-top: 20px; font-size: 13px; color: #94a3b8; }
+        .contact a { color: #667eea; text-decoration: none; }
+        .high-value-note {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #92400e;
+        }
+        .high-value-note strong { display: block; margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="checkmark">✓</div>
+        <h1 id="page_title">You're All Set!</h1>
+        <p class="message" id="page_message">We received your submission and will be in touch shortly.</p>
+
+        <div id="high_value_note" class="high-value-note" style="display:none;">
+            <strong>You qualify for our priority review track.</strong>
+            We'll be reaching out within the next few hours — not days.
+        </div>
+
+        <div class="next-steps" id="next_steps">
+            <h3>What happens next:</h3>
+            <div id="steps_content"></div>
+        </div>
+
+        <div class="cta-group" id="cta_group"></div>
+
+        <p class="contact">
+            Questions? Email <a href="mailto:kepa@techsavvyhawaii.com">kepa@techsavvyhawaii.com</a><br>
+            or call <a href="tel:(888)353-5532">(888)353-5532</a>
+        </p>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const source = params.get('source') || 'guide';
+        const type = params.get('type') || '';
+        const name = params.get('name') || '';
+
+        const firstName = name.split(' ')[0];
+        const greeting = firstName ? firstName + ', you' : 'You';
+
+        const stepsEl = document.getElementById('steps_content');
+        const ctaEl = document.getElementById('cta_group');
+
+        function makeStep(num, text) {
+            return `<div class="step"><div class="step-number">${num}</div><div class="step-text">${text}</div></div>`;
+        }
+        function makeBtn(href, text, cls = '') {
+            return `<a href="${href}" class="cta-btn ${cls}">${text}</a>`;
+        }
+
+        if (source === 'calculator') {
+            document.getElementById('page_title').textContent = greeting + `'re on the list!`;
+            document.getElementById('page_message').textContent = `Your savings analysis is being prepared. We'll follow up with real numbers for your business.`;
+            document.getElementById('high_value_note').style.display = 'block';
+            stepsEl.innerHTML =
+                makeStep(1, 'Check your email — your personalized analysis is incoming') +
+                makeStep(2, 'We\'ll review your volume and processor to find the best path') +
+                makeStep(3, 'A short call to walk through your options — no pressure');
+            ctaEl.innerHTML =
+                makeBtn('/apply', 'Complete Full Application →') +
+                makeBtn('../apply.html', 'Complete Full Application →', 'secondary' );
+            // Fix relative paths based on page location
+            ctaEl.innerHTML = makeBtn('/apply', 'Complete Full Application →');
+
+        } else if (source === 'apply') {
+            document.getElementById('page_title').textContent = `Application Received!`;
+            document.getElementById('page_message').textContent = `${greeting}'ve submitted your application. We review every one personally and will be in touch.`;
+            document.getElementById('high_value_note').style.display = 'block';
+            stepsEl.innerHTML =
+                makeStep(1, 'We\'ll review your application within 24 hours') +
+                makeStep(2, 'You\'ll get a follow-up with your rate analysis') +
+                makeStep(3, 'We schedule a quick call to finalize — usually 15 minutes');
+            ctaEl.innerHTML = makeBtn('mailto:kepa@techsavvyhawaii.com?subject=My Application', 'Questions? Email Us →', 'secondary');
+
+        } else {
+            // Guide download
+            const guideNames = {
+                'cash-discount': 'Cash Discount Programs Explained',
+                'rate-comparison': 'Industry Rate Comparison Guide',
+                'security-checklist': 'Payment Security Checklist',
+                'statement-check': 'Top 10 Statement Checks'
+            };
+            const guideName = guideNames[type] || 'your guide';
+            document.getElementById('page_title').textContent = `${greeting}'re All Set!`;
+            document.getElementById('page_message').textContent = `Check your email — <strong>${guideName}</strong> is on its way. (Check spam if you don't see it.)`;
+            stepsEl.innerHTML =
+                makeStep(1, `Download and read ${guideName}`) +
+                makeStep(2, 'Apply what you learn to your current statement') +
+                makeStep(3, 'Want a professional to take a look? Request a free review below');
+            ctaEl.innerHTML =
+                makeBtn('/guides/statement-check.html', 'Get a Free Statement Review →') +
+                makeBtn('calculator.html', 'Try the Savings Calculator →', 'secondary');
+
+            // Fix path since this page is in landing-pages/
+            ctaEl.innerHTML =
+                makeBtn('/guides/statement-check.html', 'Get a Free Statement Review →') +
+                makeBtn('/calculator', 'Try the Savings Calculator →', 'secondary');
+        }
+    </script>
+</body>
+</html>
