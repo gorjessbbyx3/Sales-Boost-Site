@@ -242,7 +242,7 @@ export default function HawaiiPage() {
       accent: "bg-emerald-600",
     },
     {
-      url: "allpurposecleaners.gorjess.co",
+      url: "808allpurposecleaners.vercel.app",
       label: "808 All Purpose Cleaners",
       tag: "Service Business",
       accent: "bg-sky-600",
