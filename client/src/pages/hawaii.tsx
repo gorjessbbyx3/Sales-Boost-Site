@@ -210,7 +210,7 @@ export default function HawaiiPage() {
   const services = [
     { title: "Custom Websites", sub: "Built from scratch. Fast. Yours." },
     { title: "CRM Systems", sub: "Your workflow, not someone else's." },
-    { title: "Brand & Design", sub: "Via GorJess.co — our design studio." },
+    { title: "Brand & Design", sub: "Logos, print, social content — built in-house by TechSavvy." },
     { title: "Zero-Fee Processing", sub: "Keep every dollar you earn." },
     { title: "Ad Funnels", sub: "Meta ads, landing pages, leads." },
     { title: "Email Deliverability", sub: "Stop landing in spam. Period." },
@@ -466,6 +466,116 @@ export default function HawaiiPage() {
                 <p className="text-white/50 text-sm">{s.sub}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SOCIAL MEDIA & VIDEO MARKETING ──────────────────────────────── */}
+      <section className="py-14 sm:py-20 bg-[#060810] relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/5 rounded-full blur-3xl" />
+        </div>
+        <div className="relative z-10 max-w-5xl mx-auto px-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            {/* Left — copy */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <span className="text-primary text-xs font-bold uppercase tracking-widest">
+                In-house marketing team
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-black text-white mt-2 mb-4 leading-tight">
+                We make the videos your{" "}
+                <span className="text-primary italic">customers stop scrolling for.</span>
+              </h2>
+              <p className="text-white/60 text-sm sm:text-base leading-relaxed mb-6">
+                Our in-house team produces professional social media videos — the
+                kind that actually get watched, shared, and acted on. Property
+                walkthroughs, brand stories, promos, reels. If it needs to move,
+                we shoot it and edit it.
+              </p>
+
+              <div className="space-y-4 mb-8">
+                {[
+                  {
+                    title: "Realtors & property managers",
+                    body: "Showcase listings with cinematic walkthroughs and neighborhood reels that stop buyers mid-scroll. We've done it for Mel — we can do it for you.",
+                  },
+                  {
+                    title: "Restaurants & hospitality",
+                    body: "Mouth-watering food content and behind-the-scenes reels that fill tables without paid ads.",
+                  },
+                  {
+                    title: "Any local business",
+                    body: "Brand videos, customer testimonials, promo cuts — edited and ready to post across Instagram, TikTok, and Facebook.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <div>
+                      <p className="text-white font-semibold text-sm">{item.title}</p>
+                      <p className="text-white/50 text-sm leading-relaxed">{item.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                size="lg"
+                className="font-bold px-8 py-5 rounded-xl shadow-lg shadow-primary/30"
+                asChild
+              >
+                <a href="/contact" data-testid="button-video-cta">
+                  Ask about video packages
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </Button>
+            </motion.div>
+
+            {/* Right — Mel's page video embed as example */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="flex flex-col gap-3"
+            >
+              <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-[#0d0f18]">
+                {/* Browser chrome */}
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-[#151821] border-b border-white/10">
+                  <div className="flex gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-red-500/70" />
+                    <div className="w-2 h-2 rounded-full bg-yellow-500/70" />
+                    <div className="w-2 h-2 rounded-full bg-green-500/70" />
+                  </div>
+                  <div className="flex-1 mx-2 bg-[#0d0f18] border border-white/10 rounded px-2 py-0.5 flex items-center gap-1.5">
+                    <Globe className="w-3 h-3 text-white/30" />
+                    <span className="text-white/30 text-xs">melcastanares.techsavvyhawaii.com</span>
+                  </div>
+                </div>
+                <div className="relative" style={{ height: "260px" }}>
+                  <iframe
+                    src="https://melcastanares.techsavvyhawaii.com"
+                    title="Mel Castanares Realtor — video showcase"
+                    loading="lazy"
+                    className="w-full h-full border-0"
+                    style={{
+                      transformOrigin: "top left",
+                      transform: "scale(0.6)",
+                      width: "166.67%",
+                      height: "166.67%",
+                      pointerEvents: "none",
+                    }}
+                  />
+                </div>
+              </div>
+              <p className="text-white/30 text-xs text-center">
+                Live example — Mel Castanares, Hawai'i Realtor · Built by TechSavvy
+              </p>
+            </motion.div>
           </div>
         </div>
       </section>
