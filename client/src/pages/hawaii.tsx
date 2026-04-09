@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Check,
   Star,
+  Globe,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Layout from "@/components/layout";
@@ -15,7 +16,7 @@ import { useSEO } from "@/hooks/useSEO";
 import logoImg from "@assets/IMG_6366.jpeg";
 import techSavvyLogoImg from "@assets/IMG_6386.jpeg";
 import paymentImg from "@assets/IMG_6470.jpeg";
-import frustratedOwnerImg from "@assets/IMG_6402_1770892555479.png";
+import soundFamiliarImg from "@assets/IMG_6407_1775728573513.png";
 
 // ─── Animated counter ──────────────────────────────────────────────────────
 function AnimatedCounter({
@@ -76,6 +77,125 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+// ─── Browser frame component ────────────────────────────────────────────────
+function BrowserFrame({
+  url,
+  label,
+  tag,
+  accent,
+  delay = 0,
+}: {
+  url: string;
+  label: string;
+  tag: string;
+  accent: string;
+  delay?: number;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const displayUrl = url.replace(/^https?:\/\//, "");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay, duration: 0.6 }}
+      className="flex flex-col rounded-2xl overflow-hidden border border-white/10 bg-[#0d0f18] shadow-2xl shadow-black/40 group"
+    >
+      {/* Browser chrome */}
+      <div className="flex items-center gap-2 px-4 py-3 bg-[#151821] border-b border-white/10 flex-shrink-0">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+        </div>
+        <div className="flex-1 mx-2">
+          <div className="flex items-center gap-1.5 bg-[#0d0f18] border border-white/10 rounded-md px-3 py-1 min-w-0">
+            <Globe className="w-3 h-3 text-white/30 flex-shrink-0" />
+            <span className="text-white/40 text-xs truncate">{displayUrl}</span>
+          </div>
+        </div>
+        <a
+          href={`https://${displayUrl}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-6 h-6 rounded flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors flex-shrink-0"
+          data-testid={`link-frame-${label.toLowerCase().replace(/\s/g, "-")}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ExternalLink className="w-3 h-3 text-white/40" />
+        </a>
+      </div>
+
+      {/* Tag + name strip */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-[#0d0f18] border-b border-white/[0.06]">
+        <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${accent} text-white`}>
+          {tag}
+        </span>
+        <span className="text-white/60 text-xs font-medium">{label}</span>
+      </div>
+
+      {/* iframe area */}
+      <div className="relative w-full" style={{ height: "320px" }}>
+        {!failed ? (
+          <>
+            {!loaded && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0d0f18] z-10">
+                <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <span className="text-white/30 text-xs">Loading preview…</span>
+              </div>
+            )}
+            <iframe
+              src={`https://${displayUrl}`}
+              title={label}
+              loading="lazy"
+              onLoad={() => setLoaded(true)}
+              onError={() => setFailed(true)}
+              className="w-full h-full border-0 bg-white"
+              style={{
+                transformOrigin: "top left",
+                transform: "scale(0.6)",
+                width: "166.67%",
+                height: "166.67%",
+                pointerEvents: "none",
+              }}
+            />
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0d0f18]">
+            <Globe className="w-8 h-8 text-white/20" />
+            <p className="text-white/40 text-xs text-center px-4">
+              Preview restricted by browser policy
+            </p>
+            <a
+              href={`https://${displayUrl}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary text-xs font-semibold hover:underline flex items-center gap-1"
+            >
+              Open site <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* Visit button */}
+      <div className="px-4 py-3 bg-[#151821] border-t border-white/10 flex items-center justify-between">
+        <span className="text-white/30 text-xs">Built by TechSavvy Hawaii</span>
+        <a
+          href={`https://${displayUrl}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-primary text-xs font-semibold hover:text-primary/80 transition-colors"
+        >
+          Visit site <ArrowRight className="w-3 h-3" />
+        </a>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default function HawaiiPage() {
   useSEO({
@@ -96,41 +216,6 @@ export default function HawaiiPage() {
     { title: "Email Deliverability", sub: "Stop landing in spam. Period." },
   ];
 
-  const clients = [
-    {
-      name: "Capture by Christian",
-      url: "https://capturebychristian.vercel.app/",
-      tag: "Photography",
-      work: "Full custom website, brand system, booking flow, and portfolio architecture — built to convert browsers into clients.",
-      color: "from-violet-500/20 to-purple-900/20",
-      accent: "bg-violet-500",
-    },
-    {
-      name: "GorJess.co",
-      url: "https://gorjess.co",
-      tag: "Design Studio",
-      work: "Our sister design studio. Logos, print, social systems, full brand identities — the visual layer behind our best clients.",
-      color: "from-rose-500/20 to-pink-900/20",
-      accent: "bg-rose-500",
-    },
-    {
-      name: "808 All Purpose Cleaners",
-      url: "#",
-      tag: "Service Business",
-      work: "CRM dashboard, pricing collateral, service posters, website, and a full brand cleanup that actually stuck.",
-      color: "from-sky-500/20 to-blue-900/20",
-      accent: "bg-sky-500",
-    },
-    {
-      name: "Mel Castanares — Realtor",
-      url: "#",
-      tag: "Real Estate",
-      work: "Real-estate CRM with 35+ custom API endpoints, lead capture, automated follow-ups, email deliverability.",
-      color: "from-emerald-500/20 to-green-900/20",
-      accent: "bg-emerald-500",
-    },
-  ];
-
   const steps = [
     {
       n: "01",
@@ -149,6 +234,33 @@ export default function HawaiiPage() {
     },
   ];
 
+  const webframes = [
+    {
+      url: "melcastanares.techsavvyhawaii.com",
+      label: "Mel Castanares — Realtor",
+      tag: "Real Estate CRM",
+      accent: "bg-emerald-600",
+    },
+    {
+      url: "allpurposecleaners.techsavvyhawaii.com",
+      label: "808 All Purpose Cleaners",
+      tag: "Service Business",
+      accent: "bg-sky-600",
+    },
+    {
+      url: "drestastysoutherncuisine.vercel.app",
+      label: "Dr. E's Tasty Southern Cuisine",
+      tag: "Restaurant",
+      accent: "bg-orange-600",
+    },
+    {
+      url: "capturebychristian.vercel.app",
+      label: "Capture by Christian",
+      tag: "Photography",
+      accent: "bg-violet-600",
+    },
+  ];
+
   return (
     <Layout>
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
@@ -159,19 +271,19 @@ export default function HawaiiPage() {
           muted
           playsInline
           preload="auto"
-          src="/images/hero-video-v2.mp4"
-          className="absolute inset-0 w-full h-full object-cover opacity-25"
+          src="/hero-hawaii.mp4"
+          className="absolute inset-0 w-full h-full object-cover opacity-40"
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#060810]/60 via-[#060810]/40 to-[#060810]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#060810]/50 via-[#060810]/30 to-[#060810]" />
 
-        {/* Floating logo image — desktop only */}
-        <div className="absolute right-4 top-24 lg:right-12 lg:top-28 hidden sm:block">
+        {/* Floating logo — desktop */}
+        <div className="absolute right-6 top-28 lg:right-16 lg:top-32 hidden sm:block">
           <motion.div
-            initial={{ opacity: 0, x: 60, rotate: 6 }}
+            initial={{ opacity: 0, x: 50, rotate: 6 }}
             animate={{ opacity: 1, x: 0, rotate: 3 }}
-            transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
-            className="w-32 h-32 lg:w-48 lg:h-48 rounded-2xl overflow-hidden border border-primary/20 shadow-2xl shadow-primary/10"
+            transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+            className="w-28 h-28 lg:w-44 lg:h-44 rounded-2xl overflow-hidden border border-primary/20 shadow-2xl shadow-primary/10"
           >
             <img
               src={techSavvyLogoImg}
@@ -181,7 +293,7 @@ export default function HawaiiPage() {
           </motion.div>
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-5 pt-28 pb-16 sm:pt-32 sm:pb-20">
+        <div className="relative z-10 max-w-5xl mx-auto px-5 pt-28 pb-12 sm:pt-36 sm:pb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -222,7 +334,7 @@ export default function HawaiiPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.35 }}
-            className="flex flex-col sm:flex-row gap-3 mb-10"
+            className="flex flex-col sm:flex-row gap-3 mb-8"
           >
             <Button
               size="lg"
@@ -266,31 +378,31 @@ export default function HawaiiPage() {
           </motion.div>
         </div>
 
-        {/* Pain-point image strip at bottom of hero */}
-        <div className="relative z-10 w-full overflow-hidden">
+        {/* "Sound familiar?" pain-point card */}
+        <div className="relative z-10 w-full">
           <div className="max-w-5xl mx-auto px-5 pb-10">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
+              transition={{ duration: 0.8, delay: 0.65 }}
               className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
             >
               <img
-                src={frustratedOwnerImg}
-                alt="Business owner overwhelmed by processing fees"
-                className="w-full h-48 sm:h-72 object-cover object-top"
+                src={soundFamiliarImg}
+                alt="Business owner losing money on processing fees"
+                className="w-full h-52 sm:h-80 object-cover object-center"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#060810]/80 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#060810]/90 via-[#060810]/60 to-transparent" />
               <div className="absolute inset-0 flex items-center px-6 sm:px-10">
                 <div>
-                  <p className="text-white/60 text-xs uppercase tracking-widest mb-1">
+                  <p className="text-white/60 text-xs uppercase tracking-widest mb-2">
                     Sound familiar?
                   </p>
-                  <p className="text-white font-black text-xl sm:text-3xl leading-tight max-w-xs">
-                    Watching fees eat your margin every single month.
+                  <p className="text-white font-black text-2xl sm:text-4xl leading-tight max-w-sm">
+                    Watching 4% disappear every single swipe.
                   </p>
-                  <p className="text-primary font-semibold text-sm mt-2">
-                    That ends when you call us.
+                  <p className="text-primary font-bold text-sm mt-3">
+                    That ends when you call us. →
                   </p>
                 </div>
               </div>
@@ -299,7 +411,7 @@ export default function HawaiiPage() {
         </div>
       </section>
 
-      {/* ── STATS ────────────────────────────────────────────────────────── */}
+      {/* ── STATS STRIP ──────────────────────────────────────────────────── */}
       <section className="bg-primary py-10 sm:py-12">
         <div className="max-w-5xl mx-auto px-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
@@ -324,8 +436,8 @@ export default function HawaiiPage() {
         </div>
       </section>
 
-      {/* ── SERVICES — horizontal scroll on mobile ───────────────────────── */}
-      <section className="py-16 sm:py-20 bg-[#07090f]">
+      {/* ── SERVICES ─────────────────────────────────────────────────────── */}
+      <section className="py-14 sm:py-20 bg-[#07090f]">
         <div className="max-w-5xl mx-auto px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -341,7 +453,6 @@ export default function HawaiiPage() {
             </h2>
           </motion.div>
 
-          {/* Mobile: horizontal scroll | Desktop: grid */}
           <div className="flex sm:grid sm:grid-cols-3 gap-3 overflow-x-auto pb-3 sm:pb-0 -mx-5 px-5 sm:mx-0 sm:px-0 scrollbar-none">
             {services.map((s, i) => (
               <motion.div
@@ -365,9 +476,9 @@ export default function HawaiiPage() {
         </div>
       </section>
 
-      {/* ── REAL WORK — client proof ──────────────────────────────────────── */}
-      <section className="py-16 sm:py-24 bg-[#060810]">
-        <div className="max-w-5xl mx-auto px-5">
+      {/* ── LIVE WEBSITE SHOWCASE ─────────────────────────────────────────── */}
+      <section className="py-14 sm:py-24 bg-[#060810]">
+        <div className="max-w-6xl mx-auto px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -375,58 +486,33 @@ export default function HawaiiPage() {
             className="mb-10"
           >
             <span className="text-primary text-xs font-bold uppercase tracking-widest">
-              Real work, real businesses
+              Live sites we've shipped
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-white mt-2 leading-tight">
-              A few things we've built this year.
+              Real businesses. Live right now.
             </h2>
-            <p className="text-white/50 text-sm mt-2">
-              No logos wall. Actual work, shipped.
+            <p className="text-white/40 text-sm mt-2">
+              Not mockups. Not demos. Click to visit.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {clients.map((c, i) => (
-              <motion.div
-                key={c.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className={`relative rounded-2xl overflow-hidden border border-white/10 p-6 bg-gradient-to-br ${c.color} hover:border-white/20 transition-all group`}
-              >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <div
-                      className={`inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${c.accent} text-white mb-2`}
-                    >
-                      {c.tag}
-                    </div>
-                    <h3 className="text-white font-black text-lg leading-tight">
-                      {c.name}
-                    </h3>
-                  </div>
-                  {c.url !== "#" && (
-                    <a
-                      href={c.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors group-hover:scale-105"
-                      data-testid={`link-client-${c.name.toLowerCase().replace(/\s/g, "-")}`}
-                    >
-                      <ExternalLink className="w-4 h-4 text-white" />
-                    </a>
-                  )}
-                </div>
-                <p className="text-white/60 text-sm leading-relaxed">{c.work}</p>
-              </motion.div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {webframes.map((f, i) => (
+              <BrowserFrame
+                key={f.url}
+                url={f.url}
+                label={f.label}
+                tag={f.tag}
+                accent={f.accent}
+                delay={i * 0.12}
+              />
             ))}
           </div>
         </div>
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-24 bg-[#07090f]">
+      <section className="py-14 sm:py-24 bg-[#07090f]">
         <div className="max-w-5xl mx-auto px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -461,7 +547,6 @@ export default function HawaiiPage() {
             ))}
           </div>
 
-          {/* Payment visual */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -564,7 +649,7 @@ export default function HawaiiPage() {
 
       {/* ── FINAL CTA ────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-[#060810] py-16 sm:py-24">
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 pointer-events-none">
           <img
             src={logoImg}
             alt=""
