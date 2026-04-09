@@ -17,6 +17,9 @@ import logoImg from "@assets/IMG_6366.jpeg";
 import techSavvyLogoImg from "@assets/IMG_6386.jpeg";
 import paymentImg from "@assets/IMG_6470.jpeg";
 import soundFamiliarImg from "@assets/IMG_6407_1775728573513.png";
+import hiw1Img from "@assets/1B14A086-2642-4916-8C70-3AE1B7162168_1775737253686.png";
+import hiw2Img from "@assets/EAB85ACC-FCBA-44CC-A7B3-DEB15B59D196_1775737505329.png";
+import hiw3Img from "@assets/IMG_6952_1775737505329.png";
 
 // ─── Animated counter ──────────────────────────────────────────────────────
 function AnimatedCounter({
@@ -221,16 +224,22 @@ export default function HawaiiPage() {
       n: "01",
       title: "20-minute call",
       body: "No pitch. We listen, ask where your business hurts, and tell you honestly if we can help.",
+      img: hiw1Img,
+      imgAlt: "TechSavvy team member on the phone",
     },
     {
       n: "02",
       title: "Plain-English plan",
       body: "What we'd build, the order, what it costs, what it won't do. You decide.",
+      img: hiw2Img,
+      imgAlt: "TechSavvy building a website for a local business",
     },
     {
       n: "03",
       title: "We build. We stay.",
       body: "Most builds ship in days. Then we stick around — not a ticket queue. A real team you can text.",
+      img: hiw3Img,
+      imgAlt: "TechSavvy rep meeting a local business owner",
     },
   ];
 
@@ -640,13 +649,22 @@ export default function HawaiiPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.12 }}
-                className="relative bg-white/[0.04] border border-white/10 rounded-2xl p-6 hover:border-primary/30 transition-all"
+                className="relative bg-white/[0.04] border border-white/10 rounded-2xl overflow-hidden hover:border-primary/30 transition-all"
               >
-                <div className="text-5xl font-black text-primary/20 mb-3 leading-none">
-                  {step.n}
+                <div className="h-44 sm:h-48 overflow-hidden">
+                  <img
+                    src={step.img}
+                    alt={step.imgAlt}
+                    className="w-full h-full object-cover object-center"
+                  />
                 </div>
-                <h3 className="text-white font-bold text-lg mb-2">{step.title}</h3>
-                <p className="text-white/50 text-sm leading-relaxed">{step.body}</p>
+                <div className="p-6">
+                  <div className="text-5xl font-black text-primary/20 mb-3 leading-none">
+                    {step.n}
+                  </div>
+                  <h3 className="text-white font-bold text-lg mb-2">{step.title}</h3>
+                  <p className="text-white/50 text-sm leading-relaxed">{step.body}</p>
+                </div>
               </motion.div>
             ))}
           </div>
