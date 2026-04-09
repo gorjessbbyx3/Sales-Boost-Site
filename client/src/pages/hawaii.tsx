@@ -279,104 +279,139 @@ export default function HawaiiPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#060810]/50 via-[#060810]/30 to-[#060810]" />
 
-        {/* Floating logo — desktop */}
-        <div className="absolute right-6 top-28 lg:right-16 lg:top-32 hidden sm:block">
-          <motion.div
-            initial={{ opacity: 0, x: 50, rotate: 6 }}
-            animate={{ opacity: 1, x: 0, rotate: 3 }}
-            transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-            className="w-28 h-28 lg:w-44 lg:h-44 rounded-2xl overflow-hidden border border-primary/20 shadow-2xl shadow-primary/10"
-          >
-            <img
-              src={techSavvyLogoImg}
-              alt="TechSavvy Hawaii"
-              className="w-full h-full object-cover"
-            />
-          </motion.div>
-        </div>
-
-        <div className="relative z-10 max-w-5xl mx-auto px-5 pt-28 pb-12 sm:pt-36 sm:pb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 mb-6"
-          >
-            <MapPin className="w-3 h-3 text-primary" />
-            <span className="text-xs text-primary font-medium">
-              Built in Honolulu · Serving all islands
-            </span>
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02] text-white mb-6"
-          >
-            We're the team your{" "}
-            <br className="hidden sm:block" />
-            business hires{" "}
-            <span className="text-primary italic">when it's done</span>
-            <br className="hidden sm:block" />
-            {" "}being small.
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.25 }}
-            className="text-base sm:text-xl text-white/70 max-w-xl leading-relaxed mb-8"
-          >
-            Websites. CRMs. Branding. Ad funnels. Email that lands. Zero-fee
-            processing. One Honolulu team. One number. No mainland runaround.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.35 }}
-            className="flex flex-col sm:flex-row gap-3 mb-8"
-          >
-            <Button
-              size="lg"
-              className="text-base font-bold px-8 py-6 rounded-xl shadow-lg shadow-primary/30"
-              asChild
+        <div className="relative z-10 max-w-7xl mx-auto px-5 pt-24 pb-12 sm:pt-32 sm:pb-14 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          {/* ── Left column ── */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 mb-6"
             >
-              <a href="/contact" data-testid="button-hero-cta">
-                Book a free 20-min call
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="text-base px-8 py-6 rounded-xl border-white/20 text-white hover:bg-white/10"
-              asChild
-            >
-              <a href="tel:8087675460" data-testid="button-hero-phone">
-                <Phone className="w-4 h-4" />
-                (808) 767-5460
-              </a>
-            </Button>
-          </motion.div>
+              <MapPin className="w-3 h-3 text-primary" />
+              <span className="text-xs text-primary font-medium">
+                Built in Honolulu · Serving all islands
+              </span>
+            </motion.div>
 
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.04] text-white mb-6"
+            >
+              We're the team your{" "}
+              business hires{" "}
+              <span className="text-primary italic">when it's done</span>{" "}
+              being small.
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.25 }}
+              className="text-base sm:text-lg text-white/70 max-w-xl leading-relaxed mb-8"
+            >
+              Websites. CRMs. Branding. Ad funnels. Email that lands. Zero-fee
+              processing. One Honolulu team. One number. No mainland runaround.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.35 }}
+              className="flex flex-col sm:flex-row gap-3 mb-8"
+            >
+              <Button
+                size="lg"
+                className="text-base font-bold px-8 py-6 rounded-xl shadow-lg shadow-primary/30"
+                asChild
+              >
+                <a href="/contact" data-testid="button-hero-cta">
+                  Book a free 20-min call
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="text-base px-8 py-6 rounded-xl border-white/20 text-white hover:bg-white/10"
+                asChild
+              >
+                <a href="tel:8087675460" data-testid="button-hero-phone">
+                  <Phone className="w-4 h-4" />
+                  (808) 767-5460
+                </a>
+              </Button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="flex flex-wrap gap-x-6 gap-y-2"
+            >
+              {[
+                "No pitch. No pressure.",
+                "Local team, not mainland",
+                "Ships in days, not quarters",
+              ].map((t) => (
+                <div key={t} className="flex items-center gap-1.5 text-xs text-white/50">
+                  <Check className="w-3 h-3 text-primary" />
+                  {t}
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* ── Right column — service showcase card ── */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            className="flex flex-wrap gap-x-6 gap-y-2"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.9, delay: 0.4, ease: "easeOut" }}
+            className="hidden lg:block"
           >
-            {[
-              "No pitch. No pressure.",
-              "Local team, not mainland",
-              "Ships in days, not quarters",
-            ].map((t) => (
-              <div key={t} className="flex items-center gap-1.5 text-xs text-white/50">
-                <Check className="w-3 h-3 text-primary" />
-                {t}
+            <div className="relative rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-md shadow-2xl overflow-hidden p-7">
+              <div className="flex items-center gap-3 mb-6">
+                <img
+                  src={techSavvyLogoImg}
+                  alt="TechSavvy Hawaii"
+                  className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                />
+                <div>
+                  <p className="text-white font-bold text-sm leading-tight">TechSavvy Hawaii</p>
+                  <p className="text-white/40 text-xs">Honolulu's full-service tech team</p>
+                </div>
+                <span className="ml-auto flex items-center gap-1 text-[10px] text-primary font-bold uppercase tracking-wide">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  Active
+                </span>
               </div>
-            ))}
+              <div className="space-y-3">
+                {services.map((s, i) => (
+                  <motion.div
+                    key={s.title}
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + i * 0.08 }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.07] hover:border-primary/30 transition-colors"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white text-xs font-semibold leading-tight">{s.title}</p>
+                      <p className="text-white/40 text-[11px] truncate">{s.sub}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-white/30">
+                <span>4 islands served</span>
+                <span>7-day avg launch</span>
+                <span>100% local team</span>
+              </div>
+            </div>
           </motion.div>
         </div>
 

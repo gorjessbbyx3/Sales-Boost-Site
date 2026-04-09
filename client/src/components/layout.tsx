@@ -220,16 +220,16 @@ function Navbar() {
 
 function Footer() {
   return (
-    <footer className="relative py-8 sm:py-14 overflow-hidden" data-testid="section-footer" aria-label="Site footer">
+    <footer className="relative py-8 sm:py-14 overflow-hidden bg-[#08090f]" data-testid="section-footer" aria-label="Site footer">
       <video
         autoPlay
         loop
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover"
+        className="hidden sm:block absolute inset-0 w-full h-full object-cover object-center"
         src="/videos/footer-bg.mp4"
       />
-      <div className="absolute inset-0 bg-black/75" />
+      <div className="absolute inset-0 bg-black/80 sm:bg-black/75" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
           <div className="col-span-2 md:col-span-1">
