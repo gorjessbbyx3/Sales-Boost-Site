@@ -543,7 +543,7 @@ export default function HawaiiPage() {
               </Button>
             </motion.div>
 
-            {/* Right — Mel's page video embed as example */}
+            {/* Right — video showreel */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -551,37 +551,18 @@ export default function HawaiiPage() {
               transition={{ duration: 0.6, delay: 0.15 }}
               className="flex flex-col gap-3"
             >
-              <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-[#0d0f18]">
-                {/* Browser chrome */}
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-[#151821] border-b border-white/10">
-                  <div className="flex gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-red-500/70" />
-                    <div className="w-2 h-2 rounded-full bg-yellow-500/70" />
-                    <div className="w-2 h-2 rounded-full bg-green-500/70" />
-                  </div>
-                  <div className="flex-1 mx-2 bg-[#0d0f18] border border-white/10 rounded px-2 py-0.5 flex items-center gap-1.5">
-                    <Globe className="w-3 h-3 text-white/30" />
-                    <span className="text-white/30 text-xs">melcastanares.techsavvyhawaii.com</span>
-                  </div>
-                </div>
-                <div className="relative" style={{ height: "260px" }}>
-                  <iframe
-                    src="https://melcastanares.techsavvyhawaii.com"
-                    title="Mel Castanares Realtor — video showcase"
-                    loading="lazy"
-                    className="w-full h-full border-0"
-                    style={{
-                      transformOrigin: "top left",
-                      transform: "scale(0.6)",
-                      width: "166.67%",
-                      height: "166.67%",
-                      pointerEvents: "none",
-                    }}
-                  />
-                </div>
+              <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black">
+                <video
+                  src="/video-showreel.mov"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full block"
+                  style={{ maxHeight: "380px", objectFit: "cover" }}
+                />
               </div>
               <p className="text-white/30 text-xs text-center">
-                Live example — Mel Castanares, Hawai'i Realtor · Built by TechSavvy
+                Real content we've produced for local Hawaii businesses
               </p>
             </motion.div>
           </div>
