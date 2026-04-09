@@ -242,7 +242,7 @@ export default function HawaiiPage() {
       accent: "bg-emerald-600",
     },
     {
-      url: "allpurposecleaners.techsavvyhawaii.com",
+      url: "allpurposecleaners.gorjess.co",
       label: "808 All Purpose Cleaners",
       tag: "Service Business",
       accent: "bg-sky-600",
@@ -252,12 +252,6 @@ export default function HawaiiPage() {
       label: "Dr. E's Tasty Southern Cuisine",
       tag: "Restaurant",
       accent: "bg-orange-600",
-    },
-    {
-      url: "capturebychristian.vercel.app",
-      label: "Capture by Christian",
-      tag: "Photography",
-      accent: "bg-violet-600",
     },
   ];
 
