@@ -201,11 +201,11 @@ function BrowserFrame({
 // ─────────────────────────────────────────────────────────────────────────────
 export default function HawaiiPage() {
   useSEO({
-    title: "TechSavvy Hawaii — Your Local Tech & Business Partner",
+    title: "TechSavvy Hawaii — Websites, CRMs, Branding & Zero-Fee Payment Processing | Honolulu",
     description:
-      "Websites, CRMs, branding, ads, and zero-fee payment processing — all from one local Honolulu team. We build, we stay, we grow with you.",
+      "Honolulu's full-service business tech team. Custom websites, CRMs, brand identities, video content, ad funnels, and zero-fee payment processing — one local team, one number, no mainland runaround.",
     keywords:
-      "Hawaii business partner, Honolulu web design, CRM Hawaii, payment processing Hawaii, TechSavvy Hawaii, local business tech Oahu",
+      "TechSavvy Hawaii, Honolulu web design, custom website Hawaii, CRM Hawaii, branding Hawaii, video marketing Hawaii, ad funnels Hawaii, zero-fee payment processing Hawaii, local tech company Honolulu, business technology Oahu, small business website Hawaii, Hawaii business partner",
     canonical: "https://techsavvyhawaii.com/",
   });
 
