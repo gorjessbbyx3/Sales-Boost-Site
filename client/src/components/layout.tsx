@@ -19,8 +19,7 @@ const navGroups = [
     label: "Services",
     items: [
       { label: "Payment Processing", href: "/payment-processing" },
-      { label: "Pricing", href: "/pricing" },
-      { label: "Free Equipment", href: "/equipment" },
+      { label: "Pricing & Equipment", href: "/pricing" },
       { label: "High-Risk Merchants", href: "/high-risk" },
       { label: "Apply Now", href: "/apply" },
     ],
@@ -37,8 +36,7 @@ const navGroups = [
     label: "Company",
     items: [
       { label: "Contact Us", href: "/contact" },
-      { label: "Partner Program", href: "/partner-program" },
-      { label: "Refer a Business", href: "/referral" },
+      { label: "Partner & Referral", href: "/referral" },
       { label: "Connect With Us", href: "/connect" },
     ],
   },
@@ -266,12 +264,7 @@ function Footer() {
               </li>
               <li>
                 <Link href="/pricing" className="transition-colors hover:text-white" data-testid="link-footer-pricing">
-                  Pricing
-                </Link>
-              </li>
-              <li>
-                <Link href="/equipment" className="transition-colors hover:text-white" data-testid="link-footer-equipment">
-                  Free Equipment
+                  Pricing & Equipment
                 </Link>
               </li>
               <li>
@@ -311,13 +304,8 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/partner-program" className="transition-colors hover:text-white" data-testid="link-footer-partner">
-                  Partner Program
-                </Link>
-              </li>
-              <li>
-                <Link href="/referral" className="transition-colors hover:text-primary text-primary/80 font-medium" data-testid="link-footer-refer">
-                  Refer a Business & Earn
+                <Link href="/referral" className="transition-colors hover:text-primary text-primary/80 font-medium" data-testid="link-footer-partner-referral">
+                  Partner & Referral — Earn 50%
                 </Link>
               </li>
             </ul>
