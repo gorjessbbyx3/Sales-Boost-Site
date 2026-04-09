@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   ArrowRight,
   Menu,
@@ -9,11 +8,97 @@ import {
   Phone,
   Mail,
   Clock,
-  Gift,
+  ChevronDown,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Breadcrumb } from "@/components/breadcrumb";
+
+const navGroups = [
+  {
+    label: "Services",
+    items: [
+      { label: "Payment Processing", href: "/payment-processing" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Free Equipment", href: "/equipment" },
+      { label: "High-Risk Merchants", href: "/high-risk" },
+      { label: "Apply Now", href: "/apply" },
+    ],
+  },
+  {
+    label: "Learn",
+    items: [
+      { label: "How It Works", href: "/how-it-works" },
+      { label: "FAQ", href: "/faq" },
+      { label: "Free Guides", href: "/free-guides" },
+    ],
+  },
+  {
+    label: "Company",
+    items: [
+      { label: "Contact Us", href: "/contact" },
+      { label: "Partner Program", href: "/partner-program" },
+      { label: "Refer a Business", href: "/referral" },
+      { label: "Connect With Us", href: "/connect" },
+    ],
+  },
+];
+
+function DropdownMenu({
+  label,
+  items,
+  currentPath,
+}: {
+  label: string;
+  items: { label: string; href: string }[];
+  currentPath: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const isActive = items.some((i) => i.href === currentPath);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1 px-3 py-2 text-sm transition-colors rounded-md hover:text-foreground ${
+          isActive ? "text-foreground font-medium" : "text-muted-foreground"
+        }`}
+        data-testid={`nav-dropdown-${label.toLowerCase()}`}
+      >
+        {label}
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1 w-52 bg-background/95 backdrop-blur-xl border border-border rounded-xl shadow-xl py-1.5 z-50">
+          {items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className={`block px-4 py-2 text-sm transition-colors hover:bg-accent hover:text-foreground ${
+                currentPath === item.href ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}
+              data-testid={`link-nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -26,111 +111,109 @@ function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const links = [
-    { label: "How It Works", href: "/how-it-works" },
-    { label: "Free Equipment", href: "/equipment" },
-    { label: "High-Risk", href: "/high-risk" },
-  ];
-
   return (
     <header>
-    <nav
-      aria-label="Main navigation"
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-background/80 backdrop-blur-xl border-b border-border"
-          : "bg-transparent"
-      }`}
-      data-testid="navbar"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-4 h-16">
-          <Link
-            href="/"
-            className="font-bold text-xl tracking-tight flex items-center gap-2.5"
-            data-testid="link-logo"
-          >
-            <span className="text-foreground font-extrabold text-xl tracking-tight"><span className="text-primary italic">λ</span>echSavvy</span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-1">
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={`px-3 py-2 text-sm transition-colors rounded-md hover:text-foreground ${
-                  location === l.href ? "text-foreground font-medium" : "text-muted-foreground"
-                }`}
-                data-testid={`link-nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-              >
-                {l.label}
-              </Link>
-            ))}
-          </div>
-
-          <div className="hidden md:flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/connect" data-testid="link-nav-connect">
-                Connect
-              </Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link href="/statement-review" data-testid="link-nav-statement-analysis">
-                Statement Analysis
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </Button>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            data-testid="button-mobile-menu"
-          >
-            {mobileOpen ? <XIcon /> : <Menu />}
-          </Button>
-        </div>
-      </div>
-
-      {mobileOpen && (
-        <div className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border px-4 pb-4">
-          {links.map((l) => (
+      <nav
+        aria-label="Main navigation"
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? "bg-background/80 backdrop-blur-xl border-b border-border"
+            : "bg-transparent"
+        }`}
+        data-testid="navbar"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-4 h-16">
             <Link
-              key={l.href}
-              href={l.href}
-              className={`block px-3 py-2.5 text-sm ${
-                location === l.href ? "text-foreground font-medium" : "text-muted-foreground"
-              }`}
-              onClick={() => setMobileOpen(false)}
-              data-testid={`link-mobile-${l.label.toLowerCase().replace(/\s/g, "-")}`}
+              href="/"
+              className="font-bold text-xl tracking-tight flex items-center gap-2.5"
+              data-testid="link-logo"
             >
-              {l.label}
+              <span className="text-foreground font-extrabold text-xl tracking-tight">
+                <span className="text-primary italic">λ</span>echSavvy
+              </span>
             </Link>
-          ))}
-          <div className="mt-3 flex flex-col gap-2">
-            <Button variant="outline" size="sm" asChild className="w-full">
-              <Link href="/connect" data-testid="link-mobile-connect" onClick={() => setMobileOpen(false)}>
-                Connect With Us
-              </Link>
-            </Button>
-            <Button size="sm" asChild className="w-full">
-              <Link href="/statement-review" data-testid="link-mobile-statement-analysis" onClick={() => setMobileOpen(false)}>
-                Statement Analysis
-              </Link>
-            </Button>
-            <a
-              href="tel:+18087675460"
-              className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+
+            {/* Desktop nav — dropdowns */}
+            <div className="hidden md:flex items-center gap-0.5">
+              {navGroups.map((group) => (
+                <DropdownMenu
+                  key={group.label}
+                  label={group.label}
+                  items={group.items}
+                  currentPath={location}
+                />
+              ))}
+            </div>
+
+            <div className="hidden md:flex items-center gap-2">
+              <Button size="sm" asChild>
+                <Link href="/statement-review" data-testid="link-nav-statement-analysis">
+                  Statement Analysis
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </Button>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              data-testid="button-mobile-menu"
             >
-              <Phone className="w-4 h-4 text-primary" />
-              (808) 767-5460
-            </a>
+              {mobileOpen ? <XIcon /> : <Menu />}
+            </Button>
           </div>
         </div>
-      )}
-    </nav>
+
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <div className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border px-4 pb-5 max-h-[80vh] overflow-y-auto">
+            {navGroups.map((group) => (
+              <div key={group.label} className="mt-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-3 mb-1">
+                  {group.label}
+                </p>
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`block px-3 py-2 text-sm rounded-md transition-colors ${
+                      location === item.href
+                        ? "text-foreground font-medium bg-accent"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setMobileOpen(false)}
+                    data-testid={`link-mobile-${item.label.toLowerCase().replace(/\s/g, "-")}`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
+            <div className="mt-5 flex flex-col gap-2">
+              <Button size="sm" asChild className="w-full">
+                <Link
+                  href="/statement-review"
+                  data-testid="link-mobile-statement-analysis"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Statement Analysis
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </Button>
+              <a
+                href="tel:+18087675460"
+                className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Phone className="w-4 h-4 text-primary" />
+                (808) 767-5460
+              </a>
+            </div>
+          </div>
+        )}
+      </nav>
     </header>
   );
 }
@@ -151,7 +234,7 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
           <div className="col-span-2 md:col-span-1">
             <p className="text-xs sm:text-sm text-white/70 leading-relaxed max-w-sm mb-3">
-              Hawai'i's trusted payment processing company. Our gift to local businesses: zero fees, free equipment, no contracts, and local support.
+              Hawai'i's full-service business tech partner. Websites, CRMs, branding, video, ads, and zero-fee payment processing — one local team.
             </p>
             <div className="space-y-2.5 text-sm text-white/60">
               <a href="tel:+18087675460" className="flex items-center gap-2 transition-colors hover:text-white">
@@ -177,8 +260,13 @@ function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-white">Services</h4>
             <ul className="space-y-3 text-sm text-white/60">
               <li>
-                <Link href="/pricing" className="transition-colors hover:text-white" data-testid="link-footer-pricing">
+                <Link href="/payment-processing" className="transition-colors hover:text-white" data-testid="link-footer-payment">
                   Payment Processing
+                </Link>
+              </li>
+              <li>
+                <Link href="/pricing" className="transition-colors hover:text-white" data-testid="link-footer-pricing">
+                  Pricing
                 </Link>
               </li>
               <li>
@@ -192,13 +280,8 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/how-it-works" className="transition-colors hover:text-white" data-testid="link-footer-features">
-                  How It Works
-                </Link>
-              </li>
-              <li>
-                <Link href="/refer" className="transition-colors hover:text-primary text-primary/80 font-medium" data-testid="link-footer-refer-biz">
-                  Earn Residual Income →
+                <Link href="/apply" className="transition-colors hover:text-primary text-primary/80 font-medium" data-testid="link-footer-apply">
+                  Apply Now →
                 </Link>
               </li>
             </ul>
@@ -213,8 +296,13 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/how-it-works#faq" className="transition-colors hover:text-white" data-testid="link-footer-faq">
+                <Link href="/faq" className="transition-colors hover:text-white" data-testid="link-footer-faq">
                   FAQ
+                </Link>
+              </li>
+              <li>
+                <Link href="/free-guides" className="transition-colors hover:text-white" data-testid="link-footer-guides">
+                  Free Guides
                 </Link>
               </li>
               <li>
@@ -223,18 +311,13 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/connect" className="transition-colors hover:text-white" data-testid="link-footer-connect">
-                  Connect With Us
+                <Link href="/partner-program" className="transition-colors hover:text-white" data-testid="link-footer-partner">
+                  Partner Program
                 </Link>
               </li>
               <li>
-                <Link href="/refer" className="transition-colors hover:text-primary text-primary/80 font-medium" data-testid="link-footer-refer">
+                <Link href="/referral" className="transition-colors hover:text-primary text-primary/80 font-medium" data-testid="link-footer-refer">
                   Refer a Business & Earn
-                </Link>
-              </li>
-              <li>
-                <Link href="/" className="transition-colors hover:text-white" data-testid="link-footer-top">
-                  Home
                 </Link>
               </li>
             </ul>

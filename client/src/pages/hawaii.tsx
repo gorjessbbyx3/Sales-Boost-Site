@@ -518,7 +518,7 @@ export default function HawaiiPage() {
                   },
                   {
                     title: "Any local business",
-                    body: "Brand videos, customer testimonials, promo cuts — edited and ready to post across Instagram, TikTok, and Facebook.",
+                    body: "Brand videos, customer testimonials, promo cuts, and AI-generated ads — edited and ready to post across Instagram, TikTok, and Facebook.",
                   },
                 ].map((item) => (
                   <div key={item.title} className="flex gap-3">
