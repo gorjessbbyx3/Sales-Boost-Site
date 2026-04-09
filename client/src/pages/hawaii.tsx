@@ -554,9 +554,12 @@ export default function HawaiiPage() {
               <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black">
                 <video
                   src="/video-showreel.mov"
-                  controls
+                  autoPlay
+                  muted
+                  loop
                   playsInline
-                  preload="metadata"
+                  controls
+                  preload="auto"
                   className="w-full block"
                   style={{ maxHeight: "380px", objectFit: "cover" }}
                 />
