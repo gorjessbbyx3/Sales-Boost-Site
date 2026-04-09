@@ -62,25 +62,18 @@ export default function HawaiiPage() {
               className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-6"
               variants={fadeUp}
             >
-              Most people think we're a{" "}
-              <span className="line-through text-muted-foreground/60">
-                payment processor
-              </span>
-              .
-              <br />
-              <span className="text-primary">We're the team your business hires</span>{" "}
-              when it's done being small.
+              The local team Hawai'i businesses call{" "}
+              <span className="text-primary">when they're ready to grow.</span>
             </motion.h1>
 
             <motion.p
               className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto"
               variants={fadeUp}
             >
-              You already know what's broken. The website nobody updates. The
-              spreadsheet pretending to be a CRM. The emails landing in spam.
-              The card fees quietly eating your margin. We don't sell you a
-              product — we sit down, look at all of it, and fix what's actually
-              costing you money.
+              Websites that actually convert. CRMs built around how you really
+              work. Branding that makes customers take you seriously. Emails
+              that land in inboxes. One local partner, one phone number —
+              handling the tech so you can run your business.
             </motion.p>
 
             <motion.div
