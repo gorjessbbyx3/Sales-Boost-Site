@@ -7,7 +7,6 @@ import {
   ChevronDown,
   ExternalLink,
   Check,
-  Star,
   Globe,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -419,9 +418,9 @@ export default function HawaiiPage() {
         <div className="max-w-5xl mx-auto px-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
             {[
-              { n: 50, s: "+", label: "HI Businesses" },
-              { n: 35, s: "+", label: "Custom API endpoints" },
-              { n: 4, s: "", label: "Service lines" },
+              { n: 50, s: "+", label: "HI Businesses served" },
+              { n: 7, s: " days", label: "Avg time to launch" },
+              { n: 4, s: " islands", label: "We serve" },
               { n: 0, p: "$", s: "", label: "Processing fees" },
             ].map((stat) => (
               <div key={stat.label}>
@@ -700,32 +699,6 @@ export default function HawaiiPage() {
                   <ArrowRight className="w-3 h-3" />
                 </a>
               </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── TESTIMONIAL ──────────────────────────────────────────────────── */}
-      <section className="py-14 sm:py-20 bg-[#060810]">
-        <div className="max-w-3xl mx-auto px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
-            <div className="flex justify-center gap-1 mb-5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
-              ))}
-            </div>
-            <blockquote className="text-xl sm:text-3xl font-bold text-white leading-snug mb-6">
-              "I hired them for a website. A year later they're running my CRM,
-              my ads, my email, and my card processing. They're not a vendor —
-              they're on my team."
-            </blockquote>
-            <div className="text-white/40 text-sm">
-              Hawai'i Small Business Owner · O'ahu
             </div>
           </motion.div>
         </div>
