@@ -204,7 +204,7 @@ export default function HawaiiPage() {
       "Websites, CRMs, branding, ads, and zero-fee payment processing — all from one local Honolulu team. We build, we stay, we grow with you.",
     keywords:
       "Hawaii business partner, Honolulu web design, CRM Hawaii, payment processing Hawaii, TechSavvy Hawaii, local business tech Oahu",
-    canonical: "https://techsavvyhawaii.com/hawaii",
+    canonical: "https://techsavvyhawaii.com/",
   });
 
   const services = [

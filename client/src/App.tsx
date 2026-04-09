@@ -5,11 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { useEffect, lazy, Suspense } from "react";
-import Home from "@/pages/home";
+import HawaiiPage from "@/pages/hawaii";
 import NotFound from "@/pages/not-found";
 import { ChatWidget } from "@/components/chat-widget";
 
 // Lazy-load all pages except homepage for faster initial load
+const HomePage = lazy(() => import("@/pages/home"));
 const PricingPage = lazy(() => import("@/pages/pricing"));
 const HowItWorksPage = lazy(() => import("@/pages/how-it-works"));
 const HighRiskPage = lazy(() => import("@/pages/high-risk"));
@@ -27,7 +28,6 @@ const EquipmentPage = lazy(() => import("@/pages/equipment"));
 const PartnerProgramPage = lazy(() => import("@/pages/partner-program"));
 const IndustryPage = lazy(() => import("@/pages/industry"));
 const IslandPage = lazy(() => import("@/pages/island"));
-const HawaiiPage = lazy(() => import("@/pages/hawaii"));
 
 const isAdminSubdomain = window.location.hostname.startsWith("admin.");
 const isProgramSubdomain = window.location.hostname.startsWith("program.");
@@ -48,7 +48,8 @@ function MainRouter() {
       <ScrollToTop />
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
         <Switch>
-          <Route path="/" component={Home} />
+          <Route path="/" component={HawaiiPage} />
+          <Route path="/payment-processing" component={HomePage} />
           <Route path="/pricing" component={PricingPage} />
           <Route path="/how-it-works" component={HowItWorksPage} />
           <Route path="/high-risk" component={HighRiskPage} />
@@ -64,7 +65,6 @@ function MainRouter() {
           <Route path="/equipment" component={EquipmentPage} />
           <Route path="/industries/:industry" component={IndustryPage} />
           <Route path="/locations/:island" component={IslandPage} />
-          <Route path="/hawaii" component={HawaiiPage} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>
