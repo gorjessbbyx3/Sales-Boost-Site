@@ -584,53 +584,94 @@ export default function HawaiiPage() {
             </motion.div>
           </div>
 
-          {/* ── Right column — service showcase card ── */}
+          {/* ── Right column — Bento service grid ── */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.9, delay: 0.4, ease: "easeOut" }}
             className="hidden lg:block"
           >
-            <div className="relative rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-md shadow-2xl overflow-hidden p-7">
-              <div className="flex items-center gap-3 mb-6">
-                <img
-                  src={techSavvyLogoImg}
-                  alt="TechSavvy Hawaii"
-                  className="w-10 h-10 rounded-xl object-cover border border-white/10"
-                />
-                <div>
-                  <p className="text-white font-bold text-sm leading-tight">TechSavvy Hawaii</p>
-                  <p className="text-white/40 text-xs">Honolulu's full-service tech team</p>
+            <div className="grid grid-cols-6 grid-rows-[160px_160px_auto] gap-2.5">
+
+              {/* Websites — wide top */}
+              <div className="col-span-4 rounded-2xl border border-white/[0.08] bg-gradient-to-br from-emerald-900/35 to-[#060810] p-5 flex flex-col justify-between hover:border-emerald-500/30 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                    <Globe className="w-4.5 h-4.5 text-emerald-400" />
+                  </div>
+                  <span className="text-[10px] text-white/20 font-mono">01</span>
                 </div>
-                <span className="ml-auto flex items-center gap-1 text-[10px] text-primary font-bold uppercase tracking-wide">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  Active
-                </span>
+                <div>
+                  <h3 className="font-black text-white text-lg mb-0.5">Custom Websites</h3>
+                  <p className="text-white/40 text-xs">Built from scratch. Live in 7 days — not months.</p>
+                </div>
               </div>
-              <div className="space-y-3">
-                {services.map((s, i) => (
-                  <motion.div
-                    key={s.title}
-                    initial={{ opacity: 0, x: 16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + i * 0.08 }}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.07] hover:border-primary/30 transition-colors"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3.5 h-3.5 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-white text-xs font-semibold leading-tight">{s.title}</p>
-                      <p className="text-white/40 text-[11px] truncate">{s.sub}</p>
-                    </div>
-                  </motion.div>
-                ))}
+
+              {/* Zero-Fee — tall right */}
+              <div className="col-span-2 row-span-2 rounded-2xl border border-white/[0.08] bg-gradient-to-b from-primary/15 to-[#060810] p-5 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
+                    <CreditCard className="w-4.5 h-4.5 text-primary" />
+                  </div>
+                  <span className="text-[10px] text-white/20 font-mono">04</span>
+                </div>
+                <div>
+                  <h3 className="font-black text-white text-base mb-1.5">Zero-Fee Processing</h3>
+                  <p className="text-white/40 text-[11px] mb-3">Keep every dollar. We pass fees to the card brands — not you.</p>
+                  <div className="space-y-1.5">
+                    {["No monthly fees", "Next-day deposits", "Free terminal"].map((f) => (
+                      <div key={f} className="flex items-center gap-1.5 text-[11px] text-white/50">
+                        <Check className="w-3 h-3 text-primary" />{f}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-white/30">
-                <span>4 islands served</span>
-                <span>7-day avg launch</span>
-                <span>100% local team</span>
+
+              {/* CRM */}
+              <div className="col-span-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 flex flex-col justify-between hover:border-sky-500/30 hover:bg-sky-900/10 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/15 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-sky-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm mb-0.5">CRM Systems</h3>
+                  <p className="text-white/35 text-xs">Your workflow, not someone else's.</p>
+                </div>
               </div>
+
+              {/* Brand */}
+              <div className="col-span-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 flex flex-col justify-between hover:border-violet-500/30 hover:bg-violet-900/10 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center">
+                  <Palette className="w-4 h-4 text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm mb-0.5">Brand & Design</h3>
+                  <p className="text-white/35 text-xs">Logos, print, social content.</p>
+                </div>
+              </div>
+
+              {/* Ad Funnels */}
+              <div className="col-span-3 rounded-2xl border border-white/[0.08] bg-gradient-to-r from-orange-900/20 to-[#060810] p-4 flex items-center gap-3 hover:border-orange-500/30 transition-colors">
+                <div className="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+                  <Megaphone className="w-4.5 h-4.5 text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm mb-0.5">Ad Funnels</h3>
+                  <p className="text-white/40 text-xs">Meta · Google · TikTok ads that convert.</p>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="col-span-3 rounded-2xl border border-white/[0.08] bg-gradient-to-r from-rose-900/20 to-[#060810] p-4 flex items-center gap-3 hover:border-rose-500/30 transition-colors">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/15 flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-4.5 h-4.5 text-rose-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm mb-0.5">Email Deliverability</h3>
+                  <p className="text-white/40 text-xs">Stop landing in spam. Period.</p>
+                </div>
+              </div>
+
             </div>
           </motion.div>
         </div>
