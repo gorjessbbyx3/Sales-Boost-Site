@@ -738,96 +738,101 @@ export default function HawaiiPage() {
       <ServicesTabs services={services} />
 
       {/* ── SOCIAL MEDIA & VIDEO MARKETING ──────────────────────────────── */}
-      <section className="py-14 sm:py-20 bg-[#060810] relative overflow-hidden">
+      <section className="py-20 sm:py-28 bg-[#060810] relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
         </div>
-        <div className="relative z-10 max-w-5xl mx-auto px-5">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-            {/* Left — copy */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+        <div className="relative z-10 max-w-4xl mx-auto px-5">
+
+          {/* Header — minimal, punchy */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-10"
+          >
+            <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">
+              In-house production
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black text-white mt-3 mb-4 leading-[1.1]">
+              Content that makes them{" "}
+              <span className="text-primary italic">stop.</span>
+            </h2>
+            <p className="text-white/40 text-base max-w-sm mx-auto">
+              Shot, edited, and posted by our team. No stock. No templates.
+            </p>
+          </motion.div>
+
+          {/* Video — full width, custom player */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="relative rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl mb-10 group"
+            style={{ boxShadow: "0 0 80px rgba(0,255,170,0.06), 0 30px 60px rgba(0,0,0,0.6)" }}
+          >
+            <video
+              id="showreel-video"
+              src="https://pub-2dc4c46cc9074fa38ebc84ede4213acb.r2.dev/video-showreel.mov"
+              poster="/images/hero-hawaii-sunset.jpg"
+              playsInline
+              controls
+              preload="metadata"
+              className="w-full block"
+              style={{ maxHeight: "520px", objectFit: "cover" }}
+            />
+            {/* Play button overlay — fades out when controls appear */}
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none group-has-[video:not([controls])]:opacity-0"
+              aria-hidden="true"
             >
-              <span className="text-primary text-xs font-bold uppercase tracking-widest">
-                In-house marketing team
-              </span>
-              <h2 className="text-2xl sm:text-4xl font-black text-white mt-2 mb-4 leading-tight">
-                We make the videos your{" "}
-                <span className="text-primary italic">customers stop scrolling for.</span>
-              </h2>
-              <p className="text-white/60 text-sm sm:text-base leading-relaxed mb-6">
-                Our in-house team produces professional social media videos — the
-                kind that actually get watched, shared, and acted on. Property
-                walkthroughs, brand stories, promos, reels. If it needs to move,
-                we shoot it and edit it.
-              </p>
+              <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-0 transition-opacity" />
+            </div>
+          </motion.div>
 
-              <div className="space-y-4 mb-8">
-                {[
-                  {
-                    title: "Realtors & property managers",
-                    body: "Showcase listings with cinematic walkthroughs and neighborhood reels that stop buyers mid-scroll. We've done it for Mel — we can do it for you.",
-                  },
-                  {
-                    title: "Restaurants & hospitality",
-                    body: "Mouth-watering food content and behind-the-scenes reels that fill tables without paid ads.",
-                  },
-                  {
-                    title: "Any local business",
-                    body: "Brand videos, customer testimonials, promo cuts, and AI-generated ads — edited and ready to post across Instagram, TikTok, and Facebook.",
-                  },
-                ].map((item) => (
-                  <div key={item.title} className="flex gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                    <div>
-                      <p className="text-white font-semibold text-sm">{item.title}</p>
-                      <p className="text-white/50 text-sm leading-relaxed">{item.body}</p>
-                    </div>
-                  </div>
-                ))}
+          {/* Stats row */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="grid grid-cols-3 gap-px bg-white/8 rounded-2xl overflow-hidden mb-10"
+          >
+            {[
+              { num: "60+", label: "Reels Produced" },
+              { num: "3", label: "Platforms" },
+              { num: "0", label: "Stock Footage" },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-[#060810] py-6 text-center">
+                <p className="text-2xl sm:text-3xl font-black text-white">{stat.num}</p>
+                <p className="text-white/40 text-xs uppercase tracking-widest mt-1">{stat.label}</p>
               </div>
+            ))}
+          </motion.div>
 
-              <Button
-                size="lg"
-                className="font-bold px-8 py-5 rounded-xl shadow-lg shadow-primary/30"
-                asChild
-              >
-                <a href="/contact" data-testid="button-video-cta">
-                  Ask about video packages
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-              </Button>
-            </motion.div>
-
-            {/* Right — video showreel */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.15 }}
-              className="flex flex-col gap-3"
+          {/* Single CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="text-center"
+          >
+            <Button
+              size="lg"
+              className="font-bold px-10 py-5 rounded-xl text-base shadow-lg shadow-primary/30"
+              asChild
             >
-              <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black">
-                <video
-                  src="https://pub-2dc4c46cc9074fa38ebc84ede4213acb.r2.dev/video-showreel.mov"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  controls
-                  preload="metadata"
-                  className="w-full block"
-                  style={{ maxHeight: "380px", objectFit: "cover" }}
-                />
-              </div>
-              <p className="text-white/30 text-xs text-center">
-                Real content we've produced for local Hawaii businesses
-              </p>
-            </motion.div>
-          </div>
+              <a href="/contact" data-testid="button-video-cta">
+                Get your reel
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </Button>
+            <p className="text-white/25 text-xs mt-4">Realtors · Restaurants · Local brands</p>
+          </motion.div>
+
         </div>
       </section>
 
