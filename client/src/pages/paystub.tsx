@@ -1,424 +1,632 @@
 import { Printer } from "lucide-react";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
-interface StubData {
-  id: string;
-  payDate: string;
-  periodStart: string;
-  periodEnd: string;
-  periodNum: number;
-  totalPeriods: number;
-  grossPay: number;
-  federalTax: number;
-  socialSecurity: number;
-  medicare: number;
-  hawaiiStateTax: number;
-  hawaiiTDI: number;
-  ytdGross: number;
-  ytdFederalTax: number;
-  ytdSocialSecurity: number;
-  ytdMedicare: number;
-  ytdHawaiiStateTax: number;
-  ytdHawaiiTDI: number;
-}
+// ─── Data ──────────────────────────────────────────────────────────────────────
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
-
-// ─── Company & Employee ────────────────────────────────────────────────────────
 const COMPANY = {
-  name: "Y HATA & CO., LIMITED",
-  address: "285 Sand Island Access Rd, Honolulu, HI 96819",
+  name: "Y. Hata & Co., Limited",
+  address: "285 Sand Island Access Road",
+  city: "Honolulu, HI 96819",
+  phone: "808 447-4162",
 };
 
 const EMPLOYEE = {
-  name: "AARON PENEYRA",
-  id: "EMP-0117",
+  name: "Aaron Peneyra",
+  address: "1649 Quincy Pl",
+  city: "Honolulu, HI 96816",
+  id: "011492",
   ssn: "***-**-4821",
-  address: "1649 QUINCY PL, HONOLULU, HI 96816",
-  dept: "Operations",
   payType: "Salary",
-  filingStatus: "Single / 0",
+  dept: "000145 – Op",
+  jobTitle: "OPERATIONS ASSOCIATE",
 };
 
-// ─── April Stub (Period 6) — Gross $1,148.92 ──────────────────────────────────
-const GROSS_APR = 1148.92;
-const apr: StubData = {
-  id: "stub-apr",
-  payDate: "04/07/2026",
+interface StubConfig {
+  stubId: string;
+  checkNum: string;
+  checkDate: string;
+  payFreq: string;
+  periodStart: string;
+  periodEnd: string;
+  pdStartFmt: string;
+  pdEndFmt: string;
+  grossPay: number;
+  federalTax: number;
+  ficaEE: number;
+  medEE: number;
+  hiWH: number;
+  hiTDI: number;
+  ytdGross: number;
+  ytdFederal: number;
+  ytdFica: number;
+  ytdMed: number;
+  ytdHiWH: number;
+  ytdHiTDI: number;
+  netWords: string;
+}
+
+// ─── April stub — Gross $1,148.92 — Pay Date 04/07/2026 ───────────────────────
+const APR: StubConfig = {
+  stubId: "apr",
+  checkNum: "009126",
+  checkDate: "04/07/2026",
+  payFreq: "Bi-Monthly",
   periodStart: "03/16/2026",
   periodEnd: "03/31/2026",
-  periodNum: 6,
-  totalPeriods: 24,
-  grossPay: GROSS_APR,
+  pdStartFmt: "03/16/2026",
+  pdEndFmt: "03/31/2026",
+  grossPay: 1148.92,
   federalTax: 86.00,
-  socialSecurity: parseFloat((GROSS_APR * 0.062).toFixed(2)),   // 71.23
-  medicare: parseFloat((GROSS_APR * 0.0145).toFixed(2)),        // 16.66
-  hawaiiStateTax: 59.45,
-  hawaiiTDI: parseFloat((GROSS_APR * 0.005).toFixed(2)),        // 5.74
+  ficaEE: 71.23,     // 6.20%
+  medEE: 16.66,      // 1.45%
+  hiWH: 59.45,       // HRS §235 progressive
+  hiTDI: 5.74,       // HRS §392 0.50%
   ytdGross: 6654.44,
-  ytdFederalTax: 457.00,
-  ytdSocialSecurity: 412.56,
-  ytdMedicare: 96.49,
-  ytdHawaiiStateTax: 337.25,
-  ytdHawaiiTDI: 33.25,
+  ytdFederal: 457.00,
+  ytdFica: 412.56,
+  ytdMed: 96.49,
+  ytdHiWH: 337.25,
+  ytdHiTDI: 33.25,
+  netWords: "Nine Hundred Nine and 84/100 Dollars",
 };
 
-// ─── March Stub (Period 5) — Gross $909.84 (≈ April take-home) ────────────────
-const GROSS_MAR = 909.84;
-const mar: StubData = {
-  id: "stub-mar",
-  payDate: "03/20/2026",
+// ─── March stub — Gross $909.84 — Pay Date 03/20/2026 ─────────────────────────
+const MAR: StubConfig = {
+  stubId: "mar",
+  checkNum: "009125",
+  checkDate: "03/20/2026",
+  payFreq: "Bi-Monthly",
   periodStart: "03/01/2026",
   periodEnd: "03/15/2026",
-  periodNum: 5,
-  totalPeriods: 24,
-  grossPay: GROSS_MAR,
+  pdStartFmt: "03/01/2026",
+  pdEndFmt: "03/15/2026",
+  grossPay: 909.84,
   federalTax: 27.00,
-  socialSecurity: parseFloat((GROSS_MAR * 0.062).toFixed(2)),   // 56.41
-  medicare: parseFloat((GROSS_MAR * 0.0145).toFixed(2)),        // 13.19
-  hawaiiStateTax: 40.00,
-  hawaiiTDI: parseFloat((GROSS_MAR * 0.005).toFixed(2)),        // 4.55
+  ficaEE: 56.41,
+  medEE: 13.19,
+  hiWH: 40.00,
+  hiTDI: 4.55,
   ytdGross: 5505.52,
-  ytdFederalTax: 371.00,
-  ytdSocialSecurity: 341.33,
-  ytdMedicare: 79.83,
-  ytdHawaiiStateTax: 277.80,
-  ytdHawaiiTDI: 27.51,
+  ytdFederal: 371.00,
+  ytdFica: 341.33,
+  ytdMed: 79.83,
+  ytdHiWH: 277.80,
+  ytdHiTDI: 27.51,
+  netWords: "Seven Hundred Sixty-Eight and 69/100 Dollars",
 };
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+const usd = (n: number) =>
+  new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 export default function PaystubPage() {
-  const printStub = (stubId: string) => {
-    document.body.setAttribute("data-print-stub", stubId);
+  const printStub = (id: string) => {
+    document.body.setAttribute("data-print-stub", id);
     window.print();
-    document.body.removeAttribute("data-print-stub");
+    setTimeout(() => document.body.removeAttribute("data-print-stub"), 500);
   };
 
   return (
-    <div
-      className="min-h-screen py-10 px-6 print:py-0 print:px-0 print:bg-white"
-      style={{ backgroundColor: "#e5e7eb" }}
-    >
-      {/* Screen header */}
-      <div className="max-w-5xl mx-auto mb-6 print:hidden">
-        <h1 className="text-xl font-bold text-gray-800">Y HATA &amp; CO. — Pay Stubs</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Formatted for pre-perforated check stub paper (8.5″ × 3.5″ per stub).
-          Click <em>Print Stub</em> on each to export as PDF.
-        </p>
-      </div>
-
-      {/* ── Stub 1 — April ── */}
-      <div className="max-w-5xl mx-auto mb-3 flex justify-end print:hidden">
+    <div style={{ background: "#ccc", minHeight: "100vh", padding: "24px 12px", fontFamily: "Arial, Helvetica, sans-serif" }}>
+      {/* Screen controls */}
+      <div style={{ maxWidth: 800, margin: "0 auto 12px", display: "flex", gap: 10, justifyContent: "flex-end" }} className="print:hidden">
         <button
-          onClick={() => printStub("stub-apr")}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-white shadow"
-          style={{ backgroundColor: "hsl(152,76%,36%)" }}
+          onClick={() => printStub("apr")}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "hsl(152,76%,36%)", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
         >
-          <Printer className="w-3.5 h-3.5" />
-          Print Stub — 04/07/2026
+          <Printer size={14} /> Print 04/07/2026 (PDF)
+        </button>
+        <button
+          onClick={() => printStub("mar")}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "#374151", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+        >
+          <Printer size={14} /> Print 03/20/2026 (PDF)
         </button>
       </div>
-      <CheckStub stub={apr} />
 
-      {/* ── Stub 2 — March ── */}
-      <div className="max-w-5xl mx-auto mt-6 mb-3 flex justify-end print:hidden">
-        <button
-          onClick={() => printStub("stub-mar")}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-white shadow"
-          style={{ backgroundColor: "hsl(152,76%,36%)" }}
-        >
-          <Printer className="w-3.5 h-3.5" />
-          Print Stub — 03/20/2026
-        </button>
+      {/* April */}
+      <div data-stub="apr">
+        <StubDocument cfg={APR} />
       </div>
-      <CheckStub stub={mar} />
 
-      <div className="pb-12 print:hidden" />
+      <div style={{ height: 32 }} className="print:hidden" />
 
-      {/* ── Print styles ── */}
+      {/* March */}
+      <div data-stub="mar">
+        <StubDocument cfg={MAR} />
+      </div>
+
+      <div style={{ height: 32 }} className="print:hidden" />
+
       <style>{`
-        /* Page size: standard pre-perforated check stub */
         @media print {
-          @page {
-            size: 8.5in 3.5in;
-            margin: 0.2in 0.25in;
-          }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-          /* Hide both stubs by default when printing, then show only the target */
+          @page { size: letter portrait; margin: 0.3in; }
+          body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .print\\:hidden { display: none !important; }
           [data-stub] { display: none !important; }
-
-          body[data-print-stub="stub-apr"] [data-stub="stub-apr"] { display: block !important; }
-          body[data-print-stub="stub-mar"] [data-stub="stub-mar"] { display: block !important; }
+          body[data-print-stub="apr"] [data-stub="apr"] { display: block !important; }
+          body[data-print-stub="mar"] [data-stub="mar"] { display: block !important; }
         }
       `}</style>
     </div>
   );
 }
 
-// ─── CheckStub ─────────────────────────────────────────────────────────────────
-// Short-and-wide layout matching pre-perforated check stub paper
-function CheckStub({ stub }: { stub: StubData }) {
-  const totalDed = parseFloat(
-    (stub.federalTax + stub.socialSecurity + stub.medicare +
-      stub.hawaiiStateTax + stub.hawaiiTDI).toFixed(2)
-  );
-  const netPay = parseFloat((stub.grossPay - totalDed).toFixed(2));
+// ─── StubDocument ──────────────────────────────────────────────────────────────
+function StubDocument({ cfg }: { cfg: StubConfig }) {
+  const totalTaxes = cfg.federalTax + cfg.ficaEE + cfg.medEE + cfg.hiWH + cfg.hiTDI;
+  const ytdTotalTaxes = cfg.ytdFederal + cfg.ytdFica + cfg.ytdMed + cfg.ytdHiWH + cfg.ytdHiTDI;
+  const netPay = cfg.grossPay - totalTaxes;
+  const ytdNetPay = cfg.ytdGross - ytdTotalTaxes;
 
-  const ytdTotalDed = parseFloat(
-    (stub.ytdFederalTax + stub.ytdSocialSecurity + stub.ytdMedicare +
-      stub.ytdHawaiiStateTax + stub.ytdHawaiiTDI).toFixed(2)
-  );
-  const ytdNet = parseFloat((stub.ytdGross - ytdTotalDed).toFixed(2));
+  // Taxable wages (no pre-tax deductions, so same as gross)
+  const txWages = cfg.grossPay;
+
+  const page: React.CSSProperties = {
+    maxWidth: 780,
+    margin: "0 auto",
+    background: "#fff",
+    border: "1px solid #666",
+    fontSize: 9,
+    color: "#000",
+    lineHeight: 1.3,
+  };
+
+  const tbl: React.CSSProperties = { width: "100%", borderCollapse: "collapse" };
+
+  const sectionHead = (label: string): React.CSSProperties => ({
+    background: "#d8d8d8",
+    fontWeight: 700,
+    fontSize: 8,
+    textAlign: "center" as const,
+    border: "1px solid #999",
+    padding: "1px 4px",
+    letterSpacing: "0.04em",
+  });
+
+  const colHead: React.CSSProperties = {
+    background: "#ebebeb",
+    fontWeight: 700,
+    fontSize: 8,
+    border: "1px solid #aaa",
+    padding: "1px 4px",
+    whiteSpace: "nowrap" as const,
+  };
+
+  const td: React.CSSProperties = { border: "1px solid #ccc", padding: "1px 4px" };
+  const tdR: React.CSSProperties = { ...td, textAlign: "right" as const };
+  const tdB: React.CSSProperties = { ...td, fontWeight: 700 };
+  const tdBR: React.CSSProperties = { ...tdR, fontWeight: 700 };
 
   return (
-    <div
-      data-stub={stub.id}
-      className="max-w-5xl mx-auto bg-white shadow-md print:shadow-none print:max-w-none"
-      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-    >
-      {/* ── Top color bar + header ── */}
-      <div
-        className="flex items-center justify-between px-4 py-2"
-        style={{ backgroundColor: "hsl(152,76%,36%)", color: "#fff" }}
-      >
-        <div>
-          <div style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.02em" }}>
-            {COMPANY.name}
-          </div>
-          <div style={{ fontSize: "10px", opacity: 0.85 }}>{COMPANY.address}</div>
-        </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "10px", opacity: 0.75, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Employee Pay Statement — Semi-Monthly
-          </div>
-          <div style={{ fontSize: "13px", fontWeight: 700 }}>
-            Period {stub.periodNum}/{stub.totalPeriods}&ensp;|&ensp;Pay Date: {stub.payDate}
-          </div>
-          <div style={{ fontSize: "10px", opacity: 0.85 }}>
-            Pay Period: {stub.periodStart} – {stub.periodEnd}
-          </div>
-        </div>
+    <div style={page}>
+
+      {/* ══ HEADER ══════════════════════════════════════════════════════════════ */}
+      <table style={{ ...tbl, borderBottom: "2px solid #666" }}>
+        <tbody>
+          <tr>
+            <td style={{ padding: "4px 8px", width: "55%", verticalAlign: "top" }}>
+              <div style={{ fontWeight: 800, fontSize: 13 }}>{COMPANY.name}</div>
+              <div>{COMPANY.address}</div>
+              <div>{COMPANY.city}</div>
+              <div>{COMPANY.phone}</div>
+            </td>
+            <td style={{ padding: "4px 8px", verticalAlign: "top", textAlign: "right" }}>
+              <div><b>Check Date:</b> {cfg.checkDate}</div>
+              <div><b>Check Number:</b> {cfg.checkNum}</div>
+              <div><b>Pay Frequency:</b> {cfg.payFreq}</div>
+              <div><b>Pay Period Dates:</b> {cfg.periodStart} – {cfg.periodEnd}</div>
+              <div><b>Tax Freq for this Payment:</b> {cfg.payFreq}</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* ══ EMPLOYEE INFORMATION ════════════════════════════════════════════════ */}
+      <table style={tbl}>
+        <thead>
+          <tr>
+            <th colSpan={2} style={{ ...sectionHead(""), textAlign: "left" }}>Employee Information</th>
+            <th style={sectionHead("")}>Tax Type</th>
+            <th style={sectionHead("")}>Tax Jurisdiction</th>
+            <th style={sectionHead("")}>Status</th>
+            <th style={sectionHead("")}>Exem</th>
+            <th style={sectionHead("")}>Adjs</th>
+            <th style={{ ...sectionHead(""), width: 160 }}>Other Tax Information</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td rowSpan={2} style={{ ...td, verticalAlign: "top", width: 180 }}>
+              <div style={{ fontWeight: 700 }}>{EMPLOYEE.name}</div>
+              <div>{EMPLOYEE.address}</div>
+              <div>{EMPLOYEE.city}</div>
+            </td>
+            <td rowSpan={2} style={{ ...td, verticalAlign: "top", fontSize: 8 }}>
+              <div>ID#: {EMPLOYEE.id}</div>
+              <div>SSN#: {EMPLOYEE.ssn}</div>
+              <div>Pay Type: {EMPLOYEE.payType}</div>
+              <div>Base Rate: —</div>
+              <div>Dept: {EMPLOYEE.dept}</div>
+            </td>
+            <td style={td}>Federal</td>
+            <td style={td}></td>
+            <td style={td}>Single</td>
+            <td style={{ ...td, textAlign: "center" }}>1</td>
+            <td style={td}></td>
+            <td style={td}></td>
+          </tr>
+          <tr>
+            <td style={td}>HI</td>
+            <td style={td}></td>
+            <td style={td}>Single</td>
+            <td style={{ ...td, textAlign: "center" }}>1</td>
+            <td style={td}></td>
+            <td style={td}></td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* ══ EARNINGS + DEDUCTIONS COLUMNS ═══════════════════════════════════════ */}
+      <table style={tbl}>
+        <tbody>
+          <tr style={{ verticalAlign: "top" }}>
+
+            {/* ── LEFT: Earnings ── */}
+            <td style={{ width: "58%", borderRight: "2px solid #666" }}>
+              <table style={tbl}>
+                <thead>
+                  <tr><th colSpan={8} style={sectionHead("")}>Earnings</th></tr>
+                  <tr>
+                    <th style={colHead}>Pd Start</th>
+                    <th style={colHead}>Pd End</th>
+                    <th style={{ ...colHead, width: 90 }}>Description</th>
+                    <th style={colHead}>PayRate</th>
+                    <th style={colHead}>Hrs/Units</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Earnings</th>
+                    <th style={colHead}>YTD Hrs</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>YTD Earnings</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={td}>{cfg.pdStartFmt}</td>
+                    <td style={td}>{cfg.pdEndFmt}</td>
+                    <td style={td}>Regular</td>
+                    <td style={td}></td>
+                    <td style={td}></td>
+                    <td style={tdR}>{usd(cfg.grossPay)}</td>
+                    <td style={td}></td>
+                    <td style={tdR}>{usd(cfg.ytdGross)}</td>
+                  </tr>
+                  {/* blank filler rows to keep parity with right column height */}
+                  {[...Array(5)].map((_, i) => (
+                    <tr key={i}>
+                      <td style={{ ...td, height: 14 }}></td>
+                      <td style={td}></td>
+                      <td style={td}></td>
+                      <td style={td}></td>
+                      <td style={td}></td>
+                      <td style={tdR}></td>
+                      <td style={td}></td>
+                      <td style={tdR}></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </td>
+
+            {/* ── RIGHT: Pre-Tax / Taxes / Post-Tax ── */}
+            <td style={{ width: "42%" }}>
+
+              {/* Pre-Tax Deductions */}
+              <table style={tbl}>
+                <thead>
+                  <tr><th colSpan={4} style={sectionHead("")}>Pre-Tax Deductions Withheld</th></tr>
+                  <tr>
+                    <th style={{ ...colHead, width: 120 }}>Description</th>
+                    <th style={colHead}>Sch/Amt</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Curr Amt</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>YTD Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td style={{ ...td, height: 14 }}></td><td style={td}></td><td style={tdR}></td><td style={tdR}></td></tr>
+                  <tr>
+                    <td colSpan={2} style={tdB}>Total Pre-Tax</td>
+                    <td style={tdBR}>0.00</td>
+                    <td style={tdBR}>0.00</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Taxes Withheld */}
+              <table style={tbl}>
+                <thead>
+                  <tr><th colSpan={4} style={sectionHead("")}>Taxes Withheld</th></tr>
+                  <tr>
+                    <th style={{ ...colHead, width: 90 }}>Description</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Tx Wages</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Curr Amt</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>YTD Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={td}>Fed W/H</td>
+                    <td style={tdR}>{usd(txWages)}</td>
+                    <td style={tdR}>{usd(cfg.federalTax)}</td>
+                    <td style={tdR}>{usd(cfg.ytdFederal)}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>FICA EE</td>
+                    <td style={tdR}>{usd(txWages)}</td>
+                    <td style={tdR}>{usd(cfg.ficaEE)}</td>
+                    <td style={tdR}>{usd(cfg.ytdFica)}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>Fed MWT EE</td>
+                    <td style={tdR}>{usd(txWages)}</td>
+                    <td style={tdR}>{usd(cfg.medEE)}</td>
+                    <td style={tdR}>{usd(cfg.ytdMed)}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>HI W/H</td>
+                    <td style={tdR}>{usd(txWages)}</td>
+                    <td style={tdR}>{usd(cfg.hiWH)}</td>
+                    <td style={tdR}>{usd(cfg.ytdHiWH)}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>HI TDI EE</td>
+                    <td style={tdR}>{usd(txWages)}</td>
+                    <td style={tdR}>{usd(cfg.hiTDI)}</td>
+                    <td style={tdR}>{usd(cfg.ytdHiTDI)}</td>
+                  </tr>
+                  <tr>
+                    <td colSpan={2} style={tdB}>Total Taxes</td>
+                    <td style={tdBR}>{usd(totalTaxes)}</td>
+                    <td style={tdBR}>{usd(ytdTotalTaxes)}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Post-Tax Deductions */}
+              <table style={tbl}>
+                <thead>
+                  <tr><th colSpan={4} style={sectionHead("")}>Post-Tax Deductions Withheld</th></tr>
+                  <tr>
+                    <th style={{ ...colHead, width: 120 }}>Description</th>
+                    <th style={colHead}>Sch/Amt</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Curr Amt</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>YTD Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td style={{ ...td, height: 14 }}></td><td style={td}></td><td style={tdR}></td><td style={tdR}></td></tr>
+                </tbody>
+              </table>
+
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* ══ TOTAL HOURS AND EARNINGS ════════════════════════════════════════════ */}
+      <table style={tbl}>
+        <thead>
+          <tr><th colSpan={7} style={sectionHead("")}>Total Hours and Earnings</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...tdB, width: "25%" }}>Total Hours and Earnings</td>
+            <td style={{ ...tdR, width: "10%" }}>0.00</td>
+            <td style={{ ...tdBR, width: "12%" }}>{usd(cfg.grossPay)}</td>
+            <td style={{ ...tdR, width: "10%" }}>0.00</td>
+            <td style={{ ...tdBR, width: "12%" }}>{usd(cfg.ytdGross)}</td>
+            <td style={td}></td>
+            <td style={td}></td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* ══ OTHER PAYROLL INFO + MESSAGES ═══════════════════════════════════════ */}
+      <table style={tbl}>
+        <thead>
+          <tr><th colSpan={4} style={sectionHead("")}>Other Payroll Information</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...td, width: 80, fontWeight: 700, fontSize: 8 }}>Job Title:</td>
+            <td style={{ ...td, width: 200 }}>{EMPLOYEE.jobTitle}</td>
+            <td style={td}></td>
+            <td style={td}></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table style={tbl}>
+        <thead>
+          <tr><th colSpan={2} style={sectionHead("")}>Messages from your Employer</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...td, fontSize: 8, color: "#444", padding: "2px 4px" }} colSpan={2}>
+              Hawaii withholding per HRS §235 &amp; Hawaii Employer's Tax Guide (2026) · Federal per IRS Pub. 15-T (2026) · TDI per HRS §392 · FICA: SS 6.20% / Medicare 1.45%
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* ══ GROSS TO NET RECAP + NET PAY DISTRIBUTION ═══════════════════════════ */}
+      <table style={tbl}>
+        <tbody>
+          <tr style={{ verticalAlign: "top" }}>
+
+            {/* Gross to Net */}
+            <td style={{ width: "62%", borderRight: "2px solid #666" }}>
+              <table style={tbl}>
+                <thead>
+                  <tr>
+                    <th colSpan={6} style={sectionHead("")}>Gross to Net Recap</th>
+                  </tr>
+                  <tr>
+                    <th style={colHead}></th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Paid</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Pre-Tax</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Taxes</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Deductions</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Total Net Pay</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={tdB}>Current</td>
+                    <td style={tdR}>{usd(cfg.grossPay)}</td>
+                    <td style={tdR}>0.00</td>
+                    <td style={tdR}>{usd(totalTaxes)}</td>
+                    <td style={tdR}>0.00</td>
+                    <td style={tdBR}>{usd(netPay)}</td>
+                  </tr>
+                  <tr>
+                    <td style={tdB}>YTD</td>
+                    <td style={tdR}>{usd(cfg.ytdGross)}</td>
+                    <td style={tdR}>0.00</td>
+                    <td style={tdR}>{usd(ytdTotalTaxes)}</td>
+                    <td style={tdR}>0.00</td>
+                    <td style={tdBR}>{usd(ytdNetPay)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+
+            {/* Net Pay Distribution */}
+            <td style={{ width: "38%" }}>
+              <table style={tbl}>
+                <thead>
+                  <tr>
+                    <th colSpan={3} style={sectionHead("")}>Net Pay Distribution</th>
+                  </tr>
+                  <tr>
+                    <th style={colHead}>Description</th>
+                    <th style={colHead}>Account Number</th>
+                    <th style={{ ...colHead, textAlign: "right" }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={td}>Check</td>
+                    <td style={td}></td>
+                    <td style={tdR}>{usd(netPay)}</td>
+                  </tr>
+                  <tr>
+                    <td colSpan={2} style={tdB}>Total Current Net Pay</td>
+                    <td style={tdBR}>{usd(netPay)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+
+      {/* ══ PERFORATION LINE ════════════════════════════════════════════════════ */}
+      <div style={{
+        borderTop: "2px dashed #666",
+        margin: "8px 0 4px",
+        padding: "3px 0 0",
+        fontSize: 8,
+        textAlign: "center",
+        letterSpacing: "0.06em",
+        color: "#333",
+      }}>
+        Statement of Earnings &nbsp;–&nbsp; Detach at perforation below and keep for your records.
       </div>
 
-      {/* ── Main body: 3 columns ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "220px 150px 1fr", borderTop: "2px solid hsl(152,76%,36%)" }}>
+      {/* ══ CHECK ════════════════════════════════════════════════════════════════ */}
+      <table style={{ ...tbl, border: "1px solid #333", marginTop: 4 }}>
+        <tbody>
 
-        {/* Col 1 — Employee info */}
-        <div
-          style={{
-            padding: "8px 12px",
-            borderRight: "1px solid #e5e7eb",
-            fontSize: "11px",
-          }}
-        >
-          <ColHeader>Employee</ColHeader>
-          <ERow label="Name" value={EMPLOYEE.name} bold />
-          <ERow label="ID" value={EMPLOYEE.id} />
-          <ERow label="SSN" value={EMPLOYEE.ssn} />
-          <ERow label="Address" value={EMPLOYEE.address} />
-          <ERow label="Dept" value={EMPLOYEE.dept} />
-          <ERow label="Filing" value={EMPLOYEE.filingStatus} />
-          <ERow label="Pay Type" value={EMPLOYEE.payType} />
-        </div>
+          {/* Check header row */}
+          <tr>
+            <td style={{ padding: "6px 10px", width: "55%", verticalAlign: "top", borderRight: "1px solid #aaa" }}>
+              <div style={{ fontWeight: 800, fontSize: 12 }}>{COMPANY.name}</div>
+              <div style={{ fontSize: 9 }}>{COMPANY.address}</div>
+              <div style={{ fontSize: 9 }}>{COMPANY.city}</div>
+            </td>
+            <td style={{ padding: "6px 10px", verticalAlign: "top", textAlign: "right" }}>
+              <div style={{ fontSize: 9 }}>Bank of Hawaii</div>
+              <div style={{ fontSize: 9 }}>Honolulu, HI 96819</div>
+              <div style={{ fontSize: 9, marginTop: 2 }}>59-102 / 1213</div>
+            </td>
+            <td style={{ padding: "6px 10px", verticalAlign: "top", textAlign: "right", width: 90 }}>
+              <div style={{ border: "1px solid #666", padding: "2px 6px", fontWeight: 700, fontSize: 12, textAlign: "center" }}>
+                {cfg.checkNum}
+              </div>
+            </td>
+          </tr>
 
-        {/* Col 2 — Earnings & Net Pay */}
-        <div
-          style={{
-            padding: "8px 12px",
-            borderRight: "1px solid #e5e7eb",
-            fontSize: "11px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>
-            <ColHeader>Earnings</ColHeader>
-            <AmtRow label="Regular Salary" amount={stub.grossPay} />
-            <div style={{ borderTop: "1px solid #e5e7eb", marginTop: 4, paddingTop: 4 }}>
-              <AmtRow label="Gross Pay" amount={stub.grossPay} bold />
-              <AmtRow label="YTD Gross" amount={stub.ytdGross} muted />
-            </div>
-          </div>
+          {/* Date row */}
+          <tr>
+            <td colSpan={2} style={{ padding: "3px 10px", borderTop: "1px solid #aaa" }}>
+              <b>DATE</b> {cfg.checkDate}
+            </td>
+            <td style={{ padding: "3px 10px", borderTop: "1px solid #aaa", borderLeft: "1px solid #aaa" }}></td>
+          </tr>
 
-          {/* Net Pay box */}
-          <div
-            style={{
-              marginTop: 8,
-              padding: "6px 8px",
-              backgroundColor: "hsl(152,76%,95%)",
-              border: "1px solid hsl(152,76%,70%)",
-              borderRadius: 4,
-            }}
-          >
-            <div style={{ fontSize: "9px", fontWeight: 700, color: "hsl(152,76%,30%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Net Pay
-            </div>
-            <div style={{ fontSize: "20px", fontWeight: 800, color: "hsl(152,76%,30%)", lineHeight: 1.2 }}>
-              {fmt(netPay)}
-            </div>
-            <div style={{ fontSize: "9px", color: "#6b7280" }}>
-              YTD Net: {fmt(ytdNet)}
-            </div>
-          </div>
-        </div>
+          {/* Pay row */}
+          <tr>
+            <td colSpan={2} style={{ padding: "3px 10px", borderTop: "1px solid #aaa" }}>
+              <b>PAY</b>&ensp;{cfg.netWords}
+            </td>
+            <td style={{
+              padding: "3px 8px",
+              borderTop: "1px solid #aaa",
+              borderLeft: "1px solid #aaa",
+              fontWeight: 800,
+              fontSize: 13,
+              textAlign: "right",
+              whiteSpace: "nowrap",
+            }}>
+              ${usd(netPay)}
+            </td>
+          </tr>
 
-        {/* Col 3 — Deductions */}
-        <div style={{ padding: "8px 12px", fontSize: "11px" }}>
-          <ColHeader>Deductions &amp; Withholdings — Hawaii Tax Rates</ColHeader>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                <th style={thLeft}>Description</th>
-                <th style={thRight}>Rate</th>
-                <th style={thRight}>Current</th>
-                <th style={thRight}>YTD</th>
-              </tr>
-            </thead>
-            <tbody>
-              <DRow
-                label="Federal Income Tax"
-                note="IRS Pub 15-T — Single/0"
-                rate="Table"
-                cur={stub.federalTax}
-                ytd={stub.ytdFederalTax}
-              />
-              <DRow
-                label="Social Security (OASDI)"
-                note="Employee — HRS §383 / IRC §3101"
-                rate="6.20%"
-                cur={stub.socialSecurity}
-                ytd={stub.ytdSocialSecurity}
-              />
-              <DRow
-                label="Medicare"
-                note="Employee — IRC §3101(b)"
-                rate="1.45%"
-                cur={stub.medicare}
-                ytd={stub.ytdMedicare}
-              />
-              <DRow
-                label="Hawaii State Income Tax"
-                note="HRS §235 — Single/0 Allowances"
-                rate="Prog."
-                cur={stub.hawaiiStateTax}
-                ytd={stub.ytdHawaiiStateTax}
-              />
-              <DRow
-                label="Hawaii TDI"
-                note="Temporary Disability Ins. — HRS §392"
-                rate="0.50%"
-                cur={stub.hawaiiTDI}
-                ytd={stub.ytdHawaiiTDI}
-              />
-            </tbody>
-            <tfoot>
-              <tr style={{ borderTop: "1.5px solid #d1d5db", backgroundColor: "#f9fafb" }}>
-                <td colSpan={2} style={{ ...tdBase, fontWeight: 700, fontSize: "10px", color: "#374151", textTransform: "uppercase", letterSpacing: "0.04em", paddingTop: 4 }}>
-                  Total Deductions
-                </td>
-                <td style={{ ...tdRight, fontWeight: 700, color: "#dc2626", paddingTop: 4 }}>
-                  ({fmt(totalDed)})
-                </td>
-                <td style={{ ...tdRight, fontWeight: 700, color: "#ef4444", paddingTop: 4 }}>
-                  ({fmt(ytdTotalDed)})
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-          {/* Tax rate note */}
-          <div style={{ fontSize: "9px", color: "#9ca3af", marginTop: 4, borderTop: "1px dashed #e5e7eb", paddingTop: 3 }}>
-            Eff. rate this period: {((totalDed / stub.grossPay) * 100).toFixed(2)}%&ensp;·&ensp;
-            Hawaii withholding per Hawaii Employer's Tax Guide (Rev. 2026)&ensp;·&ensp;
-            Federal per IRS Pub. 15-T (2026)
-          </div>
-        </div>
-      </div>
+          {/* To the order of */}
+          <tr>
+            <td style={{ padding: "3px 10px", borderTop: "1px solid #aaa", width: "55%" }}>
+              <div style={{ fontSize: 8, color: "#666" }}>TO THE ORDER OF</div>
+              <div style={{ fontWeight: 700 }}>{EMPLOYEE.name}</div>
+              <div>{EMPLOYEE.address}</div>
+              <div>{EMPLOYEE.city}</div>
+            </td>
+            <td style={{ padding: "3px 10px", borderTop: "1px solid #aaa", textAlign: "right", verticalAlign: "bottom" }}>
+              <div style={{ fontSize: 8, color: "#888" }}>VOID AFTER 180 DAYS</div>
+            </td>
+            <td style={{ padding: "3px 10px", borderTop: "1px solid #aaa", borderLeft: "1px solid #aaa", verticalAlign: "bottom", textAlign: "right" }}>
+              <div style={{ borderTop: "1px solid #333", marginTop: 24, paddingTop: 2, fontSize: 8, color: "#555" }}>
+                Authorized Signature
+              </div>
+            </td>
+          </tr>
 
-      {/* ── Bottom micro-footer ── */}
-      <div
-        style={{
-          backgroundColor: "#f3f4f6",
-          borderTop: "1px solid #e5e7eb",
-          padding: "3px 12px",
-          fontSize: "9px",
-          color: "#9ca3af",
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <span>{EMPLOYEE.name} · {EMPLOYEE.id} · SSN {EMPLOYEE.ssn}</span>
-        <span>{COMPANY.name} · Pay Date {stub.payDate} · Period {stub.periodNum}/{stub.totalPeriods}</span>
-      </div>
+          {/* MICR line */}
+          <tr>
+            <td colSpan={3} style={{
+              borderTop: "1px solid #aaa",
+              padding: "3px 10px",
+              fontSize: 9,
+              letterSpacing: "0.12em",
+              color: "#555",
+              fontFamily: "monospace",
+              textAlign: "center",
+            }}>
+              ⑆{cfg.checkNum}⑆ ⑆121301028⑆ 0003={cfg.checkNum}⑈
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
     </div>
-  );
-}
-
-// ─── Micro helpers ─────────────────────────────────────────────────────────────
-
-const tdBase: React.CSSProperties = {
-  padding: "2px 0",
-  fontSize: "11px",
-  verticalAlign: "top",
-};
-const tdRight: React.CSSProperties = {
-  ...tdBase,
-  textAlign: "right",
-  whiteSpace: "nowrap",
-};
-const thLeft: React.CSSProperties = {
-  textAlign: "left",
-  fontWeight: 700,
-  fontSize: "9px",
-  color: "#9ca3af",
-  textTransform: "uppercase",
-  letterSpacing: "0.05em",
-  paddingBottom: 3,
-};
-const thRight: React.CSSProperties = {
-  ...thLeft,
-  textAlign: "right",
-};
-
-function ColHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ fontSize: "9px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>
-      {children}
-    </div>
-  );
-}
-
-function ERow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
-  return (
-    <div style={{ display: "flex", gap: 4, lineHeight: "1.5", fontSize: "11px" }}>
-      <span style={{ color: "#6b7280", width: 56, flexShrink: 0 }}>{label}:</span>
-      <span style={{ color: "#111827", fontWeight: bold ? 700 : 400 }}>{value}</span>
-    </div>
-  );
-}
-
-function AmtRow({ label, amount, bold, muted }: { label: string; amount: number; bold?: boolean; muted?: boolean }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", fontSize: muted ? "10px" : "11px", color: muted ? "#9ca3af" : "#111827", fontWeight: bold ? 700 : 400, lineHeight: 1.6 }}>
-      <span>{label}</span>
-      <span>{fmt(amount)}</span>
-    </div>
-  );
-}
-
-function DRow({ label, note, rate, cur, ytd }: { label: string; note: string; rate: string; cur: number; ytd: number }) {
-  return (
-    <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
-      <td style={tdBase}>
-        <div style={{ fontWeight: 500, color: "#111827" }}>{label}</div>
-        <div style={{ fontSize: "9px", color: "#9ca3af" }}>{note}</div>
-      </td>
-      <td style={{ ...tdRight, color: "#6b7280", fontSize: "9px" }}>{rate}</td>
-      <td style={{ ...tdRight, color: "#111827" }}>{fmt(cur)}</td>
-      <td style={{ ...tdRight, color: "#6b7280" }}>{fmt(ytd)}</td>
-    </tr>
   );
 }
