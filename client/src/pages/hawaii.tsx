@@ -493,7 +493,7 @@ export default function HawaiiPage() {
           muted
           playsInline
           preload="auto"
-          src="/hero-hawaii.mp4"
+          src="/images/hero-video.mp4"
           className="absolute inset-0 w-full h-full object-cover opacity-40"
           aria-hidden="true"
         />
@@ -676,36 +676,62 @@ export default function HawaiiPage() {
           </motion.div>
         </div>
 
-        {/* "Sound familiar?" pain-point card */}
-        <div className="relative z-10 w-full">
-          <div className="max-w-5xl mx-auto px-5 pb-10">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.65 }}
-              className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
-            >
+      </section>
+
+      {/* ── SOUND FAMILIAR ────────────────────────────────────────────────── */}
+      <section className="bg-[#060810] pb-0">
+        <div className="max-w-5xl mx-auto px-5 pb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+          >
+            {/* Mobile: image on top with overlay text */}
+            <div className="lg:hidden relative">
               <img
                 src={soundFamiliarImg}
                 alt="Business owner losing money on processing fees"
-                className="w-full h-52 sm:h-80 object-cover object-center"
+                className="w-full h-56 object-cover object-top"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#060810]/90 via-[#060810]/60 to-transparent" />
-              <div className="absolute inset-0 flex items-center px-6 sm:px-10">
-                <div>
-                  <p className="text-white/60 text-xs uppercase tracking-widest mb-2">
-                    Sound familiar?
-                  </p>
-                  <p className="text-white font-black text-2xl sm:text-4xl leading-tight max-w-sm">
-                    Watching 4% disappear every single swipe.
-                  </p>
-                  <p className="text-primary font-bold text-sm mt-3">
-                    That ends when you call us. →
-                  </p>
-                </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060810] via-[#060810]/60 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 px-6 pb-6">
+                <p className="text-white/60 text-xs uppercase tracking-widest mb-2">
+                  Sound familiar?
+                </p>
+                <p className="text-white font-black text-2xl leading-tight">
+                  Watching 4% disappear every single swipe.
+                </p>
+                <p className="text-primary font-bold text-sm mt-2">
+                  That ends when you call us. →
+                </p>
               </div>
-            </motion.div>
-          </div>
+            </div>
+
+            {/* Desktop: side-by-side split — no cropping */}
+            <div className="hidden lg:grid lg:grid-cols-2 min-h-[300px]">
+              <div className="bg-gradient-to-br from-[#0d1220] to-[#060810] p-10 flex flex-col justify-center">
+                <p className="text-white/50 text-xs uppercase tracking-widest mb-3">
+                  Sound familiar?
+                </p>
+                <p className="text-white font-black text-3xl xl:text-4xl leading-tight mb-4">
+                  Watching 4% disappear<br />every single swipe.
+                </p>
+                <p className="text-primary font-bold text-sm">
+                  That ends when you call us. →
+                </p>
+              </div>
+              <div className="relative overflow-hidden">
+                <img
+                  src={soundFamiliarImg}
+                  alt="Business owner losing money on processing fees"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-[#0d1220]/40" />
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
