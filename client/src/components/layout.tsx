@@ -37,7 +37,6 @@ const navGroups = [
     items: [
       { label: "Contact Us", href: "/contact" },
       { label: "Partner & Referral", href: "/referral" },
-      { label: "Connect With Us", href: "/connect" },
     ],
   },
 ];
