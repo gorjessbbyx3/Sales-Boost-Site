@@ -24,7 +24,7 @@ import soundFamiliarImg from "@assets/IMG_6407_1775728573513.png";
 import hiw1Img from "@assets/1B14A086-2642-4916-8C70-3AE1B7162168_1775737253686.png";
 import hiw2Img from "@assets/EAB85ACC-FCBA-44CC-A7B3-DEB15B59D196_1775737505329.png";
 import hiw3Img from "@assets/IMG_6952_1775737505329.png";
-import HawaiiMap3D from "@/components/hawaii-map-3d";
+
 import POSReceiptShowcase from "@/components/pos-receipt-showcase";
 
 // ─── Animated counter ──────────────────────────────────────────────────────
@@ -792,41 +792,6 @@ export default function HawaiiPage() {
             transition={{ duration: 0.6, delay: 0.15 }}
           >
             <POSReceiptShowcase />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── 3D ISLAND MAP ────────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-20 bg-[#040d1a] relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-blue-500/5 rounded-full blur-[80px]" />
-        </div>
-        <div className="relative z-10 max-w-5xl mx-auto px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-8"
-          >
-            <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">
-              Serving all islands
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-3 mb-3 leading-[1.1]">
-              Find your island
-            </h2>
-            <p className="text-white/40 text-sm max-w-xs mx-auto">
-              Click your island to see local pricing, case studies, and how we serve your community.
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="rounded-2xl overflow-hidden border border-white/5 shadow-2xl"
-          >
-            <HawaiiMap3D />
           </motion.div>
         </div>
       </section>
