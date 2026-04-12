@@ -26,7 +26,7 @@ import {
   Pin, PinOff, Sparkles, Clock, UserCog, Briefcase, Sun, Moon,
   ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu, Eye,
   Download, LayoutList, LayoutGrid, Image, FileSpreadsheet, Monitor,
-  Inbox, Archive, ArchiveX, ShieldAlert, MailOpen, MoreHorizontal, ChevronDown,
+  Inbox, Archive, ArchiveX, ShieldAlert, MailOpen, MoreHorizontal, ChevronDown, Palette,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { PdfViewer, PdfThumbnail } from "@/components/pdf-viewer";
@@ -39,6 +39,7 @@ import AutopilotTab from "./admin/AutopilotTab";
 import EquipmentTab from "./admin/EquipmentTab";
 import PartnersTab from "./admin/PartnersTab";
 import FollowUpTab from "./admin/FollowUpTab";
+import MarketingStudioTab from "./admin/MarketingStudioTab";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -700,6 +701,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { label: "AI & TOOLS", tabs: [
       { value: "autopilot", icon: Zap, label: "Autopilot" },
       { value: "ai-tools", icon: Sparkles, label: "AI Tools" },
+      { value: "marketing-studio", icon: Palette, label: "Marketing Studio" },
       { value: "files", icon: FolderOpen, label: "Files" },
       { value: "equipment", icon: Monitor, label: "Equipment" },
       { value: "partners", icon: GraduationCap, label: "Partners" },
@@ -814,6 +816,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsContent value="tasks"><TasksTab /></TabsContent>
               <TabsContent value="autopilot"><AutopilotTab /></TabsContent>
               <TabsContent value="ai-tools"><AiToolsTab /></TabsContent>
+              <TabsContent value="marketing-studio"><MarketingStudioTab /></TabsContent>
               <TabsContent value="files"><FilesManagerTab /></TabsContent>
               <TabsContent value="equipment"><EquipmentTab /></TabsContent>
               <TabsContent value="partners"><PartnersTab /></TabsContent>

@@ -49,3 +49,8 @@ outputType = "webview"
 [agent]
 integrations = ["javascript_anthropic:1.0.0"]
 expertMode = true
+
+[userenv]
+
+[userenv.shared]
+VITE_ADOBE_EXPRESS_CLIENT_ID = "d80493bd5416418fae33226c08a22647"
