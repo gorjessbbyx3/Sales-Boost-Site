@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreditCard, Banknote, ChevronRight, CheckCircle } from "lucide-react";
-const terminalImg = "/images/terminal-399.png";
+const terminalImg = "/images/pos-receipt-hero.png";
 
 interface ReceiptLine {
   label: string;

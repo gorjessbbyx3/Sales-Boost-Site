@@ -20,7 +20,7 @@ import { useSEO } from "@/hooks/useSEO";
 import logoImg from "@assets/IMG_6366.jpeg";
 import techSavvyLogoImg from "@assets/IMG_6386.jpeg";
 import paymentImg from "@assets/IMG_6470.jpeg";
-import soundFamiliarImg from "@assets/IMG_6407_1775728573513.png";
+import soundFamiliarImg from "@assets/IMG_6407_1775959425123.jpeg";
 import hiw1Img from "@assets/1B14A086-2642-4916-8C70-3AE1B7162168_1775737253686.png";
 import hiw2Img from "@assets/EAB85ACC-FCBA-44CC-A7B3-DEB15B59D196_1775737505329.png";
 import hiw3Img from "@assets/IMG_6952_1775737505329.png";
@@ -495,7 +495,7 @@ export default function HawaiiPage() {
           muted
           playsInline
           preload="auto"
-          src="/images/hero-video-v2.mp4"
+          src="/images/hero-video-v3.mp4"
           className="absolute inset-0 w-full h-full object-cover opacity-40"
           aria-hidden="true"
         />
@@ -695,8 +695,7 @@ export default function HawaiiPage() {
               <img
                 src={soundFamiliarImg}
                 alt="Business owner losing money on processing fees"
-                className="w-full object-cover object-top"
-                style={{ maxHeight: "60vw", minHeight: "180px" }}
+                className="w-full h-auto object-contain"
               />
               <div className="px-6 py-6">
                 <p className="text-white/60 text-xs uppercase tracking-widest mb-2">
