@@ -31,8 +31,43 @@ export default function ReferralPage() {
   useSEO({
     title: "Earn 50% Revenue Share — Partner & Referral Program | TechSavvy Hawaii",
     description: "Earn 50% of TechSavvy's revenue on every merchant you refer. Monthly payouts for life. Sign up in 5 minutes — no selling required.",
-    keywords: "referral partner program Hawaii, 50% revenue share, earn residual income, payment processing referral, TechSavvy partner program",
+    keywords: "referral partner program Hawaii, 50% revenue share, earn residual income, payment processing referral, TechSavvy partner program, passive income Hawaii, refer a business Hawaii, payment processing affiliate",
     canonical: "https://techsavvyhawaii.com/referral",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
+    ogTitle: "Earn 50% Revenue Share for Life — TechSavvy Hawaii Partner Program",
+    ogDescription: "Refer any business to TechSavvy Hawaii and earn 50% of our revenue on that account — every month, forever. No selling required.",
+    twitterTitle: "Earn 50% Revenue Share for Life — TechSavvy Hawaii",
+    twitterDescription: "Refer a business, earn 50% monthly for life. Sign up in 5 minutes. No selling required.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": "https://techsavvyhawaii.com/referral#webpage",
+        "name": "Partner & Referral Program — 50% Revenue Share | TechSavvy Hawaii",
+        "url": "https://techsavvyhawaii.com/referral",
+        "isPartOf": { "@id": "https://techsavvyhawaii.com/#website" },
+        "about": { "@id": "https://techsavvyhawaii.com/#organization" },
+        "description": "Earn 50% of TechSavvy Hawaii's revenue on every merchant you refer. Monthly payouts for life. Sign up in 5 minutes.",
+        "speakable": {
+          "@type": "SpeakableSpecification",
+          "cssSelector": ["h1", "h2"]
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        "name": "TechSavvy Hawaii Partner Referral Program",
+        "description": "Earn 50% revenue share for life on every merchant you refer to TechSavvy Hawaii's payment processing and business technology services.",
+        "provider": { "@id": "https://techsavvyhawaii.com/#organization" },
+        "offers": {
+          "@type": "Offer",
+          "name": "50% Revenue Share for Life",
+          "description": "Refer a business to TechSavvy Hawaii and earn 50% of monthly revenue generated from that account, paid every month for as long as they remain a client.",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    ],
   });
 
   return (

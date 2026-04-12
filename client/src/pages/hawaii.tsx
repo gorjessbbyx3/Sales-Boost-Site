@@ -698,10 +698,8 @@ export default function HawaiiPage() {
                 Not mockups. Not demos. Click to visit.
               </p>
             </div>
-            <Link href="/our-work">
-              <a className="inline-flex items-center gap-2 text-sm font-bold text-primary border border-primary/30 rounded-xl px-5 py-2.5 hover:bg-primary/10 transition-colors whitespace-nowrap">
-                See all our work →
-              </a>
+            <Link href="/our-work" className="inline-flex items-center gap-2 text-sm font-bold text-primary border border-primary/30 rounded-xl px-5 py-2.5 hover:bg-primary/10 transition-colors whitespace-nowrap">
+              See all our work →
             </Link>
           </motion.div>
 

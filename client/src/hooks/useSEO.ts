@@ -75,6 +75,8 @@ export function useSEO({
 
     // Twitter
     setMetaTag("name", "twitter:card", "summary_large_image");
+    setMetaTag("name", "twitter:site", "@TechSavvyHI");
+    setMetaTag("name", "twitter:creator", "@TechSavvyHI");
     setMetaTag("name", "twitter:title", twitterTitle || ogTitle || title);
     setMetaTag("name", "twitter:description", twitterDescription || ogDescription || description);
     if (twitterImage || ogImage) setMetaTag("name", "twitter:image", twitterImage || ogImage || "");

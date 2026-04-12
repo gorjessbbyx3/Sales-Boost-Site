@@ -138,8 +138,53 @@ function ProjectCard({ project, index }: { project: typeof PROJECTS[0]; index: n
 
 export default function OurWorkPage() {
   useSEO({
-    title: "Our Work — TechSavvy Hawaii",
-    description: "Real websites and CRMs we've built for Hawaii businesses. Not mockups — live, working sites for restaurants, realtors, service businesses, and more.",
+    title: "Our Work — Real Websites & CRMs Built for Hawaii Businesses | TechSavvy Hawaii",
+    description: "See live websites and custom CRMs built for Hawaii restaurants, realtors, and service businesses by TechSavvy Hawaii. Real work, real clients, real results — not templates or mockups.",
+    keywords: "Hawaii web design portfolio, custom website examples Hawaii, CRM Hawaii examples, restaurant website Hawaii, realtor website Honolulu, TechSavvy Hawaii portfolio, website design Oahu, small business website Hawaii",
+    canonical: "https://techsavvyhawaii.com/our-work",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
+    ogTitle: "Our Work — Real Websites & CRMs Built for Hawaii | TechSavvy Hawaii",
+    ogDescription: "Live sites and custom CRMs we've built for Hawaii restaurants, realtors, and service businesses. Not mockups — real work, real results.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": "https://techsavvyhawaii.com/our-work#webpage",
+        "name": "Our Work — Websites & CRMs Built for Hawaii Businesses | TechSavvy Hawaii",
+        "url": "https://techsavvyhawaii.com/our-work",
+        "isPartOf": { "@id": "https://techsavvyhawaii.com/#website" },
+        "about": { "@id": "https://techsavvyhawaii.com/#organization" },
+        "description": "Real websites and CRM systems built for Hawaii businesses by TechSavvy Hawaii — restaurants, realtors, service companies, and more.",
+        "speakable": {
+          "@type": "SpeakableSpecification",
+          "cssSelector": ["h1", "h2"]
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "TechSavvy Hawaii Portfolio",
+        "description": "Live websites and CRM systems built for Hawaii businesses",
+        "url": "https://techsavvyhawaii.com/our-work",
+        "numberOfItems": 2,
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Mel Castanares — Realtor Website & CRM",
+            "url": "https://melcastanares.techsavvyhawaii.com",
+            "description": "Custom real estate website and CRM for a top Honolulu realtor."
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Dr. E's Tasty Southern Cuisine — Restaurant Website",
+            "url": "https://drestastysoutherncuisine.vercel.app",
+            "description": "Custom restaurant website for a Hawaii-based Southern cuisine spot."
+          }
+        ]
+      }
+    ],
   });
 
   return (

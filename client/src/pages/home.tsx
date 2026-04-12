@@ -821,8 +821,50 @@ export default function Home() {
     title: "Zero-Fee Payment Processing for Hawaii Businesses | TechSavvy Hawaii",
     description: "Hawaii businesses save $6,000–$36,000/year by eliminating credit card fees. Compliant cash discount program, free equipment, no contracts. Locally owned in Honolulu. Apply in 3 minutes.",
     keywords: "zero fee payment processing Hawaii, eliminate credit card fees Honolulu, cash discount program Hawaii, merchant services Oahu, no contract payment processor, TechSavvy Hawaii, free POS terminal, high risk merchant Hawaii",
-    canonical: "https://techsavvyhawaii.com/",
+    canonical: "https://techsavvyhawaii.com/payment-processing",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": "https://techsavvyhawaii.com/payment-processing#webpage",
+        "name": "Zero-Fee Payment Processing for Hawaii Businesses | TechSavvy Hawaii",
+        "url": "https://techsavvyhawaii.com/payment-processing",
+        "isPartOf": { "@id": "https://techsavvyhawaii.com/#website" },
+        "about": { "@id": "https://techsavvyhawaii.com/#organization" },
+        "description": "Hawaii businesses save $6,000–$36,000/year by eliminating credit card fees. Compliant cash discount program, free equipment, no contracts. Locally owned in Honolulu.",
+        "speakable": {
+          "@type": "SpeakableSpecification",
+          "cssSelector": ["h1", "h2", ".hero-description"]
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        "@id": "https://techsavvyhawaii.com/payment-processing#service",
+        "name": "Zero-Fee Credit Card Processing",
+        "serviceType": "Payment Processing",
+        "description": "Eliminate 100% of your credit card processing fees with TechSavvy Hawaii's compliant cash discount program. Free terminal hardware, next-day deposits, no contracts.",
+        "provider": { "@id": "https://techsavvyhawaii.com/#organization" },
+        "areaServed": { "@type": "State", "name": "Hawaii" },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "description": "Zero processing fees — our cash discount program passes fees to card brands, not you.",
+          "eligibleRegion": { "@type": "State", "name": "Hawaii" }
+        },
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Zero-Fee Processing Benefits",
+          "itemListElement": [
+            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Free Terminal Hardware", "description": "Clover POS, Valor, and Pax terminals provided at no cost." } },
+            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Cash Discount Program Setup", "description": "Compliant dual-pricing setup with all required signage and merchant disclosure." } },
+            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Next-Day Deposits", "description": "Funds deposited the next business day, every day." } }
+          ]
+        }
+      }
+    ],
   });
 
   return (

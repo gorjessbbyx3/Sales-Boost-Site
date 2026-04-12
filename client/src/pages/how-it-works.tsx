@@ -37,13 +37,6 @@ function FAQAccordion({ items }: { items: { q: string; a: string }[] }) {
 }
 
 export default function HowItWorksPage() {
-  useSEO({
-    title: "How the Cash Discount Program Works | TechSavvy Hawaii",
-    description: "See how Hawaii businesses eliminate credit card processing fees. Customer pays with card, service fee covers processing, you keep 100%. Next-day deposits.",
-    keywords: "cash discount program Hawaii, how to eliminate credit card fees, surcharge program, dual pricing Hawaii",
-    canonical: "https://techsavvyhawaii.com/how-it-works",
-  });
-
   const faqs = [
     { q: "Is this actually legal?", a: "Yes — 100% legal in Hawaii and all 50 states. Visa, Mastercard, and the FTC all allow cash discount and surcharge programs when properly disclosed. We handle all compliance and signage for you." },
     { q: "What's the difference between cash discount and surcharge?", a: "Cash discount: your prices include a small service fee, and cash customers get a discount. Surcharge: your prices are the base price, and card customers pay a small surcharge. Same result — you keep 100% either way. We set up whichever model fits your business best." },
@@ -53,6 +46,71 @@ export default function HowItWorksPage() {
     { q: "What if I don't like it?", a: "No contract. No cancellation fee. Leave anytime with zero penalty." },
     { q: "Do I have to buy the terminal?", a: "No — all equipment is free during our Hawaii launch promotion. We ship it, set it up, and train your team." },
   ];
+
+  useSEO({
+    title: "How the Cash Discount Program Works | TechSavvy Hawaii",
+    description: "See how Hawaii businesses eliminate 100% of credit card processing fees. Customer pays with card, a small service fee covers processing costs, you keep every dollar. Free equipment, next-day deposits, no contracts.",
+    keywords: "cash discount program Hawaii, how to eliminate credit card fees, surcharge program Hawaii, dual pricing Hawaii, zero fee processing how it works, card processing program Honolulu, how does cash discount work",
+    canonical: "https://techsavvyhawaii.com/how-it-works",
+    ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
+    ogTitle: "How Zero-Fee Credit Card Processing Works | TechSavvy Hawaii",
+    ogDescription: "No tricks. Customer pays with card, a service fee covers processing, you keep 100%. Free terminal, next-day deposits, no contracts.",
+    twitterTitle: "How Zero-Fee Payment Processing Works | TechSavvy Hawaii",
+    twitterDescription: "No tricks. Card customers pay a small fee, you keep every dollar. Free terminal, no contracts, next-day deposits.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": "https://techsavvyhawaii.com/how-it-works#webpage",
+        "name": "How the Cash Discount Program Works | TechSavvy Hawaii",
+        "url": "https://techsavvyhawaii.com/how-it-works",
+        "isPartOf": { "@id": "https://techsavvyhawaii.com/#website" },
+        "about": { "@id": "https://techsavvyhawaii.com/#organization" },
+        "description": "Step-by-step breakdown of how Hawaii businesses eliminate credit card processing fees with TechSavvy Hawaii's cash discount program.",
+        "speakable": {
+          "@type": "SpeakableSpecification",
+          "cssSelector": ["h1", "h2"]
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": faqs.map(({ q, a }) => ({
+          "@type": "Question",
+          "name": q,
+          "acceptedAnswer": { "@type": "Answer", "text": a }
+        }))
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to Eliminate Credit Card Processing Fees with the Cash Discount Program",
+        "description": "Step-by-step guide to eliminating credit card processing fees using TechSavvy Hawaii's compliant cash discount program.",
+        "provider": { "@id": "https://techsavvyhawaii.com/#organization" },
+        "totalTime": "P7D",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "name": "Free 20-Minute Consultation",
+            "text": "We review your current processing statements and calculate your exact monthly savings with zero-fee processing.",
+            "position": 1
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Free Equipment Setup",
+            "text": "We ship your free terminal (Clover, Valor, or Pax), program it for cash discount, and install required compliance signage.",
+            "position": 2
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Go Live — Keep 100%",
+            "text": "When a customer pays by card, a small service fee is applied at checkout. Cash customers pay nothing extra. You keep every dollar.",
+            "position": 3
+          }
+        ]
+      }
+    ],
+  });
 
   return (
     <Layout>

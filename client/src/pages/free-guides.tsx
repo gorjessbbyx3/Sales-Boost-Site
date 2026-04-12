@@ -91,11 +91,45 @@ export default function FreeGuidesPage() {
   const [selectedGuides, setSelectedGuides] = useState<string[]>([]);
 
   useSEO({
-    title: "Free Credit Card Processing Guides | Reduce Payment Fees | TechSavvy Hawaii",
-    description: "Free guides on credit card processing fees, merchant statement review, rate comparison, and cash discount programs. Learn how to eliminate payment processing fees for your Hawaii business.",
-    keywords: "credit card processing guide, payment processing fees guide, merchant statement checklist, rate comparison guide, cash discount guide Hawaii, how to reduce credit card fees",
+    title: "Free Credit Card Processing Guides for Hawaii Businesses | TechSavvy Hawaii",
+    description: "Download free guides on cutting credit card processing fees, reading merchant statements, comparing rates, and setting up a cash discount program. Hawaii businesses save $300–$3,000/month.",
+    keywords: "credit card processing guide Hawaii, payment processing fees guide, merchant statement checklist, rate comparison guide, cash discount guide Hawaii, how to reduce credit card fees, free merchant guides, payment processing resources Hawaii",
     canonical: "https://techsavvyhawaii.com/free-guides",
     ogImage: "https://techsavvyhawaii.com/images/hero-hawaii-sunset.jpg",
+    ogTitle: "Free Credit Card Processing Guides for Hawaii Businesses",
+    ogDescription: "4 free guides to cut your processing fees, read your statement like a pro, and see if a cash discount program is right for you.",
+    twitterTitle: "Free Payment Processing Guides for Hawaii Businesses",
+    twitterDescription: "Download 4 free guides and learn how to cut your credit card fees — in plain English.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": "https://techsavvyhawaii.com/free-guides#webpage",
+        "name": "Free Credit Card Processing Guides | TechSavvy Hawaii",
+        "url": "https://techsavvyhawaii.com/free-guides",
+        "isPartOf": { "@id": "https://techsavvyhawaii.com/#website" },
+        "about": { "@id": "https://techsavvyhawaii.com/#organization" },
+        "description": "Free downloadable guides on credit card processing fees, merchant statement analysis, rate comparison, and cash discount programs for Hawaii businesses.",
+        "speakable": {
+          "@type": "SpeakableSpecification",
+          "cssSelector": ["h1", "h2"]
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Free Credit Card Processing Guides",
+        "description": "Free guides for Hawaii businesses on cutting payment processing fees",
+        "url": "https://techsavvyhawaii.com/free-guides",
+        "numberOfItems": 4,
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Top 10 Statement Checklist", "description": "Spot hidden fees, inflated rates, and junk charges in under 10 minutes." },
+          { "@type": "ListItem", "position": 2, "name": "Rate Comparison Guide", "description": "Industry benchmarks for restaurants, retail, salons, medical and more." },
+          { "@type": "ListItem", "position": 3, "name": "Payment Security Checklist", "description": "PCI compliance, fraud prevention, and breach response in one checklist." },
+          { "@type": "ListItem", "position": 4, "name": "Cash Discount Explained", "description": "How the cash discount model works and how to implement it in your business." }
+        ]
+      }
+    ],
   });
 
   const toggleGuide = (slug: string) => {
