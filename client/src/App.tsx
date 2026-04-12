@@ -26,9 +26,12 @@ const ApplyPage = lazy(() => import("@/pages/apply"));
 const PartnerProgramPage = lazy(() => import("@/pages/partner-program"));
 const IndustryPage = lazy(() => import("@/pages/industry"));
 const IslandPage = lazy(() => import("@/pages/island"));
+const OurWorkPage = lazy(() => import("@/pages/our-work"));
 
-const isAdminSubdomain = window.location.hostname.startsWith("admin.");
-const isProgramSubdomain = window.location.hostname.startsWith("program.");
+const hostname = window.location.hostname;
+const isAdminSubdomain = hostname.startsWith("admin.");
+const isProgramSubdomain = hostname.startsWith("program.");
+const isAllPurposeSubdomain = hostname === "allpurposecleaners.gorjess.co";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -59,6 +62,7 @@ function MainRouter() {
           <Route path="/statement-review" component={StatementReviewPage} />
           <Route path="/referral" component={ReferralPage} />
           <Route path="/apply" component={ApplyPage} />
+          <Route path="/our-work" component={OurWorkPage} />
           <Route path="/industries/:industry" component={IndustryPage} />
           <Route path="/locations/:island" component={IslandPage} />
           <Route component={NotFound} />
@@ -91,7 +95,7 @@ function ProgramRouter() {
 }
 
 function App() {
-  if (isAdminSubdomain) {
+  if (isAdminSubdomain || isAllPurposeSubdomain) {
     return (
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>

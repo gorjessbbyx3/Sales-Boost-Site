@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Layout from "@/components/layout";
+import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 import logoImg from "@assets/IMG_6366.jpeg";
 import techSavvyLogoImg from "@assets/IMG_6386.jpeg";
@@ -472,12 +473,6 @@ export default function HawaiiPage() {
       accent: "bg-emerald-600",
     },
     {
-      url: "808allpurposecleaners.vercel.app",
-      label: "808 All Purpose Cleaners",
-      tag: "Service Business",
-      accent: "bg-sky-600",
-    },
-    {
       url: "drestastysoutherncuisine.vercel.app",
       label: "Dr. E's Tasty Southern Cuisine",
       tag: "Restaurant",
@@ -904,17 +899,24 @@ export default function HawaiiPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-10"
+            className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
           >
-            <span className="text-primary text-xs font-bold uppercase tracking-widest">
-              Live sites we've shipped
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white mt-2 leading-tight">
-              Real businesses. Live right now.
-            </h2>
-            <p className="text-white/40 text-sm mt-2">
-              Not mockups. Not demos. Click to visit.
-            </p>
+            <div>
+              <span className="text-primary text-xs font-bold uppercase tracking-widest">
+                Live sites we've shipped
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-black text-white mt-2 leading-tight">
+                Real businesses. Live right now.
+              </h2>
+              <p className="text-white/40 text-sm mt-2">
+                Not mockups. Not demos. Click to visit.
+              </p>
+            </div>
+            <Link href="/our-work">
+              <a className="inline-flex items-center gap-2 text-sm font-bold text-primary border border-primary/30 rounded-xl px-5 py-2.5 hover:bg-primary/10 transition-colors whitespace-nowrap">
+                See all our work →
+              </a>
+            </Link>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
