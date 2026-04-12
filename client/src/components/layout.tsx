@@ -225,7 +225,7 @@ function Footer() {
         muted
         playsInline
         className="hidden sm:block absolute inset-0 w-full h-full object-cover object-center"
-        src="/videos/footer-bg.mp4"
+        src="/videos/footer-bg.mp4?v=2"
       />
       <div className="absolute inset-0 bg-black/80 sm:bg-black/75" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
