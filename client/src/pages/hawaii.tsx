@@ -773,33 +773,13 @@ export default function HawaiiPage() {
             </div>
           </motion.div>
 
-          {/* Stats row */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="grid grid-cols-3 gap-px bg-white/8 rounded-2xl overflow-hidden mb-10"
-          >
-            {[
-              { num: "60+", label: "Reels Produced" },
-              { num: "3", label: "Platforms" },
-              { num: "0", label: "Stock Footage" },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-[#060810] py-6 text-center">
-                <p className="text-2xl sm:text-3xl font-black text-white">{stat.num}</p>
-                <p className="text-white/40 text-xs uppercase tracking-widest mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </motion.div>
-
           {/* Single CTA */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="text-center"
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="text-center mt-10"
           >
             <Button
               size="lg"
@@ -807,7 +787,7 @@ export default function HawaiiPage() {
               asChild
             >
               <a href="/contact" data-testid="button-video-cta">
-                Get your reel
+                Book a free 20-min call
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
