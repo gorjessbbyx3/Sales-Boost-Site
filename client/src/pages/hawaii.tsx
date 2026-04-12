@@ -836,7 +836,7 @@ export default function HawaiiPage() {
           >
             <video
               id="showreel-video"
-              src="https://pub-2dc4c46cc9074fa38ebc84ede4213acb.r2.dev/video-showreel.mov"
+              src="/videos/showreel-v2.mp4"
               poster="/images/hero-hawaii-sunset.jpg"
               playsInline
               controls
