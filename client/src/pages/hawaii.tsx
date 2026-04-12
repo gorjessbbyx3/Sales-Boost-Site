@@ -675,6 +675,150 @@ export default function HawaiiPage() {
 
       </section>
 
+      {/* ── SERVICES ─────────────────────────────────────────────────────── */}
+      <ServicesTabs services={services} />
+
+      {/* ── LIVE WEBSITE SHOWCASE ─────────────────────────────────────────── */}
+      <section className="py-14 sm:py-24 bg-[#060810]">
+        <div className="max-w-6xl mx-auto px-5">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
+          >
+            <div>
+              <span className="text-primary text-xs font-bold uppercase tracking-widest">
+                Live sites we've shipped
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-black text-white mt-2 leading-tight">
+                Real businesses. Live right now.
+              </h2>
+              <p className="text-white/40 text-sm mt-2">
+                Not mockups. Not demos. Click to visit.
+              </p>
+            </div>
+            <Link href="/our-work">
+              <a className="inline-flex items-center gap-2 text-sm font-bold text-primary border border-primary/30 rounded-xl px-5 py-2.5 hover:bg-primary/10 transition-colors whitespace-nowrap">
+                See all our work →
+              </a>
+            </Link>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {webframes.map((f, i) => (
+              <BrowserFrame
+                key={f.url}
+                url={f.url}
+                label={f.label}
+                tag={f.tag}
+                accent={f.accent}
+                delay={i * 0.12}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SOCIAL MEDIA & VIDEO MARKETING ──────────────────────────────── */}
+      <section className="py-20 sm:py-28 bg-[#060810] relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
+        </div>
+        <div className="relative z-10 max-w-4xl mx-auto px-5">
+
+          {/* Header — minimal, punchy */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-10"
+          >
+            <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">
+              In-house production
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black text-white mt-3 mb-4 leading-[1.1]">
+              Content that makes them{" "}
+              <span className="text-primary italic">stop.</span>
+            </h2>
+            <p className="text-white/40 text-base max-w-sm mx-auto">
+              Shot, edited, and posted by our team. No stock. No templates.
+            </p>
+          </motion.div>
+
+          {/* Video — full width, custom player */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="relative rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl mb-10 group"
+            style={{ boxShadow: "0 0 80px rgba(0,255,170,0.06), 0 30px 60px rgba(0,0,0,0.6)" }}
+          >
+            <video
+              id="showreel-video"
+              src="/videos/showreel-v3.mp4"
+              poster="/images/hero-hawaii-sunset.jpg"
+              playsInline
+              controls
+              preload="metadata"
+              className="w-full block"
+              style={{ maxHeight: "520px", objectFit: "cover" }}
+            />
+            {/* Play button overlay — fades out when controls appear */}
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none group-has-[video:not([controls])]:opacity-0"
+              aria-hidden="true"
+            >
+              <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-0 transition-opacity" />
+            </div>
+          </motion.div>
+
+          {/* Stats row */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="grid grid-cols-3 gap-px bg-white/8 rounded-2xl overflow-hidden mb-10"
+          >
+            {[
+              { num: "60+", label: "Reels Produced" },
+              { num: "3", label: "Platforms" },
+              { num: "0", label: "Stock Footage" },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-[#060810] py-6 text-center">
+                <p className="text-2xl sm:text-3xl font-black text-white">{stat.num}</p>
+                <p className="text-white/40 text-xs uppercase tracking-widest mt-1">{stat.label}</p>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Single CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="text-center"
+          >
+            <Button
+              size="lg"
+              className="font-bold px-10 py-5 rounded-xl text-base shadow-lg shadow-primary/30"
+              asChild
+            >
+              <a href="/contact" data-testid="button-video-cta">
+                Get your reel
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </Button>
+            <p className="text-white/25 text-xs mt-4">Realtors · Restaurants · Local brands</p>
+          </motion.div>
+
+        </div>
+      </section>
+
       {/* ── SOUND FAMILIAR ────────────────────────────────────────────────── */}
       <section className="bg-[#060810] pb-0">
         <div className="max-w-5xl mx-auto px-5 pb-12">
@@ -787,150 +931,6 @@ export default function HawaiiPage() {
           >
             <POSReceiptShowcase />
           </motion.div>
-        </div>
-      </section>
-
-      {/* ── SERVICES ─────────────────────────────────────────────────────── */}
-      <ServicesTabs services={services} />
-
-      {/* ── SOCIAL MEDIA & VIDEO MARKETING ──────────────────────────────── */}
-      <section className="py-20 sm:py-28 bg-[#060810] relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
-        </div>
-        <div className="relative z-10 max-w-4xl mx-auto px-5">
-
-          {/* Header — minimal, punchy */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-10"
-          >
-            <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">
-              In-house production
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white mt-3 mb-4 leading-[1.1]">
-              Content that makes them{" "}
-              <span className="text-primary italic">stop.</span>
-            </h2>
-            <p className="text-white/40 text-base max-w-sm mx-auto">
-              Shot, edited, and posted by our team. No stock. No templates.
-            </p>
-          </motion.div>
-
-          {/* Video — full width, custom player */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="relative rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl mb-10 group"
-            style={{ boxShadow: "0 0 80px rgba(0,255,170,0.06), 0 30px 60px rgba(0,0,0,0.6)" }}
-          >
-            <video
-              id="showreel-video"
-              src="/videos/showreel-v3.mp4"
-              poster="/images/hero-hawaii-sunset.jpg"
-              playsInline
-              controls
-              preload="metadata"
-              className="w-full block"
-              style={{ maxHeight: "520px", objectFit: "cover" }}
-            />
-            {/* Play button overlay — fades out when controls appear */}
-            <div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none group-has-[video:not([controls])]:opacity-0"
-              aria-hidden="true"
-            >
-              <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-0 transition-opacity" />
-            </div>
-          </motion.div>
-
-          {/* Stats row */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="grid grid-cols-3 gap-px bg-white/8 rounded-2xl overflow-hidden mb-10"
-          >
-            {[
-              { num: "60+", label: "Reels Produced" },
-              { num: "3", label: "Platforms" },
-              { num: "0", label: "Stock Footage" },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-[#060810] py-6 text-center">
-                <p className="text-2xl sm:text-3xl font-black text-white">{stat.num}</p>
-                <p className="text-white/40 text-xs uppercase tracking-widest mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Single CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="text-center"
-          >
-            <Button
-              size="lg"
-              className="font-bold px-10 py-5 rounded-xl text-base shadow-lg shadow-primary/30"
-              asChild
-            >
-              <a href="/contact" data-testid="button-video-cta">
-                Get your reel
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </Button>
-            <p className="text-white/25 text-xs mt-4">Realtors · Restaurants · Local brands</p>
-          </motion.div>
-
-        </div>
-      </section>
-
-      {/* ── LIVE WEBSITE SHOWCASE ─────────────────────────────────────────── */}
-      <section className="py-14 sm:py-24 bg-[#060810]">
-        <div className="max-w-6xl mx-auto px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
-          >
-            <div>
-              <span className="text-primary text-xs font-bold uppercase tracking-widest">
-                Live sites we've shipped
-              </span>
-              <h2 className="text-2xl sm:text-4xl font-black text-white mt-2 leading-tight">
-                Real businesses. Live right now.
-              </h2>
-              <p className="text-white/40 text-sm mt-2">
-                Not mockups. Not demos. Click to visit.
-              </p>
-            </div>
-            <Link href="/our-work">
-              <a className="inline-flex items-center gap-2 text-sm font-bold text-primary border border-primary/30 rounded-xl px-5 py-2.5 hover:bg-primary/10 transition-colors whitespace-nowrap">
-                See all our work →
-              </a>
-            </Link>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {webframes.map((f, i) => (
-              <BrowserFrame
-                key={f.url}
-                url={f.url}
-                label={f.label}
-                tag={f.tag}
-                accent={f.accent}
-                delay={i * 0.12}
-              />
-            ))}
-          </div>
         </div>
       </section>
 
