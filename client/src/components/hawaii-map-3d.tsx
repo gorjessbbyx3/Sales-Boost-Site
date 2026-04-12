@@ -17,68 +17,114 @@ interface IslandDef {
 
 const ISLANDS: IslandDef[] = [
   {
+    // Kaua'i — roughly circular, cliffs on northwest coast
     slug: "kauai",
     name: "Kaua'i",
     tagline: "Garden Isle",
     color: 0x10b981,
     glowColor: "#10b981",
-    x: -2.8,
-    y: 0.6,
-    scale: 0.7,
+    x: -3.0,
+    y: 0.4,
+    scale: 0.72,
     shape: [
-      [0, 0.9], [0.4, 0.7], [0.85, 0.3], [0.9, -0.2],
-      [0.5, -0.8], [0, -0.9], [-0.5, -0.7], [-0.85, -0.1],
-      [-0.8, 0.5], [-0.4, 0.85],
+      [0.0,  1.0],
+      [0.55, 0.85],
+      [0.9,  0.4],
+      [1.0, -0.05],
+      [0.75,-0.6],
+      [0.3, -1.0],
+      [-0.2,-0.95],
+      [-0.7,-0.65],
+      [-1.0,-0.1],
+      [-0.9, 0.45],
+      [-0.5, 0.85],
     ],
   },
   {
+    // O'ahu — elongated NW-SE, wider in center, Ko'olau on E, Waianae on W
+    // North Shore protrudes N, SE corner tapers (Diamond Head)
     slug: "oahu",
     name: "O'ahu",
     tagline: "Gathering Place",
     color: 0x3b82f6,
     glowColor: "#3b82f6",
-    x: -1.1,
+    x: -1.2,
     y: 0.0,
-    scale: 0.85,
+    scale: 0.88,
     shape: [
-      [0, 1.0], [0.45, 0.8], [0.9, 0.3], [1.0, -0.1],
-      [0.7, -0.6], [0.2, -1.0], [-0.3, -1.0], [-0.8, -0.5],
-      [-1.0, 0.1], [-0.7, 0.7], [-0.2, 0.95],
+      [-0.2, 1.0],  // North Shore center
+      [ 0.3, 0.85], // Laie / Ko'olau N
+      [ 0.7, 0.5],  // Kaneohe
+      [ 1.0, 0.0],  // Waimanalo / Koko Head
+      [ 0.8,-0.45], // SE tip (Diamond Head)
+      [ 0.5,-0.9],  // Ewa Beach
+      [ 0.0,-1.0],  // Pearl Harbor
+      [-0.5,-0.8],  // Leeward
+      [-1.0,-0.3],  // Kaena Pt / Waianae
+      [-0.9, 0.35], // Waianae N
+      [-0.5, 0.8],  // Mokuleia
     ],
   },
   {
+    // Maui — iconic figure-8: West Maui (NW lobe) + Haleakalā (SE lobe) joined by isthmus
     slug: "maui",
     name: "Maui",
     tagline: "Valley Isle",
     color: 0xf59e0b,
     glowColor: "#f59e0b",
-    x: 1.1,
-    y: -0.2,
-    scale: 1.0,
+    x: 1.0,
+    y: -0.15,
+    scale: 1.05,
     shape: [
-      // West lobe
-      [-0.8, 0.8], [-0.2, 1.0], [0.1, 0.7], [0.0, 0.2],
-      // Isthmus
-      [-0.1, 0.0], [0.2, -0.05],
-      // East lobe (Haleakala)
-      [0.5, 0.2], [1.0, 0.1], [1.0, -0.5],
-      [0.6, -1.0], [0.0, -0.9], [-0.5, -0.5],
-      [-0.8, -0.1], [-1.0, 0.4],
+      // West Maui lobe (NW)
+      [-0.85, 0.55],
+      [-0.55, 0.95],
+      [-0.1,  0.85],
+      [ 0.05, 0.5],
+      // Narrow isthmus
+      [ 0.05, 0.2],
+      [ 0.15, 0.1],
+      // East Maui / Haleakalā lobe (SE) — larger
+      [ 0.4,  0.35],
+      [ 0.85, 0.5],
+      [ 1.0,  0.15],
+      [ 1.0, -0.35],
+      [ 0.7, -0.95],
+      [ 0.2, -1.0],
+      [-0.3, -0.75],
+      [-0.35,-0.3],
+      // Back up through isthmus
+      [-0.2,  0.1],
+      [-0.15, 0.35],
+      // West Maui bottom
+      [-0.65,-0.0],
+      [-1.0,  0.15],
     ],
   },
   {
+    // Big Island — large, roughly pentagonal
+    // Kohala (N), Kona coast (W), Ka'ū (S), Puna lava finger (E), Hilo (NE)
     slug: "big-island",
     name: "Big Island",
     tagline: "Hawai'i Island",
     color: 0xef4444,
     glowColor: "#ef4444",
-    x: 2.9,
-    y: -0.8,
-    scale: 1.4,
+    x: 3.0,
+    y: -0.75,
+    scale: 1.45,
     shape: [
-      [0, 1.0], [0.5, 0.85], [0.95, 0.4], [1.0, -0.1],
-      [0.7, -0.7], [0.3, -1.0], [-0.3, -1.0],
-      [-0.8, -0.6], [-1.0, 0.0], [-0.7, 0.6], [-0.3, 0.95],
+      [-0.35, 1.0],  // Kohala W
+      [ 0.1,  0.95], // Kohala E
+      [ 0.6,  0.65], // Hilo N
+      [ 1.0,  0.2],  // Puna tip (E)
+      [ 0.85,-0.25], // Puna S
+      [ 0.55,-0.75], // Ka'ū E
+      [ 0.15,-1.0],  // Ka'ū S (South Point)
+      [-0.25,-0.9],  // Ka'ū W
+      [-0.8, -0.5],  // Kona S
+      [-1.0, -0.0],  // Kona mid
+      [-0.85, 0.5],  // Kona N
+      [-0.55, 0.8],  // Kohala SW
     ],
   },
 ];
