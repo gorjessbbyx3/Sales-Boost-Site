@@ -853,26 +853,49 @@ export default function HawaiiPage() {
         </div>
       </section>
 
-      {/* ── STATS STRIP ──────────────────────────────────────────────────── */}
-      <section className="bg-primary py-10 sm:py-12">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+      {/* ── COMPETITOR FEE TICKER ─────────────────────────────────────────── */}
+      <style>{`
+        @keyframes fee-ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .fee-ticker-track {
+          display: flex;
+          width: max-content;
+          animation: fee-ticker 36s linear infinite;
+        }
+        .fee-ticker-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+      <section className="bg-[#060810] border-y border-white/[0.07] py-4 overflow-hidden">
+        <div className="flex overflow-hidden select-none">
+          <div className="fee-ticker-track">
             {[
-              { n: 50, s: "+", label: "HI Businesses served" },
-              { n: 7, s: " days", label: "Avg time to launch" },
-              { n: 4, s: " islands", label: "We serve" },
-              { n: 0, p: "$", s: "", label: "Processing fees" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <div className="text-3xl sm:text-4xl font-black text-white mb-0.5">
-                  <AnimatedCounter
-                    target={stat.n}
-                    prefix={stat.p || ""}
-                    suffix={stat.s}
-                  />
-                </div>
-                <div className="text-xs text-white/70 font-medium">{stat.label}</div>
-              </div>
+              { processor: "Square",        amount: "$3,100", note: "avg merchant" },
+              { processor: "Clover",        amount: "$3,400", note: "avg merchant" },
+              { processor: "Toast",         amount: "$4,500", note: "avg restaurant" },
+              { processor: "Stripe",        amount: "$3,500", note: "avg merchant" },
+              { processor: "Wix Payments",  amount: "$3,500", note: "avg merchant" },
+              { processor: "PayPal",        amount: "$4,200", note: "avg merchant" },
+              { processor: "Square",        amount: "$3,100", note: "avg merchant" },
+              { processor: "Clover",        amount: "$3,400", note: "avg merchant" },
+              { processor: "Toast",         amount: "$4,500", note: "avg restaurant" },
+              { processor: "Stripe",        amount: "$3,500", note: "avg merchant" },
+              { processor: "Wix Payments",  amount: "$3,500", note: "avg merchant" },
+              { processor: "PayPal",        amount: "$4,200", note: "avg merchant" },
+            ].map((item, i) => (
+              <span key={i} className="inline-flex items-center gap-3 px-8 whitespace-nowrap">
+                <span className="text-white/30 text-xs font-semibold uppercase tracking-widest">{item.note}</span>
+                <span className="text-white/60 text-sm font-bold">{item.processor}</span>
+                <span className="text-white/20 text-xs">pays</span>
+                <span className="text-primary font-black text-base">{item.amount}/yr</span>
+                <span className="text-white/15 text-xs">in fees</span>
+                <span className="mx-4 text-white/10 text-lg">·</span>
+                <span className="text-white/20 text-xs font-medium italic">TechSavvy merchants pay</span>
+                <span className="text-primary font-black text-base">$0</span>
+                <span className="mx-6 text-white/10 text-lg">✦</span>
+              </span>
             ))}
           </div>
         </div>
