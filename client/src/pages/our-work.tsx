@@ -32,13 +32,13 @@ const PROJECTS = [
     features: ["Menu display", "Location + hours", "Photo gallery", "Social integration"],
   },
   {
-    url: "poormantowing.com",
-    label: "Poorman Towing",
-    sub: "Towing & Recovery — O'ahu",
-    tag: "Service Business",
-    accent: "#f59e0b",
-    description: "24/7 towing service site built for lead generation. Fast load, click-to-call CTAs, and clear service area coverage.",
-    features: ["Click-to-call", "24/7 messaging", "Service area map", "Fast load"],
+    url: "retentionanalyzer.gorjess.co",
+    label: "Retention Analyzer",
+    sub: "Business Intelligence Tool",
+    tag: "Web App",
+    accent: "#a855f7",
+    description: "AI-powered customer retention analysis tool. Helps businesses identify churn risk, track loyalty trends, and act on data-driven insights.",
+    features: ["Churn prediction", "Retention metrics", "AI insights", "Dashboard"],
   },
 ];
 
