@@ -28,7 +28,6 @@ const navGroups = [
     label: "Learn",
     items: [
       { label: "How It Works", href: "/how-it-works" },
-      { label: "FAQ", href: "/faq" },
       { label: "Free Guides", href: "/free-guides" },
     ],
   },
