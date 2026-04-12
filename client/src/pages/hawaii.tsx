@@ -688,15 +688,15 @@ export default function HawaiiPage() {
             transition={{ duration: 0.7 }}
             className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
           >
-            {/* Mobile: image on top with overlay text */}
-            <div className="lg:hidden relative">
+            {/* Mobile: image full-width at natural ratio, text below */}
+            <div className="lg:hidden flex flex-col bg-gradient-to-b from-[#0d1220] to-[#060810]">
               <img
                 src={soundFamiliarImg}
                 alt="Business owner losing money on processing fees"
-                className="w-full h-56 object-cover object-top"
+                className="w-full object-cover object-top"
+                style={{ maxHeight: "60vw", minHeight: "180px" }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060810] via-[#060810]/60 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 px-6 pb-6">
+              <div className="px-6 py-6">
                 <p className="text-white/60 text-xs uppercase tracking-widest mb-2">
                   Sound familiar?
                 </p>
