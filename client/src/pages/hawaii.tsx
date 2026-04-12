@@ -25,6 +25,7 @@ import hiw1Img from "@assets/1B14A086-2642-4916-8C70-3AE1B7162168_1775737253686.
 import hiw2Img from "@assets/EAB85ACC-FCBA-44CC-A7B3-DEB15B59D196_1775737505329.png";
 import hiw3Img from "@assets/IMG_6952_1775737505329.png";
 import HawaiiMap3D from "@/components/hawaii-map-3d";
+import NetworkSphere3D from "@/components/network-sphere-3d";
 
 // ─── Animated counter ──────────────────────────────────────────────────────
 function AnimatedCounter({
@@ -758,6 +759,70 @@ export default function HawaiiPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── 3D NETWORK SPHERE ────────────────────────────────────────────── */}
+      <section className="py-20 sm:py-28 bg-[#060810] relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]" />
+        </div>
+        <div className="relative z-10 max-w-6xl mx-auto px-5 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Text side */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">
+              Your payment network
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black text-white mt-3 mb-5 leading-[1.1]">
+              Every swipe.<br />
+              <span className="text-primary italic">Zero fees.</span><br />
+              Your money.
+            </h2>
+            <p className="text-white/50 text-base leading-relaxed mb-8 max-w-md">
+              Traditional processors take 2–4% of every transaction. We've built a network where the customer covers that cost — so you keep 100% of what you earn. No monthly minimums. No contracts. No surprises.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Avg monthly savings", value: "$1,400+" },
+                { label: "Setup time", value: "48 hrs" },
+                { label: "Contract required", value: "None" },
+                { label: "Equipment cost", value: "$0" },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-xl border border-white/5 bg-white/3 p-4"
+                  style={{ background: "rgba(255,255,255,0.02)" }}
+                >
+                  <p className="text-xl font-black text-primary">{stat.value}</p>
+                  <p className="text-xs text-white/40 mt-0.5">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* 3D sphere side */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="relative"
+            style={{ height: "480px" }}
+          >
+            <NetworkSphere3D />
+            {/* Floating label badges */}
+            <div className="absolute top-8 right-4 px-3 py-1.5 rounded-full bg-primary/15 border border-primary/30 text-xs text-primary font-semibold pointer-events-none">
+              Live merchant network
+            </div>
+            <div className="absolute bottom-12 left-4 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-white/60 font-medium pointer-events-none">
+              Move your mouse ↗
+            </div>
+          </motion.div>
         </div>
       </section>
 
