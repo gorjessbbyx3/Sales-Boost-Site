@@ -232,17 +232,17 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div
-      className="border-b border-white/10 last:border-0 cursor-pointer"
+      className="border-b border-border/70 last:border-0 cursor-pointer"
       onClick={() => setOpen((o) => !o)}
     >
       <button className="w-full flex items-center justify-between gap-4 py-5 text-left">
-        <span className="font-semibold text-white text-sm sm:text-base">{q}</span>
+        <span className="font-semibold text-foreground text-sm sm:text-base">{q}</span>
         <ChevronDown
           className={`w-5 h-5 text-primary flex-shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
         />
       </button>
       <div className={`overflow-hidden transition-all duration-300 ${open ? "max-h-64 pb-5" : "max-h-0"}`}>
-        <p className="text-white/60 text-sm leading-relaxed">{a}</p>
+        <p className="text-muted-foreground text-sm leading-relaxed">{a}</p>
       </div>
     </div>
   );
@@ -253,7 +253,7 @@ function ServiceSection({ svc, index }: { svc: typeof SERVICES[0]; index: number
   const isEven = index % 2 === 0;
 
   return (
-    <section id={svc.id} className="py-20 border-b border-white/[0.06] scroll-mt-24">
+    <section id={svc.id} className="py-20 border-b border-border/40 scroll-mt-24">
       <div className="max-w-6xl mx-auto px-5">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -275,10 +275,10 @@ function ServiceSection({ svc, index }: { svc: typeof SERVICES[0]; index: number
               </span>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight mb-4">
+            <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight mb-4">
               {svc.tagline}
             </h2>
-            <p className="text-white/60 text-base leading-relaxed mb-8">{svc.intro}</p>
+            <p className="text-muted-foreground text-base leading-relaxed mb-8">{svc.intro}</p>
 
             {/* Feature cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
@@ -286,12 +286,12 @@ function ServiceSection({ svc, index }: { svc: typeof SERVICES[0]; index: number
                 const FIcon = f.icon;
                 return (
                   <div key={f.title}
-                    className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                    className="rounded-xl border border-border bg-card p-4">
                     <div className="flex items-center gap-2.5 mb-2">
                       <FIcon className="w-4 h-4 flex-shrink-0" style={{ color: svc.accent }} />
-                      <span className="font-bold text-white text-sm">{f.title}</span>
+                      <span className="font-bold text-foreground text-sm">{f.title}</span>
                     </div>
-                    <p className="text-white/50 text-xs leading-relaxed">{f.body}</p>
+                    <p className="text-muted-foreground text-xs leading-relaxed">{f.body}</p>
                   </div>
                 );
               })}
@@ -310,13 +310,13 @@ function ServiceSection({ svc, index }: { svc: typeof SERVICES[0]; index: number
           {/* Right/Left: what you get + who it's for */}
           <div className="lg:w-[360px] flex-shrink-0 space-y-5">
             {/* What you get */}
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
-              <h3 className="text-white font-black text-sm uppercase tracking-widest mb-4" style={{ color: svc.accent }}>
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="font-black text-sm uppercase tracking-widest mb-4" style={{ color: svc.accent }}>
                 What you get
               </h3>
               <ul className="space-y-2.5">
                 {svc.whatYouGet.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm text-white/70">
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-foreground/80">
                     <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: svc.accent }} />
                     {item}
                   </li>
@@ -325,11 +325,11 @@ function ServiceSection({ svc, index }: { svc: typeof SERVICES[0]; index: number
             </div>
 
             {/* Who it's for */}
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
-              <h3 className="text-white font-black text-sm uppercase tracking-widest mb-3" style={{ color: svc.accent }}>
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="font-black text-sm uppercase tracking-widest mb-3" style={{ color: svc.accent }}>
                 Best for
               </h3>
-              <p className="text-white/60 text-sm leading-relaxed">{svc.whoFor}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed">{svc.whoFor}</p>
             </div>
           </div>
         </motion.div>
@@ -393,7 +393,7 @@ export default function ServicesPage() {
   return (
     <Layout>
       {/* ── Hero ── */}
-      <section className="bg-[#060810] pt-28 pb-16 relative overflow-hidden">
+      <section className="bg-background pt-28 pb-16 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[340px] bg-primary/8 rounded-full blur-[120px]" />
         </div>
@@ -406,11 +406,11 @@ export default function ServicesPage() {
             <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">
               Everything we do
             </span>
-            <h1 className="text-4xl sm:text-6xl font-black text-white mt-3 mb-5 leading-[1.05]">
+            <h1 className="text-4xl sm:text-6xl font-black text-foreground mt-3 mb-5 leading-[1.05]">
               One team.<br />
               <span className="text-primary">Everything your business needs.</span>
             </h1>
-            <p className="text-white/50 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
               We're not a marketplace or an agency farm. We're a small, focused Hawaii-based team that builds websites, systems, brands, and marketing for local businesses — and we do the work ourselves.
             </p>
           </motion.div>
@@ -429,7 +429,7 @@ export default function ServicesPage() {
                   key={s.id}
                   href={`#${s.id}`}
                   data-testid={`link-service-nav-${s.id}`}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/[0.04] text-white/60 text-xs font-semibold hover:border-white/25 hover:text-white transition-all"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card text-muted-foreground text-xs font-semibold hover:border-primary/40 hover:text-foreground transition-all"
                 >
                   <Icon className="w-3.5 h-3.5" style={{ color: s.accent }} />
                   {s.label}
@@ -441,14 +441,14 @@ export default function ServicesPage() {
       </section>
 
       {/* ── Service deep-dives ── */}
-      <div className="bg-[#060810]">
+      <div className="bg-background">
         {SERVICES.map((svc, i) => (
           <ServiceSection key={svc.id} svc={svc} index={i} />
         ))}
       </div>
 
       {/* ── FAQ ── */}
-      <section className="bg-[#07090f] py-20 border-t border-white/5">
+      <section className="bg-muted/20 py-20 border-t border-border/40">
         <div className="max-w-3xl mx-auto px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -457,11 +457,11 @@ export default function ServicesPage() {
             className="text-center mb-12"
           >
             <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">Common questions</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-3">
+            <h2 className="text-3xl sm:text-4xl font-black text-foreground mt-3">
               Good questions. Straight answers.
             </h2>
           </motion.div>
-          <div className="bg-white/[0.02] border border-white/[0.08] rounded-2xl px-6 sm:px-8">
+          <div className="bg-card border border-border rounded-2xl px-6 sm:px-8">
             {FAQS.map((f) => (
               <FAQItem key={f.q} q={f.q} a={f.a} />
             ))}
@@ -470,17 +470,17 @@ export default function ServicesPage() {
       </section>
 
       {/* ── Bottom CTA ── */}
-      <section className="bg-[#060810] py-20 border-t border-white/5">
+      <section className="bg-background py-20 border-t border-border/40">
         <div className="max-w-2xl mx-auto px-5 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
+            <h2 className="text-3xl sm:text-4xl font-black text-foreground mb-4">
               Not sure where to start?
             </h2>
-            <p className="text-white/50 text-base mb-8 leading-relaxed">
+            <p className="text-muted-foreground text-base mb-8 leading-relaxed">
               Book a free 20-minute call. We'll listen, ask where your business hurts, and tell you honestly what would move the needle — even if it's nothing we sell.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -494,7 +494,7 @@ export default function ServicesPage() {
               <a
                 href="tel:+18087675460"
                 data-testid="link-services-cta-phone"
-                className="inline-flex items-center gap-2 border border-white/15 text-white/70 font-semibold px-6 py-4 rounded-xl text-sm hover:border-white/30 hover:text-white transition-all"
+                className="inline-flex items-center gap-2 border border-border text-muted-foreground font-semibold px-6 py-4 rounded-xl text-sm hover:border-foreground/30 hover:text-foreground transition-all"
               >
                 <Phone className="w-4 h-4" /> (808) 767-5460
               </a>

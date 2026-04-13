@@ -202,7 +202,7 @@ const FAQS = [
 
 function AiChatSection() {
   return (
-    <section className="bg-[#07090f] py-20 border-t border-white/5">
+    <section className="bg-muted/20 py-20 border-t border-border/40">
       <div className="max-w-6xl mx-auto px-5">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -213,10 +213,10 @@ function AiChatSection() {
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-5">
             <Bot className="w-3.5 h-3.5" /> Included Free with Every Package
           </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-black text-foreground mb-4">
             AI chat included free<br />with every package.
           </h2>
-          <p className="text-white/50 text-base max-w-xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground text-base max-w-xl mx-auto leading-relaxed">
             Every package comes with an AI chat widget at no extra cost. What it can <em>do</em> upgrades with your tier — from answering questions, to booking appointments, to replying to leads automatically.
           </p>
         </motion.div>
@@ -263,13 +263,13 @@ function AiChatSection() {
                       {tier.pkg} Package
                     </span>
                   </div>
-                  <h3 className="text-white font-black text-lg mb-1">{tier.label}</h3>
-                  <p className="text-white/40 text-sm mb-5">{tier.tagline}</p>
+                  <h3 className="text-foreground font-black text-lg mb-1">{tier.label}</h3>
+                  <p className="text-muted-foreground/70 text-sm mb-5">{tier.tagline}</p>
 
                   {/* Capabilities */}
                   <ul className="space-y-2.5 mb-4">
                     {tier.capabilities.map((cap) => (
-                      <li key={cap} className="flex items-start gap-2.5 text-sm text-white/70">
+                      <li key={cap} className="flex items-start gap-2.5 text-sm text-foreground/80">
                         <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: tier.accent }} />
                         {cap}
                       </li>
@@ -278,9 +278,9 @@ function AiChatSection() {
 
                   {/* Not included */}
                   {tier.notIncluded.length > 0 && (
-                    <ul className="space-y-1.5 pt-3 border-t border-white/[0.06]">
+                    <ul className="space-y-1.5 pt-3 border-t border-border/30">
                       {tier.notIncluded.map((item) => (
-                        <li key={item} className="flex items-start gap-2 text-xs text-white/20">
+                        <li key={item} className="flex items-start gap-2 text-xs text-muted-foreground/40">
                           <span className="mt-0.5 flex-shrink-0">—</span>
                           {item}
                         </li>
@@ -289,17 +289,14 @@ function AiChatSection() {
                   )}
                 </div>
 
-                <div
-                  className="px-6 pb-6"
-                >
-                  <a
-                    href="/contact"
-                    data-testid={`link-ai-chat-cta-${tier.pkg.toLowerCase()}`}
-                    className="flex items-center justify-center gap-2 w-full font-bold py-3 rounded-xl text-sm transition-opacity hover:opacity-90 border"
+                <div className="px-6 pb-6">
+                  <div
+                    data-testid={`badge-ai-chat-included-${tier.pkg.toLowerCase()}`}
+                    className="flex items-center justify-center gap-2 w-full font-bold py-3 rounded-xl text-sm border"
                     style={{ borderColor: tier.accent + "40", color: tier.accent, background: tier.accent + "10" }}
                   >
-                    Add to my package <ArrowRight className="w-3.5 h-3.5" />
-                  </a>
+                    <Check className="w-3.5 h-3.5" /> Included with your plan
+                  </div>
                 </div>
               </motion.div>
             );
@@ -310,7 +307,7 @@ function AiChatSection() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center text-white/25 text-xs mt-8"
+          className="text-center text-muted-foreground/50 text-xs mt-8"
         >
           AI chat is included at no extra cost with every package. Setup and training included.
         </motion.p>
@@ -322,13 +319,13 @@ function AiChatSection() {
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-white/10 last:border-0 cursor-pointer" onClick={() => setOpen((o) => !o)}>
+    <div className="border-b border-border/70 last:border-0 cursor-pointer" onClick={() => setOpen((o) => !o)}>
       <button className="w-full flex items-center justify-between gap-4 py-5 text-left">
-        <span className="font-semibold text-white text-sm sm:text-base">{q}</span>
+        <span className="font-semibold text-foreground text-sm sm:text-base">{q}</span>
         <ChevronDown className={`w-5 h-5 text-primary flex-shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
       </button>
       <div className={`overflow-hidden transition-all duration-300 ${open ? "max-h-64 pb-5" : "max-h-0"}`}>
-        <p className="text-white/60 text-sm leading-relaxed">{a}</p>
+        <p className="text-muted-foreground/80 text-sm leading-relaxed">{a}</p>
       </div>
     </div>
   );
@@ -341,12 +338,12 @@ function PackageCard({ pkg, index }: { pkg: typeof PACKAGES[0]; index: number })
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="relative flex flex-col rounded-2xl border overflow-hidden"
+      className="relative flex flex-col rounded-2xl border overflow-hidden bg-card"
       style={{
-        borderColor: pkg.highlight ? pkg.accent + "60" : "rgba(255,255,255,0.08)",
+        borderColor: pkg.highlight ? pkg.accent + "60" : undefined,
         background: pkg.highlight
-          ? `linear-gradient(135deg, ${pkg.accent}10 0%, rgba(255,255,255,0.02) 100%)`
-          : "rgba(255,255,255,0.02)",
+          ? `linear-gradient(135deg, ${pkg.accent}10 0%, transparent 100%)`
+          : undefined,
         boxShadow: pkg.highlight ? `0 0 60px ${pkg.accent}18` : "none",
       }}
     >
@@ -374,30 +371,30 @@ function PackageCard({ pkg, index }: { pkg: typeof PACKAGES[0]; index: number })
           <span className="text-xs font-black uppercase tracking-[0.18em] mb-2 block" style={{ color: pkg.accent }}>
             {pkg.name}
           </span>
-          <h3 className="text-white font-black text-xl leading-snug mb-3">{pkg.tagline}</h3>
+          <h3 className="text-foreground font-black text-xl leading-snug mb-3">{pkg.tagline}</h3>
 
           {/* Pricing */}
           <div className="flex items-end gap-4 flex-wrap">
             <div>
-              <span className="text-white/40 text-xs uppercase tracking-widest block mb-0.5">Setup</span>
-              <span className="text-3xl font-black text-white">{pkg.setup}</span>
-              <span className="text-white/40 text-sm ml-1">once</span>
+              <span className="text-muted-foreground/70 text-xs uppercase tracking-widest block mb-0.5">Setup</span>
+              <span className="text-3xl font-black text-foreground">{pkg.setup}</span>
+              <span className="text-muted-foreground/70 text-sm ml-1">once</span>
             </div>
-            <div className="text-white/20 text-xl font-light mb-1">+</div>
+            <div className="text-muted-foreground/40 text-xl font-light mb-1">+</div>
             <div>
-              <span className="text-white/40 text-xs uppercase tracking-widest block mb-0.5">Then</span>
+              <span className="text-muted-foreground/70 text-xs uppercase tracking-widest block mb-0.5">Then</span>
               <span className="text-3xl font-black" style={{ color: pkg.accent }}>{pkg.monthly}</span>
-              <span className="text-white/40 text-sm ml-1">{pkg.monthlyNote}</span>
+              <span className="text-muted-foreground/70 text-sm ml-1">{pkg.monthlyNote}</span>
             </div>
           </div>
         </div>
 
         {/* Setup includes */}
         <div className="mb-5">
-          <p className="text-white/30 text-[10px] font-black uppercase tracking-widest mb-3">Setup includes</p>
+          <p className="text-muted-foreground/50 text-[10px] font-black uppercase tracking-widest mb-3">Setup includes</p>
           <ul className="space-y-2">
             {pkg.setupIncludes.map((item) => (
-              <li key={item} className="flex items-start gap-2.5 text-sm text-white/70">
+              <li key={item} className="flex items-start gap-2.5 text-sm text-foreground/80">
                 <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: pkg.accent }} />
                 {item}
               </li>
@@ -410,7 +407,7 @@ function PackageCard({ pkg, index }: { pkg: typeof PACKAGES[0]; index: number })
           <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: pkg.accent }}>Monthly includes</p>
           <ul className="space-y-2">
             {pkg.monthlyIncludes.map((item) => (
-              <li key={item} className="flex items-start gap-2.5 text-sm text-white/70">
+              <li key={item} className="flex items-start gap-2.5 text-sm text-foreground/80">
                 <Zap className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: pkg.accent }} />
                 {item}
               </li>
@@ -419,7 +416,7 @@ function PackageCard({ pkg, index }: { pkg: typeof PACKAGES[0]; index: number })
         </div>
 
         {/* Best for */}
-        <p className="text-white/40 text-xs leading-relaxed mb-6 flex-1">{pkg.bestFor}</p>
+        <p className="text-muted-foreground/70 text-xs leading-relaxed mb-6 flex-1">{pkg.bestFor}</p>
 
         {/* CTA */}
         <a
@@ -466,18 +463,18 @@ export default function PackagesPage() {
   return (
     <Layout>
       {/* ── Hero ── */}
-      <section className="bg-[#060810] pt-28 pb-16 relative overflow-hidden">
+      <section className="bg-background pt-28 pb-16 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[340px] bg-primary/8 rounded-full blur-[120px]" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto px-5 text-center">
           <motion.div initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">Transparent pricing</span>
-            <h1 className="text-4xl sm:text-6xl font-black text-white mt-3 mb-5 leading-[1.05]">
+            <h1 className="text-4xl sm:text-6xl font-black text-foreground mt-3 mb-5 leading-[1.05]">
               Simple packages.<br />
               <span className="text-primary">No surprises.</span>
             </h1>
-            <p className="text-white/50 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
               One setup fee. One monthly rate. No hidden costs, no add-on traps. Pick the package that fits where your business is right now — you can always upgrade.
             </p>
           </motion.div>
@@ -490,7 +487,7 @@ export default function PackagesPage() {
             className="inline-flex items-center gap-2.5 mt-8 px-5 py-3 rounded-full border border-primary/30 bg-primary/8"
           >
             <CreditCard className="w-4 h-4 text-primary flex-shrink-0" />
-            <span className="text-white/80 text-sm">
+            <span className="text-foreground/80 text-sm">
               <span className="text-primary font-bold">Payment processing is always free</span> — no setup fee, no monthly fee, no processing fees. Ever.
             </span>
           </motion.div>
@@ -498,7 +495,7 @@ export default function PackagesPage() {
       </section>
 
       {/* ── Package cards ── */}
-      <section className="bg-[#060810] pb-20">
+      <section className="bg-background pb-20">
         <div className="max-w-6xl mx-auto px-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {PACKAGES.map((pkg, i) => (
@@ -511,7 +508,7 @@ export default function PackagesPage() {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-center text-white/25 text-xs mt-8"
+            className="text-center text-muted-foreground/50 text-xs mt-8"
           >
             No contracts. Cancel anytime. Setup fees are one-time. Monthly billing starts at launch.
           </motion.p>
@@ -522,7 +519,7 @@ export default function PackagesPage() {
       <AiChatSection />
 
       {/* ── Add-ons ── */}
-      <section className="bg-[#07090f] py-20 border-t border-white/5">
+      <section className="bg-muted/20 py-20 border-t border-border/40">
         <div className="max-w-5xl mx-auto px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -531,8 +528,8 @@ export default function PackagesPage() {
             className="text-center mb-12"
           >
             <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">À la carte</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-3 mb-3">Add what you need.</h2>
-            <p className="text-white/50 text-base">Stack any of these onto your package at any time.</p>
+            <h2 className="text-3xl sm:text-4xl font-black text-foreground mt-3 mb-3">Add what you need.</h2>
+            <p className="text-muted-foreground text-base">Stack any of these onto your package at any time.</p>
           </motion.div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {ADD_ONS.map((addon, i) => {
@@ -544,16 +541,16 @@ export default function PackagesPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.07 }}
-                  className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5"
+                  className="rounded-xl border border-border bg-card p-5"
                 >
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2.5">
                       <Icon className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="font-bold text-white text-sm">{addon.label}</span>
+                      <span className="font-bold text-foreground text-sm">{addon.label}</span>
                     </div>
                     <span className="text-primary text-xs font-black whitespace-nowrap">{addon.price}</span>
                   </div>
-                  <p className="text-white/50 text-xs leading-relaxed">{addon.desc}</p>
+                  <p className="text-muted-foreground text-xs leading-relaxed">{addon.desc}</p>
                 </motion.div>
               );
             })}
@@ -562,7 +559,7 @@ export default function PackagesPage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section className="bg-[#060810] py-20 border-t border-white/5">
+      <section className="bg-background py-20 border-t border-border/40">
         <div className="max-w-3xl mx-auto px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -571,9 +568,9 @@ export default function PackagesPage() {
             className="text-center mb-12"
           >
             <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">Before you ask</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-3">Pricing questions.</h2>
+            <h2 className="text-3xl sm:text-4xl font-black text-foreground mt-3">Pricing questions.</h2>
           </motion.div>
-          <div className="bg-white/[0.02] border border-white/[0.08] rounded-2xl px-6 sm:px-8">
+          <div className="bg-card border border-border rounded-2xl px-6 sm:px-8">
             {FAQS.map((f) => (
               <FAQItem key={f.q} q={f.q} a={f.a} />
             ))}
@@ -582,11 +579,11 @@ export default function PackagesPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="bg-[#07090f] py-20 border-t border-white/5">
+      <section className="bg-muted/20 py-20 border-t border-border/40">
         <div className="max-w-2xl mx-auto px-5 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">Not sure which fits?</h2>
-            <p className="text-white/50 text-base mb-8 leading-relaxed">
+            <h2 className="text-3xl sm:text-4xl font-black text-foreground mb-4">Not sure which fits?</h2>
+            <p className="text-muted-foreground text-base mb-8 leading-relaxed">
               Book a free 20-minute call. We'll look at where your business is, where you want it to go, and tell you honestly which package makes sense — or if none of them do.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -600,7 +597,7 @@ export default function PackagesPage() {
               <a
                 href="tel:+18087675460"
                 data-testid="link-packages-cta-phone"
-                className="inline-flex items-center gap-2 border border-white/15 text-white/70 font-semibold px-6 py-4 rounded-xl text-sm hover:border-white/30 hover:text-white transition-all"
+                className="inline-flex items-center gap-2 border border-border text-muted-foreground font-semibold px-6 py-4 rounded-xl text-sm hover:border-foreground/30 hover:text-foreground transition-all"
               >
                 <Phone className="w-4 h-4" /> (808) 767-5460
               </a>

@@ -534,7 +534,7 @@ function ContactSection() {
     businessName: "",
     businessType: "",
     monthlyVolume: "",
-    interest: "bundle-terminal",
+    interest: "starter-package",
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
@@ -545,9 +545,10 @@ function ContactSection() {
     setSubmitting(true);
     try {
       const pkgMap: Record<string, string> = {
-        "bundle-terminal": "terminal",
-        "bundle-trial": "trial",
-        "online-only": "online",
+        "starter-package": "starter-package",
+        "growth-package": "growth-package",
+        "full-stack-package": "full-stack-package",
+        "bundle-terminal": "payment-processing",
         "high-risk": "high-risk",
         "online-store": "online-store",
         "questions": "questions",
@@ -588,7 +589,7 @@ function ContactSection() {
           <motion.div className="flex flex-wrap items-center justify-center gap-3" variants={fadeUp}>
             <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
               <Zap className="w-3.5 h-3.5 mr-1.5" />
-              Free \u2014 No Commitment
+              Free — No Commitment
             </Badge>
             <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
               <MapPin className="w-3.5 h-3.5 mr-1.5" />
@@ -803,9 +804,16 @@ function ContactSection() {
                       className="w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                       data-testid="select-contact-interest"
                     >
-                      <option value="bundle-terminal">Zero-Fee Processing</option>
-                      <option value="high-risk">High-Risk Merchant Account</option>
-                      <option value="online-store">Online Payment Gateway</option>
+                      <optgroup label="Packages">
+                        <option value="starter-package">Starter Package — $799 setup + $199/mo</option>
+                        <option value="growth-package">Growth Package — $500 setup + $750/mo</option>
+                        <option value="full-stack-package">Full Stack Package — $1,500 setup + $1,200/mo</option>
+                      </optgroup>
+                      <optgroup label="Payment Processing">
+                        <option value="bundle-terminal">Zero-Fee Processing (Always Free)</option>
+                        <option value="high-risk">High-Risk Merchant Account</option>
+                        <option value="online-store">Online Payment Gateway</option>
+                      </optgroup>
                       <option value="questions">Just Have Questions</option>
                     </select>
                   </div>

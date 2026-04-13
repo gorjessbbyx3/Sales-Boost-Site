@@ -85,17 +85,17 @@ function ProjectCard({ project, index }: { project: typeof PROJECTS[0]; index: n
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="group relative bg-white/[0.03] border border-white/8 rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-300"
-      style={{ boxShadow: "0 4px 40px rgba(0,0,0,0.3)" }}
+      className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-foreground/20 transition-all duration-300"
+      style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}
     >
       {/* Browser chrome */}
-      <div className="bg-[#0d0f18] border-b border-white/[0.06] px-4 py-3 flex items-center gap-3">
+      <div className="bg-secondary/80 dark:bg-[#0d0f18] border-b border-border px-4 py-3 flex items-center gap-3">
         <div className="flex gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
           <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
           <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
         </div>
-        <div className="flex-1 bg-white/5 rounded-md px-3 py-1 text-[11px] text-white/30 font-mono truncate">
+        <div className="flex-1 bg-muted rounded-md px-3 py-1 text-[11px] text-muted-foreground font-mono truncate">
           {project.url}
         </div>
         <a
@@ -103,7 +103,7 @@ function ProjectCard({ project, index }: { project: typeof PROJECTS[0]; index: n
           target="_blank"
           rel="noopener noreferrer"
           data-testid={`link-project-${index}`}
-          className="text-white/20 hover:text-primary transition-colors"
+          className="text-muted-foreground/40 hover:text-primary transition-colors"
         >
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
@@ -115,6 +115,7 @@ function ProjectCard({ project, index }: { project: typeof PROJECTS[0]; index: n
           src={`https://${project.url}`}
           title={project.label}
           loading="lazy"
+          sandbox="allow-scripts allow-same-origin"
           className="border-0 bg-white"
           style={{
             width: "166.67%",
@@ -150,18 +151,18 @@ function ProjectCard({ project, index }: { project: typeof PROJECTS[0]; index: n
             >
               {project.tag}
             </span>
-            <h3 className="text-white font-black text-lg leading-tight">{project.label}</h3>
-            <p className="text-white/40 text-xs mt-0.5">{project.sub}</p>
+            <h3 className="text-foreground font-black text-lg leading-tight">{project.label}</h3>
+            <p className="text-muted-foreground/70 text-xs mt-0.5">{project.sub}</p>
           </div>
         </div>
 
-        <p className="text-white/60 text-sm leading-relaxed mb-4">{project.description}</p>
+        <p className="text-muted-foreground text-sm leading-relaxed mb-4">{project.description}</p>
 
         <div className="flex flex-wrap gap-2">
           {project.features.map((f) => (
             <span
               key={f}
-              className="text-[10px] font-semibold text-white/40 bg-white/5 border border-white/8 px-2.5 py-1 rounded-full"
+              className="text-[10px] font-semibold text-muted-foreground/70 bg-muted border border-border px-2.5 py-1 rounded-full"
             >
               {f}
             </span>
@@ -268,7 +269,7 @@ export default function OurWorkPage() {
   return (
     <Layout>
       {/* Hero */}
-      <section className="bg-[#060810] pt-28 pb-16 relative overflow-hidden">
+      <section className="bg-background pt-28 pb-16 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/8 rounded-full blur-[100px]" />
         </div>
@@ -281,11 +282,11 @@ export default function OurWorkPage() {
             <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">
               Portfolio
             </span>
-            <h1 className="text-4xl sm:text-6xl font-black text-white mt-3 mb-4 leading-[1.05]">
+            <h1 className="text-4xl sm:text-6xl font-black text-foreground mt-3 mb-4 leading-[1.05]">
               Real sites.<br />
               <span className="text-primary">Real businesses.</span>
             </h1>
-            <p className="text-white/50 text-base max-w-md mx-auto">
+            <p className="text-muted-foreground text-base max-w-md mx-auto">
               Every site here is live, built by our team, and actively serving customers. Not a single stock photo or template in the bunch.
             </p>
           </motion.div>
@@ -303,8 +304,8 @@ export default function OurWorkPage() {
               { n: "7 days", label: "Avg Launch Time" },
             ].map((s) => (
               <div key={s.label} className="text-center">
-                <p className="text-2xl sm:text-3xl font-black text-white">{s.n}</p>
-                <p className="text-white/40 text-xs uppercase tracking-widest mt-1">{s.label}</p>
+                <p className="text-2xl sm:text-3xl font-black text-foreground">{s.n}</p>
+                <p className="text-muted-foreground/70 text-xs uppercase tracking-widest mt-1">{s.label}</p>
               </div>
             ))}
           </motion.div>
@@ -312,7 +313,7 @@ export default function OurWorkPage() {
       </section>
 
       {/* Projects grid */}
-      <section className="bg-[#060810] pb-24">
+      <section className="bg-background pb-24">
         <div className="max-w-6xl mx-auto px-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {PROJECTS.map((p, i) => (
@@ -323,17 +324,17 @@ export default function OurWorkPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-[#07090f] py-20 border-t border-white/5">
+      <section className="bg-muted/20 py-20 border-t border-border/40">
         <div className="max-w-2xl mx-auto px-5 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
+            <h2 className="text-3xl sm:text-4xl font-black text-foreground mb-4">
               Want yours next?
             </h2>
-            <p className="text-white/50 text-base mb-8">
+            <p className="text-muted-foreground text-base mb-8">
               We build fast, stay on, and charge you nothing for payment processing. Most sites go live in under a week.
             </p>
             <a

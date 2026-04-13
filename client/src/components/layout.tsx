@@ -9,10 +9,13 @@ import {
   Mail,
   Clock,
   ChevronDown,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Breadcrumb } from "@/components/breadcrumb";
+import { useTheme } from "@/hooks/use-theme";
 
 const navGroups = [
   {
@@ -102,6 +105,7 @@ function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [location] = useLocation();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -145,6 +149,15 @@ function Navbar() {
             </div>
 
             <div className="hidden md:flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                data-testid="button-theme-toggle"
+              >
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </Button>
               <Button size="sm" asChild>
                 <Link href="/statement-review" data-testid="link-nav-statement-analysis">
                   Statement Analysis
@@ -201,6 +214,14 @@ function Navbar() {
                   <ArrowRight className="w-3 h-3" />
                 </Link>
               </Button>
+              <button
+                onClick={toggleTheme}
+                className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="button-mobile-theme-toggle"
+              >
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              </button>
               <a
                 href="tel:+18087675460"
                 className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
