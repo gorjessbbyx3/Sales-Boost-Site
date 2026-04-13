@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate, useInView } from "framer-motion";
-import { CreditCard, Banknote, CheckCircle2, TrendingDown, TrendingUp, DollarSign } from "lucide-react";
+import { CreditCard, Banknote, CheckCircle2, TrendingDown } from "lucide-react";
 
 const ITEMS = [
   { label: "1× PLATE LUNCH", value: "$13.00" },
@@ -33,12 +33,8 @@ function FeeCounter() {
 }
 
 /* ─── Mini bar chart ────────────────────────────────────────────── */
-function MiniBarChart({ type }: { type: "loss" | "gain" }) {
-  const isLoss = type === "loss";
-  const heights = isLoss
-    ? [18, 28, 36, 44, 52, 58, 66, 74, 82, 88, 94, 100]
-    : [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
-  const color = isLoss ? "#ef4444" : "#10b981";
+function MiniBarChart() {
+  const heights = [18, 28, 36, 44, 52, 58, 66, 74, 82, 88, 94, 100];
 
   return (
     <div className="flex items-end gap-[3px] h-10 w-full">
@@ -52,8 +48,8 @@ function MiniBarChart({ type }: { type: "loss" | "gain" }) {
           className="flex-1 rounded-t-sm"
           style={{
             height: `${h}%`,
-            background: color,
-            opacity: isLoss ? 0.5 + (i / 11) * 0.5 : 0.75,
+            background: "#ef4444",
+            opacity: 0.5 + (i / 11) * 0.5,
             transformOrigin: "bottom",
           }}
         />
@@ -62,22 +58,22 @@ function MiniBarChart({ type }: { type: "loss" | "gain" }) {
   );
 }
 
-/* ─── Left panel — the cost of doing nothing ────────────────────── */
+/* ─── Loss panel — the cost of doing nothing ────────────────────── */
 function LossPanel({ switchMode }: { switchMode: (m: "cc" | "cash") => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -30 }}
+      initial={{ opacity: 0, x: 30 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6, delay: 0.2 }}
-      className="rounded-2xl border border-red-500/20 p-5 flex flex-col gap-4"
+      className="rounded-2xl border border-red-500/20 p-5 flex flex-col gap-4 h-full"
       style={{ background: "rgba(239,68,68,0.05)" }}
     >
       {/* Label */}
       <div className="flex items-center gap-2">
         <TrendingDown className="w-4 h-4 text-red-400 shrink-0" />
         <span className="text-red-400 text-xs font-black uppercase tracking-widest">
-          Without us
+          What you're losing
         </span>
       </div>
 
@@ -91,7 +87,7 @@ function LossPanel({ switchMode }: { switchMode: (m: "cc" | "cash") => void }) {
 
       {/* Bar chart */}
       <div>
-        <MiniBarChart type="loss" />
+        <MiniBarChart />
         <p className="text-white/25 text-[10px] mt-1.5">Fees accumulating month over month</p>
       </div>
 
@@ -121,68 +117,7 @@ function LossPanel({ switchMode }: { switchMode: (m: "cc" | "cash") => void }) {
   );
 }
 
-/* ─── Right panel — what you keep ──────────────────────────────── */
-function GainPanel() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 30 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.6, delay: 0.2 }}
-      className="rounded-2xl border border-emerald-500/20 p-5 flex flex-col gap-4"
-      style={{ background: "rgba(16,185,129,0.05)" }}
-    >
-      {/* Label */}
-      <div className="flex items-center gap-2">
-        <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0" />
-        <span className="text-emerald-400 text-xs font-black uppercase tracking-widest">
-          With us
-        </span>
-      </div>
-
-      {/* Big number */}
-      <div>
-        <div className="text-3xl sm:text-4xl font-black text-emerald-400 leading-none">
-          $0
-        </div>
-        <p className="text-white/40 text-xs mt-1">in processing fees. Ever.</p>
-      </div>
-
-      {/* Bar chart */}
-      <div>
-        <MiniBarChart type="gain" />
-        <p className="text-white/25 text-[10px] mt-1.5">100% of revenue stays yours</p>
-      </div>
-
-      {/* Breakdown */}
-      <div className="border-t border-white/5 pt-3 space-y-1.5">
-        {[
-          { label: "Per transaction", val: "$0.00" },
-          { label: "Per month (500 tx)", val: "$0" },
-          { label: "Per year", val: "$0" },
-        ].map((r) => (
-          <div key={r.label} className="flex justify-between text-xs">
-            <span className="text-white/40">{r.label}</span>
-            <span className="text-emerald-400 font-bold">{r.val}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Badge */}
-      <div
-        className="flex items-center gap-2 rounded-xl px-3 py-2.5 border border-emerald-500/25 mt-auto"
-        style={{ background: "rgba(16,185,129,0.1)" }}
-      >
-        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-        <span className="text-emerald-300 text-xs font-bold">
-          You keep 100% — customers save on cash
-        </span>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── Receipt center ────────────────────────────────────────────── */
+/* ─── Receipt ───────────────────────────────────────────────────── */
 function ReceiptCenter({
   mode,
   printing,
@@ -311,7 +246,7 @@ function ReceiptCenter({
         </motion.div>
       </motion.div>
 
-      {/* Floating savings badge — mobile only */}
+      {/* Floating savings badge — visible when cash mode */}
       <AnimatePresence>
         {isCash && (
           <motion.div
@@ -320,7 +255,7 @@ function ReceiptCenter({
             animate={{ opacity: 1, scale: 1, x: 70, y: -50 }}
             exit={{ opacity: 0, scale: 0.5 }}
             transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.3 }}
-            className="absolute top-1/2 right-0 lg:hidden flex flex-col items-center rounded-2xl border border-emerald-500/40 px-3 py-2 text-center"
+            className="absolute top-1/2 right-0 flex flex-col items-center rounded-2xl border border-emerald-500/40 px-3 py-2 text-center"
             style={{ background: "rgba(16,185,129,0.12)", backdropFilter: "blur(8px)", minWidth: "80px" }}
           >
             <CheckCircle2 className="w-4 h-4 text-emerald-400 mb-0.5" />
@@ -382,19 +317,11 @@ export default function POSReceiptShowcase() {
         </button>
       </div>
 
-      {/* ── Desktop: 3-column layout ── */}
-      <div className="w-full hidden lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-8 lg:items-start">
-        <LossPanel switchMode={switchMode} />
+      {/* ── Side by side: receipt + red card ── */}
+      <div className="w-full flex flex-col sm:flex-row items-start justify-center gap-8">
         <ReceiptCenter mode={mode} printing={printing} visible={visible} />
-        <GainPanel />
-      </div>
-
-      {/* ── Mobile: receipt centered, panels below ── */}
-      <div className="lg:hidden flex flex-col items-center w-full gap-6">
-        <ReceiptCenter mode={mode} printing={printing} visible={visible} />
-        <div className="grid grid-cols-2 gap-3 w-full">
+        <div className="flex-1 max-w-sm w-full">
           <LossPanel switchMode={switchMode} />
-          <GainPanel />
         </div>
       </div>
 

@@ -32,15 +32,6 @@ const PROJECTS = [
     features: ["Menu display", "Location + hours", "Photo gallery", "Social integration"],
   },
   {
-    url: "retentionanalyzer.gorjess.co",
-    label: "Retention Analyzer",
-    sub: "Business Intelligence Tool",
-    tag: "Web App",
-    accent: "#a855f7",
-    description: "AI-powered customer retention analysis tool. Helps businesses identify churn risk, track loyalty trends, and act on data-driven insights.",
-    features: ["Churn prediction", "Retention metrics", "AI insights", "Dashboard"],
-  },
-  {
     url: "gorjess.co",
     label: "GorJess",
     sub: "Creative Agency — Hawaii",
@@ -57,15 +48,6 @@ const PROJECTS = [
     accent: "#f59e0b",
     description: "Fast, trust-building website for a Hawaii bail bond service. Clear CTAs, 24/7 availability messaging, and mobile-optimized for urgent situations.",
     features: ["24/7 contact", "Fast load times", "Mobile-first", "Trust signals"],
-  },
-  {
-    url: "street-patrol.vercel.app",
-    label: "Street Patrol",
-    sub: "Security Services — Hawaii",
-    tag: "Website",
-    accent: "#3b82f6",
-    description: "Professional security services website with service area maps, coverage options, and direct inquiry forms for commercial clients.",
-    features: ["Service areas", "Coverage plans", "Contact forms", "Professional design"],
   },
   {
     url: "sonsauto.vercel.app",
@@ -220,7 +202,7 @@ export default function OurWorkPage() {
         "name": "TechSavvy Hawaii Portfolio",
         "description": "Live websites and CRM systems built for Hawaii businesses",
         "url": "https://techsavvyhawaii.com/our-work",
-        "numberOfItems": 10,
+        "numberOfItems": 8,
         "itemListElement": [
           {
             "@type": "ListItem",
@@ -246,48 +228,34 @@ export default function OurWorkPage() {
           {
             "@type": "ListItem",
             "position": 4,
-            "name": "Retention Analyzer — Business Intelligence Web App",
-            "url": "https://retentionanalyzer.gorjess.co",
-            "description": "AI-powered customer retention and churn analysis tool."
-          },
-          {
-            "@type": "ListItem",
-            "position": 5,
             "name": "GorJess — Creative Agency Website",
             "url": "https://gorjess.co",
             "description": "Creative agency site for branding, web design, and digital marketing services."
           },
           {
             "@type": "ListItem",
-            "position": 6,
+            "position": 5,
             "name": "All In 1 Bonding — Bail Bonds Website",
             "url": "https://allin1bonding.vercel.app",
             "description": "Fast, trust-building bail bond service website for Hawaii clients."
           },
           {
             "@type": "ListItem",
-            "position": 7,
-            "name": "Street Patrol — Security Services Website",
-            "url": "https://street-patrol.vercel.app",
-            "description": "Professional security services site for a Hawaii patrol company."
-          },
-          {
-            "@type": "ListItem",
-            "position": 8,
+            "position": 6,
             "name": "Son's Auto — Auto Services Website",
             "url": "https://sonsauto.vercel.app",
             "description": "Bold auto services website for Hawaii car owners."
           },
           {
             "@type": "ListItem",
-            "position": 9,
+            "position": 7,
             "name": "Oahu Tours — Tourism & Activities Website",
             "url": "https://oahu-tours.vercel.app",
             "description": "Vibrant tour company website showcasing O'ahu experiences."
           },
           {
             "@type": "ListItem",
-            "position": 10,
+            "position": 8,
             "name": "Martin Law — Law Firm Website",
             "url": "https://martin-law.vercel.app",
             "description": "Clean, authoritative law firm website built for trust and conversion."
