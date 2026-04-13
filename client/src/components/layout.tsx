@@ -19,6 +19,7 @@ const navGroups = [
     label: "Services",
     items: [
       { label: "All Services", href: "/services" },
+      { label: "Packages & Pricing", href: "/packages" },
       { label: "Payment Processing", href: "/payment-processing" },
       { label: "Equipment", href: "/pricing" },
       { label: "High-Risk Merchants", href: "/high-risk" },
@@ -259,6 +260,11 @@ function Footer() {
               <li>
                 <Link href="/services" className="transition-colors hover:text-white" data-testid="link-footer-services">
                   All Services
+                </Link>
+              </li>
+              <li>
+                <Link href="/packages" className="transition-colors hover:text-white" data-testid="link-footer-packages">
+                  Packages & Pricing
                 </Link>
               </li>
               <li>
