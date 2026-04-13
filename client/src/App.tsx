@@ -27,6 +27,7 @@ const PartnerProgramPage = lazy(() => import("@/pages/partner-program"));
 const IndustryPage = lazy(() => import("@/pages/industry"));
 const IslandPage = lazy(() => import("@/pages/island"));
 const OurWorkPage = lazy(() => import("@/pages/our-work"));
+const ServicesPage = lazy(() => import("@/pages/services"));
 
 const hostname = window.location.hostname;
 const isAdminSubdomain = hostname.startsWith("admin.");
@@ -63,6 +64,7 @@ function MainRouter() {
           <Route path="/referral" component={ReferralPage} />
           <Route path="/apply" component={ApplyPage} />
           <Route path="/our-work" component={OurWorkPage} />
+          <Route path="/services" component={ServicesPage} />
           <Route path="/industries/:industry" component={IndustryPage} />
           <Route path="/locations/:island" component={IslandPage} />
           <Route component={NotFound} />
