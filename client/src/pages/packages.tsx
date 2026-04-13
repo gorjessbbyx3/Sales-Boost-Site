@@ -14,6 +14,10 @@ import {
   Zap,
   Star,
   ChevronDown,
+  Bot,
+  CalendarCheck,
+  MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -103,6 +107,58 @@ const PACKAGES = [
   },
 ];
 
+const AI_CHAT_TIERS = [
+  {
+    pkg: "Starter",
+    label: "Q&A Assistant",
+    icon: MessageSquare,
+    accent: "#38bdf8",
+    price: "$79/mo add-on",
+    tagline: "Fewer phone calls. More answered questions.",
+    capabilities: [
+      "Answers questions about hours, services, location, pricing",
+      "Pulls info directly from your website",
+      "Handles FAQs so your team doesn't have to",
+      "Greets every visitor — even at 2 AM",
+      "Collects contact info when visitors want follow-up",
+    ],
+    notIncluded: ["Appointment scheduling", "CRM integration", "Email automation"],
+  },
+  {
+    pkg: "Growth",
+    label: "Scheduling + Lead Capture",
+    icon: CalendarCheck,
+    accent: "#22c55e",
+    price: "$149/mo add-on",
+    tagline: "Books appointments. Captures leads. Works while you sleep.",
+    capabilities: [
+      "Everything the Starter AI does",
+      "Books appointments directly into your CRM",
+      "Captures lead info and starts follow-up sequences automatically",
+      "Qualifies visitors before handing off to your team",
+      "Sends confirmation texts or emails after booking",
+    ],
+    notIncluded: ["Auto-reply emails", "CRM data entry automation"],
+  },
+  {
+    pkg: "Full Stack",
+    label: "Full Automation",
+    icon: Sparkles,
+    accent: "#a78bfa",
+    price: "Included",
+    tagline: "Drafts emails. Replies to leads. Updates your CRM.",
+    capabilities: [
+      "Everything in Scheduling + Lead Capture",
+      "Drafts and sends reply emails to common inquiries",
+      "Generates outreach emails from templates",
+      "Logs every conversation and updates CRM records",
+      "Auto-tags and routes leads to the right pipeline stage",
+      "Handles re-engagement for cold leads",
+    ],
+    notIncluded: [],
+  },
+];
+
 const ADD_ONS = [
   { icon: Globe, label: "Extra pages", price: "$150 each", desc: "Add pages beyond the base package — services, team, gallery, etc." },
   { icon: CreditCard, label: "eCommerce setup", price: "$600+", desc: "Online store with product pages, cart, and checkout." },
@@ -140,6 +196,126 @@ const FAQS = [
 ];
 
 // ─── Components ───────────────────────────────────────────────────────────────
+
+function AiChatSection() {
+  return (
+    <section className="bg-[#07090f] py-20 border-t border-white/5">
+      <div className="max-w-6xl mx-auto px-5">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-5">
+            <Bot className="w-3.5 h-3.5" /> AI Chat Add-On
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
+            Add an AI assistant to your website.
+          </h2>
+          <p className="text-white/50 text-base max-w-xl mx-auto leading-relaxed">
+            Every package can include an AI chat widget — but what it can <em>do</em> depends on your tier. From answering questions to booking appointments to replying to leads automatically.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {AI_CHAT_TIERS.map((tier, i) => {
+            const Icon = tier.icon;
+            const isIncluded = tier.price === "Included";
+            return (
+              <motion.div
+                key={tier.pkg}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="rounded-2xl border flex flex-col overflow-hidden"
+                style={{
+                  borderColor: tier.accent + "30",
+                  background: `linear-gradient(135deg, ${tier.accent}08 0%, rgba(255,255,255,0.01) 100%)`,
+                }}
+              >
+                <div className="p-6 flex-1">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: tier.accent + "20" }}
+                    >
+                      <Icon className="w-5 h-5" style={{ color: tier.accent }} />
+                    </div>
+                    <span
+                      className="text-xs font-black px-2.5 py-1 rounded-full"
+                      style={{
+                        background: isIncluded ? tier.accent + "20" : "rgba(255,255,255,0.05)",
+                        color: isIncluded ? tier.accent : "rgba(255,255,255,0.4)",
+                        border: `1px solid ${isIncluded ? tier.accent + "40" : "rgba(255,255,255,0.08)"}`,
+                      }}
+                    >
+                      {tier.price}
+                    </span>
+                  </div>
+
+                  <div className="mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: tier.accent }}>
+                      {tier.pkg} Package
+                    </span>
+                  </div>
+                  <h3 className="text-white font-black text-lg mb-1">{tier.label}</h3>
+                  <p className="text-white/40 text-sm mb-5">{tier.tagline}</p>
+
+                  {/* Capabilities */}
+                  <ul className="space-y-2.5 mb-4">
+                    {tier.capabilities.map((cap) => (
+                      <li key={cap} className="flex items-start gap-2.5 text-sm text-white/70">
+                        <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: tier.accent }} />
+                        {cap}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Not included */}
+                  {tier.notIncluded.length > 0 && (
+                    <ul className="space-y-1.5 pt-3 border-t border-white/[0.06]">
+                      {tier.notIncluded.map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-xs text-white/20">
+                          <span className="mt-0.5 flex-shrink-0">—</span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div
+                  className="px-6 pb-6"
+                >
+                  <a
+                    href="/contact"
+                    data-testid={`link-ai-chat-cta-${tier.pkg.toLowerCase()}`}
+                    className="flex items-center justify-center gap-2 w-full font-bold py-3 rounded-xl text-sm transition-opacity hover:opacity-90 border"
+                    style={{ borderColor: tier.accent + "40", color: tier.accent, background: tier.accent + "10" }}
+                  >
+                    Add to my package <ArrowRight className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="text-center text-white/25 text-xs mt-8"
+        >
+          AI chat pricing is month-to-month. Cancel anytime. Setup and training included.
+        </motion.p>
+      </div>
+    </section>
+  );
+}
 
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -339,6 +515,9 @@ export default function PackagesPage() {
           </motion.p>
         </div>
       </section>
+
+      {/* ── AI Chat tiers ── */}
+      <AiChatSection />
 
       {/* ── Add-ons ── */}
       <section className="bg-[#07090f] py-20 border-t border-white/5">
