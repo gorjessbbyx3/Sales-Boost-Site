@@ -40,6 +40,60 @@ const PROJECTS = [
     description: "AI-powered customer retention analysis tool. Helps businesses identify churn risk, track loyalty trends, and act on data-driven insights.",
     features: ["Churn prediction", "Retention metrics", "AI insights", "Dashboard"],
   },
+  {
+    url: "gorjess.co",
+    label: "GorJess",
+    sub: "Creative Agency — Hawaii",
+    tag: "Agency Website",
+    accent: "#ec4899",
+    description: "Sleek creative agency site showcasing branding, web design, and digital marketing services. Built to convert visitors into clients.",
+    features: ["Portfolio showcase", "Service pages", "Brand identity", "Lead capture"],
+  },
+  {
+    url: "allin1bonding.vercel.app",
+    label: "All In 1 Bonding",
+    sub: "Bail Bonds — Hawaii",
+    tag: "Website",
+    accent: "#f59e0b",
+    description: "Fast, trust-building website for a Hawaii bail bond service. Clear CTAs, 24/7 availability messaging, and mobile-optimized for urgent situations.",
+    features: ["24/7 contact", "Fast load times", "Mobile-first", "Trust signals"],
+  },
+  {
+    url: "street-patrol.vercel.app",
+    label: "Street Patrol",
+    sub: "Security Services — Hawaii",
+    tag: "Website",
+    accent: "#3b82f6",
+    description: "Professional security services website with service area maps, coverage options, and direct inquiry forms for commercial clients.",
+    features: ["Service areas", "Coverage plans", "Contact forms", "Professional design"],
+  },
+  {
+    url: "sonsauto.vercel.app",
+    label: "Son's Auto",
+    sub: "Auto Services — Hawaii",
+    tag: "Website",
+    accent: "#ef4444",
+    description: "Bold auto services website with service listings, appointment requests, and a strong local brand presence for Hawaii car owners.",
+    features: ["Service menu", "Appointment requests", "Local branding", "Mobile-ready"],
+  },
+  {
+    url: "oahu-tours.vercel.app",
+    label: "Oahu Tours",
+    sub: "Tours & Activities — O'ahu",
+    tag: "Tourism Website",
+    accent: "#14b8a6",
+    description: "Vibrant tour company site showcasing O'ahu experiences with tour listings, photo galleries, and easy booking prompts for visitors.",
+    features: ["Tour listings", "Photo gallery", "Booking CTA", "SEO-optimized"],
+  },
+  {
+    url: "martin-law.vercel.app",
+    label: "Martin Law",
+    sub: "Law Firm — Hawaii",
+    tag: "Law Firm Website",
+    accent: "#6366f1",
+    description: "Clean, authoritative law firm website with practice area pages, attorney profiles, and consultation request forms built for trust and conversion.",
+    features: ["Practice areas", "Attorney profiles", "Consultation form", "Professional design"],
+  },
 ];
 
 function ProjectCard({ project, index }: { project: typeof PROJECTS[0]; index: number }) {
@@ -166,7 +220,7 @@ export default function OurWorkPage() {
         "name": "TechSavvy Hawaii Portfolio",
         "description": "Live websites and CRM systems built for Hawaii businesses",
         "url": "https://techsavvyhawaii.com/our-work",
-        "numberOfItems": 2,
+        "numberOfItems": 10,
         "itemListElement": [
           {
             "@type": "ListItem",
@@ -181,6 +235,62 @@ export default function OurWorkPage() {
             "name": "Dr. E's Tasty Southern Cuisine — Restaurant Website",
             "url": "https://drestastysoutherncuisine.vercel.app",
             "description": "Custom restaurant website for a Hawaii-based Southern cuisine spot."
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "808 All Purpose Cleaners — Cleaning Services Website",
+            "url": "https://808allpurposecleaners.vercel.app",
+            "description": "Conversion-focused website for a Honolulu cleaning company."
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "name": "Retention Analyzer — Business Intelligence Web App",
+            "url": "https://retentionanalyzer.gorjess.co",
+            "description": "AI-powered customer retention and churn analysis tool."
+          },
+          {
+            "@type": "ListItem",
+            "position": 5,
+            "name": "GorJess — Creative Agency Website",
+            "url": "https://gorjess.co",
+            "description": "Creative agency site for branding, web design, and digital marketing services."
+          },
+          {
+            "@type": "ListItem",
+            "position": 6,
+            "name": "All In 1 Bonding — Bail Bonds Website",
+            "url": "https://allin1bonding.vercel.app",
+            "description": "Fast, trust-building bail bond service website for Hawaii clients."
+          },
+          {
+            "@type": "ListItem",
+            "position": 7,
+            "name": "Street Patrol — Security Services Website",
+            "url": "https://street-patrol.vercel.app",
+            "description": "Professional security services site for a Hawaii patrol company."
+          },
+          {
+            "@type": "ListItem",
+            "position": 8,
+            "name": "Son's Auto — Auto Services Website",
+            "url": "https://sonsauto.vercel.app",
+            "description": "Bold auto services website for Hawaii car owners."
+          },
+          {
+            "@type": "ListItem",
+            "position": 9,
+            "name": "Oahu Tours — Tourism & Activities Website",
+            "url": "https://oahu-tours.vercel.app",
+            "description": "Vibrant tour company website showcasing O'ahu experiences."
+          },
+          {
+            "@type": "ListItem",
+            "position": 10,
+            "name": "Martin Law — Law Firm Website",
+            "url": "https://martin-law.vercel.app",
+            "description": "Clean, authoritative law firm website built for trust and conversion."
           }
         ]
       }
@@ -220,8 +330,8 @@ export default function OurWorkPage() {
             className="flex justify-center gap-8 sm:gap-16 mt-10"
           >
             {[
-              { n: "15+", label: "Sites Launched" },
-              { n: "5", label: "Industries" },
+              { n: "20+", label: "Sites Launched" },
+              { n: "9+", label: "Industries" },
               { n: "7 days", label: "Avg Launch Time" },
             ].map((s) => (
               <div key={s.label} className="text-center">
