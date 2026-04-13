@@ -46,6 +46,7 @@ const PACKAGES = [
       "Monthly Analytics summary (plain English)",
       "Priority text/email support",
       "Annual SEO refresh",
+      "AI chat widget — Q&A assistant (included free)",
     ],
     bestFor: "Restaurants, retail shops, service businesses, and professionals who need a solid online presence without the headache of managing it themselves.",
     cta: "Get started",
@@ -73,6 +74,7 @@ const PACKAGES = [
       "New ad creative every month (copy + design)",
       "1–2 email campaigns/month (written + sent)",
       "Monthly performance report — leads, cost per lead, opens, clicks",
+      "AI chat widget — books appointments + captures leads (included free)",
     ],
     bestFor: "Businesses ready to grow predictably — gyms, med spas, contractors, restaurants, realtors — anyone who wants new customers coming in without running ads themselves.",
     cta: "Start growing",
@@ -100,6 +102,7 @@ const PACKAGES = [
       "Email deliverability monitoring + list hygiene",
       "Quarterly strategy call — what's working, what to change",
       "First priority on any new builds or changes",
+      "AI chat widget — full automation, drafts emails + updates CRM (included free)",
     ],
     bestFor: "Businesses serious about growth that want one team handling everything — no juggling four vendors, no wondering who to call.",
     cta: "Let's talk",
@@ -113,7 +116,7 @@ const AI_CHAT_TIERS = [
     label: "Q&A Assistant",
     icon: MessageSquare,
     accent: "#38bdf8",
-    price: "$79/mo add-on",
+    price: "Free — Included",
     tagline: "Fewer phone calls. More answered questions.",
     capabilities: [
       "Answers questions about hours, services, location, pricing",
@@ -129,7 +132,7 @@ const AI_CHAT_TIERS = [
     label: "Scheduling + Lead Capture",
     icon: CalendarCheck,
     accent: "#22c55e",
-    price: "$149/mo add-on",
+    price: "Free — Included",
     tagline: "Books appointments. Captures leads. Works while you sleep.",
     capabilities: [
       "Everything the Starter AI does",
@@ -145,7 +148,7 @@ const AI_CHAT_TIERS = [
     label: "Full Automation",
     icon: Sparkles,
     accent: "#a78bfa",
-    price: "Included",
+    price: "Free — Included",
     tagline: "Drafts emails. Replies to leads. Updates your CRM.",
     capabilities: [
       "Everything in Scheduling + Lead Capture",
@@ -208,20 +211,19 @@ function AiChatSection() {
           className="text-center mb-12"
         >
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-5">
-            <Bot className="w-3.5 h-3.5" /> AI Chat Add-On
+            <Bot className="w-3.5 h-3.5" /> Included Free with Every Package
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
-            Add an AI assistant to your website.
+            AI chat included free<br />with every package.
           </h2>
           <p className="text-white/50 text-base max-w-xl mx-auto leading-relaxed">
-            Every package can include an AI chat widget — but what it can <em>do</em> depends on your tier. From answering questions to booking appointments to replying to leads automatically.
+            Every package comes with an AI chat widget at no extra cost. What it can <em>do</em> upgrades with your tier — from answering questions, to booking appointments, to replying to leads automatically.
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {AI_CHAT_TIERS.map((tier, i) => {
             const Icon = tier.icon;
-            const isIncluded = tier.price === "Included";
             return (
               <motion.div
                 key={tier.pkg}
@@ -247,9 +249,9 @@ function AiChatSection() {
                     <span
                       className="text-xs font-black px-2.5 py-1 rounded-full"
                       style={{
-                        background: isIncluded ? tier.accent + "20" : "rgba(255,255,255,0.05)",
-                        color: isIncluded ? tier.accent : "rgba(255,255,255,0.4)",
-                        border: `1px solid ${isIncluded ? tier.accent + "40" : "rgba(255,255,255,0.08)"}`,
+                        background: tier.accent + "20",
+                        color: tier.accent,
+                        border: `1px solid ${tier.accent}40`,
                       }}
                     >
                       {tier.price}
@@ -310,7 +312,7 @@ function AiChatSection() {
           viewport={{ once: true }}
           className="text-center text-white/25 text-xs mt-8"
         >
-          AI chat pricing is month-to-month. Cancel anytime. Setup and training included.
+          AI chat is included at no extra cost with every package. Setup and training included.
         </motion.p>
       </div>
     </section>
