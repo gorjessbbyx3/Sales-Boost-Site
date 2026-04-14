@@ -518,10 +518,8 @@ export default function HawaiiPage() {
               transition={{ duration: 0.7, delay: 0.1 }}
               className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.04] text-foreground mb-6"
             >
-              We're the team your{" "}
-              business hires{" "}
-              <span className="text-primary italic">when it's done</span>{" "}
-              being small.
+              Your business keeps more of every dollar.{" "}
+              <span className="text-primary italic">And finally looks the part online.</span>
             </motion.h1>
 
             <motion.p
@@ -530,8 +528,9 @@ export default function HawaiiPage() {
               transition={{ duration: 0.6, delay: 0.25 }}
               className="text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed mb-8"
             >
-              Websites. CRMs. Branding. Ad funnels. Email that lands. Zero-fee
-              processing. One Honolulu team. One number. No mainland runaround.
+              We eliminate payment processing fees and build the websites,
+              marketing, and systems that help local Hawaii businesses compete —
+              all from one Honolulu team.
             </motion.p>
 
             <motion.div
@@ -570,9 +569,9 @@ export default function HawaiiPage() {
               className="flex flex-wrap gap-x-6 gap-y-2"
             >
               {[
-                "No pitch. No pressure.",
-                "Local team, not mainland",
-                "Ships in days, not quarters",
+                "Zero processing fees — always",
+                "Websites live in 7 days",
+                "100% local Honolulu team",
               ].map((t) => (
                 <div key={t} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Check className="w-3 h-3 text-primary" />
