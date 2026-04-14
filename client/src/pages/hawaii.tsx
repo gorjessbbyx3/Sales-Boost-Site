@@ -69,11 +69,11 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div
-      className="border-b border-white/10 last:border-0"
+      className="border-b border-border last:border-0"
       onClick={() => setOpen((o) => !o)}
     >
       <button className="w-full flex items-center justify-between gap-4 py-5 text-left">
-        <span className="font-semibold text-white text-sm sm:text-base">{q}</span>
+        <span className="font-semibold text-foreground text-sm sm:text-base">{q}</span>
         <ChevronDown
           className={`w-5 h-5 text-primary flex-shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
         />
@@ -81,7 +81,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
       <div
         className={`overflow-hidden transition-all duration-300 ${open ? "max-h-48 pb-5" : "max-h-0"}`}
       >
-        <p className="text-white/60 text-sm leading-relaxed">{a}</p>
+        <p className="text-muted-foreground text-sm leading-relaxed">{a}</p>
       </div>
     </div>
   );
@@ -213,7 +213,7 @@ function ServicesTabs({ services }: { services: any[] }) {
   const Icon = s.icon;
 
   return (
-    <section className="py-14 sm:py-20 bg-[#07090f]">
+    <section className="py-14 sm:py-20 bg-muted/30">
       <div className="max-w-5xl mx-auto px-5">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -224,7 +224,7 @@ function ServicesTabs({ services }: { services: any[] }) {
           <span className="text-primary text-xs font-bold uppercase tracking-widest">
             What your business gets
           </span>
-          <h2 className="text-2xl sm:text-4xl font-black text-white mt-2 leading-tight">
+          <h2 className="text-2xl sm:text-4xl font-black text-foreground mt-2 leading-tight">
             One team. Everything you need.
           </h2>
         </motion.div>
@@ -241,8 +241,8 @@ function ServicesTabs({ services }: { services: any[] }) {
                   onClick={() => setActive(i)}
                   className={`flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl border text-sm transition-all ${
                     isActive
-                      ? "border-white/15 bg-white/[0.08] text-white font-semibold"
-                      : "border-transparent bg-white/[0.04] text-white/50"
+                      ? "border-border bg-muted/50 text-foreground font-semibold"
+                      : "border-transparent bg-muted/20 text-muted-foreground"
                   }`}
                 >
                   <TabIcon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isActive ? item.accent : undefined }} />
@@ -256,36 +256,35 @@ function ServicesTabs({ services }: { services: any[] }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
-            className="mt-4 rounded-2xl border border-white/[0.08] p-6 flex flex-col gap-5"
-            style={{ background: `linear-gradient(135deg, ${s.accent}0d 0%, #07090f 60%)` }}
+            className="mt-4 rounded-2xl border border-border bg-card p-6 flex flex-col gap-5"
           >
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: `${s.accent}22` }}>
                 <Icon className="w-5 h-5" style={{ color: s.accent }} />
               </div>
               <div>
-                <h3 className="font-black text-white text-lg leading-tight">{s.title}</h3>
-                <p className="text-white/40 text-xs">{s.tagline}</p>
+                <h3 className="font-black text-foreground text-lg leading-tight">{s.title}</h3>
+                <p className="text-muted-foreground text-xs">{s.tagline}</p>
               </div>
             </div>
-            <p className="text-white/65 text-sm leading-relaxed">{s.description}</p>
+            <p className="text-muted-foreground text-sm leading-relaxed">{s.description}</p>
             <div className="grid grid-cols-2 gap-2">
               {s.features.map((f: string) => (
-                <div key={f} className="flex items-start gap-1.5 text-xs text-white/50">
+                <div key={f} className="flex items-start gap-1.5 text-xs text-muted-foreground">
                   <Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: s.accent }} />
                   {f}
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-3 pt-4 border-t border-white/[0.07]">
+            <div className="flex items-center gap-3 pt-4 border-t border-border">
               <a
                 href="/contact"
-                className="inline-flex items-center gap-2 font-bold px-5 py-2.5 rounded-xl text-sm text-[#07090f]"
+                className="inline-flex items-center gap-2 font-bold px-5 py-2.5 rounded-xl text-sm text-white"
                 style={{ background: s.accent }}
               >
                 Get started <ArrowRight className="w-3.5 h-3.5" />
               </a>
-              <span className="text-white/25 text-xs">No commitment required</span>
+              <span className="text-muted-foreground text-xs">No commitment required</span>
             </div>
           </motion.div>
         </div>
@@ -302,20 +301,20 @@ function ServicesTabs({ services }: { services: any[] }) {
                   onClick={() => setActive(i)}
                   className={`w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 border ${
                     isActive
-                      ? "bg-white/[0.07] border-white/15 shadow-lg"
-                      : "bg-transparent border-transparent hover:bg-white/[0.04]"
+                      ? "bg-muted/50 border-border shadow-lg"
+                      : "bg-transparent border-transparent hover:bg-muted/20"
                   }`}
                 >
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors"
-                    style={{ background: isActive ? `${item.accent}22` : "rgba(255,255,255,0.05)" }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors bg-muted/40"
+                    style={isActive ? { background: `${item.accent}22` } : undefined}
                   >
                     <TabIcon
                       className="w-4 h-4 transition-colors"
-                      style={{ color: isActive ? item.accent : "rgba(255,255,255,0.35)" }}
+                      style={{ color: isActive ? item.accent : undefined }}
                     />
                   </div>
-                  <p className={`text-sm font-semibold leading-tight truncate transition-colors ${isActive ? "text-white" : "text-white/50"}`}>
+                  <p className={`text-sm font-semibold leading-tight truncate transition-colors ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
                     {item.title}
                   </p>
                   {isActive && (
@@ -331,8 +330,7 @@ function ServicesTabs({ services }: { services: any[] }) {
             initial={{ opacity: 0, x: 8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.22 }}
-            className="col-span-3 rounded-2xl border border-white/[0.08] p-7 flex flex-col justify-between"
-            style={{ background: `linear-gradient(135deg, ${s.accent}0d 0%, #07090f 60%)` }}
+            className="col-span-3 rounded-2xl border border-border bg-card p-7 flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center gap-3 mb-5">
@@ -340,29 +338,29 @@ function ServicesTabs({ services }: { services: any[] }) {
                   <Icon className="w-6 h-6" style={{ color: s.accent }} />
                 </div>
                 <div>
-                  <h3 className="font-black text-white text-xl leading-tight">{s.title}</h3>
-                  <p className="text-white/40 text-xs">{s.tagline}</p>
+                  <h3 className="font-black text-foreground text-xl leading-tight">{s.title}</h3>
+                  <p className="text-muted-foreground text-xs">{s.tagline}</p>
                 </div>
               </div>
-              <p className="text-white/65 text-sm leading-relaxed mb-6">{s.description}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-6">{s.description}</p>
               <div className="grid grid-cols-2 gap-2">
                 {s.features.map((f: string) => (
-                  <div key={f} className="flex items-start gap-2 text-xs text-white/50">
+                  <div key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
                     <Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: s.accent }} />
                     {f}
                   </div>
                 ))}
               </div>
             </div>
-            <div className="mt-6 flex items-center gap-3 pt-5 border-t border-white/[0.07]">
+            <div className="mt-6 flex items-center gap-3 pt-5 border-t border-border">
               <a
                 href="/contact"
-                className="inline-flex items-center gap-2 font-bold px-5 py-2.5 rounded-xl text-sm text-[#07090f] hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-2 font-bold px-5 py-2.5 rounded-xl text-sm text-white hover:opacity-90 transition-opacity"
                 style={{ background: s.accent }}
               >
                 Get started <ArrowRight className="w-3.5 h-3.5" />
               </a>
-              <span className="text-white/25 text-xs">No commitment required</span>
+              <span className="text-muted-foreground text-xs">No commitment required</span>
             </div>
           </motion.div>
         </div>
@@ -483,7 +481,7 @@ export default function HawaiiPage() {
   return (
     <Layout>
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-[#060810]">
+      <section className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-background">
         <video
           autoPlay
           loop
@@ -491,10 +489,13 @@ export default function HawaiiPage() {
           playsInline
           preload="auto"
           src="/images/hero-video-v3.mp4"
-          className="absolute inset-0 w-full h-full object-cover opacity-40"
+          className="absolute inset-0 w-full h-full object-cover opacity-30 dark:opacity-40"
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#060810]/50 via-[#060810]/30 to-[#060810]" />
+        {/* Dark mode: strong dark gradient overlay */}
+        <div className="absolute inset-0 hidden dark:block bg-gradient-to-b from-background/50 via-background/30 to-background" />
+        {/* Light mode: subtle fade */}
+        <div className="absolute inset-0 dark:hidden bg-gradient-to-b from-background/40 via-transparent to-background/70" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-5 pt-24 pb-12 sm:pt-32 sm:pb-14 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           {/* ── Left column ── */}
@@ -515,7 +516,7 @@ export default function HawaiiPage() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.04] text-white mb-6"
+              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.04] text-foreground mb-6"
             >
               We're the team your{" "}
               business hires{" "}
@@ -527,7 +528,7 @@ export default function HawaiiPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.25 }}
-              className="text-base sm:text-lg text-white/70 max-w-xl leading-relaxed mb-8"
+              className="text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed mb-8"
             >
               Websites. CRMs. Branding. Ad funnels. Email that lands. Zero-fee
               processing. One Honolulu team. One number. No mainland runaround.
@@ -552,7 +553,7 @@ export default function HawaiiPage() {
               <Button
                 variant="outline"
                 size="lg"
-                className="text-base px-8 py-6 rounded-xl border-white/20 text-white hover:bg-white/10"
+                className="text-base px-8 py-6 rounded-xl border-border text-foreground hover:bg-muted/40"
                 asChild
               >
                 <a href="tel:8087675460" data-testid="button-hero-phone">
@@ -573,7 +574,7 @@ export default function HawaiiPage() {
                 "Local team, not mainland",
                 "Ships in days, not quarters",
               ].map((t) => (
-                <div key={t} className="flex items-center gap-1.5 text-xs text-white/50">
+                <div key={t} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Check className="w-3 h-3 text-primary" />
                   {t}
                 </div>
@@ -591,33 +592,33 @@ export default function HawaiiPage() {
             <div className="grid grid-cols-6 grid-rows-[160px_160px_auto] gap-2.5">
 
               {/* Websites — wide top */}
-              <div className="col-span-4 rounded-2xl border border-white/[0.08] bg-gradient-to-br from-emerald-900/35 to-[#060810] p-5 flex flex-col justify-between hover:border-emerald-500/30 transition-colors">
+              <div className="col-span-4 rounded-2xl border border-border bg-gradient-to-br from-emerald-500/10 to-card p-5 flex flex-col justify-between hover:border-emerald-500/40 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-                    <Globe className="w-4.5 h-4.5 text-emerald-400" />
+                    <Globe className="w-4.5 h-4.5 text-emerald-500" />
                   </div>
-                  <span className="text-[10px] text-white/20 font-mono">01</span>
+                  <span className="text-[10px] text-muted-foreground/50 font-mono">01</span>
                 </div>
                 <div>
-                  <h3 className="font-black text-white text-lg mb-0.5">Custom Websites</h3>
-                  <p className="text-white/40 text-xs">Built from scratch. Live in 7 days — not months.</p>
+                  <h3 className="font-black text-foreground text-lg mb-0.5">Custom Websites</h3>
+                  <p className="text-muted-foreground text-xs">Built from scratch. Live in 7 days — not months.</p>
                 </div>
               </div>
 
               {/* Zero-Fee — tall right */}
-              <div className="col-span-2 row-span-2 rounded-2xl border border-white/[0.08] bg-gradient-to-b from-primary/15 to-[#060810] p-5 flex flex-col justify-between hover:border-primary/30 transition-colors">
+              <div className="col-span-2 row-span-2 rounded-2xl border border-border bg-gradient-to-b from-primary/10 to-card p-5 flex flex-col justify-between hover:border-primary/40 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
                     <CreditCard className="w-4.5 h-4.5 text-primary" />
                   </div>
-                  <span className="text-[10px] text-white/20 font-mono">04</span>
+                  <span className="text-[10px] text-muted-foreground/50 font-mono">04</span>
                 </div>
                 <div>
-                  <h3 className="font-black text-white text-base mb-1.5">Zero-Fee Processing</h3>
-                  <p className="text-white/40 text-[11px] mb-3">Keep every dollar. We pass fees to the card brands — not you.</p>
+                  <h3 className="font-black text-foreground text-base mb-1.5">Zero-Fee Processing</h3>
+                  <p className="text-muted-foreground text-[11px] mb-3">Keep every dollar. We pass fees to the card brands — not you.</p>
                   <div className="space-y-1.5">
                     {["No monthly fees", "Next-day deposits", "Free terminal"].map((f) => (
-                      <div key={f} className="flex items-center gap-1.5 text-[11px] text-white/50">
+                      <div key={f} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                         <Check className="w-3 h-3 text-primary" />{f}
                       </div>
                     ))}
@@ -626,46 +627,46 @@ export default function HawaiiPage() {
               </div>
 
               {/* CRM */}
-              <div className="col-span-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 flex flex-col justify-between hover:border-sky-500/30 hover:bg-sky-900/10 transition-colors">
+              <div className="col-span-2 rounded-2xl border border-border bg-card p-4 flex flex-col justify-between hover:border-sky-500/40 hover:bg-sky-500/5 transition-colors">
                 <div className="w-8 h-8 rounded-lg bg-sky-500/15 flex items-center justify-center">
-                  <Users className="w-4 h-4 text-sky-400" />
+                  <Users className="w-4 h-4 text-sky-500" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm mb-0.5">CRM Systems</h3>
-                  <p className="text-white/35 text-xs">Your workflow, not someone else's.</p>
+                  <h3 className="font-bold text-foreground text-sm mb-0.5">CRM Systems</h3>
+                  <p className="text-muted-foreground text-xs">Your workflow, not someone else's.</p>
                 </div>
               </div>
 
               {/* Brand */}
-              <div className="col-span-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 flex flex-col justify-between hover:border-violet-500/30 hover:bg-violet-900/10 transition-colors">
+              <div className="col-span-2 rounded-2xl border border-border bg-card p-4 flex flex-col justify-between hover:border-violet-500/40 hover:bg-violet-500/5 transition-colors">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center">
-                  <Palette className="w-4 h-4 text-violet-400" />
+                  <Palette className="w-4 h-4 text-violet-500" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm mb-0.5">Brand & Design</h3>
-                  <p className="text-white/35 text-xs">Logos, print, social content.</p>
+                  <h3 className="font-bold text-foreground text-sm mb-0.5">Brand & Design</h3>
+                  <p className="text-muted-foreground text-xs">Logos, print, social content.</p>
                 </div>
               </div>
 
               {/* Ad Funnels */}
-              <div className="col-span-3 rounded-2xl border border-white/[0.08] bg-gradient-to-r from-orange-900/20 to-[#060810] p-4 flex items-center gap-3 hover:border-orange-500/30 transition-colors">
+              <div className="col-span-3 rounded-2xl border border-border bg-gradient-to-r from-orange-500/10 to-card p-4 flex items-center gap-3 hover:border-orange-500/40 transition-colors">
                 <div className="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center flex-shrink-0">
-                  <Megaphone className="w-4.5 h-4.5 text-orange-400" />
+                  <Megaphone className="w-4.5 h-4.5 text-orange-500" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm mb-0.5">Ad Funnels</h3>
-                  <p className="text-white/40 text-xs">Meta · Google · TikTok ads that convert.</p>
+                  <h3 className="font-bold text-foreground text-sm mb-0.5">Ad Funnels</h3>
+                  <p className="text-muted-foreground text-xs">Meta · Google · TikTok ads that convert.</p>
                 </div>
               </div>
 
               {/* Email */}
-              <div className="col-span-3 rounded-2xl border border-white/[0.08] bg-gradient-to-r from-rose-900/20 to-[#060810] p-4 flex items-center gap-3 hover:border-rose-500/30 transition-colors">
+              <div className="col-span-3 rounded-2xl border border-border bg-gradient-to-r from-rose-500/10 to-card p-4 flex items-center gap-3 hover:border-rose-500/40 transition-colors">
                 <div className="w-9 h-9 rounded-xl bg-rose-500/15 flex items-center justify-center flex-shrink-0">
-                  <Mail className="w-4.5 h-4.5 text-rose-400" />
+                  <Mail className="w-4.5 h-4.5 text-rose-500" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm mb-0.5">Email Deliverability</h3>
-                  <p className="text-white/40 text-xs">Stop landing in spam. Period.</p>
+                  <h3 className="font-bold text-foreground text-sm mb-0.5">Email Deliverability</h3>
+                  <p className="text-muted-foreground text-xs">Stop landing in spam. Period.</p>
                 </div>
               </div>
 
@@ -679,7 +680,7 @@ export default function HawaiiPage() {
       <ServicesTabs services={services} />
 
       {/* ── LIVE WEBSITE SHOWCASE ─────────────────────────────────────────── */}
-      <section className="py-14 sm:py-24 bg-[#060810]">
+      <section className="py-14 sm:py-24 bg-background">
         <div className="max-w-6xl mx-auto px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -691,10 +692,10 @@ export default function HawaiiPage() {
               <span className="text-primary text-xs font-bold uppercase tracking-widest">
                 Live sites we've shipped
               </span>
-              <h2 className="text-2xl sm:text-4xl font-black text-white mt-2 leading-tight">
+              <h2 className="text-2xl sm:text-4xl font-black text-foreground mt-2 leading-tight">
                 Real businesses. Live right now.
               </h2>
-              <p className="text-white/40 text-sm mt-2">
+              <p className="text-muted-foreground text-sm mt-2">
                 Not mockups. Not demos. Click to visit.
               </p>
             </div>
@@ -719,7 +720,7 @@ export default function HawaiiPage() {
       </section>
 
       {/* ── SOCIAL MEDIA & VIDEO MARKETING ──────────────────────────────── */}
-      <section className="py-20 sm:py-28 bg-[#060810] relative overflow-hidden">
+      <section className="py-20 sm:py-28 bg-muted/30 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
         </div>
@@ -736,11 +737,11 @@ export default function HawaiiPage() {
             <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">
               In-house production
             </span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white mt-3 mb-4 leading-[1.1]">
+            <h2 className="text-3xl sm:text-5xl font-black text-foreground mt-3 mb-4 leading-[1.1]">
               Content that makes them{" "}
               <span className="text-primary italic">stop.</span>
             </h2>
-            <p className="text-white/40 text-base max-w-sm mx-auto">
+            <p className="text-muted-foreground text-base max-w-sm mx-auto">
               Shot, edited, and posted by our team. No stock. No templates.
             </p>
           </motion.div>
@@ -751,8 +752,8 @@ export default function HawaiiPage() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="relative rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl mb-10 group"
-            style={{ boxShadow: "0 0 80px rgba(0,255,170,0.06), 0 30px 60px rgba(0,0,0,0.6)" }}
+            className="relative rounded-2xl overflow-hidden bg-black border border-border shadow-2xl mb-10 group"
+            style={{ boxShadow: "0 0 80px rgba(0,255,170,0.06), 0 30px 60px rgba(0,0,0,0.25)" }}
           >
             <video
               id="showreel-video"
@@ -791,34 +792,34 @@ export default function HawaiiPage() {
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
-            <p className="text-white/25 text-xs mt-4">Realtors · Restaurants · Local brands</p>
+            <p className="text-muted-foreground text-xs mt-4">Realtors · Restaurants · Local brands</p>
           </motion.div>
 
         </div>
       </section>
 
       {/* ── SOUND FAMILIAR ────────────────────────────────────────────────── */}
-      <section className="bg-[#060810] pb-0">
+      <section className="bg-background pb-0">
         <div className="max-w-5xl mx-auto px-5 pb-12">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
-            className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+            className="rounded-2xl overflow-hidden border border-border shadow-lg"
           >
             {/* Mobile: image full-width at natural ratio, text below */}
-            <div className="lg:hidden flex flex-col bg-gradient-to-b from-[#0d1220] to-[#060810]">
+            <div className="lg:hidden flex flex-col bg-muted/30">
               <img
                 src={soundFamiliarImg}
                 alt="Business owner losing money on processing fees"
                 className="w-full h-auto object-contain"
               />
               <div className="px-6 py-6">
-                <p className="text-white/60 text-xs uppercase tracking-widest mb-2">
+                <p className="text-muted-foreground text-xs uppercase tracking-widest mb-2">
                   Sound familiar?
                 </p>
-                <p className="text-white font-black text-2xl leading-tight">
+                <p className="text-foreground font-black text-2xl leading-tight">
                   Watching 4% disappear every single swipe.
                 </p>
                 <p className="text-primary font-bold text-sm mt-2">
@@ -829,11 +830,11 @@ export default function HawaiiPage() {
 
             {/* Desktop: side-by-side split — no cropping */}
             <div className="hidden lg:grid lg:grid-cols-2 min-h-[300px]">
-              <div className="bg-gradient-to-br from-[#0d1220] to-[#060810] p-10 flex flex-col justify-center">
-                <p className="text-white/50 text-xs uppercase tracking-widest mb-3">
+              <div className="bg-muted/30 p-10 flex flex-col justify-center">
+                <p className="text-muted-foreground text-xs uppercase tracking-widest mb-3">
                   Sound familiar?
                 </p>
-                <p className="text-white font-black text-3xl xl:text-4xl leading-tight mb-4">
+                <p className="text-foreground font-black text-3xl xl:text-4xl leading-tight mb-4">
                   Watching 4% disappear<br />every single swipe.
                 </p>
                 <p className="text-primary font-bold text-sm">
@@ -846,7 +847,7 @@ export default function HawaiiPage() {
                   alt="Business owner losing money on processing fees"
                   className="absolute inset-0 w-full h-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-[#0d1220]/40" />
+                <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-muted/40" />
               </div>
             </div>
           </motion.div>
@@ -868,7 +869,7 @@ export default function HawaiiPage() {
           animation-play-state: paused;
         }
       `}</style>
-      <section className="bg-[#060810] border-y border-white/[0.07] py-4 overflow-hidden">
+      <section className="bg-background border-y border-border py-4 overflow-hidden">
         <div className="flex overflow-hidden select-none">
           <div className="fee-ticker-track">
             {[
@@ -886,15 +887,15 @@ export default function HawaiiPage() {
               { processor: "PayPal",        amount: "$4,200", note: "avg merchant" },
             ].map((item, i) => (
               <span key={i} className="inline-flex items-center gap-3 px-8 whitespace-nowrap">
-                <span className="text-white/30 text-xs font-semibold uppercase tracking-widest">{item.note}</span>
-                <span className="text-white/60 text-sm font-bold">{item.processor}</span>
-                <span className="text-white/20 text-xs">pays</span>
+                <span className="text-muted-foreground/70 text-xs font-semibold uppercase tracking-widest">{item.note}</span>
+                <span className="text-foreground text-sm font-bold">{item.processor}</span>
+                <span className="text-muted-foreground text-xs">pays</span>
                 <span className="text-primary font-black text-base">{item.amount}/yr</span>
-                <span className="text-white/15 text-xs">in fees</span>
-                <span className="mx-4 text-white/10 text-lg">·</span>
-                <span className="text-white/20 text-xs font-medium italic">TechSavvy merchants pay</span>
+                <span className="text-muted-foreground text-xs">in fees</span>
+                <span className="mx-4 text-muted-foreground/50 text-lg">·</span>
+                <span className="text-muted-foreground text-xs font-medium italic">TechSavvy merchants pay</span>
                 <span className="text-primary font-black text-base">$0</span>
-                <span className="mx-6 text-white/10 text-lg">✦</span>
+                <span className="mx-6 text-muted-foreground/50 text-lg">✦</span>
               </span>
             ))}
           </div>
@@ -902,9 +903,9 @@ export default function HawaiiPage() {
       </section>
 
       {/* ── POS RECEIPT SHOWCASE ──────────────────────────────────────────── */}
-      <section className="py-20 sm:py-28 bg-[#07090f] relative overflow-hidden">
+      <section className="py-20 sm:py-28 bg-muted/30 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-primary/4 rounded-full blur-[100px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
         </div>
         <div className="relative z-10 max-w-5xl mx-auto px-5">
           <motion.div
@@ -917,10 +918,10 @@ export default function HawaiiPage() {
             <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">
               Cash Discount Program
             </span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white mt-3 mb-4 leading-[1.1]">
+            <h2 className="text-3xl sm:text-5xl font-black text-foreground mt-3 mb-4 leading-[1.1]">
               See it on the receipt.
             </h2>
-            <p className="text-white/40 text-base max-w-sm mx-auto">
+            <p className="text-muted-foreground text-base max-w-sm mx-auto">
               Your customers see exactly what they're paying — and why cash saves them money.
             </p>
           </motion.div>
@@ -936,7 +937,7 @@ export default function HawaiiPage() {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section className="py-14 sm:py-24 bg-[#07090f]">
+      <section className="py-14 sm:py-24 bg-background">
         <div className="max-w-5xl mx-auto px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -947,7 +948,7 @@ export default function HawaiiPage() {
             <span className="text-primary text-xs font-bold uppercase tracking-widest">
               How it works
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white mt-2 leading-tight">
+            <h2 className="text-2xl sm:text-4xl font-black text-foreground mt-2 leading-tight">
               What working with us actually looks like.
             </h2>
           </motion.div>
@@ -960,7 +961,7 @@ export default function HawaiiPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.12 }}
-                className="relative bg-white/[0.04] border border-white/10 rounded-2xl overflow-hidden hover:border-primary/30 transition-all"
+                className="relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 transition-all"
               >
                 <div className="h-44 sm:h-48 overflow-hidden">
                   <img
@@ -973,8 +974,8 @@ export default function HawaiiPage() {
                   <div className="text-5xl font-black text-primary/20 mb-3 leading-none">
                     {step.n}
                   </div>
-                  <h3 className="text-white font-bold text-lg mb-2">{step.title}</h3>
-                  <p className="text-white/50 text-sm leading-relaxed">{step.body}</p>
+                  <h3 className="text-foreground font-bold text-lg mb-2">{step.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{step.body}</p>
                 </div>
               </motion.div>
             ))}
@@ -984,26 +985,26 @@ export default function HawaiiPage() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mt-6 rounded-2xl overflow-hidden border border-white/10"
+            className="mt-6 rounded-2xl overflow-hidden border border-border"
           >
             <img
               src={paymentImg}
               alt="How zero-fee payment processing works"
               className="w-full h-40 sm:h-56 object-cover object-center"
             />
-            <div className="bg-white/[0.04] border-t border-white/10 px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="bg-muted/30 border-t border-border px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
-                <p className="text-white font-bold text-sm">
+                <p className="text-foreground font-bold text-sm">
                   Zero-fee processing — when it fits, it's free.
                 </p>
-                <p className="text-white/50 text-xs mt-0.5">
+                <p className="text-muted-foreground text-xs mt-0.5">
                   Legally compliant cash discount. No contracts. Free terminal.
                 </p>
               </div>
               <Button
                 size="sm"
                 variant="outline"
-                className="border-white/20 text-white hover:bg-white/10 flex-shrink-0"
+                className="border-border text-foreground hover:bg-muted/40 flex-shrink-0"
                 asChild
               >
                 <a href="/statement-review" data-testid="button-payment-cta">
@@ -1017,7 +1018,7 @@ export default function HawaiiPage() {
       </section>
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <section className="py-14 sm:py-20 bg-[#07090f]">
+      <section className="py-14 sm:py-20 bg-muted/30">
         <div className="max-w-2xl mx-auto px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1028,7 +1029,7 @@ export default function HawaiiPage() {
             <span className="text-primary text-xs font-bold uppercase tracking-widest">
               Questions
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mt-2">
+            <h2 className="text-2xl sm:text-3xl font-black text-foreground mt-2">
               Before you call.
             </h2>
           </motion.div>
@@ -1055,13 +1056,13 @@ export default function HawaiiPage() {
       </section>
 
       {/* ── FINAL CTA ────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-[#060810] py-16 sm:py-24">
+      <section className="relative overflow-hidden bg-muted/30 py-16 sm:py-24">
         <div className="absolute inset-0 pointer-events-none">
           <img
             src={logoImg}
             alt=""
             aria-hidden="true"
-            className="absolute right-0 bottom-0 w-64 sm:w-96 opacity-[0.06] object-contain"
+            className="absolute right-0 bottom-0 w-64 sm:w-96 opacity-[0.04] object-contain"
           />
         </div>
         <div className="relative z-10 max-w-3xl mx-auto px-5 text-center">
@@ -1073,12 +1074,12 @@ export default function HawaiiPage() {
             <span className="text-primary text-xs font-bold uppercase tracking-widest">
               Ready?
             </span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white mt-3 mb-4 leading-tight">
+            <h2 className="text-3xl sm:text-5xl font-black text-foreground mt-3 mb-4 leading-tight">
               One conversation.
               <br />
               <span className="text-primary">No pitch. No pressure.</span>
             </h2>
-            <p className="text-white/50 text-base max-w-md mx-auto mb-8 leading-relaxed">
+            <p className="text-muted-foreground text-base max-w-md mx-auto mb-8 leading-relaxed">
               Tell us what your business looks like today and where you want it
               in a year. We'll tell you — honestly — if we're the team that
               gets you there.
@@ -1097,7 +1098,7 @@ export default function HawaiiPage() {
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto text-base px-10 py-6 rounded-xl border-white/20 text-white hover:bg-white/10"
+                className="w-full sm:w-auto text-base px-10 py-6 rounded-xl border-border text-foreground hover:bg-muted/40"
                 asChild
               >
                 <a href="tel:8087675460" data-testid="button-final-phone">
@@ -1106,7 +1107,7 @@ export default function HawaiiPage() {
                 </a>
               </Button>
             </div>
-            <p className="text-white/30 text-xs flex items-center justify-center gap-2">
+            <p className="text-muted-foreground text-xs flex items-center justify-center gap-2">
               <MapPin className="w-3 h-3" />
               1917 S King St, Honolulu · Mon–Fri 8am–5pm
             </p>

@@ -280,7 +280,7 @@ function AiChatSection() {
                   {tier.notIncluded.length > 0 && (
                     <ul className="space-y-1.5 pt-3 border-t border-border/30">
                       {tier.notIncluded.map((item) => (
-                        <li key={item} className="flex items-start gap-2 text-xs text-muted-foreground/40">
+                        <li key={item} className="flex items-start gap-2 text-xs text-muted-foreground/70">
                           <span className="mt-0.5 flex-shrink-0">—</span>
                           {item}
                         </li>
@@ -307,7 +307,7 @@ function AiChatSection() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center text-muted-foreground/50 text-xs mt-8"
+          className="text-center text-muted-foreground text-xs mt-8"
         >
           AI chat is included at no extra cost with every package. Setup and training included.
         </motion.p>
@@ -391,7 +391,7 @@ function PackageCard({ pkg, index }: { pkg: typeof PACKAGES[0]; index: number })
 
         {/* Setup includes */}
         <div className="mb-5">
-          <p className="text-muted-foreground/50 text-[10px] font-black uppercase tracking-widest mb-3">Setup includes</p>
+          <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-3">Setup includes</p>
           <ul className="space-y-2">
             {pkg.setupIncludes.map((item) => (
               <li key={item} className="flex items-start gap-2.5 text-sm text-foreground/80">
@@ -508,7 +508,7 @@ export default function PackagesPage() {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-center text-muted-foreground/50 text-xs mt-8"
+            className="text-center text-muted-foreground text-xs mt-8"
           >
             No contracts. Cancel anytime. Setup fees are one-time. Monthly billing starts at launch.
           </motion.p>
