@@ -45,7 +45,7 @@ import MarketingStudioTab from "./admin/MarketingStudioTab";
 
 type PipelineStage = "new" | "contacted" | "qualified" | "statement-requested" | "statement-received" | "analysis-delivered" | "proposal-sent" | "negotiation" | "won" | "lost" | "nurture";
 type LeadSource = "referral" | "networking" | "social" | "direct" | "lead-magnet" | "prospecting";
-type PackageType = "terminal" | "trial" | "online" | "combo";
+type PackageType = "terminal" | "trial" | "online" | "combo" | "starter" | "growth" | "full-stack";
 type MaintenancePlan = "none" | "basic" | "pro" | "premium";
 type Vertical = "restaurant" | "retail" | "salon" | "auto" | "medical" | "cbd" | "vape" | "firearms" | "ecommerce" | "services" | "other";
 
@@ -188,7 +188,7 @@ interface Client {
 interface RevenueEntry {
   id: string;
   date: string;
-  type: "terminal-sale" | "trial-convert" | "maintenance" | "one-off-update" | "website-addon" | "other";
+  type: "terminal-sale" | "trial-convert" | "maintenance" | "one-off-update" | "website-addon" | "branding" | "crm-setup" | "ad-management" | "email-setup" | "social-production" | "package-starter" | "package-growth" | "package-full-stack" | "other";
   description: string;
   amount: number;
   clientId: string;
@@ -447,10 +447,15 @@ const VERTICAL_CONFIG: Record<Vertical, string> = {
 };
 
 const PACKAGE_CONFIG: Record<PackageType, { label: string; color: string }> = {
-  terminal: { label: "Terminal ($399)", color: "text-primary" },
-  trial: { label: "30-Day Trial", color: "text-chart-4" },
-  online: { label: "Online (Free)", color: "text-chart-2" },
-  combo: { label: "Combo Bundle", color: "text-amber-400" },
+  // ── Payments ──
+  terminal:     { label: "Terminal ($399)", color: "text-primary" },
+  trial:        { label: "30-Day Trial", color: "text-chart-4" },
+  online:       { label: "Online (Free)", color: "text-chart-2" },
+  combo:        { label: "Combo Bundle", color: "text-amber-400" },
+  // ── Full-Service Packages ──
+  starter:      { label: "Starter Package", color: "text-sky-400" },
+  growth:       { label: "Growth Package", color: "text-violet-400" },
+  "full-stack": { label: "Full Stack Package", color: "text-orange-400" },
 };
 
 const MAINTENANCE_CONFIG: Record<MaintenancePlan, { label: string; price: string }> = {
@@ -461,9 +466,25 @@ const MAINTENANCE_CONFIG: Record<MaintenancePlan, { label: string; price: string
 };
 
 const REVENUE_TYPES: Record<RevenueEntry["type"], string> = {
-  "terminal-sale": "Terminal Sale", "trial-convert": "Trial Conversion",
-  "maintenance": "Maintenance Plan", "one-off-update": "One-Off Update",
-  "website-addon": "Website Add-On", "other": "Other",
+  // ── Payments ──
+  "terminal-sale":       "Terminal Sale",
+  "trial-convert":       "Trial Conversion",
+  // ── Website & Maintenance ──
+  "maintenance":         "Maintenance Plan",
+  "one-off-update":      "One-Off Update",
+  "website-addon":       "Website Add-On",
+  // ── Full-Service Packages ──
+  "package-starter":     "Starter Package",
+  "package-growth":      "Growth Package",
+  "package-full-stack":  "Full Stack Package",
+  // ── À La Carte Services ──
+  "branding":            "Brand & Design",
+  "crm-setup":           "CRM Setup",
+  "ad-management":       "Ad Funnel / Management",
+  "email-setup":         "Email Deliverability Setup",
+  "social-production":   "Social Media / Video Production",
+  // ── Other ──
+  "other":               "Other",
 };
 
 const MODELS = [
@@ -477,18 +498,30 @@ const CONTACT_METHODS: Record<string, string> = {
 };
 
 const DEFAULT_CHECKLIST = [
-  "Spoke with owner/decision maker",
+  // ── First Contact ──
+  "Spoke with owner / decision maker",
   "Left business card with employee",
-  "Dropped off flyer/brochure",
-  "Got current processing statement",
-  "Showed savings estimate",
-  "Discussed cash discount program",
-  "Owner interested — wants follow-up",
-  "Owner said not interested",
+  "Dropped off flyer / brochure",
   "Sent intro email",
   "Sent text message",
-  "Scheduled demo/meeting",
+  // ── Payments Discovery ──
+  "Got current processing statement",
+  "Showed payment fee savings estimate",
+  "Discussed zero-fee / cash discount program",
+  // ── Digital Presence Discovery ──
+  "Reviewed current website / online presence",
+  "Discussed website needs and 7-day timeline",
+  "Shown package options (Starter / Growth / Full Stack)",
+  "Discussed CRM or automation needs",
+  "Discussed ad funnel / marketing needs",
+  "Discussed branding or design needs",
+  "Discussed email deliverability needs",
+  // ── Next Steps ──
+  "Owner interested — wants follow-up",
+  "Owner said not interested",
+  "Scheduled demo / discovery call",
   "Delivered equipment",
+  "Proposal sent",
 ];
 
 const ACTIVITY_COLORS: Record<string, string> = {
@@ -1765,7 +1798,7 @@ function LeadsTab() {
 function LeadFormDialog({ open, onClose, onSave, lead, teamMembers = [] }: { open: boolean; onClose: () => void; onSave: (form: Partial<Lead>) => void; lead: Lead | null; teamMembers?: { id: string; name: string; role: string }[] }) {
   const [form, setForm] = useState<Partial<Lead>>({});
   useEffect(() => {
-    if (open) setForm(lead || { name: "", business: "", address: "", phone: "", email: "", decisionMakerName: "", decisionMakerRole: "", bestContactMethod: "phone", package: "terminal", status: "new", source: "direct", vertical: "other", currentProcessor: "", currentEquipment: "", monthlyVolume: "", painPoints: "", nextStep: "", nextStepDate: "", attachments: [], notes: "", assignedTo: "" });
+    if (open) setForm(lead || { name: "", business: "", address: "", phone: "", email: "", decisionMakerName: "", decisionMakerRole: "", bestContactMethod: "phone", package: "starter", status: "new", source: "direct", vertical: "other", currentProcessor: "", currentEquipment: "", monthlyVolume: "", painPoints: "", nextStep: "", nextStepDate: "", attachments: [], notes: "", assignedTo: "" });
   }, [open, lead]);
   const set = (key: keyof Lead, value: any) => setForm((p) => ({ ...p, [key]: value }));
   const attachments = (form.attachments || []) as Array<{ name: string; url: string }>;
@@ -1799,7 +1832,15 @@ function LeadFormDialog({ open, onClose, onSave, lead, teamMembers = [] }: { ope
             </div>
             <div className="space-y-1.5"><Label className="text-xs">Package</Label>
               <Select value={form.package || "terminal"} onValueChange={(v) => set("package", v)}><SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="terminal">Terminal ($399)</SelectItem><SelectItem value="trial">30-Day Trial</SelectItem><SelectItem value="online">Online (Free)</SelectItem><SelectItem value="combo">Combo Bundle</SelectItem></SelectContent></Select>
+                <SelectContent>
+                  <SelectItem value="starter">Starter Package</SelectItem>
+                  <SelectItem value="growth">Growth Package</SelectItem>
+                  <SelectItem value="full-stack">Full Stack Package</SelectItem>
+                  <SelectItem value="terminal">Terminal — Payments Only ($399)</SelectItem>
+                  <SelectItem value="trial">30-Day Trial</SelectItem>
+                  <SelectItem value="online">Online (Free)</SelectItem>
+                  <SelectItem value="combo">Combo Bundle</SelectItem>
+                </SelectContent></Select>
             </div>
             <div className="space-y-1.5"><Label className="text-xs">Pipeline Stage</Label>
               <Select value={form.status || "new"} onValueChange={(v) => set("status", v)}><SelectTrigger><SelectValue /></SelectTrigger>
@@ -1824,7 +1865,7 @@ function LeadFormDialog({ open, onClose, onSave, lead, teamMembers = [] }: { ope
             <div className="space-y-1.5"><Label className="text-xs">Current Equipment/POS</Label><Input value={form.currentEquipment || ""} onChange={(e) => set("currentEquipment", e.target.value)} placeholder="Clover Mini, Verifone..." /></div>
             <div className="space-y-1.5"><Label className="text-xs">Est. Monthly Volume</Label><Input value={form.monthlyVolume || ""} onChange={(e) => set("monthlyVolume", e.target.value)} placeholder="$5K-$10K" /></div>
           </div>
-          <div className="space-y-1.5"><Label className="text-xs">Pain Points</Label><Input value={form.painPoints || ""} onChange={(e) => set("painPoints", e.target.value)} placeholder="High fees, old terminal, chargebacks, funding delays..." /></div>
+          <div className="space-y-1.5"><Label className="text-xs">Pain Points</Label><Input value={form.painPoints || ""} onChange={(e) => set("painPoints", e.target.value)} placeholder="High fees, outdated website, no CRM, weak online presence, chargebacks..." /></div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">Next Step</Label><Input value={form.nextStep || ""} onChange={(e) => set("nextStep", e.target.value)} placeholder="Statement review call" /></div>
             <div className="space-y-1.5"><Label className="text-xs">Next Step Date</Label><Input type="date" value={form.nextStepDate || ""} onChange={(e) => set("nextStepDate", e.target.value)} /></div>
@@ -2633,7 +2674,15 @@ function ClientFormDialog({ open, onClose, onSave, client }: { open: boolean; on
           <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs">Contact Name</Label><Input value={form.name || ""} onChange={(e) => set("name", e.target.value)} /></div><div className="space-y-1.5"><Label className="text-xs">Business Name</Label><Input value={form.business || ""} onChange={(e) => set("business", e.target.value)} /></div></div>
           <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} /></div><div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={form.email || ""} onChange={(e) => set("email", e.target.value)} /></div></div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label className="text-xs">Package</Label><Select value={form.package || "terminal"} onValueChange={(v) => set("package", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="terminal">Terminal ($399)</SelectItem><SelectItem value="trial">30-Day Trial</SelectItem><SelectItem value="online">Online (Free)</SelectItem></SelectContent></Select></div>
+            <div className="space-y-1.5"><Label className="text-xs">Package</Label><Select value={form.package || "starter"} onValueChange={(v) => set("package", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              <SelectItem value="starter">Starter Package</SelectItem>
+              <SelectItem value="growth">Growth Package</SelectItem>
+              <SelectItem value="full-stack">Full Stack Package</SelectItem>
+              <SelectItem value="terminal">Terminal — Payments Only ($399)</SelectItem>
+              <SelectItem value="trial">30-Day Trial</SelectItem>
+              <SelectItem value="online">Online (Free)</SelectItem>
+              <SelectItem value="combo">Combo Bundle</SelectItem>
+            </SelectContent></Select></div>
             <div className="space-y-1.5"><Label className="text-xs">Maintenance</Label><Select value={form.maintenance || "none"} onValueChange={(v) => set("maintenance", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem><SelectItem value="basic">Basic ($50/mo)</SelectItem><SelectItem value="pro">Pro ($199/mo)</SelectItem><SelectItem value="premium">Premium ($399/mo)</SelectItem></SelectContent></Select></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
