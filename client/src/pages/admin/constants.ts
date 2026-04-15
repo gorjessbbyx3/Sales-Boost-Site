@@ -1,4 +1,4 @@
-import type { PipelineStage, LeadSource, Vertical, PackageType, MaintenancePlan, RevenueEntry, DealStage, UserRole } from "./types";
+import type { PipelineStage, LeadSource, Vertical, PackageType, MaintenancePlan, RevenueEntry, DealStage, UserRole, ProjectType, ProjectStatus } from "./types";
 
 // ─── Pipeline ────────────────────────────────────────────────────────
 
@@ -6,6 +6,7 @@ export const PIPELINE_CONFIG: Record<PipelineStage, { label: string; color: stri
   new:                  { label: "New Lead", color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20", short: "New" },
   contacted:            { label: "Contacted", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20", short: "Contacted" },
   qualified:            { label: "Qualified", color: "text-cyan-400", bg: "bg-cyan-400/10 border-cyan-400/20", short: "Qualified" },
+  "discovery-call":     { label: "Discovery Call", color: "text-teal-400", bg: "bg-teal-400/10 border-teal-400/20", short: "Discovery" },
   "statement-requested":{ label: "Stmt Requested", color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20", short: "Stmt Req" },
   "statement-received": { label: "Stmt Received", color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20", short: "Stmt Recv" },
   "analysis-delivered": { label: "Analysis Sent", color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/20", short: "Analysis" },
@@ -31,9 +32,13 @@ export const VERTICAL_CONFIG: Record<Vertical, string> = {
 };
 
 export const PACKAGE_CONFIG: Record<PackageType, { label: string; color: string }> = {
-  terminal: { label: "Terminal ($399)", color: "text-primary" },
-  trial: { label: "30-Day Trial", color: "text-chart-4" },
-  online: { label: "Online (Free)", color: "text-chart-2" },
+  starter:      { label: "Starter Package", color: "text-sky-400" },
+  growth:       { label: "Growth Package", color: "text-violet-400" },
+  "full-stack": { label: "Full Stack Package", color: "text-orange-400" },
+  terminal:     { label: "Terminal ($399)", color: "text-primary" },
+  trial:        { label: "30-Day Trial", color: "text-chart-4" },
+  online:       { label: "Online (Free)", color: "text-chart-2" },
+  combo:        { label: "Combo Bundle", color: "text-amber-400" },
 };
 
 export const MAINTENANCE_CONFIG: Record<MaintenancePlan, { label: string; price: string }> = {
@@ -46,7 +51,50 @@ export const MAINTENANCE_CONFIG: Record<MaintenancePlan, { label: string; price:
 export const REVENUE_TYPES: Record<RevenueEntry["type"], string> = {
   "terminal-sale": "Terminal Sale", "trial-convert": "Trial Conversion",
   "maintenance": "Maintenance Plan", "one-off-update": "One-Off Update",
-  "website-addon": "Website Add-On", "other": "Other",
+  "website-addon": "Website Add-On",
+  "package-starter": "Starter Package", "package-growth": "Growth Package", "package-full-stack": "Full Stack Package",
+  "branding": "Brand & Design", "crm-setup": "CRM Setup", "ad-management": "Ad Funnel / Management",
+  "email-setup": "Email Deliverability Setup", "social-production": "Social Media / Video Production",
+  "other": "Other",
+};
+
+export const PROJECT_TYPE_CONFIG: Record<ProjectType, { label: string; color: string; icon: string }> = {
+  website:        { label: "Website Build", color: "text-blue-400", icon: "🌐" },
+  crm:            { label: "CRM Setup", color: "text-purple-400", icon: "📊" },
+  branding:       { label: "Branding & Design", color: "text-pink-400", icon: "🎨" },
+  ads:            { label: "Ad Funnel", color: "text-orange-400", icon: "📣" },
+  email:          { label: "Email Setup", color: "text-cyan-400", icon: "✉️" },
+  social:         { label: "Social / Video", color: "text-rose-400", icon: "🎬" },
+  "payments-setup": { label: "Payments Setup", color: "text-emerald-400", icon: "💳" },
+  other:          { label: "Other", color: "text-gray-400", icon: "📋" },
+};
+
+export const PROJECT_STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; bg: string }> = {
+  "not-started": { label: "Not Started", color: "text-gray-400", bg: "bg-gray-400/10 border-gray-400/20" },
+  discovery:     { label: "Discovery", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20" },
+  "in-progress": { label: "In Progress", color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20" },
+  review:        { label: "Client Review", color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
+  revision:      { label: "Revision", color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/20" },
+  launched:      { label: "Launched", color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20" },
+  complete:      { label: "Complete", color: "text-green-400", bg: "bg-green-400/10 border-green-400/20" },
+  "on-hold":     { label: "On Hold", color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20" },
+};
+
+export const ACTIVE_SERVICES_OPTIONS = [
+  { value: "payments", label: "Payment Processing" },
+  { value: "website", label: "Website" },
+  { value: "crm", label: "CRM" },
+  { value: "ads", label: "Ad Funnels" },
+  { value: "email", label: "Email Marketing" },
+  { value: "branding", label: "Branding & Design" },
+  { value: "social", label: "Social Media" },
+  { value: "maintenance", label: "Website Maintenance" },
+];
+
+export const ONBOARDING_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  "not-started": { label: "Not Started", color: "text-gray-400" },
+  "in-progress": { label: "In Progress", color: "text-amber-400" },
+  complete:      { label: "Complete", color: "text-emerald-400" },
 };
 
 export const MODELS = [

@@ -123,7 +123,7 @@ export const clients = pgTable("clients", {
   business: text("business").notNull().default(""),
   phone: text("phone").notNull().default(""),
   email: text("email").notNull().default(""),
-  package: text("package").notNull().default("terminal"),
+  package: text("package").notNull().default("starter"),
   maintenance: text("maintenance").notNull().default("none"),
   websiteUrl: text("website_url").notNull().default(""),
   websiteStatus: text("website_status").notNull().default("not-started"),
@@ -131,6 +131,29 @@ export const clients = pgTable("clients", {
   monthlyVolume: real("monthly_volume").notNull().default(0),
   startDate: text("start_date").notNull().default(""),
   notes: text("notes").notNull().default(""),
+  activeServices: text("active_services").notNull().default("[]"),
+  onboardingStatus: text("onboarding_status").notNull().default("not-started"),
+  nextBillingDate: text("next_billing_date").notNull().default(""),
+  domainName: text("domain_name").notNull().default(""),
+  hostingProvider: text("hosting_provider").notNull().default(""),
+  credentials: text("credentials").notNull().default("[]"),
+  clientAssets: text("client_assets").notNull().default("[]"),
+});
+
+export const projects = pgTable("projects", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull().default(""),
+  title: text("title").notNull().default(""),
+  type: text("type").notNull().default("website"),
+  status: text("status").notNull().default("not-started"),
+  assigneeId: text("assignee_id").notNull().default(""),
+  startDate: text("start_date").notNull().default(""),
+  targetDate: text("target_date").notNull().default(""),
+  launchDate: text("launch_date").notNull().default(""),
+  milestones: text("milestones").notNull().default("[]"),
+  notes: text("notes").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
 });
 
 // ─── Equipment ────────────────────────────────────────────────────────

@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 - **Schema Validation**: drizzle-zod generates Zod schemas from Drizzle table definitions
 - **Migrations**: Output to `./migrations` directory
 - **Push Command**: `npm run db:push` to sync schema to database
-- **Current Schema**: `users` table (id, username, password) and `ai_config` table (id, enabled, model, systemPrompt, welcomeMessage, maxTokens)
+- **Current Schema**: `users`, `ai_config`, `clients` (extended with activeServices, onboardingStatus, nextBillingDate, domainName, hostingProvider, credentials, clientAssets as JSON text fields), `projects` (delivery tracker with milestones JSON, type, status pipeline, client linking), `leads`, `deals`, `tasks`, `files`, `equipment`, `partners`
 - **Connection**: Requires `DATABASE_URL` environment variable
 
 ### Project Structure
@@ -88,6 +88,13 @@ script/           → Build scripts
 - **Replit Plugins** — `@replit/vite-plugin-runtime-error-modal`, `@replit/vite-plugin-cartographer`, `@replit/vite-plugin-dev-banner` for development experience on Replit
 - **Radix UI** — Headless UI primitives powering shadcn/ui components
 - **Anthropic Claude API** — Powers the AI chatbot (requires `ANTHROPIC_API_KEY` secret). Uses `@anthropic-ai/sdk` package.
+
+### Admin Dashboard (subdomain: admin.*)
+- **Tabs**: Overview, Tasks, Pipeline (Leads), Follow-Up, Deals, Clients, Projects, Inbox, Playbooks, Analytics, 90-Day Plan, Finances, Autopilot, AI Tools, Marketing Studio, Files, Equipment, Partners, Settings
+- **Client Management**: 4-tab form (Details, Services, Credentials, Assets & Info) with active services tracking, onboarding status, domain/hosting info, stored login credentials, and client assets/reference data
+- **Project Delivery Tracker**: Milestone-based project tracking with status pipeline (not-started → discovery → in-progress → review → revision → launched → complete), project types (website, crm, branding, ads, email, social, payments, custom), client linking, assignee management
+- **Pipeline Stages**: new → contacted → qualified → discovery-call → statement-requested → statement-received → analysis-delivered → proposal-sent → negotiation → won/lost/nurture
+- **Frontend types**: `client/src/pages/admin/types.ts`, constants: `client/src/pages/admin/constants.ts`
 
 ### AI Chatbot System
 - **Admin Config Page**: `/ai-config` — toggle agent on/off, select model, edit system prompt, set welcome message, configure max tokens

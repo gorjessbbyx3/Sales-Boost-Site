@@ -1220,7 +1220,13 @@ RULES:
 
   app.get("/api/clients", requireAdminSession, async (_req, res) => {
     const rows = await db.select().from(schema.clients);
-    res.json(rows);
+    const parsed = rows.map(r => ({
+      ...r,
+      activeServices: typeof r.activeServices === "string" ? (() => { try { return JSON.parse(r.activeServices); } catch { return []; } })() : (r.activeServices || []),
+      credentials: typeof r.credentials === "string" ? (() => { try { return JSON.parse(r.credentials); } catch { return []; } })() : (r.credentials || []),
+      clientAssets: typeof r.clientAssets === "string" ? (() => { try { return JSON.parse(r.clientAssets); } catch { return []; } })() : (r.clientAssets || []),
+    }));
+    res.json(parsed);
   });
 
   app.post("/api/clients", requireAdminSession, async (req, res) => {
@@ -1231,7 +1237,7 @@ RULES:
       business: req.body.business || "",
       phone: req.body.phone || "",
       email: req.body.email || "",
-      package: req.body.package || "terminal",
+      package: req.body.package || "starter",
       maintenance: req.body.maintenance || "none",
       websiteUrl: req.body.websiteUrl || "",
       websiteStatus: req.body.websiteStatus || "not-started",
@@ -1239,6 +1245,13 @@ RULES:
       monthlyVolume: req.body.monthlyVolume || 0,
       startDate: req.body.startDate || new Date().toISOString().split("T")[0],
       notes: req.body.notes || "",
+      activeServices: JSON.stringify(req.body.activeServices || []),
+      onboardingStatus: req.body.onboardingStatus || "not-started",
+      nextBillingDate: req.body.nextBillingDate || "",
+      domainName: req.body.domainName || "",
+      hostingProvider: req.body.hostingProvider || "",
+      credentials: JSON.stringify(req.body.credentials || []),
+      clientAssets: JSON.stringify(req.body.clientAssets || []),
     }).returning();
     logActivity("Client Added", `${client.business || client.name}`, "client");
     sendSlackNotification(`New client onboarded: ${client.business || client.name} (${client.package})`, "newClient");
@@ -1246,7 +1259,11 @@ RULES:
   });
 
   app.patch("/api/clients/:id", requireAdminSession, async (req, res) => {
-    const updateData = pickColumns(schema.clients, req.body);
+    const body = { ...req.body };
+    if (body.activeServices && typeof body.activeServices !== "string") body.activeServices = JSON.stringify(body.activeServices);
+    if (body.credentials && typeof body.credentials !== "string") body.credentials = JSON.stringify(body.credentials);
+    if (body.clientAssets && typeof body.clientAssets !== "string") body.clientAssets = JSON.stringify(body.clientAssets);
+    const updateData = pickColumns(schema.clients, body);
     const [updated] = await db.update(schema.clients).set(updateData).where(eq(schema.clients.id, req.params.id as string)).returning();
     if (!updated) return res.status(404).json({ error: "Client not found" });
     logActivity("Client Updated", `${updated.business || updated.name}`, "client");
@@ -1256,6 +1273,56 @@ RULES:
   app.delete("/api/clients/:id", requireAdminSession, async (req, res) => {
     const [deleted] = await db.delete(schema.clients).where(eq(schema.clients.id, req.params.id as string)).returning();
     if (deleted) logActivity("Client Removed", `${deleted.business || deleted.name}`, "client");
+    res.json({ success: true });
+  });
+
+  // ─── Projects CRUD ──────────────────────────────────────────────
+
+  app.get("/api/projects", requireAdminSession, async (_req, res) => {
+    const rows = await db.select().from(schema.projects);
+    const parsed = rows.map(r => ({
+      ...r,
+      milestones: typeof r.milestones === "string" ? (() => { try { return JSON.parse(r.milestones); } catch { return []; } })() : (r.milestones || []),
+    }));
+    res.json(parsed);
+  });
+
+  app.post("/api/projects", requireAdminSession, async (req, res) => {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const [project] = await db.insert(schema.projects).values({
+      id,
+      clientId: req.body.clientId || "",
+      title: req.body.title || "",
+      type: req.body.type || "website",
+      status: req.body.status || "not-started",
+      assigneeId: req.body.assigneeId || "",
+      startDate: req.body.startDate || now.split("T")[0],
+      targetDate: req.body.targetDate || "",
+      launchDate: req.body.launchDate || "",
+      milestones: JSON.stringify(req.body.milestones || []),
+      notes: req.body.notes || "",
+      createdAt: now,
+      updatedAt: now,
+    }).returning();
+    logActivity("Project Created", `${project.title}`, "client");
+    res.status(201).json(project);
+  });
+
+  app.patch("/api/projects/:id", requireAdminSession, async (req, res) => {
+    const body = { ...req.body };
+    if (body.milestones && typeof body.milestones !== "string") body.milestones = JSON.stringify(body.milestones);
+    body.updatedAt = new Date().toISOString();
+    const updateData = pickColumns(schema.projects, body);
+    const [updated] = await db.update(schema.projects).set(updateData).where(eq(schema.projects.id, req.params.id as string)).returning();
+    if (!updated) return res.status(404).json({ error: "Project not found" });
+    logActivity("Project Updated", `${updated.title}`, "client");
+    res.json(updated);
+  });
+
+  app.delete("/api/projects/:id", requireAdminSession, async (req, res) => {
+    const [deleted] = await db.delete(schema.projects).where(eq(schema.projects.id, req.params.id as string)).returning();
+    if (deleted) logActivity("Project Deleted", `${deleted.title}`, "client");
     res.json({ success: true });
   });
 

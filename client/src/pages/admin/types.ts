@@ -1,8 +1,8 @@
 // ─── Shared Admin Types ─────────────────────────────────────────────
 
-export type PipelineStage = "new" | "contacted" | "qualified" | "statement-requested" | "statement-received" | "analysis-delivered" | "proposal-sent" | "negotiation" | "won" | "lost" | "nurture";
+export type PipelineStage = "new" | "contacted" | "qualified" | "discovery-call" | "statement-requested" | "statement-received" | "analysis-delivered" | "proposal-sent" | "negotiation" | "won" | "lost" | "nurture";
 export type LeadSource = "referral" | "networking" | "social" | "direct" | "lead-magnet";
-export type PackageType = "terminal" | "trial" | "online";
+export type PackageType = "terminal" | "trial" | "online" | "combo" | "starter" | "growth" | "full-stack";
 export type MaintenancePlan = "none" | "basic" | "pro" | "premium";
 export type Vertical = "restaurant" | "retail" | "salon" | "auto" | "medical" | "cbd" | "vape" | "firearms" | "ecommerce" | "services" | "other";
 export type DealStage = "prospecting" | "qualification" | "proposal" | "negotiation" | "closed-won" | "closed-lost";
@@ -129,6 +129,20 @@ export interface ChannelScore {
   avgVolumeWon: number;
 }
 
+export interface ClientCredential {
+  label: string;
+  url: string;
+  username: string;
+  password: string;
+  notes: string;
+}
+
+export interface ClientAsset {
+  label: string;
+  value: string;
+  notes: string;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -143,16 +157,50 @@ export interface Client {
   monthlyVolume: number;
   startDate: string;
   notes: string;
+  activeServices: string[];
+  onboardingStatus: "not-started" | "in-progress" | "complete";
+  nextBillingDate: string;
+  domainName: string;
+  hostingProvider: string;
+  credentials: ClientCredential[];
+  clientAssets: ClientAsset[];
 }
 
 export interface RevenueEntry {
   id: string;
   date: string;
-  type: "terminal-sale" | "trial-convert" | "maintenance" | "one-off-update" | "website-addon" | "other";
+  type: "terminal-sale" | "trial-convert" | "maintenance" | "one-off-update" | "website-addon" | "branding" | "crm-setup" | "ad-management" | "email-setup" | "social-production" | "package-starter" | "package-growth" | "package-full-stack" | "other";
   description: string;
   amount: number;
   clientId: string;
   recurring: boolean;
+}
+
+export type ProjectType = "website" | "crm" | "branding" | "ads" | "email" | "social" | "payments-setup" | "other";
+export type ProjectStatus = "not-started" | "discovery" | "in-progress" | "review" | "revision" | "launched" | "complete" | "on-hold";
+
+export interface ProjectMilestone {
+  id: string;
+  label: string;
+  dueDate: string;
+  completed: boolean;
+  completedAt: string;
+}
+
+export interface Project {
+  id: string;
+  clientId: string;
+  title: string;
+  type: ProjectType;
+  status: ProjectStatus;
+  assigneeId: string;
+  startDate: string;
+  targetDate: string;
+  launchDate: string;
+  milestones: ProjectMilestone[];
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Task {

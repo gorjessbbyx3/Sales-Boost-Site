@@ -42,7 +42,7 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string
 
 // Active pipeline stages (not new, not terminal)
 const FOLLOW_UP_STAGES: PipelineStage[] = [
-  "contacted", "qualified", "statement-requested", "statement-received",
+  "contacted", "qualified", "discovery-call", "statement-requested", "statement-received",
   "analysis-delivered", "proposal-sent", "negotiation",
 ];
 

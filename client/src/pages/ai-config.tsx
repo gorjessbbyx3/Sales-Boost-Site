@@ -27,6 +27,7 @@ import {
   ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu, Eye,
   Download, LayoutList, LayoutGrid, Image, FileSpreadsheet, Monitor,
   Inbox, Archive, ArchiveX, ShieldAlert, MailOpen, MoreHorizontal, ChevronDown, Palette,
+  FolderKanban, KeyRound, Server,
 } from "lucide-react";
 import type { AiConfig } from "@shared/schema";
 import { PdfViewer, PdfThumbnail } from "@/components/pdf-viewer";
@@ -40,10 +41,11 @@ import EquipmentTab from "./admin/EquipmentTab";
 import PartnersTab from "./admin/PartnersTab";
 import FollowUpTab from "./admin/FollowUpTab";
 import MarketingStudioTab from "./admin/MarketingStudioTab";
+import ProjectsTab from "./admin/ProjectsTab";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
-type PipelineStage = "new" | "contacted" | "qualified" | "statement-requested" | "statement-received" | "analysis-delivered" | "proposal-sent" | "negotiation" | "won" | "lost" | "nurture";
+type PipelineStage = "new" | "contacted" | "qualified" | "discovery-call" | "statement-requested" | "statement-received" | "analysis-delivered" | "proposal-sent" | "negotiation" | "won" | "lost" | "nurture";
 type LeadSource = "referral" | "networking" | "social" | "direct" | "lead-magnet" | "prospecting";
 type PackageType = "terminal" | "trial" | "online" | "combo" | "starter" | "growth" | "full-stack";
 type MaintenancePlan = "none" | "basic" | "pro" | "premium";
@@ -169,6 +171,20 @@ interface ChannelScore {
   avgVolumeWon: number;
 }
 
+interface ClientCredential {
+  label: string;
+  url: string;
+  username: string;
+  password: string;
+  notes: string;
+}
+
+interface ClientAsset {
+  label: string;
+  value: string;
+  notes: string;
+}
+
 interface Client {
   id: string;
   name: string;
@@ -183,6 +199,13 @@ interface Client {
   monthlyVolume: number;
   startDate: string;
   notes: string;
+  activeServices: string[];
+  onboardingStatus: "not-started" | "in-progress" | "complete";
+  nextBillingDate: string;
+  domainName: string;
+  hostingProvider: string;
+  credentials: ClientCredential[];
+  clientAssets: ClientAsset[];
 }
 
 interface RevenueEntry {
@@ -421,6 +444,7 @@ const PIPELINE_CONFIG: Record<PipelineStage, { label: string; color: string; bg:
   new:                  { label: "New Lead", color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20", short: "New" },
   contacted:            { label: "Contacted", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20", short: "Contacted" },
   qualified:            { label: "Qualified", color: "text-cyan-400", bg: "bg-cyan-400/10 border-cyan-400/20", short: "Qualified" },
+  "discovery-call":     { label: "Discovery Call", color: "text-teal-400", bg: "bg-teal-400/10 border-teal-400/20", short: "Discovery" },
   "statement-requested":{ label: "Stmt Requested", color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20", short: "Stmt Req" },
   "statement-received": { label: "Stmt Received", color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20", short: "Stmt Recv" },
   "analysis-delivered": { label: "Analysis Sent", color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/20", short: "Analysis" },
@@ -723,6 +747,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       { value: "follow-up", icon: ArrowRight, label: "Follow-Up" },
       { value: "deals", icon: DollarSign, label: "Deals" },
       { value: "clients", icon: Users, label: "Clients" },
+      { value: "projects", icon: FolderKanban, label: "Projects" },
       { value: "inbox", icon: Mail, label: "Inbox" },
     ]},
     { label: "STRATEGY", tabs: [
@@ -845,6 +870,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsContent value="analytics"><AnalyticsTab /></TabsContent>
               <TabsContent value="plan"><PlanTab /></TabsContent>
               <TabsContent value="clients"><ClientsTab /></TabsContent>
+              <TabsContent value="projects"><ProjectsTab /></TabsContent>
               <TabsContent value="finances"><FinancesTab /></TabsContent>
               <TabsContent value="tasks"><TasksTab /></TabsContent>
               <TabsContent value="autopilot"><AutopilotTab /></TabsContent>
@@ -1060,8 +1086,11 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
       actions.push({ label: "Call", icon: Phone, action: "leads" });
       actions.push({ label: "Email", icon: Mail, action: "inbox" });
     } else if (lead.status === "contacted" || lead.status === "qualified") {
-      actions.push({ label: "Request Statement", icon: FileText, action: "leads" });
+      actions.push({ label: "Book Discovery", icon: Calendar, action: "leads" });
       if (daysSinceUpdate > 3) actions.push({ label: "Follow Up", icon: Phone, action: "leads" });
+    } else if (lead.status === "discovery-call") {
+      actions.push({ label: "Send Proposal", icon: Send, action: "leads" });
+      actions.push({ label: "Request Statement", icon: FileText, action: "leads" });
     } else if (lead.status === "statement-requested") {
       actions.push({ label: "Check Status", icon: Phone, action: "leads" });
     } else if (lead.status === "statement-received" || lead.status === "analysis-delivered") {
@@ -1534,7 +1563,7 @@ function LeadsTab() {
   });
   const convertMutation = useMutation({
     mutationFn: async (lead: Lead) => {
-      const clientRes = await apiRequest("POST", "/api/clients", { name: lead.name, business: lead.business, phone: lead.phone, email: lead.email, package: lead.package, maintenance: "none", websiteUrl: "", websiteStatus: "not-started", terminalId: "", monthlyVolume: 0, startDate: today(), notes: lead.notes });
+      const clientRes = await apiRequest("POST", "/api/clients", { name: lead.name, business: lead.business, phone: lead.phone, email: lead.email, package: lead.package, maintenance: "none", websiteUrl: "", websiteStatus: "not-started", terminalId: "", monthlyVolume: 0, startDate: today(), notes: lead.notes, activeServices: [], onboardingStatus: "not-started", nextBillingDate: "", domainName: "", hostingProvider: "", credentials: [], clientAssets: [] });
       const client = await clientRes.json();
       await apiRequest("PATCH", `/api/leads/${lead.id}`, { status: "won" });
       // Auto-create onboarding tasks
@@ -2646,7 +2675,23 @@ function ClientsTab() {
                   <span className="flex items-center gap-1"><Globe className="w-3 h-3" />Website: <span className={WS[client.websiteStatus]?.color}>{WS[client.websiteStatus]?.label}</span></span>
                   {client.websiteUrl && <a href={client.websiteUrl.startsWith("http") ? client.websiteUrl : `https://${client.websiteUrl}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-foreground text-primary"><ExternalLink className="w-3 h-3" />{client.websiteUrl}</a>}
                   {client.monthlyVolume > 0 && <span><DollarSign className="w-3 h-3 inline" />${client.monthlyVolume.toLocaleString()}/mo</span>}
+                  {client.domainName && <span className="flex items-center gap-1"><Globe className="w-3 h-3" />{client.domainName}</span>}
                 </div>
+                {(() => {
+                  const svcs = parseJSONField<string[]>(client.activeServices, []);
+                  const creds = parseJSONField<any[]>(client.credentials, []);
+                  const onb = client.onboardingStatus || "not-started";
+                  const showRow = svcs.length > 0 || creds.length > 0 || onb !== "not-started";
+                  if (!showRow) return null;
+                  return (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {onb === "in-progress" && <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-400/20">Onboarding</Badge>}
+                      {onb === "complete" && <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-400/20">Onboarded</Badge>}
+                      {svcs.map(s => <Badge key={s} variant="outline" className="text-[10px]">{ACTIVE_SERVICES_OPTIONS.find(o => o.value === s)?.label || s}</Badge>)}
+                      {creds.length > 0 && <Badge variant="outline" className="text-[10px] text-violet-400 border-violet-400/20"><KeyRound className="w-2.5 h-2.5 mr-0.5" />{creds.length} login{creds.length !== 1 ? "s" : ""}</Badge>}
+                    </div>
+                  );
+                })()}
                 {client.notes && <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{client.notes}</p>}
               </div>
               <div className="flex items-center gap-1 shrink-0">
@@ -2662,41 +2707,218 @@ function ClientsTab() {
   );
 }
 
+function parseJSONField<T>(val: any, fallback: T): T {
+  if (Array.isArray(val)) return val as T;
+  if (typeof val === "string") { try { return JSON.parse(val); } catch { return fallback; } }
+  return fallback;
+}
+
+const ACTIVE_SERVICES_OPTIONS = [
+  { value: "payments", label: "Payment Processing" },
+  { value: "website", label: "Website" },
+  { value: "crm", label: "CRM" },
+  { value: "ads", label: "Ad Funnels" },
+  { value: "email", label: "Email Marketing" },
+  { value: "branding", label: "Branding & Design" },
+  { value: "social", label: "Social Media" },
+  { value: "maintenance", label: "Website Maintenance" },
+];
+
 function ClientFormDialog({ open, onClose, onSave, client }: { open: boolean; onClose: () => void; onSave: (form: Partial<Client>) => void; client: Client | null; }) {
   const [form, setForm] = useState<Partial<Client>>({});
-  useEffect(() => { if (open) setForm(client || { name: "", business: "", phone: "", email: "", package: "terminal", maintenance: "none", websiteUrl: "", websiteStatus: "not-started", terminalId: "", monthlyVolume: 0, startDate: today(), notes: "" }); }, [open, client]);
-  const set = (key: keyof Client, value: string | number) => setForm((p) => ({ ...p, [key]: value }));
+  const [credentials, setCredentials] = useState<ClientCredential[]>([]);
+  const [clientAssets, setClientAssets] = useState<ClientAsset[]>([]);
+  const [activeServices, setActiveServices] = useState<string[]>([]);
+  const [section, setSection] = useState<"details" | "services" | "credentials" | "assets">("details");
+
+  useEffect(() => {
+    if (open) {
+      if (client) {
+        setForm({ ...client });
+        setCredentials(parseJSONField<ClientCredential[]>(client.credentials, []));
+        setClientAssets(parseJSONField<ClientAsset[]>(client.clientAssets, []));
+        setActiveServices(parseJSONField<string[]>(client.activeServices, []));
+      } else {
+        setForm({ name: "", business: "", phone: "", email: "", package: "starter", maintenance: "none", websiteUrl: "", websiteStatus: "not-started", terminalId: "", monthlyVolume: 0, startDate: today(), notes: "", onboardingStatus: "not-started", nextBillingDate: "", domainName: "", hostingProvider: "" });
+        setCredentials([]);
+        setClientAssets([]);
+        setActiveServices([]);
+      }
+      setSection("details");
+    }
+  }, [open, client]);
+
+  const set = (key: keyof Client, value: any) => setForm((p) => ({ ...p, [key]: value }));
+
+  const addCredential = () => setCredentials(prev => [...prev, { label: "", url: "", username: "", password: "", notes: "" }]);
+  const removeCredential = (i: number) => setCredentials(prev => prev.filter((_, idx) => idx !== i));
+  const updateCredential = (i: number, key: keyof ClientCredential, value: string) => {
+    setCredentials(prev => { const updated = [...prev]; updated[i] = { ...updated[i], [key]: value }; return updated; });
+  };
+
+  const addAsset = () => setClientAssets(prev => [...prev, { label: "", value: "", notes: "" }]);
+  const removeAsset = (i: number) => setClientAssets(prev => prev.filter((_, idx) => idx !== i));
+  const updateAsset = (i: number, key: keyof ClientAsset, value: string) => {
+    setClientAssets(prev => { const updated = [...prev]; updated[i] = { ...updated[i], [key]: value }; return updated; });
+  };
+
+  const toggleService = (svc: string) => {
+    setActiveServices(prev => prev.includes(svc) ? prev.filter(s => s !== svc) : [...prev, svc]);
+  };
+
+  const handleSave = () => {
+    onSave({ ...form, credentials, clientAssets, activeServices });
+  };
+
+  const sectionTabs = [
+    { key: "details", label: "Details", icon: Users },
+    { key: "services", label: "Services", icon: Zap },
+    { key: "credentials", label: "Credentials", icon: KeyRound },
+    { key: "assets", label: "Assets & Info", icon: Server },
+  ] as const;
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{client ? "Edit Client" : "Add New Client"}</DialogTitle><DialogDescription>Manage merchant details</DialogDescription></DialogHeader>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs">Contact Name</Label><Input value={form.name || ""} onChange={(e) => set("name", e.target.value)} /></div><div className="space-y-1.5"><Label className="text-xs">Business Name</Label><Input value={form.business || ""} onChange={(e) => set("business", e.target.value)} /></div></div>
-          <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} /></div><div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={form.email || ""} onChange={(e) => set("email", e.target.value)} /></div></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label className="text-xs">Package</Label><Select value={form.package || "starter"} onValueChange={(v) => set("package", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-              <SelectItem value="starter">Starter Package</SelectItem>
-              <SelectItem value="growth">Growth Package</SelectItem>
-              <SelectItem value="full-stack">Full Stack Package</SelectItem>
-              <SelectItem value="terminal">Terminal — Payments Only ($399)</SelectItem>
-              <SelectItem value="trial">30-Day Trial</SelectItem>
-              <SelectItem value="online">Online (Free)</SelectItem>
-              <SelectItem value="combo">Combo Bundle</SelectItem>
-            </SelectContent></Select></div>
-            <div className="space-y-1.5"><Label className="text-xs">Maintenance</Label><Select value={form.maintenance || "none"} onValueChange={(v) => set("maintenance", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem><SelectItem value="basic">Basic ($50/mo)</SelectItem><SelectItem value="pro">Pro ($199/mo)</SelectItem><SelectItem value="premium">Premium ($399/mo)</SelectItem></SelectContent></Select></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label className="text-xs">Website Status</Label><Select value={form.websiteStatus || "not-started"} onValueChange={(v) => set("websiteStatus", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="not-started">Not Started</SelectItem><SelectItem value="in-progress">In Progress</SelectItem><SelectItem value="live">Live</SelectItem><SelectItem value="self-hosted">Self-Hosted</SelectItem></SelectContent></Select></div>
-            <div className="space-y-1.5"><Label className="text-xs">Website URL</Label><Input value={form.websiteUrl || ""} onChange={(e) => set("websiteUrl", e.target.value)} placeholder="example.com" /></div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="space-y-1.5"><Label className="text-xs">Terminal ID</Label><Input value={form.terminalId || ""} onChange={(e) => set("terminalId", e.target.value)} /></div>
-            <div className="space-y-1.5"><Label className="text-xs">Monthly Vol ($)</Label><Input type="number" value={form.monthlyVolume || ""} onChange={(e) => set("monthlyVolume", Number(e.target.value))} /></div>
-            <div className="space-y-1.5"><Label className="text-xs">Start Date</Label><Input type="date" value={form.startDate || today()} onChange={(e) => set("startDate", e.target.value)} /></div>
-          </div>
-          <div className="space-y-1.5"><Label className="text-xs">Notes</Label><Textarea value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} rows={3} className="resize-none text-sm" /></div>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{client ? "Edit Client" : "Add New Client"}</DialogTitle><DialogDescription>Manage client details, services, and access credentials</DialogDescription></DialogHeader>
+
+        <div className="flex gap-1 border-b border-border/50 mb-3">
+          {sectionTabs.map(tab => (
+            <button key={tab.key} onClick={() => setSection(tab.key)} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${section === tab.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`} data-testid={`tab-client-${tab.key}`}>
+              <tab.icon className="w-3 h-3" />{tab.label}
+              {tab.key === "credentials" && credentials.length > 0 && <Badge variant="outline" className="text-[9px] px-1 py-0 ml-0.5">{credentials.length}</Badge>}
+              {tab.key === "assets" && clientAssets.length > 0 && <Badge variant="outline" className="text-[9px] px-1 py-0 ml-0.5">{clientAssets.length}</Badge>}
+            </button>
+          ))}
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => onSave(form)} disabled={!form.name || !form.business}><Save className="w-3.5 h-3.5" />{client ? "Update" : "Add Client"}</Button></DialogFooter>
+
+        {section === "details" && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs">Contact Name</Label><Input value={form.name || ""} onChange={(e) => set("name", e.target.value)} data-testid="input-client-name" /></div><div className="space-y-1.5"><Label className="text-xs">Business Name</Label><Input value={form.business || ""} onChange={(e) => set("business", e.target.value)} data-testid="input-client-business" /></div></div>
+            <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} /></div><div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={form.email || ""} onChange={(e) => set("email", e.target.value)} /></div></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Package</Label><Select value={form.package || "starter"} onValueChange={(v) => set("package", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="starter">Starter Package</SelectItem><SelectItem value="growth">Growth Package</SelectItem><SelectItem value="full-stack">Full Stack Package</SelectItem>
+                <SelectItem value="terminal">Terminal — Payments Only ($399)</SelectItem><SelectItem value="trial">30-Day Trial</SelectItem><SelectItem value="online">Online (Free)</SelectItem><SelectItem value="combo">Combo Bundle</SelectItem>
+              </SelectContent></Select></div>
+              <div className="space-y-1.5"><Label className="text-xs">Maintenance</Label><Select value={form.maintenance || "none"} onValueChange={(v) => set("maintenance", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem><SelectItem value="basic">Basic ($50/mo)</SelectItem><SelectItem value="pro">Pro ($199/mo)</SelectItem><SelectItem value="premium">Premium ($399/mo)</SelectItem></SelectContent></Select></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Website Status</Label><Select value={form.websiteStatus || "not-started"} onValueChange={(v) => set("websiteStatus", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="not-started">Not Started</SelectItem><SelectItem value="in-progress">In Progress</SelectItem><SelectItem value="live">Live</SelectItem><SelectItem value="self-hosted">Self-Hosted</SelectItem></SelectContent></Select></div>
+              <div className="space-y-1.5"><Label className="text-xs">Website URL</Label><Input value={form.websiteUrl || ""} onChange={(e) => set("websiteUrl", e.target.value)} placeholder="example.com" /></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Terminal ID</Label><Input value={form.terminalId || ""} onChange={(e) => set("terminalId", e.target.value)} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Monthly Vol ($)</Label><Input type="number" value={form.monthlyVolume || ""} onChange={(e) => set("monthlyVolume", Number(e.target.value))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Start Date</Label><Input type="date" value={form.startDate || today()} onChange={(e) => set("startDate", e.target.value)} /></div>
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Notes</Label><Textarea value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} rows={2} className="resize-none text-sm" /></div>
+          </div>
+        )}
+
+        {section === "services" && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Active Services</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {ACTIVE_SERVICES_OPTIONS.map(svc => (
+                  <label key={svc.value} className={`flex items-center gap-2 px-3 py-2 rounded-md border text-xs cursor-pointer transition-colors ${activeServices.includes(svc.value) ? "border-primary/40 bg-primary/5 text-foreground" : "border-border/50 text-muted-foreground hover:border-border"}`}>
+                    <Checkbox checked={activeServices.includes(svc.value)} onCheckedChange={() => toggleService(svc.value)} />
+                    {svc.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Onboarding Status</Label>
+                <Select value={form.onboardingStatus || "not-started"} onValueChange={(v) => set("onboardingStatus", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="not-started">Not Started</SelectItem><SelectItem value="in-progress">In Progress</SelectItem><SelectItem value="complete">Complete</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5"><Label className="text-xs">Next Billing Date</Label><Input type="date" value={form.nextBillingDate || ""} onChange={(e) => set("nextBillingDate", e.target.value)} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Domain Name</Label><Input value={form.domainName || ""} onChange={(e) => set("domainName", e.target.value)} placeholder="clientbusiness.com" data-testid="input-client-domain" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Hosting Provider</Label><Input value={form.hostingProvider || ""} onChange={(e) => set("hostingProvider", e.target.value)} placeholder="Cloudflare, GoDaddy, Vercel..." /></div>
+            </div>
+          </div>
+        )}
+
+        {section === "credentials" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-xs font-semibold">Login Credentials & Access</Label>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Store logins for domains, hosting, CMS, CRM, analytics, social accounts, etc.</p>
+              </div>
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={addCredential} data-testid="button-add-credential"><Plus className="w-3 h-3 mr-1" />Add</Button>
+            </div>
+            {credentials.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <KeyRound className="w-6 h-6 mx-auto mb-2 opacity-40" />
+                <p className="text-xs">No credentials stored yet.</p>
+                <Button variant="outline" size="sm" className="mt-2 text-xs h-7" onClick={addCredential}><Plus className="w-3 h-3 mr-1" />Add First Credential</Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {credentials.map((cred, i) => (
+                  <Card key={i} className="overflow-visible border-border/50">
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">#{i + 1}</span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeCredential(i)}><Trash2 className="w-3 h-3" /></Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1"><Label className="text-[10px]">Label</Label><Input className="h-7 text-xs" value={cred.label} onChange={e => updateCredential(i, "label", e.target.value)} placeholder="Domain registrar, WordPress admin, CRM..." data-testid={`input-cred-label-${i}`} /></div>
+                        <div className="space-y-1"><Label className="text-[10px]">URL</Label><Input className="h-7 text-xs" value={cred.url} onChange={e => updateCredential(i, "url", e.target.value)} placeholder="https://login.example.com" /></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1"><Label className="text-[10px]">Username / Email</Label><Input className="h-7 text-xs" value={cred.username} onChange={e => updateCredential(i, "username", e.target.value)} /></div>
+                        <div className="space-y-1"><Label className="text-[10px]">Password / Key</Label><Input className="h-7 text-xs" type="password" value={cred.password} onChange={e => updateCredential(i, "password", e.target.value)} /></div>
+                      </div>
+                      <div className="space-y-1"><Label className="text-[10px]">Notes</Label><Input className="h-7 text-xs" value={cred.notes} onChange={e => updateCredential(i, "notes", e.target.value)} placeholder="2FA enabled, recovery email is..." /></div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {section === "assets" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-xs font-semibold">Client Assets & Reference Info</Label>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Brand colors, logo locations, API keys, important contacts, DNS records, etc.</p>
+              </div>
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={addAsset} data-testid="button-add-asset"><Plus className="w-3 h-3 mr-1" />Add</Button>
+            </div>
+            {clientAssets.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <Server className="w-6 h-6 mx-auto mb-2 opacity-40" />
+                <p className="text-xs">No assets stored yet.</p>
+                <Button variant="outline" size="sm" className="mt-2 text-xs h-7" onClick={addAsset}><Plus className="w-3 h-3 mr-1" />Add First Asset</Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {clientAssets.map((asset, i) => (
+                  <div key={i} className="flex items-start gap-2 group">
+                    <div className="flex-1 grid grid-cols-3 gap-2">
+                      <Input className="h-7 text-xs" value={asset.label} onChange={e => updateAsset(i, "label", e.target.value)} placeholder="Brand primary color, Logo URL..." data-testid={`input-asset-label-${i}`} />
+                      <Input className="h-7 text-xs" value={asset.value} onChange={e => updateAsset(i, "value", e.target.value)} placeholder="#1a56db, https://..." />
+                      <Input className="h-7 text-xs" value={asset.notes} onChange={e => updateAsset(i, "notes", e.target.value)} placeholder="Notes..." />
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive shrink-0" onClick={() => removeAsset(i)}><Trash2 className="w-3 h-3" /></Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={handleSave} disabled={!form.name || !form.business} data-testid="button-save-client"><Save className="w-3.5 h-3.5" />{client ? "Update" : "Add Client"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
