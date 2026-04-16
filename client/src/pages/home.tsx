@@ -38,22 +38,22 @@ function AnimatedCounter({ target, prefix = "", suffix = "", duration = 2 }: { t
 function HeroSection() {
   return (
     <section className="relative overflow-hidden">
-      {/* Video */}
-      <div className="relative w-full">
-        <video autoPlay loop muted playsInline preload="auto" src="/videos/hero-v5.mp4" className="w-full h-auto block" aria-label="Hawaii business payment processing" />
+      {/* Video — natural height on mobile, fixed height on desktop to prevent 1000px+ tall videos */}
+      <div className="relative w-full lg:h-[600px] xl:h-[70vh]">
+        <video autoPlay loop muted playsInline preload="auto" src="/videos/hero-v5.mp4" className="w-full h-auto block lg:absolute lg:inset-0 lg:h-full lg:w-full lg:object-cover" aria-label="Hawaii business payment processing" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-background" />
       </div>
 
       {/* Content */}
-      <div className="pb-8 sm:pb-12 -mt-10 sm:-mt-16 relative z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="pb-8 sm:pb-12 -mt-10 sm:-mt-16 lg:-mt-40 relative z-10">
+        <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div variants={staggerContainer} initial="hidden" animate="visible">
-            <motion.h1 className="text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] mb-4" variants={fadeUp}>
+            <motion.h1 className="text-2xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold tracking-tight leading-[1.08] mb-4" variants={fadeUp}>
               Stop Paying Credit Card Fees.{" "}
               <span className="text-primary">Keep Every Dollar.</span>
             </motion.h1>
 
-            <motion.p className="text-sm sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto leading-relaxed" variants={fadeUp}>
+            <motion.p className="text-sm sm:text-lg lg:text-xl text-muted-foreground mb-5 max-w-xl lg:max-w-2xl mx-auto leading-relaxed" variants={fadeUp}>
               Hawaii businesses save <span className="text-foreground font-semibold">$500–$3,000+ every month</span> with our compliant cash discount program. No contracts. No processing fees. Free equipment.
             </motion.p>
 
@@ -61,20 +61,20 @@ function HeroSection() {
             <motion.div className="flex items-center justify-center gap-2 mb-6" variants={fadeUp}>
               <div className="flex">
                 {[1,2,3,4,5].map(i => (
-                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  <Star key={i} className="w-4 h-4 lg:w-5 lg:h-5 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              <span className="text-sm text-muted-foreground">4.9/5 from Hawaii business owners</span>
+              <span className="text-sm lg:text-base text-muted-foreground">4.9/5 from Hawaii business owners</span>
             </motion.div>
 
             <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-5" variants={fadeUp}>
-              <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto" asChild>
+              <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto lg:text-lg lg:px-10" asChild>
                 <a href="/statement-review">
                   See How Much You're Losing — Free
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </Button>
-              <Button variant="outline" size="lg" className="text-base px-6 py-6 w-full sm:w-auto" asChild>
+              <Button variant="outline" size="lg" className="text-base px-6 py-6 w-full sm:w-auto lg:text-lg lg:px-8" asChild>
                 <a href="tel:8087675460">
                   <Phone className="w-4 h-4" />
                   (808) 767-5460
@@ -83,7 +83,7 @@ function HeroSection() {
             </motion.div>
 
             {/* Trust line */}
-            <motion.p className="text-xs text-muted-foreground" variants={fadeUp}>
+            <motion.p className="text-xs lg:text-sm text-muted-foreground" variants={fadeUp}>
               ✓ 100% legal  ·  ✓ Setup in 3–7 days  ·  ✓ Cancel anytime  ·  ✓ Locally owned in Honolulu
             </motion.p>
           </motion.div>
@@ -99,11 +99,11 @@ function HeroSection() {
 
 function HowItWorks() {
   return (
-    <section className="py-14 sm:py-24 relative">
+    <section className="py-14 sm:py-24 lg:py-32 relative">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
           <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
-            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-2">
+            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-2">
               How TechSavvy Hawai'i Works
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground">Three simple steps. No complicated process. No long wait times.</p>
@@ -427,12 +427,12 @@ function SavingsCalculator() {
   const fmt = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
   return (
-    <section className="py-16 sm:py-24 relative" id="calculator">
+    <section className="py-16 sm:py-24 lg:py-32 relative" id="calculator">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-card/50 via-transparent to-card/50" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
           <motion.div className="text-center mb-10" variants={fadeUp}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-3">
               How much are you <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">throwing away</span> every month?
             </h2>
             <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
@@ -524,7 +524,7 @@ function SavingsCalculator() {
 
 function CompareSection() {
   return (
-    <section className="py-16 sm:py-24 relative bg-foreground text-background">
+    <section className="py-16 sm:py-24 lg:py-32 relative bg-foreground text-background">
       {/* Wave top */}
       <div className="absolute top-0 left-0 right-0 overflow-hidden leading-none">
         <svg viewBox="0 0 1200 60" preserveAspectRatio="none" className="w-full h-8 sm:h-12">
@@ -540,7 +540,7 @@ function CompareSection() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
           <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 text-background">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-3 text-background">
               Why local businesses are switching.
             </h2>
           </motion.div>
@@ -592,19 +592,19 @@ function CompareSection() {
 
 function WhoWeWorkWith() {
   return (
-    <section className="py-16 sm:py-24 relative">
+    <section className="py-16 sm:py-24 lg:py-32 relative">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-card/50 via-transparent to-card/50" />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
           <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-3">
               If you accept credit cards, we can save you money.
             </h2>
             <p className="text-muted-foreground text-sm sm:text-lg max-w-xl mx-auto">
               We work with all types of Hawaii businesses — from food trucks to medical offices.
             </p>
           </motion.div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
             {[
               { name: "Restaurants & Bars", link: "/industries/restaurants" },
               { name: "Food Trucks", link: null },
@@ -649,11 +649,11 @@ function WhoWeWorkWith() {
 
 function TrustSection() {
   return (
-    <section className="py-16 sm:py-24 relative">
+    <section className="py-16 sm:py-24 lg:py-32 relative">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-5">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight mb-5">
               Built for Hawai'i.{" "}
               <span className="text-primary">Run by Hawai'i.</span>
             </h2>
@@ -736,11 +736,11 @@ function LocalTrustBadges() {
 
 function TestimonialSection() {
   return (
-    <section className="py-10 sm:py-14 relative">
+    <section className="py-10 sm:py-14 lg:py-20 relative">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-card/50 via-transparent to-card/50" />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6">
             {[
               { name: "Restaurant Owner", loc: "Waikiki", quote: "Switched in a week. Saving over $1,200/mo now." },
               { name: "Nail Salon Owner", loc: "Kailua", quote: "Free terminal, easy setup, real savings every month." },
@@ -748,14 +748,14 @@ function TestimonialSection() {
             ].map((t, i) => (
               <motion.div key={i} variants={fadeUp}>
                 <Card className="border-border/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-0.5 mb-2">
+                  <CardContent className="p-4 lg:p-6">
+                    <div className="flex items-center gap-0.5 mb-2 lg:mb-3">
                       {Array.from({ length: 5 }).map((_, j) => (
-                        <Star key={j} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        <Star key={j} className="w-3 h-3 lg:w-4 lg:h-4 fill-amber-400 text-amber-400" />
                       ))}
                     </div>
-                    <p className="text-xs text-foreground/90 leading-relaxed mb-2">"{t.quote}"</p>
-                    <div className="text-xs font-semibold text-foreground">{t.name} <span className="font-normal text-muted-foreground">— {t.loc}</span></div>
+                    <p className="text-xs lg:text-sm text-foreground/90 leading-relaxed mb-2 lg:mb-3">"{t.quote}"</p>
+                    <div className="text-xs lg:text-sm font-semibold text-foreground">{t.name} <span className="font-normal text-muted-foreground">— {t.loc}</span></div>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -781,11 +781,11 @@ function FAQSection() {
   ];
 
   return (
-    <section className="py-16 sm:py-24 relative">
+    <section className="py-16 sm:py-24 lg:py-32 relative">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
           <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
               Questions you're probably thinking.
             </h2>
           </motion.div>
