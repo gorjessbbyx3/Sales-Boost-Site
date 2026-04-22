@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // kept for potential sub-component use
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -860,27 +860,25 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         {/* Main content */}
         <main className={`flex-1 min-w-0 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-0" : "lg:ml-0"}`}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-            <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsContent value="overview"><OverviewTab setActiveTab={handleTabChange} /></TabsContent>
-              <TabsContent value="leads"><LeadsTab /></TabsContent>
-              <TabsContent value="follow-up"><FollowUpTab /></TabsContent>
-              <TabsContent value="deals"><DealsTab /></TabsContent>
-              <TabsContent value="inbox"><InboxTab /></TabsContent>
-              <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>
-              <TabsContent value="analytics"><AnalyticsTab /></TabsContent>
-              <TabsContent value="plan"><PlanTab /></TabsContent>
-              <TabsContent value="clients"><ClientsTab /></TabsContent>
-              <TabsContent value="projects"><ProjectsTab /></TabsContent>
-              <TabsContent value="finances"><FinancesTab /></TabsContent>
-              <TabsContent value="tasks"><TasksTab /></TabsContent>
-              <TabsContent value="autopilot"><AutopilotTab /></TabsContent>
-              <TabsContent value="ai-tools"><AiToolsTab /></TabsContent>
-              <TabsContent value="marketing-studio"><MarketingStudioTab /></TabsContent>
-              <TabsContent value="files"><FilesManagerTab /></TabsContent>
-              <TabsContent value="equipment"><EquipmentTab /></TabsContent>
-              <TabsContent value="partners"><PartnersTab /></TabsContent>
-              <TabsContent value="settings"><SettingsTab /></TabsContent>
-            </Tabs>
+            {activeTab === "overview" && <OverviewTab setActiveTab={handleTabChange} />}
+            {activeTab === "leads" && <LeadsTab />}
+            {activeTab === "follow-up" && <FollowUpTab />}
+            {activeTab === "deals" && <DealsTab />}
+            {activeTab === "inbox" && <InboxTab />}
+            {activeTab === "playbooks" && <PlaybooksTab />}
+            {activeTab === "analytics" && <AnalyticsTab />}
+            {activeTab === "plan" && <PlanTab />}
+            {activeTab === "clients" && <ClientsTab />}
+            {activeTab === "projects" && <ProjectsTab />}
+            {activeTab === "finances" && <FinancesTab />}
+            {activeTab === "tasks" && <TasksTab />}
+            {activeTab === "autopilot" && <AutopilotTab />}
+            {activeTab === "ai-tools" && <AiToolsTab />}
+            {activeTab === "marketing-studio" && <MarketingStudioTab />}
+            {activeTab === "files" && <FilesManagerTab />}
+            {activeTab === "equipment" && <EquipmentTab />}
+            {activeTab === "partners" && <PartnersTab />}
+            {activeTab === "settings" && <SettingsTab />}
           </div>
         </main>
       </div>
@@ -2641,9 +2639,9 @@ function ClientsTab() {
   const [search, setSearch] = useState("");
   const { toast } = useToast();
 
-  const createMutation = useMutation({ mutationFn: async (data: Partial<Client>) => { const res = await apiRequest("POST", "/api/clients", data); return res.json(); }, onSuccess: () => { refetch(); toast({ title: "Client added" }); setShowForm(false); setEditingClient(null); } });
-  const updateMutation = useMutation({ mutationFn: async ({ id, ...data }: Partial<Client> & { id: string }) => { const res = await apiRequest("PATCH", `/api/clients/${id}`, data); return res.json(); }, onSuccess: () => { refetch(); toast({ title: "Client updated" }); setShowForm(false); setEditingClient(null); } });
-  const deleteMutation = useMutation({ mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/clients/${id}`); }, onSuccess: () => { refetch(); toast({ title: "Client removed" }); } });
+  const createMutation = useMutation({ mutationFn: async (data: Partial<Client>) => { const res = await apiRequest("POST", "/api/clients", data); return res.json(); }, onSuccess: () => { refetch(); toast({ title: "Client added" }); setShowForm(false); setEditingClient(null); }, onError: () => { toast({ title: "Failed to add client", variant: "destructive" }); } });
+  const updateMutation = useMutation({ mutationFn: async ({ id, ...data }: Partial<Client> & { id: string }) => { const res = await apiRequest("PATCH", `/api/clients/${id}`, data); return res.json(); }, onSuccess: () => { refetch(); toast({ title: "Client updated" }); setShowForm(false); setEditingClient(null); }, onError: () => { toast({ title: "Failed to update client", variant: "destructive" }); } });
+  const deleteMutation = useMutation({ mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/clients/${id}`); }, onSuccess: () => { refetch(); toast({ title: "Client removed" }); }, onError: () => { toast({ title: "Failed to remove client", variant: "destructive" }); } });
 
   const filtered = useMemo(() => clients.filter((c) => !search || [c.name, c.business, c.email].some((f) => f.toLowerCase().includes(search.toLowerCase()))).sort((a, b) => a.business.localeCompare(b.business)), [clients, search]);
   const handleSave = (form: Partial<Client>) => { if (editingClient) updateMutation.mutate({ ...form, id: editingClient.id } as Client & { id: string }); else createMutation.mutate(form); };
@@ -2665,8 +2663,8 @@ function ClientsTab() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="font-semibold text-sm">{client.business || client.name}</span>
-                  <Badge variant="outline" className={`text-[10px] ${PACKAGE_CONFIG[client.package].color}`}>{PACKAGE_CONFIG[client.package].label}</Badge>
-                  {client.maintenance !== "none" && <Badge variant="outline" className="text-[10px] text-primary">{MAINTENANCE_CONFIG[client.maintenance].label} — {MAINTENANCE_CONFIG[client.maintenance].price}</Badge>}
+                  <Badge variant="outline" className={`text-[10px] ${PACKAGE_CONFIG[client.package as PackageType]?.color || ""}`}>{PACKAGE_CONFIG[client.package as PackageType]?.label || client.package}</Badge>
+                  {client.maintenance !== "none" && <Badge variant="outline" className="text-[10px] text-primary">{MAINTENANCE_CONFIG[client.maintenance as MaintenancePlan]?.label} — {MAINTENANCE_CONFIG[client.maintenance as MaintenancePlan]?.price}</Badge>}
                 </div>
                 {client.business && client.name && <p className="text-xs text-muted-foreground">{client.name}</p>}
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
