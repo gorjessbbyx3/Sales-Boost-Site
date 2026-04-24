@@ -38,7 +38,7 @@ import UsersTab from "./admin/UsersTab";
 import AutopilotTab from "./admin/AutopilotTab";
 import PartnersTab from "./admin/PartnersTab";
 import FollowUpTab from "./admin/FollowUpTab";
-import ProjectsTab from "./admin/ProjectsTab";
+import SocialCalendarTab from "./admin/SocialCalendarTab";
 import OutreachMapTab from "./admin/OutreachMapTab";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -748,7 +748,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       { value: "follow-up", icon: ArrowRight, label: "Follow-Up" },
       { value: "clients", icon: Users, label: "Clients" },
       { value: "outreach", icon: MapPin, label: "Outreach Map" },
-      { value: "projects", icon: FolderKanban, label: "Projects" },
+      { value: "social", icon: Calendar, label: "Social Calendar" },
       { value: "inbox", icon: Mail, label: "Inbox" },
     ]},
     { label: "STRATEGY", tabs: [
@@ -866,7 +866,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             {activeTab === "analytics" && <AnalyticsTab />}
             {activeTab === "clients" && <ClientsTab />}
             {activeTab === "outreach" && <OutreachMapTab />}
-            {activeTab === "projects" && <ProjectsTab />}
+            {activeTab === "social" && <SocialCalendarTab />}
             {activeTab === "finances" && <FinancesTab />}
             {activeTab === "tasks" && <TasksTab />}
             {activeTab === "autopilot" && <AutopilotTab />}

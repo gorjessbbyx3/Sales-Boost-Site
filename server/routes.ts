@@ -4994,6 +4994,174 @@ Return ONLY valid JSON, no other text.`,
     }
   });
 
+  // ─── Social Media Calendar ─────────────────────────────────────────
+
+  app.get("/api/social-posts", requireAdminSession, async (_req: Request, res: Response) => {
+    try {
+      const posts = await db.select().from(schema.socialPosts).orderBy(schema.socialPosts.scheduledDate, schema.socialPosts.scheduledTime);
+      return res.json(posts);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/social-posts", requireAdminSession, async (req: Request, res: Response) => {
+    try {
+      const { platform, scheduledDate, scheduledTime, title, contentIdea, caption, hashtags,
+              visualPrompt, visualUrl, callToAction, status, notes } = req.body;
+      if (!scheduledDate) return res.status(400).json({ error: "scheduledDate required" });
+      const VALID_PLATFORMS = ["instagram", "facebook", "both"];
+      const VALID_STATUSES = ["idea", "draft", "scheduled", "published"];
+      const safePlatform = VALID_PLATFORMS.includes(platform) ? platform : "both";
+      const safeStatus = VALID_STATUSES.includes(status) ? status : "idea";
+      const [created] = await db.insert(schema.socialPosts).values({
+        platform: safePlatform,
+        scheduledDate,
+        scheduledTime: scheduledTime || "09:00",
+        title: title || "",
+        contentIdea: contentIdea || "",
+        caption: caption || "",
+        hashtags: hashtags || "",
+        visualPrompt: visualPrompt || "",
+        visualUrl: visualUrl || "",
+        callToAction: callToAction || "",
+        status: safeStatus,
+        notes: notes || "",
+      }).returning();
+      return res.json(created);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.patch("/api/social-posts/:id", requireAdminSession, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id as string);
+      const VALID_PLATFORMS = ["instagram", "facebook", "both"];
+      const VALID_STATUSES = ["idea", "draft", "scheduled", "published"];
+      const allowed = ["platform","scheduledDate","scheduledTime","title","contentIdea","caption",
+                       "hashtags","visualPrompt","visualUrl","callToAction","status","notes"];
+      const updateData: Record<string, any> = { updatedAt: new Date() };
+      for (const k of allowed) {
+        if (req.body[k] === undefined) continue;
+        if (k === "platform" && !VALID_PLATFORMS.includes(req.body[k])) continue;
+        if (k === "status" && !VALID_STATUSES.includes(req.body[k])) continue;
+        updateData[k] = req.body[k];
+      }
+      const [updated] = await db.update(schema.socialPosts).set(updateData)
+        .where(eq(schema.socialPosts.id, id)).returning();
+      return res.json(updated);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/social-posts/:id", requireAdminSession, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id as string);
+      await db.delete(schema.socialPosts).where(eq(schema.socialPosts.id, id));
+      return res.json({ ok: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Generate a month's worth of post ideas via the Cloudflare Worker AI,
+  // then persist them as `idea` status drafts.
+  app.post("/api/social-posts/generate-ideas", requireAdminSession, async (req: Request, res: Response) => {
+    try {
+      const { month, count: rawCount = 8, startDate, themes } = req.body;
+      const count = Math.max(1, Math.min(20, parseInt(String(rawCount)) || 8)); // clamp 1-20
+      if (!startDate) return res.status(400).json({ error: "startDate required" });
+
+      const workerUrl = process.env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (process.env.WORKER_KEY) headers["X-Worker-Key"] = process.env.WORKER_KEY;
+
+      const r = await fetch(`${workerUrl}/social-ideas`, {
+        method: "POST", headers,
+        body: JSON.stringify({ month, count, startDate, themes }),
+      });
+      if (!r.ok) {
+        const txt = await r.text();
+        return res.status(502).json({ error: "Worker AI error", detail: txt.slice(0, 300) });
+      }
+      const data = await r.json() as { ideas?: any[]; error?: string };
+      if (!data.ideas?.length) return res.status(500).json({ error: data.error || "No ideas returned" });
+
+      const inserted: any[] = [];
+      for (const idea of data.ideas) {
+        try {
+          const [created] = await db.insert(schema.socialPosts).values({
+            platform: idea.platform || "both",
+            scheduledDate: idea.scheduledDate || startDate,
+            scheduledTime: idea.scheduledTime || "09:00",
+            title: idea.title || "",
+            contentIdea: idea.contentIdea || "",
+            caption: idea.caption || "",
+            hashtags: idea.hashtags || "",
+            visualPrompt: idea.visualPrompt || "",
+            callToAction: idea.callToAction || "",
+            status: "idea",
+            notes: "",
+            visualUrl: "",
+          }).returning();
+          inserted.push(created);
+        } catch (insertErr) {
+          // Skip malformed entries but keep going
+        }
+      }
+
+      return res.json({ ideas: inserted });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Generate ONE detailed image-gen prompt for a post (live preview, not persisted).
+  app.post("/api/social-posts/generate-visual-prompt", requireAdminSession, async (req: Request, res: Response) => {
+    try {
+      const workerUrl = process.env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (process.env.WORKER_KEY) headers["X-Worker-Key"] = process.env.WORKER_KEY;
+
+      const r = await fetch(`${workerUrl}/social-visual-prompt`, {
+        method: "POST", headers,
+        body: JSON.stringify(req.body),
+      });
+      if (!r.ok) {
+        const txt = await r.text();
+        return res.status(502).json({ error: "Worker AI error", detail: txt.slice(0, 300) });
+      }
+      const data = await r.json();
+      return res.json(data);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Refine / generate caption + hashtags + CTA from a brief.
+  app.post("/api/social-posts/generate-caption", requireAdminSession, async (req: Request, res: Response) => {
+    try {
+      const workerUrl = process.env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (process.env.WORKER_KEY) headers["X-Worker-Key"] = process.env.WORKER_KEY;
+
+      const r = await fetch(`${workerUrl}/social-caption`, {
+        method: "POST", headers,
+        body: JSON.stringify(req.body),
+      });
+      if (!r.ok) {
+        const txt = await r.text();
+        return res.status(502).json({ error: "Worker AI error", detail: txt.slice(0, 300) });
+      }
+      const data = await r.json();
+      return res.json(data);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // Start autopilot if enabled on server boot
   (async () => {
     try {

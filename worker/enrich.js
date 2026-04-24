@@ -27,6 +27,7 @@ import { handleEnrich, handleExtractStatement } from "./handlers/leads.js";
 import { handlePitch, handleObjection, handleScore, handleEmail, handleSms, handleRecommend } from "./handlers/sales.js";
 import { handleSummarize, handleQuiz, handleRoleplay, handleClassify, handleChat } from "./handlers/content.js";
 import { handleAnalyzeStatement } from "./handlers/statement.js";
+import { handleSocialIdeas, handleSocialVisualPrompt, handleSocialCaption } from "./handlers/social.js";
 
 // ---------------------------------------------------------------------------
 // Router
@@ -65,6 +66,9 @@ export default {
           "POST /analyze-statement",
           "POST /recommend",
           "POST /chat",
+          "POST /social-ideas",
+          "POST /social-visual-prompt",
+          "POST /social-caption",
         ],
       }, 200, allowedOrigin);
     }
@@ -102,6 +106,9 @@ export default {
       "/analyze-statement": handleAnalyzeStatement,
       "/recommend": handleRecommend,
       "/chat": handleChat,
+      "/social-ideas": handleSocialIdeas,
+      "/social-visual-prompt": handleSocialVisualPrompt,
+      "/social-caption": handleSocialCaption,
     };
 
     // Legacy: POST to / still runs enrich for backward compat

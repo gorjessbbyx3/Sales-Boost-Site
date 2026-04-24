@@ -676,3 +676,24 @@ export const outreachBusinesses = pgTable("outreach_businesses", {
 });
 
 export type OutreachBusiness = typeof outreachBusinesses.$inferSelect;
+
+// ─── Social Media Calendar ─────────────────────────────────────────────
+export const socialPosts = pgTable("social_posts", {
+  id: serial("id").primaryKey(),
+  platform: text("platform").notNull().default("both"),         // "instagram" | "facebook" | "both"
+  scheduledDate: text("scheduled_date").notNull(),              // YYYY-MM-DD
+  scheduledTime: text("scheduled_time").notNull().default("09:00"), // HH:MM
+  title: text("title").notNull().default(""),
+  contentIdea: text("content_idea").notNull().default(""),      // The brief / concept
+  caption: text("caption").notNull().default(""),               // The actual post copy
+  hashtags: text("hashtags").notNull().default(""),
+  visualPrompt: text("visual_prompt").notNull().default(""),    // Image-gen prompt
+  visualUrl: text("visual_url").notNull().default(""),          // Optional uploaded/generated image
+  callToAction: text("call_to_action").notNull().default(""),
+  status: text("status").notNull().default("idea"),             // "idea" | "draft" | "scheduled" | "published"
+  notes: text("notes").notNull().default(""),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type SocialPost = typeof socialPosts.$inferSelect;
