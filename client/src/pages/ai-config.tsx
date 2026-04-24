@@ -42,6 +42,7 @@ import PartnersTab from "./admin/PartnersTab";
 import FollowUpTab from "./admin/FollowUpTab";
 import MarketingStudioTab from "./admin/MarketingStudioTab";
 import ProjectsTab from "./admin/ProjectsTab";
+import OutreachMapTab from "./admin/OutreachMapTab";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -750,6 +751,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       { value: "follow-up", icon: ArrowRight, label: "Follow-Up" },
       { value: "deals", icon: DollarSign, label: "Deals" },
       { value: "clients", icon: Users, label: "Clients" },
+      { value: "outreach", icon: MapPin, label: "Outreach Map" },
       { value: "projects", icon: FolderKanban, label: "Projects" },
       { value: "inbox", icon: Mail, label: "Inbox" },
     ]},
@@ -872,6 +874,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             {activeTab === "analytics" && <AnalyticsTab />}
             {activeTab === "plan" && <PlanTab />}
             {activeTab === "clients" && <ClientsTab />}
+            {activeTab === "outreach" && <OutreachMapTab />}
             {activeTab === "projects" && <ProjectsTab />}
             {activeTab === "finances" && <FinancesTab />}
             {activeTab === "tasks" && <TasksTab />}

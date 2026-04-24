@@ -4877,6 +4877,55 @@ Return ONLY valid JSON, no other text.`,
     }
   });
 
+  // ─── Outreach Businesses ──────────────────────────────────────────────
+  app.get("/api/outreach-businesses", requireAdminSession, async (_req: Request, res: Response) => {
+    try {
+      const existing = await db.select({ id: schema.outreachBusinesses.id }).from(schema.outreachBusinesses).limit(1);
+      if (existing.length === 0) {
+        const { OUTREACH_SEED } = await import("./outreach-seed.js");
+        const rows = OUTREACH_SEED.map(b => ({
+          name: b.name,
+          address: b.address,
+          category: b.category,
+          type: b.type,
+          phone: b.phone,
+          rating: b.rating,
+          status: "not_contacted",
+          notes: "",
+        }));
+        for (let i = 0; i < rows.length; i += 50) {
+          await db.insert(schema.outreachBusinesses).values(rows.slice(i, i + 50));
+        }
+      }
+      const businesses = await db.select().from(schema.outreachBusinesses).orderBy(schema.outreachBusinesses.category, schema.outreachBusinesses.name);
+      return res.json(businesses);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.patch("/api/outreach-businesses/:id", requireAdminSession, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id as string);
+      const { status, notes } = req.body;
+      const updateData: Record<string, any> = {};
+      if (status !== undefined) {
+        updateData.status = status;
+        if (status === "visited" || status === "converted") {
+          updateData.visitedAt = new Date();
+        }
+      }
+      if (notes !== undefined) updateData.notes = notes;
+      const [updated] = await db.update(schema.outreachBusinesses)
+        .set(updateData)
+        .where(eq(schema.outreachBusinesses.id, id))
+        .returning();
+      return res.json(updated);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // Start autopilot if enabled on server boot
   (async () => {
     try {

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, integer, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, integer, timestamp, real, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -656,3 +656,20 @@ export type Opportunity = typeof opportunities.$inferSelect;
 export type UserAccount = typeof userAccounts.$inferSelect;
 export type LeadActivityRecord = typeof leadActivities.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
+
+// ─── Outreach Map ─────────────────────────────────────────────────────
+export const outreachBusinesses = pgTable("outreach_businesses", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  address: text("address").notNull(),
+  category: text("category").notNull().default(""),
+  type: text("type").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  rating: real("rating"),
+  status: text("status").notNull().default("not_contacted"),
+  notes: text("notes").notNull().default(""),
+  visitedAt: timestamp("visited_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type OutreachBusiness = typeof outreachBusinesses.$inferSelect;
