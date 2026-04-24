@@ -67,6 +67,7 @@ function MainRouter() {
           <Route path="/our-work" component={OurWorkPage} />
           <Route path="/services" component={ServicesPage} />
           <Route path="/packages" component={PackagesPage} />
+          <Route path="/admin" component={AiConfigPage} />
           <Route path="/industries/:industry" component={IndustryPage} />
           <Route path="/locations/:island" component={IslandPage} />
           <Route component={NotFound} />
