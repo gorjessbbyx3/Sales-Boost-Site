@@ -47,7 +47,7 @@ import ProjectsTab from "./admin/ProjectsTab";
 
 type PipelineStage = "new" | "contacted" | "qualified" | "discovery-call" | "statement-requested" | "statement-received" | "analysis-delivered" | "proposal-sent" | "negotiation" | "won" | "lost" | "nurture";
 type LeadSource = "referral" | "networking" | "social" | "direct" | "lead-magnet" | "prospecting";
-type PackageType = "terminal" | "trial" | "online" | "combo" | "starter" | "growth" | "full-stack";
+type PackageType = "terminal" | "trial" | "online" | "combo" | "starter" | "growth" | "full-stack" | "payment-processing" | "website-crm";
 type MaintenancePlan = "none" | "basic" | "pro" | "premium";
 type Vertical = "restaurant" | "retail" | "salon" | "auto" | "medical" | "cbd" | "vape" | "firearms" | "ecommerce" | "services" | "other";
 
@@ -480,6 +480,9 @@ const PACKAGE_CONFIG: Record<PackageType, { label: string; color: string }> = {
   starter:      { label: "Starter Package", color: "text-sky-400" },
   growth:       { label: "Growth Package", color: "text-violet-400" },
   "full-stack": { label: "Full Stack Package", color: "text-orange-400" },
+  // ── Legacy / Direct ──
+  "payment-processing": { label: "Payment Processing", color: "text-emerald-400" },
+  "website-crm":        { label: "Website + CRM", color: "text-cyan-400" },
 };
 
 const MAINTENANCE_CONFIG: Record<MaintenancePlan, { label: string; price: string }> = {
@@ -1867,6 +1870,8 @@ function LeadFormDialog({ open, onClose, onSave, lead, teamMembers = [] }: { ope
                   <SelectItem value="trial">30-Day Trial</SelectItem>
                   <SelectItem value="online">Online (Free)</SelectItem>
                   <SelectItem value="combo">Combo Bundle</SelectItem>
+                  <SelectItem value="payment-processing">Payment Processing</SelectItem>
+                  <SelectItem value="website-crm">Website + CRM</SelectItem>
                 </SelectContent></Select>
             </div>
             <div className="space-y-1.5"><Label className="text-xs">Pipeline Stage</Label>
@@ -2798,6 +2803,7 @@ function ClientFormDialog({ open, onClose, onSave, client }: { open: boolean; on
               <div className="space-y-1.5"><Label className="text-xs">Package</Label><Select value={form.package || "starter"} onValueChange={(v) => set("package", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 <SelectItem value="starter">Starter Package</SelectItem><SelectItem value="growth">Growth Package</SelectItem><SelectItem value="full-stack">Full Stack Package</SelectItem>
                 <SelectItem value="terminal">Terminal — Payments Only ($399)</SelectItem><SelectItem value="trial">30-Day Trial</SelectItem><SelectItem value="online">Online (Free)</SelectItem><SelectItem value="combo">Combo Bundle</SelectItem>
+                <SelectItem value="payment-processing">Payment Processing</SelectItem><SelectItem value="website-crm">Website + CRM</SelectItem>
               </SelectContent></Select></div>
               <div className="space-y-1.5"><Label className="text-xs">Maintenance</Label><Select value={form.maintenance || "none"} onValueChange={(v) => set("maintenance", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem><SelectItem value="basic">Basic ($50/mo)</SelectItem><SelectItem value="pro">Pro ($199/mo)</SelectItem><SelectItem value="premium">Premium ($399/mo)</SelectItem></SelectContent></Select></div>
             </div>
