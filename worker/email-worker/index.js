@@ -101,15 +101,17 @@ export default {
 
     console.log(`📧 Inbound email from: ${from} | Subject: ${subject}`);
 
-    // Parse email body
+    // Parse email body + attachments
     let textBody = "";
     let htmlBody = "";
+    let attachments = [];
     try {
       const rawEmail = await new Response(message.raw).arrayBuffer();
       const parser = new PostalMime();
       const parsed = await parser.parse(rawEmail);
       textBody = parsed.text || "";
       htmlBody = parsed.html || "";
+      attachments = Array.isArray(parsed.attachments) ? parsed.attachments : [];
     } catch (err) {
       console.error("Failed to parse email body:", err);
     }
@@ -184,6 +186,67 @@ export default {
         ).run();
 
         console.log(`💾 → ${folder}: thread ${threadId}`);
+
+        // Attachments — upload each to R2 + insert email_attachments row.
+        // Guardrails: size cap, count cap, and a blocklist of executable types.
+        // These limits prevent abuse / unbounded R2 spend from hostile inbound mail.
+        const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;     // per attachment (~25MB)
+        const MAX_TOTAL_BYTES = 50 * 1024 * 1024;          // per email
+        const MAX_ATTACHMENT_COUNT = 20;                   // per email
+        const BLOCKED_EXTENSIONS = new Set([
+          "exe","scr","bat","com","cmd","vbs","vbe","js","jse","wsf","wsh",
+          "msi","dll","ps1","cpl","jar","lnk","reg","hta","sct","msc",
+        ]);
+        if (attachments.length > 0 && env.FILES_BUCKET) {
+          const publicBase = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+          let total = 0;
+          let saved = 0;
+          for (const att of attachments) {
+            if (saved >= MAX_ATTACHMENT_COUNT) {
+              console.warn(`⚠️ skipping attachment "${att.filename}" — count cap reached`);
+              continue;
+            }
+            try {
+              const rawName = att.filename || "attachment";
+              const ext = (rawName.split(".").pop() || "").toLowerCase();
+              if (BLOCKED_EXTENSIONS.has(ext)) {
+                console.warn(`⛔ skipping attachment "${rawName}" — blocked extension .${ext}`);
+                continue;
+              }
+              const safeName = rawName.replace(/[^\w.\-]/g, "_").slice(0, 120);
+              const buf = att.content instanceof Uint8Array ? att.content : new Uint8Array(att.content || []);
+              if (buf.length === 0) {
+                console.warn(`⚠️ skipping empty attachment "${rawName}"`);
+                continue;
+              }
+              if (buf.length > MAX_ATTACHMENT_BYTES) {
+                console.warn(`⛔ skipping attachment "${rawName}" — ${buf.length} bytes exceeds per-file cap`);
+                continue;
+              }
+              if (total + buf.length > MAX_TOTAL_BYTES) {
+                console.warn(`⛔ skipping attachment "${rawName}" — would exceed per-email total cap`);
+                continue;
+              }
+              total += buf.length;
+
+              const attId = crypto.randomUUID();
+              const r2Key = `email-attachments/${threadId}/${attId}-${safeName}`;
+              const contentType = att.mimeType || "application/octet-stream";
+              await env.FILES_BUCKET.put(r2Key, buf, { httpMetadata: { contentType } });
+              const url = `${publicBase}/${r2Key}`;
+              await env.DB.prepare(`
+                INSERT INTO email_attachments (id, message_id, thread_id, filename, content_type, size, r2_key, url, direction, signed_of, saved_to_files, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'inbound', '', 0, ?)
+              `).bind(attId, messageId, threadId, safeName, contentType, buf.length, r2Key, url, now).run();
+              saved++;
+              console.log(`📎 Saved attachment ${safeName} (${buf.length} bytes) → ${r2Key}`);
+            } catch (attErr) {
+              console.error("Failed to save attachment:", att.filename, attErr);
+            }
+          }
+        } else if (attachments.length > 0) {
+          console.warn(`⚠️ ${attachments.length} attachment(s) ignored — FILES_BUCKET binding missing`);
+        }
 
         // Create lead if new_lead
         if (classification.intent === "new_lead") {

@@ -51,6 +51,32 @@ function err(message: string, status = 400) {
   return json({ error: message }, status);
 }
 
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let s = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    s += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)) as any);
+  }
+  return btoa(s);
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const clean = b64.replace(/^data:[^;]+;base64,/, "");
+  const bin = atob(clean);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
@@ -220,6 +246,49 @@ async function getSessionUser(db: D1Database, request: Request): Promise<{ id: s
     if (!user) return { id: "admin", username: "admin", email: "contact@techsavvyhawaii.com", displayName: "Admin", role: "admin" };
     return { id: user.id as string, username: (user.username as string) || "", email: user.email as string, displayName: user.display_name as string, role: user.role as string };
   } catch { return null; }
+}
+
+// True if the current session may view threads belonging to `emailAccount`
+// (matches the same per-mailbox ACL used by /api/email/threads/:id).
+// Empty / null email_account is treated as global (any admin can see it).
+async function userCanAccessEmailAccount(db: D1Database, request: Request, emailAccount: string | null | undefined): Promise<boolean> {
+  if (!(await isAuthenticated(db, request))) return false;
+  if (!emailAccount) return true;
+  const sessionUser = await getSessionUser(db, request);
+  const userId = sessionUser?.id || "";
+  try {
+    const acctAccess = await db.prepare(
+      "SELECT id FROM email_accounts WHERE address = ? AND (owner_id = '' OR owner_id = ?)"
+    ).bind(emailAccount, userId).first();
+    return !!acctAccess;
+  } catch { return false; }
+}
+
+// Verify a user's session can act on a given attachment id. Joins to the
+// thread AND enforces per-mailbox account scope (same model as thread detail).
+// Returns the attachment row (with `email_account` carried over from the thread)
+// when allowed, or null otherwise.
+async function authorizeAttachment(db: D1Database, request: Request, attachmentId: string): Promise<Record<string, any> | null> {
+  if (!attachmentId) return null;
+  if (!(await isAuthenticated(db, request))) return null;
+  try {
+    const row: any = await db.prepare(
+      `SELECT a.*, t.id AS t_id, t.email_account AS t_email_account
+         FROM email_attachments a
+         JOIN email_threads t ON t.id = a.thread_id
+        WHERE a.id = ?`
+    ).bind(attachmentId).first();
+    if (!row || !row.t_id) return null;
+    if (!(await userCanAccessEmailAccount(db, request, row.t_email_account as string))) return null;
+    return row;
+  } catch { return null; }
+}
+
+// Strip optional "data:<mime>;base64," prefix some clients prepend.
+function stripDataUrlPrefix(b64: string): string {
+  if (!b64) return b64;
+  const m = b64.match(/^data:[^;,]+(?:;[^,]+)?,(.*)$/);
+  return m ? m[1] : b64;
 }
 
 function setSessionCookie(token: string): string {
@@ -1817,11 +1886,29 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
 
       const { results: messages } = await env.DB.prepare("SELECT * FROM email_messages WHERE thread_id = ? ORDER BY sent_at ASC").bind(id).all();
+
+      // Fetch all attachments for this thread in one query, then group by message_id
+      let attachmentsByMsg: Record<string, any[]> = {};
+      try {
+        const { results: atts } = await env.DB.prepare(
+          "SELECT * FROM email_attachments WHERE thread_id = ? ORDER BY created_at ASC"
+        ).bind(id).all();
+        for (const a of (atts || [])) {
+          const mid = a.message_id as string;
+          if (!attachmentsByMsg[mid]) attachmentsByMsg[mid] = [];
+          attachmentsByMsg[mid].push(mapAttachment(a));
+        }
+      } catch (e) { /* table may not exist yet pre-migration */ }
+
       // Mark as read
       if (thread.unread) {
         await env.DB.prepare("UPDATE email_threads SET unread = 0 WHERE id = ?").bind(id).run();
       }
-      return json({ ...mapThread(thread), messages: messages.map(mapMessage) });
+      const messagesWithAtts = messages.map((m: any) => ({
+        ...mapMessage(m),
+        attachments: attachmentsByMsg[m.id as string] || [],
+      }));
+      return json({ ...mapThread(thread), messages: messagesWithAtts });
     }
 
     // DELETE /api/email/threads/:id
@@ -1994,6 +2081,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (path === "/api/email/send" && method === "POST") {
       const body: any = await request.json();
       const { to, subject, html, text, threadId, fromAlias } = body;
+      // attachments: [{ filename, contentType, contentBase64 }] OR [{ filename, url }] OR [{ attachmentId }] (re-send existing R2 file)
+      const inAttachments: any[] = Array.isArray(body.attachments) ? body.attachments : [];
       if (!to || !subject || !html) return err("to, subject, and html are required");
 
       const apiKey = env.RESEND_API_KEY;
@@ -2019,6 +2108,56 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         fromName = sessionUser.displayName || fromName;
       }
 
+      // Resolve attachments → Resend's [{ filename, content (base64) }] format.
+      // We only record the linked / re-sent attachments AFTER they've been
+      // successfully prepared, so DB linkage never claims something was sent
+      // when R2 was unreachable.
+      const resendAttachments: any[] = [];
+      const newAttachmentRecords: Array<{ filename: string; contentType: string; size: number; bytes: Uint8Array }> = [];
+      const reusedAttachmentRows: any[] = [];
+      const SEND_TOTAL_LIMIT = 25 * 1024 * 1024;
+      let sendTotal = 0;
+      for (const a of inAttachments) {
+        try {
+          if (a.attachmentId) {
+            const row = await authorizeAttachment(env.DB, request, a.attachmentId);
+            if (!row) continue;
+            if (!env.FILES_BUCKET) continue;
+            const obj = await env.FILES_BUCKET.get(row.r2_key as string);
+            if (!obj) continue;
+            const buf = new Uint8Array(await obj.arrayBuffer());
+            if (sendTotal + buf.length > SEND_TOTAL_LIMIT) continue;
+            sendTotal += buf.length;
+            resendAttachments.push({
+              filename: row.filename,
+              content: bytesToBase64(buf),
+              content_type: row.content_type,
+            });
+            reusedAttachmentRows.push(row);
+          } else if (a.contentBase64) {
+            // New upload from compose dialog — strip optional data: prefix
+            const cleanB64 = stripDataUrlPrefix(String(a.contentBase64));
+            const buf = base64ToBytes(cleanB64);
+            if (sendTotal + buf.length > SEND_TOTAL_LIMIT) continue;
+            sendTotal += buf.length;
+            resendAttachments.push({
+              filename: a.filename || "attachment",
+              content: cleanB64,
+              content_type: a.contentType || "application/octet-stream",
+            });
+            newAttachmentRecords.push({
+              filename: a.filename || "attachment",
+              contentType: a.contentType || "application/octet-stream",
+              size: buf.length,
+              bytes: buf,
+            });
+          }
+          // Note: dropped the "{ filename, url }" pass-through path — we no longer
+          // hand external URLs to Resend, since our own attachment URLs are
+          // auth-gated and would not work for Resend's fetcher.
+        } catch (e) { console.error("Attachment prep failed:", e); }
+      }
+
       // Send via Resend API
       const resendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -2029,6 +2168,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           subject,
           html,
           text: text || undefined,
+          ...(resendAttachments.length > 0 ? { attachments: resendAttachments } : {}),
         }),
       });
 
@@ -2042,7 +2182,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       const msgId = genId();
       const ts = now();
 
-      // Create or update thread
+      // Create or update thread. When the caller targets an existing thread,
+      // verify they have access to that thread's mailbox so they can't reply
+      // into someone else's mailbox.
       let tid = threadId;
       if (!tid) {
         tid = genId();
@@ -2050,6 +2192,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at, email_account) VALUES (?, ?, '', ?, ?, 'direct', 'open', 0, ?, ?, ?)"
         ).bind(tid, subject, to, to, ts, ts, fromEmail).run();
       } else {
+        const existingThread: any = await env.DB.prepare("SELECT email_account FROM email_threads WHERE id = ?").bind(tid).first();
+        if (!existingThread) return err("Thread not found", 404);
+        if (!(await userCanAccessEmailAccount(env.DB, request, existingThread.email_account as string))) {
+          return err("Access denied", 403);
+        }
         await env.DB.prepare("UPDATE email_threads SET last_message_at = ?, status = 'replied' WHERE id = ?").bind(ts, tid).run();
       }
 
@@ -2057,6 +2204,32 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       await env.DB.prepare(
         "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'outbound', ?, ?, ?, ?, ?, ?, ?, 'sent', ?)"
       ).bind(msgId, tid, fromEmail, fromName, to, subject, text || "", html, resendData.id || "", ts).run();
+
+      // Persist new attachments to R2 + DB so they appear in the thread
+      if (newAttachmentRecords.length > 0 && env.FILES_BUCKET) {
+        const publicBase = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+        for (const rec of newAttachmentRecords) {
+          try {
+            const safeName = rec.filename.replace(/[^\w.\-]/g, "_").slice(0, 120);
+            const attId = genId();
+            const r2Key = `email-attachments/${tid}/${attId}-${safeName}`;
+            await env.FILES_BUCKET.put(r2Key, rec.bytes, { httpMetadata: { contentType: rec.contentType } });
+            const url = `${publicBase}/${r2Key}`;
+            await env.DB.prepare(
+              "INSERT INTO email_attachments (id, message_id, thread_id, filename, content_type, size, r2_key, url, direction, signed_of, saved_to_files, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'outbound', '', 0, ?)"
+            ).bind(attId, msgId, tid, safeName, rec.contentType, rec.size, r2Key, url, ts).run();
+          } catch (e) { console.error("Outbound attachment R2 save failed:", e); }
+        }
+      }
+
+      // Link only the re-sent attachments that were actually transmitted to Resend.
+      for (const row of reusedAttachmentRows) {
+        try {
+          await env.DB.prepare(
+            "INSERT INTO email_attachments (id, message_id, thread_id, filename, content_type, size, r2_key, url, direction, signed_of, saved_to_files, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'outbound', '', 0, ?)"
+          ).bind(genId(), msgId, tid, row.filename, row.content_type, row.size, row.r2_key, row.url, ts).run();
+        } catch (e) { console.error("Outbound link attachment failed:", e); }
+      }
 
       return json({ success: true, threadId: tid, messageId: msgId });
     }
@@ -4748,10 +4921,250 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       path === "/api/outreach-businesses" ||
       path.startsWith("/api/outreach-businesses/") ||
       path === "/api/social-posts" ||
-      path.startsWith("/api/social-posts/");
+      path.startsWith("/api/social-posts/") ||
+      path.startsWith("/api/email/attachments/") ||
+      /^\/api\/email\/messages\/[^/]+\/forward$/.test(path);
 
     if (needsAdmin && !(await isAuthenticated(env.DB, request))) {
       return err("Unauthorized", 401);
+    }
+
+    // ─── EMAIL ATTACHMENTS & FORWARD ─────────────────────────────────────
+
+    // GET /api/email/attachments/:id/download — authenticated proxy.
+    // We never expose the raw R2 public URL to the browser; this endpoint
+    // streams the bytes after re-checking session + ownership on every hit.
+    {
+      const m = path.match(/^\/api\/email\/attachments\/([^/]+)\/download$/);
+      if (m && method === "GET") {
+        const aid = m[1];
+        const row = await authorizeAttachment(env.DB, request, aid);
+        if (!row) return err("Not found", 404);
+        if (!env.FILES_BUCKET) return err("R2 not configured", 500);
+        const obj = await env.FILES_BUCKET.get(row.r2_key as string);
+        if (!obj) return err("File missing", 404);
+        const u = new URL(request.url);
+        const wantsDownload = u.searchParams.get("dl") === "1";
+        const safeName = String(row.filename || "attachment").replace(/[^\w. \-()]/g, "_");
+        const disp = `${wantsDownload ? "attachment" : "inline"}; filename="${safeName}"`;
+        return new Response(obj.body, {
+          headers: {
+            "Content-Type": String(row.content_type || "application/octet-stream"),
+            "Content-Disposition": disp,
+            "Cache-Control": "private, no-store",
+          },
+        });
+      }
+    }
+
+    // POST /api/email/messages/:id/forward
+    {
+      const m = path.match(/^\/api\/email\/messages\/([^/]+)\/forward$/);
+      if (m && method === "POST") {
+        const msgId = m[1];
+        const body: any = await request.json();
+        const { to, note } = body;
+        const includeAttachmentIds: string[] = Array.isArray(body.includeAttachmentIds) ? body.includeAttachmentIds : [];
+        if (!to) return err("Recipient (to) is required");
+
+        const apiKey = env.RESEND_API_KEY;
+        if (!apiKey) return err("RESEND_API_KEY not configured", 500);
+
+        const msg: any = await env.DB.prepare("SELECT * FROM email_messages WHERE id = ?").bind(msgId).first();
+        if (!msg) return err("Message not found", 404);
+        const thread: any = await env.DB.prepare("SELECT * FROM email_threads WHERE id = ?").bind(msg.thread_id).first();
+
+        // Per-mailbox ACL: requester must have access to the source thread's mailbox.
+        if (!(await userCanAccessEmailAccount(env.DB, request, thread?.email_account))) {
+          return err("Access denied", 403);
+        }
+
+        // Determine from
+        let fromEmail = "contact@techsavvyhawaii.com";
+        let fromName = "TechSavvy Hawaii";
+        const sessionUser = await getSessionUser(env.DB, request);
+        if (sessionUser && sessionUser.email && sessionUser.email.includes("@techsavvyhawaii.com")) {
+          fromEmail = sessionUser.email;
+          fromName = sessionUser.displayName || fromName;
+        } else if (thread && thread.email_account) {
+          fromEmail = thread.email_account as string;
+        }
+
+        // Build forwarded body
+        const fwdSubject = msg.subject?.toString().toLowerCase().startsWith("fwd:") ? msg.subject : `Fwd: ${msg.subject || "(no subject)"}`;
+        const noteHtml = note ? `<p>${String(note).replace(/\n/g, "<br/>")}</p><hr/>` : "";
+        const headerHtml = `<p style="color:#6b7280;font-size:13px;margin:0 0 8px;">---------- Forwarded message ----------<br/>
+<b>From:</b> ${escapeHtml(msg.from_name || "")} &lt;${escapeHtml(msg.from_email || "")}&gt;<br/>
+<b>Date:</b> ${escapeHtml(msg.sent_at || "")}<br/>
+<b>Subject:</b> ${escapeHtml(msg.subject || "")}<br/>
+<b>To:</b> ${escapeHtml(msg.to_email || "")}</p>`;
+        const originalHtml = msg.html_body || `<pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(msg.body || "")}</pre>`;
+        const finalHtml = `${noteHtml}${headerHtml}<div>${originalHtml}</div>`;
+
+        // Attach selected attachments from R2 — but only the ones that actually
+        // belong to this message's thread, and only after we've successfully
+        // pulled the bytes from R2. We track the *sent* rows separately so we
+        // never insert a DB linkage for an attachment that wasn't transmitted.
+        const resendAttachments: any[] = [];
+        const sentAttachmentRows: any[] = [];
+        const FORWARD_TOTAL_LIMIT = 25 * 1024 * 1024; // Resend hard limit ≈25MB total
+        let totalBytes = 0;
+        if (includeAttachmentIds.length > 0) {
+          for (const aid of includeAttachmentIds) {
+            const row = await authorizeAttachment(env.DB, request, aid);
+            if (!row) continue;
+            if (row.thread_id !== msg.thread_id) continue; // must belong to this thread
+            if (!env.FILES_BUCKET) continue;
+            const obj = await env.FILES_BUCKET.get(row.r2_key as string);
+            if (!obj) continue;
+            const buf = new Uint8Array(await obj.arrayBuffer());
+            if (totalBytes + buf.length > FORWARD_TOTAL_LIMIT) continue;
+            totalBytes += buf.length;
+            resendAttachments.push({
+              filename: row.filename,
+              content: bytesToBase64(buf),
+              content_type: row.content_type,
+            });
+            sentAttachmentRows.push(row);
+          }
+        }
+
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({
+            from: `${fromName} <${fromEmail}>`,
+            to: [to],
+            subject: fwdSubject,
+            html: finalHtml,
+            ...(resendAttachments.length > 0 ? { attachments: resendAttachments } : {}),
+          }),
+        });
+        if (!resendRes.ok) {
+          const errText = await resendRes.text();
+          console.error("Resend forward error:", errText);
+          return err("Failed to forward email", 500);
+        }
+        const resendData: any = await resendRes.json();
+        const ts = now();
+        const newMsgId = genId();
+        const tid = msg.thread_id as string;
+
+        await env.DB.prepare("UPDATE email_threads SET last_message_at = ?, status = 'forwarded' WHERE id = ?").bind(ts, tid).run();
+        await env.DB.prepare(
+          "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'outbound', ?, ?, ?, ?, ?, ?, ?, 'sent', ?)"
+        ).bind(newMsgId, tid, fromEmail, fromName, to, fwdSubject, note || "", finalHtml, resendData.id || "", ts).run();
+
+        // Only link the attachments we actually transmitted to Resend.
+        for (const row of sentAttachmentRows) {
+          try {
+            await env.DB.prepare(
+              "INSERT INTO email_attachments (id, message_id, thread_id, filename, content_type, size, r2_key, url, direction, signed_of, saved_to_files, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'outbound', '', 0, ?)"
+            ).bind(genId(), newMsgId, tid, row.filename, row.content_type, row.size, row.r2_key, row.url, ts).run();
+          } catch (e) { console.error("Forward attachment link failed:", e); }
+        }
+
+        return json({ success: true, messageId: newMsgId, threadId: tid });
+      }
+    }
+
+    // POST /api/email/attachments/:id/save-to-files
+    {
+      const m = path.match(/^\/api\/email\/attachments\/([^/]+)\/save-to-files$/);
+      if (m && method === "POST") {
+        const aid = m[1];
+        const body: any = await request.json().catch(() => ({}));
+        const folder: string = body.folder || "Email Attachments";
+
+        const row = await authorizeAttachment(env.DB, request, aid);
+        if (!row) return err("Attachment not found", 404);
+
+        const fileId = genId();
+        const fileType = (() => {
+          const ct = (row.content_type as string || "").toLowerCase();
+          if (ct.startsWith("image/")) return "image";
+          if (ct.includes("pdf")) return "pdf";
+          if (ct.startsWith("video/")) return "video";
+          if (ct.startsWith("audio/")) return "audio";
+          if (ct.includes("word") || ct.includes("document") || ct.includes("text")) return "document";
+          return "other";
+        })();
+
+        await env.DB.prepare(
+          "INSERT INTO admin_files (id, name, size, type, category, folder, uploaded_at, url) VALUES (?, ?, ?, ?, 'email', ?, ?, ?)"
+        ).bind(fileId, row.filename, row.size || 0, fileType, folder, now(), row.url).run();
+
+        await env.DB.prepare("UPDATE email_attachments SET saved_to_files = 1 WHERE id = ?").bind(aid).run();
+        return json({ success: true, fileId });
+      }
+    }
+
+    // POST /api/email/attachments/:id/save-to-client/:clientId
+    {
+      const m = path.match(/^\/api\/email\/attachments\/([^/]+)\/save-to-client\/([^/]+)$/);
+      if (m && method === "POST") {
+        const aid = m[1];
+        const clientId = m[2];
+
+        const row = await authorizeAttachment(env.DB, request, aid);
+        if (!row) return err("Attachment not found", 404);
+
+        const client: any = await env.DB.prepare("SELECT * FROM clients WHERE id = ?").bind(clientId).first();
+        if (!client) return err("Client not found", 404);
+
+        let assets: any[] = [];
+        try { assets = JSON.parse((client.client_assets as string) || "[]"); } catch { assets = []; }
+        if (!Array.isArray(assets)) assets = [];
+        assets.push({
+          id: genId(),
+          name: row.filename,
+          url: row.url,
+          contentType: row.content_type,
+          size: row.size || 0,
+          source: "email",
+          addedAt: now(),
+        });
+
+        await env.DB.prepare("UPDATE clients SET client_assets = ? WHERE id = ?").bind(JSON.stringify(assets), clientId).run();
+        return json({ success: true, assetsCount: assets.length });
+      }
+    }
+
+    // POST /api/email/attachments/:id/sign
+    // Body: { signedBase64: string }   (the client signs the PDF in-browser via pdf-lib and uploads the result)
+    {
+      const m = path.match(/^\/api\/email\/attachments\/([^/]+)\/sign$/);
+      if (m && method === "POST") {
+        const aid = m[1];
+        const body: any = await request.json();
+        const signedBase64Raw: string = body.signedBase64;
+        if (!signedBase64Raw) return err("signedBase64 is required");
+        if (!env.FILES_BUCKET) return err("R2 not configured", 500);
+
+        const orig = await authorizeAttachment(env.DB, request, aid);
+        if (!orig) return err("Attachment not found", 404);
+
+        const buf = base64ToBytes(stripDataUrlPrefix(signedBase64Raw));
+        const baseName = (orig.filename as string || "document.pdf").replace(/\.pdf$/i, "");
+        const safeName = `${baseName}-SIGNED.pdf`.replace(/[^\w.\-]/g, "_");
+        const newId = genId();
+        const r2Key = `email-attachments/${orig.thread_id}/${newId}-${safeName}`;
+        await env.FILES_BUCKET.put(r2Key, buf, { httpMetadata: { contentType: "application/pdf" } });
+        const publicBase = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+        const url = `${publicBase}/${r2Key}`;
+        const ts = now();
+        await env.DB.prepare(
+          "INSERT INTO email_attachments (id, message_id, thread_id, filename, content_type, size, r2_key, url, direction, signed_of, saved_to_files, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'outbound', ?, 0, ?)"
+        ).bind(newId, orig.message_id, orig.thread_id, safeName, "application/pdf", buf.length, r2Key, url, aid, ts).run();
+
+        // Also save to admin_files in "Signed Documents"
+        const fileId = genId();
+        await env.DB.prepare(
+          "INSERT INTO admin_files (id, name, size, type, category, folder, uploaded_at, url) VALUES (?, ?, ?, 'pdf', 'signed', 'Signed Documents', ?, ?)"
+        ).bind(fileId, safeName, buf.length, ts, url).run();
+
+        return json({ success: true, attachmentId: newId, fileId, url });
+      }
     }
 
     // ─── OUTREACH MAP BUSINESSES ─────────────────────────────────────────
@@ -5156,6 +5569,24 @@ function mapMessage(row: Record<string, unknown>) {
     status: row.status,
     sentAt: row.sent_at,
     aiTags: (() => { try { return JSON.parse(row.ai_tags as string || "[]"); } catch { return []; } })(),
+  };
+}
+
+function mapAttachment(row: Record<string, unknown>) {
+  // Always serve attachments through the authenticated proxy — never leak the raw
+  // public R2 URL to the client (it would be accessible without an admin session).
+  return {
+    id: row.id,
+    messageId: row.message_id,
+    threadId: row.thread_id,
+    filename: row.filename,
+    contentType: row.content_type,
+    size: Number(row.size || 0),
+    url: `/api/email/attachments/${row.id}/download`,
+    direction: row.direction || "inbound",
+    signedOf: row.signed_of || "",
+    savedToFiles: !!row.saved_to_files,
+    createdAt: row.created_at,
   };
 }
 

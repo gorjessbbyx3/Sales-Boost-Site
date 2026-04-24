@@ -101,3 +101,15 @@ script/           → Build scripts
 - **Chat Widget**: Floating chatbot bubble on landing page (only visible when AI is enabled via config)
 - **API Routes**: `GET /api/ai-config`, `PATCH /api/ai-config`, `POST /api/chat`
 - **Business Context**: The AI knows about λechSavvy's payment processing, free websites (for payment processor customers only), premium website packages, and custom software solutions
+### Email Inbox: Attachments, Forward, Sign (Apr 2026)
+- Inbound Cloudflare email worker (`worker/email-worker/`, `tight-fog-5031`) extracts ALL attachment types via PostalMime, uploads each to R2 `FILES_BUCKET` (`techsavvy-assets`), and writes an `email_attachments` row. Inbound is capped at 25MB/file, 50MB/email, 20 attachments, with executable extensions (exe/bat/scr/etc) blocked.
+- D1 schema additions in `migrations/0023_email_attachments.sql`: `email_attachments` table + `clients.client_assets` JSON column.
+- Pages Function (`functions/api/[[route]].ts`) endpoints (all admin + per-mailbox ACL):
+  - `GET /api/email/attachments/:id/download` — auth-gated proxy stream from R2 (never exposes raw R2 URL to the browser; use `?dl=1` to force download).
+  - `POST /api/email/messages/:id/forward` — forwards via Resend with optional original attachments.
+  - `POST /api/email/attachments/:id/save-to-files` — copies into `admin_files`.
+  - `POST /api/email/attachments/:id/save-to-client/:clientId` — appends to `clients.client_assets`.
+  - `POST /api/email/attachments/:id/sign` — accepts a signed PDF (base64), uploads to R2, registers as new attachment + admin file in "Signed Documents".
+- Frontend (`client/src/components/inbox/EmailAttachments.tsx`) renders chips with view/download/save-to-files/save-to-client/sign actions and a Forward dialog. Client-side PDF signing uses `pdf-lib` + a signature canvas pad.
+- All auth-gated attachment endpoints go through `authorizeAttachment()` which joins to the thread and enforces the same per-mailbox account ACL used by `GET /api/email/threads/:id`.
+- DEPLOY NOTE: the Pages Function deploys via the existing GitHub Actions workflow. The Cloudflare email worker is separate and must be deployed manually after edits: `cd worker/email-worker && npx wrangler deploy`.

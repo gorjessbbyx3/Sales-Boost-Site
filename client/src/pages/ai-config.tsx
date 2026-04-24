@@ -40,6 +40,7 @@ import PartnersTab from "./admin/PartnersTab";
 import FollowUpTab from "./admin/FollowUpTab";
 import SocialCalendarTab from "./admin/SocialCalendarTab";
 import OutreachMapTab from "./admin/OutreachMapTab";
+import { EmailAttachmentList, ForwardDialog, type EmailAttachment } from "@/components/inbox/EmailAttachments";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -377,6 +378,7 @@ interface EmailMessage {
   status: string;
   sentAt: string;
   aiTags?: string[];
+  attachments?: EmailAttachment[];
 }
 
 interface EmailStats {
@@ -5984,6 +5986,9 @@ function InboxTab() {
   // Reply state
   const [replyBody, setReplyBody] = useState("");
 
+  // Forward state — store the message being forwarded
+  const [forwardMsg, setForwardMsg] = useState<EmailMessage | null>(null);
+
   // Template state
   const { data: templates = [], refetch: refetchTemplates } = useQuery<OutreachTemplate[]>({ queryKey: ["/api/email/templates"] });
   const [showTemplates, setShowTemplates] = useState(false);
@@ -6379,10 +6384,34 @@ function InboxTab() {
                     <span>Recorded in finances</span>
                   </div>
                 )}
+
+                {/* Attachments */}
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <EmailAttachmentList attachments={msg.attachments} onSigned={refetchDetail} />
+                )}
+
+                {/* Forward action */}
+                <div className="mt-2 flex justify-end">
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground hover:text-foreground" onClick={() => setForwardMsg(msg)}>
+                    <ArrowUpRight className="w-3 h-3 mr-1" />Forward
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
+
+        {/* Forward dialog */}
+        {forwardMsg && (
+          <ForwardDialog
+            open={!!forwardMsg}
+            onOpenChange={(v) => { if (!v) setForwardMsg(null); }}
+            messageId={forwardMsg.id}
+            defaultSubject={forwardMsg.subject || threadDetail.subject || ""}
+            attachments={forwardMsg.attachments || []}
+            onForwarded={() => { setForwardMsg(null); refetchDetail(); refetchAll(); }}
+          />
+        )}
 
         <Card className="border-border/50">
           <CardContent className="p-4 space-y-3">

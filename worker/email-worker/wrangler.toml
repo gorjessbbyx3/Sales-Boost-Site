@@ -13,6 +13,15 @@ binding = "DB"
 database_name = "savvy-admin"
 database_id = "1bbb0cdc-f9c3-4043-baad-48f9a7caa16e"
 
+# ─── R2 Bucket (shared with main site — stores email attachments) ──
+[[r2_buckets]]
+binding = "FILES_BUCKET"
+bucket_name = "techsavvy-assets"
+
+# ─── Public R2 URL (for browser download/view links) ──────
+[vars]
+R2_PUBLIC_URL = "https://assets.techsavvyhawaii.com"
+
 # ─── Send Email Binding (for auto-replies) ────────────────
 # This lets the worker send emails FROM contact@techsavvyhawaii.com
 # Requires Email Routing enabled and a verified destination
