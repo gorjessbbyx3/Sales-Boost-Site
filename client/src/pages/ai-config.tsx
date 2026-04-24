@@ -33,14 +33,11 @@ import type { AiConfig } from "@shared/schema";
 import { PdfViewer, PdfThumbnail } from "@/components/pdf-viewer";
 import { useTheme } from "@/hooks/use-theme";
 import { useState, useEffect, useMemo, useRef } from "react";
-import DealsTab from "./admin/DealsTab";
 import ForecastTab from "./admin/ForecastTab";
 import UsersTab from "./admin/UsersTab";
 import AutopilotTab from "./admin/AutopilotTab";
-import EquipmentTab from "./admin/EquipmentTab";
 import PartnersTab from "./admin/PartnersTab";
 import FollowUpTab from "./admin/FollowUpTab";
-import MarketingStudioTab from "./admin/MarketingStudioTab";
 import ProjectsTab from "./admin/ProjectsTab";
 import OutreachMapTab from "./admin/OutreachMapTab";
 
@@ -749,7 +746,6 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { label: "SALES", tabs: [
       { value: "leads", icon: UserPlus, label: "Pipeline" },
       { value: "follow-up", icon: ArrowRight, label: "Follow-Up" },
-      { value: "deals", icon: DollarSign, label: "Deals" },
       { value: "clients", icon: Users, label: "Clients" },
       { value: "outreach", icon: MapPin, label: "Outreach Map" },
       { value: "projects", icon: FolderKanban, label: "Projects" },
@@ -758,15 +754,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { label: "STRATEGY", tabs: [
       { value: "playbooks", icon: BookOpen, label: "Playbooks" },
       { value: "analytics", icon: Target, label: "Analytics" },
-      { value: "plan", icon: Calendar, label: "90-Day Plan" },
       { value: "finances", icon: DollarSign, label: "Finances" },
     ]},
     { label: "AI & TOOLS", tabs: [
       { value: "autopilot", icon: Zap, label: "Autopilot" },
       { value: "ai-tools", icon: Sparkles, label: "AI Tools" },
-      { value: "marketing-studio", icon: Palette, label: "Marketing Studio" },
       { value: "files", icon: FolderOpen, label: "Files" },
-      { value: "equipment", icon: Monitor, label: "Equipment" },
       { value: "partners", icon: GraduationCap, label: "Partners" },
     ]},
     { label: "", tabs: [
@@ -868,11 +861,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             {activeTab === "overview" && <OverviewTab setActiveTab={handleTabChange} />}
             {activeTab === "leads" && <LeadsTab />}
             {activeTab === "follow-up" && <FollowUpTab />}
-            {activeTab === "deals" && <DealsTab />}
             {activeTab === "inbox" && <InboxTab />}
             {activeTab === "playbooks" && <PlaybooksTab />}
             {activeTab === "analytics" && <AnalyticsTab />}
-            {activeTab === "plan" && <PlanTab />}
             {activeTab === "clients" && <ClientsTab />}
             {activeTab === "outreach" && <OutreachMapTab />}
             {activeTab === "projects" && <ProjectsTab />}
@@ -880,9 +871,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             {activeTab === "tasks" && <TasksTab />}
             {activeTab === "autopilot" && <AutopilotTab />}
             {activeTab === "ai-tools" && <AiToolsTab />}
-            {activeTab === "marketing-studio" && <MarketingStudioTab />}
             {activeTab === "files" && <FilesManagerTab />}
-            {activeTab === "equipment" && <EquipmentTab />}
             {activeTab === "partners" && <PartnersTab />}
             {activeTab === "settings" && <SettingsTab />}
           </div>
@@ -1487,21 +1476,6 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
                 <div className="text-[9px] text-muted-foreground">Active Plans</div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* 90-Day Plan progress */}
-        <Card className="overflow-visible border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab("plan")}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-primary" />90-Day Plan</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex items-end gap-3 mb-3">
-              <div className="text-3xl font-extrabold tracking-tight">{b?.planProgress.percent || 0}%</div>
-              <p className="text-[10px] text-muted-foreground pb-1">{b?.planProgress.completed || 0} of {b?.planProgress.total || 0} done</p>
-            </div>
-            <Progress value={b?.planProgress.percent || 0} className="h-2.5" />
-            <p className="text-[10px] text-primary font-medium mt-3 text-right">View Plan →</p>
           </CardContent>
         </Card>
 
