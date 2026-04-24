@@ -85,6 +85,164 @@ function now() {
   return new Date().toISOString();
 }
 
+// ─── Lead ↔ Outreach bidirectional sync ──────────────────────────────
+// Only mirror leads from these sources onto the outreach map; partner referrals
+// and statement reviews stay pipeline-only. "lead-magnet" is the codebase
+// label for website contact-form submissions.
+const SYNCABLE_LEAD_SOURCES = new Set(["direct", "contact-form", "lead-magnet", "outreach", "outreach-reply"]);
+
+async function syncLeadToOutreach(env: Env, lead: Record<string, any>): Promise<number | null> {
+  if (!lead || !lead.business || !SYNCABLE_LEAD_SOURCES.has(lead.source)) return null;
+  const name = String(lead.business).trim();
+  const address = String(lead.address || "").trim();
+  const phone = String(lead.phone || "").trim();
+  const category = String(lead.vertical || "other");
+  const noteLine = `Synced from pipeline lead${lead.name ? ` — ${lead.name}` : ""}`;
+  const linked = lead.outreach_business_id
+    ? await env.DB.prepare("SELECT * FROM outreach_businesses WHERE id = ?").bind(lead.outreach_business_id).first()
+    : null;
+  if (linked) {
+    const sameAddr = String(linked.address || "") === address;
+    const changed = linked.name !== name || !sameAddr || String(linked.phone || "") !== phone || String(linked.category || "") !== category;
+    if (changed) {
+      const geocodeReset = sameAddr ? "" : ", geocoded = 0, lat = NULL, lng = NULL";
+      await env.DB.prepare(
+        `UPDATE outreach_businesses SET name = ?, address = ?, phone = ?, category = ?${geocodeReset} WHERE id = ?`
+      ).bind(name, address, phone, category, linked.id).run();
+    }
+    return Number(linked.id);
+  }
+  const result = await env.DB.prepare(
+    "INSERT INTO outreach_businesses (name, address, category, type, phone, status, notes, lead_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(name, address, category, "merchant", phone, "not_contacted", noteLine, lead.id).run();
+  const obId = (result as any).meta?.last_row_id;
+  if (obId) {
+    await env.DB.prepare("UPDATE leads SET outreach_business_id = ? WHERE id = ?").bind(obId, lead.id).run();
+  }
+  return obId || null;
+}
+
+async function syncOutreachToLead(env: Env, business: Record<string, any>): Promise<string | null> {
+  if (!business || !business.name) return null;
+  const businessName = String(business.name).trim();
+  const address = String(business.address || "").trim();
+  const phone = String(business.phone || "").trim();
+  const vertical = String(business.category || "other");
+  const linked = business.lead_id
+    ? await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(business.lead_id).first()
+    : null;
+  if (linked) {
+    const changed = linked.business !== businessName || String(linked.address || "") !== address || String(linked.phone || "") !== phone || String(linked.vertical || "") !== vertical;
+    if (changed) {
+      await env.DB.prepare(
+        "UPDATE leads SET business = ?, address = ?, phone = ?, vertical = ?, updated_at = ? WHERE id = ?"
+      ).bind(businessName, address, phone, vertical, now(), linked.id).run();
+    }
+    return String(linked.id);
+  }
+  const newId = genId();
+  const ts = now();
+  await env.DB.prepare(
+    "INSERT INTO leads (id, name, business, address, phone, email, decision_maker_name, decision_maker_role, best_contact_method, package, status, source, vertical, current_processor, current_equipment, monthly_volume, pain_points, next_step, next_step_date, attachments, notes, outreach_business_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(
+    newId, "", businessName, address, phone, "", "", "", "phone", "terminal",
+    "new", "outreach", vertical, "", "", "", "", "", "",
+    "[]", `Synced from outreach map\n${business.notes || ""}`.trim(),
+    business.id, ts, ts
+  ).run();
+  await env.DB.prepare("UPDATE outreach_businesses SET lead_id = ? WHERE id = ?").bind(newId, business.id).run();
+  return newId;
+}
+
+// ─── Lead enrichment via Anthropic web search + Nominatim ────────────
+function leadIsIncomplete(lead: Record<string, any>): boolean {
+  return !lead.address || !lead.phone || !lead.vertical || lead.vertical === "other" || !lead.business;
+}
+
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  if (!address) return null;
+  try {
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`, {
+      headers: { "User-Agent": "TechSavvyHawaii/1.0 (admin-crm)" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!resp.ok) return null;
+    const data: any[] = await resp.json();
+    if (!data.length) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch { return null; }
+}
+
+async function enrichLeadViaAnthropic(env: Env, lead: Record<string, any>): Promise<{ updates: Record<string, any>; confidence: string; sources: string[]; raw?: string } | null> {
+  if (!env.ANTHROPIC_API_KEY) return null;
+  const known = `Business name: ${lead.business || "(unknown)"}\nContact name: ${lead.name || "(unknown)"}\nAddress: ${lead.address || "(missing)"}\nPhone: ${lead.phone || "(missing)"}\nEmail: ${lead.email || "(missing)"}\nVertical: ${lead.vertical || "(missing)"}\nNotes: ${lead.notes || "(none)"}`;
+  const prompt = `You are enriching a sales lead for a Hawaii merchant services company. Use web search to verify and fill in missing information for this business in Hawaii.\n\nKnown info:\n${known}\n\nSEARCH STRATEGY (in priority order):\n1. Hawaii Business Express (https://hbe.ehawaii.gov) — official state business registry, best source for legal name + registered address.\n2. Google Maps / business website — best source for current physical address, phone, hours, decision-maker name.\n3. Yelp / industry directories — fallback for category/vertical.\n\nReturn ONLY a single JSON object (no prose, no markdown fences) with this exact shape:\n{\n  "business": "verified business name or empty string if unchanged",\n  "address": "full street address with city, state, zip — or empty if not found",\n  "phone": "phone in (808) XXX-XXXX format — or empty",\n  "vertical": "one of: restaurant, retail, salon, services, healthcare, automotive, construction, professional, hospitality, other — or empty",\n  "decisionMakerName": "owner / GM / decision-maker name — or empty",\n  "decisionMakerRole": "their role — or empty",\n  "confidence": "high | medium | low",\n  "sources": ["url1", "url2"]\n}\n\nOnly include fields you're confident about. Use empty string "" for unknowns. Do not invent data.`;
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 4 }],
+        messages: [{ role: "user", content: prompt }],
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (!resp.ok) return null;
+    const data: any = await resp.json();
+    const textBlock = (data.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+    if (!textBlock) return null;
+    const match = textBlock.match(/\{[\s\S]*\}/);
+    if (!match) return { updates: {}, confidence: "low", sources: [], raw: textBlock };
+    let parsed: any;
+    try { parsed = JSON.parse(match[0]); } catch { return { updates: {}, confidence: "low", sources: [], raw: textBlock }; }
+    const updates: Record<string, any> = {};
+    const fields = ["business", "address", "phone", "vertical", "decisionMakerName", "decisionMakerRole"];
+    for (const f of fields) {
+      const v = parsed[f];
+      if (typeof v === "string" && v.trim() && v !== lead[f] && v !== lead[f === "decisionMakerName" ? "decision_maker_name" : f === "decisionMakerRole" ? "decision_maker_role" : f]) {
+        updates[f] = v.trim();
+      }
+    }
+    return {
+      updates,
+      confidence: parsed.confidence || "low",
+      sources: Array.isArray(parsed.sources) ? parsed.sources.slice(0, 5) : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function applyEnrichmentToLead(env: Env, leadId: string, enrichment: { updates: Record<string, any> }, opts: { onlyMissing: boolean }): Promise<string[]> {
+  if (!enrichment || !enrichment.updates) return [];
+  const lead: any = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(leadId).first();
+  if (!lead) return [];
+  const map: Record<string, string> = {
+    business: "business", address: "address", phone: "phone", vertical: "vertical",
+    decisionMakerName: "decision_maker_name", decisionMakerRole: "decision_maker_role",
+  };
+  const sets: string[] = [];
+  const vals: any[] = [];
+  const applied: string[] = [];
+  for (const [k, dbCol] of Object.entries(map)) {
+    const v = enrichment.updates[k];
+    if (!v) continue;
+    const currentVal = lead[dbCol];
+    if (opts.onlyMissing && currentVal && String(currentVal).trim()) continue;
+    sets.push(`${dbCol} = ?`); vals.push(v); applied.push(k);
+  }
+  if (!sets.length) return [];
+  sets.push("updated_at = ?"); vals.push(now());
+  await env.DB.prepare(`UPDATE leads SET ${sets.join(", ")} WHERE id = ?`).bind(...vals, leadId).run();
+  return applied;
+}
+
 // ─── Branded Email Templates ────────────────────────────────────────
 
 const BRAND = { name: "Tech Savvy Hawaii", phone: "(808) 767-5460", email: "contact@techsavvyhawaii.com", url: "https://techsavvyhawaii.com" };
@@ -860,6 +1018,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         "INSERT INTO leads (id, name, business, phone, email, package, status, source, notes, attachments, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'new', 'lead-magnet', ?, '[]', ?, ?)"
       ).bind(id, body.name || "", body.business || "", body.phone || "", body.email || "", body.package || "terminal", body.notes || "", ts, ts).run();
 
+      // Mirror website contact-form lead onto the outreach map (source 'lead-magnet' is syncable)
+      try {
+        const newLead: any = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
+        if (newLead) await syncLeadToOutreach(env, newLead);
+      } catch (e) { console.error("public lead → outreach sync failed", e); }
+
       // Log to admin inbox
       try {
         const threadId = genId();
@@ -1484,8 +1648,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       await env.DB.prepare(
         "INSERT INTO leads (id, name, business, address, phone, email, decision_maker_name, decision_maker_role, best_contact_method, package, status, source, vertical, current_processor, current_equipment, monthly_volume, pain_points, next_step, next_step_date, attachments, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       ).bind(id, body.name || "", body.business || "", body.address || "", body.phone || "", body.email || "", body.decisionMakerName || "", body.decisionMakerRole || "", body.bestContactMethod || "phone", body.package || "terminal", body.status || "new", body.source || "direct", body.vertical || "other", body.currentProcessor || "", body.currentEquipment || "", body.monthlyVolume || "", body.painPoints || "", body.nextStep || "", body.nextStepDate || "", JSON.stringify(Array.isArray(body.attachments) ? body.attachments : []), body.notes || "", ts, ts).run();
-      const row = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
-      return json(mapLead(row!), 201);
+      const row: any = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
+      try { await syncLeadToOutreach(env, row); } catch (e) { console.error("syncLeadToOutreach failed", e); }
+      const refreshed = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
+      return json(mapLead(refreshed!), 201);
     }
 
     // PATCH /api/leads/:id
@@ -1516,14 +1682,21 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       if (updates.length > 1) {
         await env.DB.prepare(`UPDATE leads SET ${updates.join(", ")} WHERE id = ?`).bind(...values, id).run();
       }
-      const row = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
+      const row: any = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
       if (!row) return err("Lead not found", 404);
+      // Mirror to outreach_businesses if any sync field touched
+      const syncTriggers = ["business", "address", "phone", "vertical", "source"];
+      if (syncTriggers.some(k => body[k] !== undefined)) {
+        try { await syncLeadToOutreach(env, row); } catch (e) { console.error("syncLeadToOutreach failed", e); }
+      }
       return json(mapLead(row));
     }
 
     // DELETE /api/leads/:id
     if (leadPatchMatch && method === "DELETE") {
       const id = leadPatchMatch[1];
+      // Unlink the mirrored outreach business but keep it on the map (still a sales target)
+      try { await env.DB.prepare("UPDATE outreach_businesses SET lead_id = NULL WHERE lead_id = ?").bind(id).run(); } catch {}
       await env.DB.prepare("DELETE FROM leads WHERE id = ?").bind(id).run();
       return json({ success: true });
     }
@@ -5187,8 +5360,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         "not_contacted", body.notes || ""
       ).run();
       const id = (result as any).meta?.last_row_id;
-      const row = await env.DB.prepare("SELECT * FROM outreach_businesses WHERE id = ?").bind(id).first();
-      return json(row ? mapOutreachBusiness(row) : { id }, 201);
+      const row: any = await env.DB.prepare("SELECT * FROM outreach_businesses WHERE id = ?").bind(id).first();
+      try { if (row) await syncOutreachToLead(env, row); } catch (e) { console.error("syncOutreachToLead failed", e); }
+      const refreshed = await env.DB.prepare("SELECT * FROM outreach_businesses WHERE id = ?").bind(id).first();
+      return json(refreshed ? mapOutreachBusiness(refreshed) : { id }, 201);
     }
 
     if (path === "/api/outreach-businesses/geocode-next" && method === "POST") {
@@ -5257,15 +5432,107 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           `UPDATE outreach_businesses SET ${updates.join(", ")} WHERE id = ?`
         ).bind(...values, id).run();
       }
-      const row = await env.DB.prepare("SELECT * FROM outreach_businesses WHERE id = ?").bind(id).first();
+      const row: any = await env.DB.prepare("SELECT * FROM outreach_businesses WHERE id = ?").bind(id).first();
       if (!row) return err("Business not found", 404);
+      // Mirror to leads if a sync field was touched
+      const obSyncTriggers = ["name", "address", "phone", "category"];
+      if (obSyncTriggers.some(k => body[k] !== undefined)) {
+        try { await syncOutreachToLead(env, row); } catch (e) { console.error("syncOutreachToLead failed", e); }
+      }
       return json(mapOutreachBusiness(row));
     }
 
     if (obPatchMatch && method === "DELETE") {
       const id = parseInt(obPatchMatch[1]);
+      // Unlink the mirrored lead but keep it in the pipeline
+      try { await env.DB.prepare("UPDATE leads SET outreach_business_id = NULL WHERE outreach_business_id = ?").bind(id).run(); } catch {}
       await env.DB.prepare("DELETE FROM outreach_businesses WHERE id = ?").bind(id).run();
       return json({ ok: true });
+    }
+
+    // POST /api/admin/sync-leads-outreach — backfill links both ways for existing rows (admin-gated)
+    if (path === "/api/admin/sync-leads-outreach" && method === "POST") {
+      if (!(await isAuthenticated(env.DB, request))) return err("Unauthorized", 401);
+      let leadsLinked = 0; let businessesLinked = 0;
+      const { results: orphanLeads } = await env.DB.prepare(
+        "SELECT * FROM leads WHERE (outreach_business_id IS NULL OR outreach_business_id = 0) AND business != ''"
+      ).all();
+      for (const lead of (orphanLeads || []) as any[]) {
+        if (!SYNCABLE_LEAD_SOURCES.has(String(lead.source))) continue;
+        const obId = await syncLeadToOutreach(env, lead);
+        if (obId) leadsLinked++;
+      }
+      const { results: orphanBusinesses } = await env.DB.prepare(
+        "SELECT * FROM outreach_businesses WHERE (lead_id IS NULL OR lead_id = '') AND name != ''"
+      ).all();
+      for (const business of (orphanBusinesses || []) as any[]) {
+        const lid = await syncOutreachToLead(env, business);
+        if (lid) businessesLinked++;
+      }
+      return json({ leadsLinked, businessesLinked });
+    }
+
+    // POST /api/leads/:id/enrich — single-lead enrichment via Anthropic web search (admin-gated)
+    const enrichOneMatch = path.match(/^\/api\/leads\/([^/]+)\/enrich$/);
+    if (enrichOneMatch && method === "POST") {
+      if (!(await isAuthenticated(env.DB, request))) return err("Unauthorized", 401);
+      const id = enrichOneMatch[1];
+      const lead: any = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
+      if (!lead) return err("Lead not found", 404);
+      const enrichment = await enrichLeadViaAnthropic(env, lead);
+      if (!enrichment) return err("Enrichment failed (no Anthropic key or web search error)", 502);
+      // Apply only to fields that are currently empty
+      const applied = await applyEnrichmentToLead(env, id, enrichment, { onlyMissing: true });
+      // If we filled an address, geocode it for the map
+      if (applied.includes("address")) {
+        const updatedLead: any = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
+        if (updatedLead?.outreach_business_id) {
+          const coords = await geocodeAddress(updatedLead.address);
+          if (coords) {
+            await env.DB.prepare(
+              "UPDATE outreach_businesses SET lat = ?, lng = ?, geocoded = 1 WHERE id = ?"
+            ).bind(coords.lat, coords.lng, updatedLead.outreach_business_id).run();
+          }
+        }
+        // Re-mirror so outreach map gets new address
+        const refreshed: any = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
+        try { await syncLeadToOutreach(env, refreshed); } catch {}
+      }
+      const finalRow = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(id).first();
+      return json({
+        lead: mapLead(finalRow!),
+        enrichment: { applied, suggested: enrichment.updates, confidence: enrichment.confidence, sources: enrichment.sources },
+      });
+    }
+
+    // POST /api/admin/enrich-incomplete-leads — bulk enrichment, capped per call (admin-gated)
+    if (path === "/api/admin/enrich-incomplete-leads" && method === "POST") {
+      if (!(await isAuthenticated(env.DB, request))) return err("Unauthorized", 401);
+      const body: any = await request.json().catch(() => ({}));
+      const limit = Math.min(Math.max(parseInt(body.limit || "5"), 1), 10);
+      const { results } = await env.DB.prepare(
+        "SELECT * FROM leads WHERE (address = '' OR phone = '' OR vertical = '' OR vertical = 'other' OR business = '') ORDER BY created_at DESC LIMIT ?"
+      ).bind(limit).all();
+      const incomplete = (results || []) as any[];
+      const summary: Array<{ id: string; business: string; applied: string[]; confidence: string; ok: boolean }> = [];
+      for (const lead of incomplete) {
+        if (!leadIsIncomplete(lead)) continue;
+        const enrichment = await enrichLeadViaAnthropic(env, lead);
+        if (!enrichment) {
+          summary.push({ id: String(lead.id), business: String(lead.business || lead.name || ""), applied: [], confidence: "n/a", ok: false });
+          continue;
+        }
+        // Auto-apply only when high confidence; medium/low surface as suggestions only.
+        const applied = enrichment.confidence === "high"
+          ? await applyEnrichmentToLead(env, String(lead.id), enrichment, { onlyMissing: true })
+          : [];
+        if (applied.includes("address")) {
+          const refreshed: any = await env.DB.prepare("SELECT * FROM leads WHERE id = ?").bind(lead.id).first();
+          try { await syncLeadToOutreach(env, refreshed); } catch {}
+        }
+        summary.push({ id: String(lead.id), business: String(lead.business || lead.name || ""), applied, confidence: enrichment.confidence, ok: true });
+      }
+      return json({ processed: summary.length, summary });
     }
 
     // ─── SOCIAL MEDIA CALENDAR ───────────────────────────────────────────
@@ -5485,6 +5752,7 @@ function mapLead(row: Record<string, unknown>) {
     assignedTo: row.assigned_to || "",
     checklist: (() => { try { return JSON.parse(row.checklist as string || "[]"); } catch { return []; } })(),
     verified: (() => { try { return JSON.parse(row.verified as string || "{}"); } catch { return {}; } })(),
+    outreachBusinessId: row.outreach_business_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -5711,6 +5979,7 @@ function mapOutreachBusiness(row: Record<string, unknown>) {
     lng: row.lng,
     geocoded: !!row.geocoded,
     visitedAt: row.visited_at || null,
+    leadId: row.lead_id || null,
     createdAt: row.created_at,
   };
 }

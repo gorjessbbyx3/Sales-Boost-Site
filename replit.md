@@ -113,3 +113,16 @@ script/           → Build scripts
 - Frontend (`client/src/components/inbox/EmailAttachments.tsx`) renders chips with view/download/save-to-files/save-to-client/sign actions and a Forward dialog. Client-side PDF signing uses `pdf-lib` + a signature canvas pad.
 - All auth-gated attachment endpoints go through `authorizeAttachment()` which joins to the thread and enforces the same per-mailbox account ACL used by `GET /api/email/threads/:id`.
 - DEPLOY NOTE: the Pages Function deploys via the existing GitHub Actions workflow. The Cloudflare email worker is separate and must be deployed manually after edits: `cd worker/email-worker && npx wrangler deploy`.
+
+### Pipeline ↔ Outreach Map Sync + Lead Enrichment (Apr 2026)
+- D1 schema additions in `migrations/0024_lead_outreach_sync.sql`: `leads.outreach_business_id` (INTEGER) and `outreach_businesses.lead_id` (TEXT) with indexes.
+- Bidirectional sync helpers in `functions/api/[[route]].ts` (`syncLeadToOutreach` / `syncOutreachToLead`):
+  - Pipeline lead → outreach map mirror runs on POST/PATCH `/api/leads` and POST `/api/leads/public`. Only sources `direct`, `contact-form`, `lead-magnet`, `outreach`, `outreach-reply` are mirrored — partner referrals and statement reviews stay pipeline-only.
+  - Outreach business → pipeline lead mirror runs on POST/PATCH `/api/outreach-businesses` (new lead's source = `outreach`).
+  - DELETE on either side unlinks (sets the FK to NULL) instead of cascading — the counterpart row is preserved.
+  - Address edits invalidate the geocode (`geocoded=0, lat=NULL, lng=NULL`) so the geocoder will re-resolve.
+- Backfill endpoint `POST /api/admin/sync-leads-outreach` (admin-gated) walks orphan rows in both tables and creates the missing cross-links.
+- Enrichment endpoints (admin-gated, Anthropic web search tool `web_search_20250305` + Nominatim):
+  - `POST /api/leads/:id/enrich` — single-lead enrichment. Always applied to empty fields only; if address fills, the linked outreach business is re-geocoded.
+  - `POST /api/admin/enrich-incomplete-leads` (body `{ limit: 1-10 }`, default 5) — bulk. Only auto-applies HIGH-confidence updates to empty fields; medium/low surface as suggestions in the response.
+- UI in `client/src/pages/ai-config.tsx` LeadsTab: per-row purple Sparkles button on incomplete leads (Enrich), and toolbar buttons `Bulk Enrich (N)` + `Sync Map`.

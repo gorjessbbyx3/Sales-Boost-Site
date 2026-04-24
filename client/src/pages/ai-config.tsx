@@ -1587,7 +1587,41 @@ function LeadsTab() {
     },
   });
 
+  // Full enrichment via Anthropic web search + Hawaii Business Express + Nominatim
+  const enrichLeadMutation = useMutation({
+    mutationFn: async (leadId: string) => { const res = await apiRequest("POST", `/api/leads/${leadId}/enrich`, {}); return res.json(); },
+    onSuccess: (data) => {
+      refetch();
+      const applied: string[] = data.enrichment?.applied || [];
+      const conf = data.enrichment?.confidence || "low";
+      if (applied.length > 0) toast({ title: `Enriched (${conf} confidence)`, description: `Updated: ${applied.join(", ")}` });
+      else toast({ title: "Nothing to add", description: `Web search returned ${conf} confidence — no new fields applied.` });
+    },
+    onError: (err: Error) => { toast({ title: "Enrichment failed", description: err.message, variant: "destructive" }); },
+  });
+
+  const bulkEnrichMutation = useMutation({
+    mutationFn: async () => { const res = await apiRequest("POST", "/api/admin/enrich-incomplete-leads", { limit: 5 }); return res.json(); },
+    onSuccess: (data) => {
+      refetch();
+      const ok = (data.summary || []).filter((s: any) => s.applied?.length > 0).length;
+      toast({ title: `Bulk enrich: ${data.processed} processed`, description: `${ok} lead${ok === 1 ? "" : "s"} auto-updated. Re-run to process more.` });
+    },
+    onError: (err: Error) => { toast({ title: "Bulk enrich failed", description: err.message, variant: "destructive" }); },
+  });
+
+  const syncOutreachMutation = useMutation({
+    mutationFn: async () => { const res = await apiRequest("POST", "/api/admin/sync-leads-outreach", {}); return res.json(); },
+    onSuccess: (data) => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/outreach-businesses"] });
+      toast({ title: "Sync complete", description: `${data.leadsLinked} lead(s) → map, ${data.businessesLinked} map row(s) → pipeline` });
+    },
+    onError: (err: Error) => { toast({ title: "Sync failed", description: err.message, variant: "destructive" }); },
+  });
+
   const missingEmailCount = leads.filter(l => !l.email && (l.business || l.name)).length;
+  const incompleteCount = leads.filter(l => !l.address || !l.phone || !l.vertical || l.vertical === "other").length;
 
   return (
     <div className="space-y-4">
@@ -1602,6 +1636,14 @@ function LeadsTab() {
               <Mail className="w-3.5 h-3.5" />{enrichMutation.isPending ? "Finding Emails..." : `Find Emails (${missingEmailCount})`}
             </Button>
           )}
+          {incompleteCount > 0 && (
+            <Button size="sm" variant="outline" onClick={() => bulkEnrichMutation.mutate()} disabled={bulkEnrichMutation.isPending} title="Run web search to fill missing fields on the 5 most recent incomplete leads">
+              <Sparkles className="w-3.5 h-3.5" />{bulkEnrichMutation.isPending ? "Enriching..." : `Bulk Enrich (${incompleteCount})`}
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={() => syncOutreachMutation.mutate()} disabled={syncOutreachMutation.isPending} title="Backfill cross-links between pipeline leads and the outreach map">
+            <MapPin className="w-3.5 h-3.5" />{syncOutreachMutation.isPending ? "Syncing..." : "Sync Map"}
+          </Button>
           <Button size="sm" onClick={() => { setEditingLead(null); setShowForm(true); }}><Plus className="w-3.5 h-3.5" />Add Lead</Button>
         </div>
       </div>
@@ -1780,6 +1822,9 @@ function LeadsTab() {
                     )}
                     {!["won", "lost"].includes(lead.status) && (
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => convertMutation.mutate(lead)} title="Convert to client"><CheckCircle className="w-3.5 h-3.5" /></Button>
+                    )}
+                    {(!lead.address || !lead.phone || !lead.vertical || lead.vertical === "other") && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-purple-400" onClick={() => enrichLeadMutation.mutate(lead.id)} disabled={enrichLeadMutation.isPending && enrichLeadMutation.variables === lead.id} title="Enrich missing fields via web search"><Sparkles className="w-3.5 h-3.5" /></Button>
                     )}
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingLead(lead); setShowForm(true); }}><Edit3 className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(lead.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
