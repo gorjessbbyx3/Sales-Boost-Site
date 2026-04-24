@@ -29,6 +29,7 @@ const IslandPage = lazy(() => import("@/pages/island"));
 const OurWorkPage = lazy(() => import("@/pages/our-work"));
 const ServicesPage = lazy(() => import("@/pages/services"));
 const PackagesPage = lazy(() => import("@/pages/packages"));
+const MainlandPage = lazy(() => import("@/pages/mainland"));
 
 const hostname = window.location.hostname;
 const isAdminSubdomain = hostname.startsWith("admin.");
@@ -52,6 +53,7 @@ function MainRouter() {
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
         <Switch>
           <Route path="/" component={HawaiiPage} />
+          <Route path="/home" component={MainlandPage} />
           <Route path="/payment-processing" component={HomePage} />
           <Route path="/pricing" component={PricingPage} />
           <Route path="/how-it-works" component={HowItWorksPage} />
