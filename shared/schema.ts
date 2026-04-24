@@ -668,6 +668,9 @@ export const outreachBusinesses = pgTable("outreach_businesses", {
   rating: real("rating"),
   status: text("status").notNull().default("not_contacted"),
   notes: text("notes").notNull().default(""),
+  lat: real("lat"),
+  lng: real("lng"),
+  geocoded: boolean("geocoded").notNull().default(false),
   visitedAt: timestamp("visited_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });

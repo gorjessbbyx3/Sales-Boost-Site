@@ -4884,14 +4884,9 @@ Return ONLY valid JSON, no other text.`,
       if (existing.length === 0) {
         const { OUTREACH_SEED } = await import("./outreach-seed.js");
         const rows = OUTREACH_SEED.map(b => ({
-          name: b.name,
-          address: b.address,
-          category: b.category,
-          type: b.type,
-          phone: b.phone,
-          rating: b.rating,
-          status: "not_contacted",
-          notes: "",
+          name: b.name, address: b.address, category: b.category,
+          type: b.type, phone: b.phone, rating: b.rating,
+          status: "not_contacted", notes: "",
         }));
         for (let i = 0; i < rows.length; i += 50) {
           await db.insert(schema.outreachBusinesses).values(rows.slice(i, i + 50));
@@ -4904,23 +4899,96 @@ Return ONLY valid JSON, no other text.`,
     }
   });
 
+  // Geocode next ungeocoded business via Nominatim
+  app.post("/api/outreach-businesses/geocode-next", requireAdminSession, async (_req: Request, res: Response) => {
+    try {
+      const [business] = await db.select()
+        .from(schema.outreachBusinesses)
+        .where(eq(schema.outreachBusinesses.geocoded, false))
+        .limit(1);
+      if (!business) return res.json({ done: true, remaining: 0 });
+
+      const q = encodeURIComponent(business.address);
+      const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`;
+      let lat: number | null = null;
+      let lng: number | null = null;
+      try {
+        const resp = await fetch(url, {
+          headers: { "User-Agent": "TechSavvyHawaii/1.0 (internal-crm)" },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (resp.ok) {
+          const data: any[] = await resp.json();
+          if (data.length > 0) {
+            lat = parseFloat(data[0].lat);
+            lng = parseFloat(data[0].lon);
+          }
+        }
+      } catch { /* geocode failed – mark geocoded anyway to skip */ }
+
+      await db.update(schema.outreachBusinesses)
+        .set({ geocoded: true, lat: lat ?? undefined, lng: lng ?? undefined })
+        .where(eq(schema.outreachBusinesses.id, business.id));
+
+      const [{ remaining }] = await db.select({ remaining: sql<number>`count(*)::int` })
+        .from(schema.outreachBusinesses)
+        .where(eq(schema.outreachBusinesses.geocoded, false));
+
+      return res.json({ done: false, remaining, geocoded: { id: business.id, lat, lng } });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Create new business
+  app.post("/api/outreach-businesses", requireAdminSession, async (req: Request, res: Response) => {
+    try {
+      const { name, address, category, type, phone, rating, notes } = req.body;
+      const [created] = await db.insert(schema.outreachBusinesses).values({
+        name: name || "", address: address || "", category: category || "",
+        type: type || "", phone: phone || "",
+        rating: rating ? parseFloat(rating) : null,
+        notes: notes || "", status: "not_contacted",
+      }).returning();
+      return res.json(created);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update business (status, notes, or full edit)
   app.patch("/api/outreach-businesses/:id", requireAdminSession, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id as string);
-      const { status, notes } = req.body;
+      const { status, notes, name, address, category, type, phone, rating } = req.body;
       const updateData: Record<string, any> = {};
       if (status !== undefined) {
         updateData.status = status;
-        if (status === "visited" || status === "converted") {
-          updateData.visitedAt = new Date();
-        }
+        if (status === "visited" || status === "converted") updateData.visitedAt = new Date();
       }
       if (notes !== undefined) updateData.notes = notes;
+      if (name !== undefined) updateData.name = name;
+      if (address !== undefined) { updateData.address = address; updateData.geocoded = false; updateData.lat = null; updateData.lng = null; }
+      if (category !== undefined) updateData.category = category;
+      if (type !== undefined) updateData.type = type;
+      if (phone !== undefined) updateData.phone = phone;
+      if (rating !== undefined) updateData.rating = rating ? parseFloat(rating) : null;
       const [updated] = await db.update(schema.outreachBusinesses)
         .set(updateData)
         .where(eq(schema.outreachBusinesses.id, id))
         .returning();
       return res.json(updated);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Delete business
+  app.delete("/api/outreach-businesses/:id", requireAdminSession, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id as string);
+      await db.delete(schema.outreachBusinesses).where(eq(schema.outreachBusinesses.id, id));
+      return res.json({ ok: true });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
