@@ -4740,6 +4740,267 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json({ total: (total?.[0] as any)?.cnt || 0, byLink: results || [] });
     }
 
+    // ─── OUTREACH MAP + SOCIAL CALENDAR (admin-gated) ────────────────────
+    // All routes below require an authenticated admin session. We check once
+    // at the top to avoid repeating the guard on every handler.
+
+    const needsAdmin =
+      path === "/api/outreach-businesses" ||
+      path.startsWith("/api/outreach-businesses/") ||
+      path === "/api/social-posts" ||
+      path.startsWith("/api/social-posts/");
+
+    if (needsAdmin && !(await isAuthenticated(env.DB, request))) {
+      return err("Unauthorized", 401);
+    }
+
+    // ─── OUTREACH MAP BUSINESSES ─────────────────────────────────────────
+
+    if (path === "/api/outreach-businesses" && method === "GET") {
+      const { results } = await env.DB.prepare(
+        "SELECT * FROM outreach_businesses ORDER BY category, name"
+      ).all();
+      return json((results || []).map(mapOutreachBusiness));
+    }
+
+    if (path === "/api/outreach-businesses" && method === "POST") {
+      const body: any = await request.json();
+      const result = await env.DB.prepare(
+        "INSERT INTO outreach_businesses (name, address, category, type, phone, rating, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      ).bind(
+        body.name || "", body.address || "", body.category || "",
+        body.type || "", body.phone || "",
+        body.rating ? parseFloat(body.rating) : null,
+        "not_contacted", body.notes || ""
+      ).run();
+      const id = (result as any).meta?.last_row_id;
+      const row = await env.DB.prepare("SELECT * FROM outreach_businesses WHERE id = ?").bind(id).first();
+      return json(row ? mapOutreachBusiness(row) : { id }, 201);
+    }
+
+    if (path === "/api/outreach-businesses/geocode-next" && method === "POST") {
+      const business = await env.DB.prepare(
+        "SELECT * FROM outreach_businesses WHERE geocoded = 0 LIMIT 1"
+      ).first();
+      if (!business) return json({ done: true, remaining: 0 });
+
+      const q = encodeURIComponent(business.address as string);
+      const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`;
+      let lat: number | null = null;
+      let lng: number | null = null;
+      try {
+        const resp = await fetch(url, {
+          headers: { "User-Agent": "TechSavvyHawaii/1.0 (admin-crm)" },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (resp.ok) {
+          const data: any[] = await resp.json();
+          if (data.length > 0) {
+            lat = parseFloat(data[0].lat);
+            lng = parseFloat(data[0].lon);
+          }
+        }
+      } catch { /* mark geocoded anyway to avoid loop */ }
+
+      await env.DB.prepare(
+        "UPDATE outreach_businesses SET geocoded = 1, lat = ?, lng = ? WHERE id = ?"
+      ).bind(lat, lng, business.id).run();
+
+      const remainingRow = await env.DB.prepare(
+        "SELECT COUNT(*) as cnt FROM outreach_businesses WHERE geocoded = 0"
+      ).first();
+      const remaining = (remainingRow as any)?.cnt || 0;
+      return json({ done: false, remaining, geocoded: { id: business.id, lat, lng } });
+    }
+
+    const obPatchMatch = path.match(/^\/api\/outreach-businesses\/([^/]+)$/);
+    if (obPatchMatch && method === "PATCH") {
+      const id = parseInt(obPatchMatch[1]);
+      const body: any = await request.json();
+      const updates: string[] = [];
+      const values: any[] = [];
+      const fieldMap: Record<string, string> = {
+        status: "status", notes: "notes", name: "name", address: "address",
+        category: "category", type: "type", phone: "phone",
+      };
+      for (const [jsKey, dbCol] of Object.entries(fieldMap)) {
+        if (body[jsKey] !== undefined) { updates.push(`${dbCol} = ?`); values.push(body[jsKey]); }
+      }
+      if (body.rating !== undefined) {
+        updates.push("rating = ?");
+        values.push(body.rating ? parseFloat(body.rating) : null);
+      }
+      // Editing the address invalidates the geocode
+      if (body.address !== undefined) {
+        updates.push("geocoded = ?", "lat = ?", "lng = ?");
+        values.push(0, null, null);
+      }
+      if (body.status === "visited" || body.status === "converted") {
+        updates.push("visited_at = ?");
+        values.push(now());
+      }
+      if (updates.length > 0) {
+        await env.DB.prepare(
+          `UPDATE outreach_businesses SET ${updates.join(", ")} WHERE id = ?`
+        ).bind(...values, id).run();
+      }
+      const row = await env.DB.prepare("SELECT * FROM outreach_businesses WHERE id = ?").bind(id).first();
+      if (!row) return err("Business not found", 404);
+      return json(mapOutreachBusiness(row));
+    }
+
+    if (obPatchMatch && method === "DELETE") {
+      const id = parseInt(obPatchMatch[1]);
+      await env.DB.prepare("DELETE FROM outreach_businesses WHERE id = ?").bind(id).run();
+      return json({ ok: true });
+    }
+
+    // ─── SOCIAL MEDIA CALENDAR ───────────────────────────────────────────
+
+    if (path === "/api/social-posts" && method === "GET") {
+      const { results } = await env.DB.prepare(
+        "SELECT * FROM social_posts ORDER BY scheduled_date, scheduled_time"
+      ).all();
+      return json((results || []).map(mapSocialPost));
+    }
+
+    if (path === "/api/social-posts" && method === "POST") {
+      const body: any = await request.json();
+      if (!body.scheduledDate) return err("scheduledDate required", 400);
+      const VALID_PLATFORMS = ["instagram", "facebook", "both"];
+      const VALID_STATUSES = ["idea", "draft", "scheduled", "published"];
+      const safePlatform = VALID_PLATFORMS.includes(body.platform) ? body.platform : "both";
+      const safeStatus = VALID_STATUSES.includes(body.status) ? body.status : "idea";
+      const ts = now();
+      const result = await env.DB.prepare(
+        "INSERT INTO social_posts (platform, scheduled_date, scheduled_time, title, content_idea, caption, hashtags, visual_prompt, visual_url, call_to_action, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ).bind(
+        safePlatform, body.scheduledDate, body.scheduledTime || "09:00",
+        body.title || "", body.contentIdea || "", body.caption || "",
+        body.hashtags || "", body.visualPrompt || "", body.visualUrl || "",
+        body.callToAction || "", safeStatus, body.notes || "", ts, ts
+      ).run();
+      const id = (result as any).meta?.last_row_id;
+      const row = await env.DB.prepare("SELECT * FROM social_posts WHERE id = ?").bind(id).first();
+      return json(row ? mapSocialPost(row) : { id }, 201);
+    }
+
+    const spMatch = path.match(/^\/api\/social-posts\/([^/]+)$/);
+    if (spMatch && spMatch[1] !== "generate-ideas" && spMatch[1] !== "generate-visual-prompt" && spMatch[1] !== "generate-caption" && method === "PATCH") {
+      const id = parseInt(spMatch[1]);
+      const body: any = await request.json();
+      const VALID_PLATFORMS = ["instagram", "facebook", "both"];
+      const VALID_STATUSES = ["idea", "draft", "scheduled", "published"];
+      const fieldMap: Record<string, string> = {
+        platform: "platform", scheduledDate: "scheduled_date", scheduledTime: "scheduled_time",
+        title: "title", contentIdea: "content_idea", caption: "caption",
+        hashtags: "hashtags", visualPrompt: "visual_prompt", visualUrl: "visual_url",
+        callToAction: "call_to_action", status: "status", notes: "notes",
+      };
+      const updates: string[] = [];
+      const values: any[] = [];
+      for (const [jsKey, dbCol] of Object.entries(fieldMap)) {
+        if (body[jsKey] === undefined) continue;
+        if (jsKey === "platform" && !VALID_PLATFORMS.includes(body[jsKey])) continue;
+        if (jsKey === "status" && !VALID_STATUSES.includes(body[jsKey])) continue;
+        updates.push(`${dbCol} = ?`);
+        values.push(body[jsKey]);
+      }
+      updates.push("updated_at = ?");
+      values.push(now());
+      await env.DB.prepare(
+        `UPDATE social_posts SET ${updates.join(", ")} WHERE id = ?`
+      ).bind(...values, id).run();
+      const row = await env.DB.prepare("SELECT * FROM social_posts WHERE id = ?").bind(id).first();
+      if (!row) return err("Post not found", 404);
+      return json(mapSocialPost(row));
+    }
+
+    if (spMatch && method === "DELETE") {
+      const id = parseInt(spMatch[1]);
+      await env.DB.prepare("DELETE FROM social_posts WHERE id = ?").bind(id).run();
+      return json({ ok: true });
+    }
+
+    // AI proxy: generate a month of post ideas and persist as drafts
+    if (path === "/api/social-posts/generate-ideas" && method === "POST") {
+      const body: any = await request.json();
+      const startDate = body.startDate;
+      if (!startDate) return err("startDate required", 400);
+      const count = Math.max(1, Math.min(20, parseInt(String(body.count ?? 8)) || 8));
+
+      const workerUrl = env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+      const r = await fetch(`${workerUrl}/social-ideas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month: body.month, count, startDate, themes: body.themes }),
+      });
+      if (!r.ok) {
+        const txt = await r.text();
+        return json({ error: "Worker AI error", detail: txt.slice(0, 300) }, 502);
+      }
+      const data = await r.json() as { ideas?: any[]; error?: string };
+      if (!data.ideas?.length) return json({ error: data.error || "No ideas returned" }, 500);
+
+      const inserted: any[] = [];
+      const ts = now();
+      for (const idea of data.ideas) {
+        try {
+          const result = await env.DB.prepare(
+            "INSERT INTO social_posts (platform, scheduled_date, scheduled_time, title, content_idea, caption, hashtags, visual_prompt, visual_url, call_to_action, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+          ).bind(
+            idea.platform || "both",
+            idea.scheduledDate || startDate,
+            idea.scheduledTime || "09:00",
+            idea.title || "",
+            idea.contentIdea || "",
+            idea.caption || "",
+            idea.hashtags || "",
+            idea.visualPrompt || "",
+            "",
+            idea.callToAction || "",
+            "idea",
+            "",
+            ts, ts
+          ).run();
+          const newId = (result as any).meta?.last_row_id;
+          const row = await env.DB.prepare("SELECT * FROM social_posts WHERE id = ?").bind(newId).first();
+          if (row) inserted.push(mapSocialPost(row));
+        } catch { /* skip malformed entries */ }
+      }
+      return json({ ideas: inserted });
+    }
+
+    if (path === "/api/social-posts/generate-visual-prompt" && method === "POST") {
+      const body: any = await request.json();
+      const workerUrl = env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+      const r = await fetch(`${workerUrl}/social-visual-prompt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) {
+        const txt = await r.text();
+        return json({ error: "Worker AI error", detail: txt.slice(0, 300) }, 502);
+      }
+      return json(await r.json());
+    }
+
+    if (path === "/api/social-posts/generate-caption" && method === "POST") {
+      const body: any = await request.json();
+      const workerUrl = env.ENRICH_WORKER_URL || "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
+      const r = await fetch(`${workerUrl}/social-caption`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) {
+        const txt = await r.text();
+        return json({ error: "Worker AI error", detail: txt.slice(0, 300) }, 502);
+      }
+      return json(await r.json());
+    }
+
     // ─── CATCH-ALL ──────────────────────────────────────────────────────
 
     return err("Not found", 404);
@@ -5002,6 +5263,45 @@ function mapInvoice(row: Record<string, unknown>) {
 
 function mapResource(row: Record<string, unknown>) {
   return { id: row.id, title: row.title, description: row.description, category: row.category, type: row.type, url: row.url, thumbnailUrl: row.thumbnail_url, order: row.sort_order, featured: !!row.featured, published: !!row.published, createdAt: row.created_at, updatedAt: row.updated_at };
+}
+
+function mapOutreachBusiness(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    name: row.name,
+    address: row.address,
+    category: row.category,
+    type: row.type,
+    phone: row.phone,
+    rating: row.rating,
+    status: row.status,
+    notes: row.notes,
+    lat: row.lat,
+    lng: row.lng,
+    geocoded: !!row.geocoded,
+    visitedAt: row.visited_at || null,
+    createdAt: row.created_at,
+  };
+}
+
+function mapSocialPost(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    platform: row.platform,
+    scheduledDate: row.scheduled_date,
+    scheduledTime: row.scheduled_time,
+    title: row.title,
+    contentIdea: row.content_idea,
+    caption: row.caption,
+    hashtags: row.hashtags,
+    visualPrompt: row.visual_prompt,
+    visualUrl: row.visual_url,
+    callToAction: row.call_to_action,
+    status: row.status,
+    notes: row.notes,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 function mapBusinessInfo(row: Record<string, unknown>) {

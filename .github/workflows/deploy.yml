@@ -24,6 +24,13 @@ jobs:
       - name: Remove _redirects (SPA handled by wrangler config)
         run: rm -f dist/public/_redirects
 
+      - name: Apply D1 migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 migrations apply savvy-admin --remote --config wrangler-workers.toml
+
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
