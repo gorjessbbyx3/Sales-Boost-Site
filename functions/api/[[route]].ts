@@ -2254,6 +2254,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (path === "/api/email/send" && method === "POST") {
       const body: any = await request.json();
       const { to, subject, html, text, threadId, fromAlias } = body;
+      // CC / BCC — accept comma-separated string or string[]
+      const parseList = (v: any): string[] => {
+        if (!v) return [];
+        if (Array.isArray(v)) return v.map((s) => String(s).trim()).filter(Boolean);
+        return String(v).split(/[,;]+/).map((s) => s.trim()).filter(Boolean);
+      };
+      const ccList = parseList(body.cc);
+      const bccList = parseList(body.bcc);
       // attachments: [{ filename, contentType, contentBase64 }] OR [{ filename, url }] OR [{ attachmentId }] (re-send existing R2 file)
       const inAttachments: any[] = Array.isArray(body.attachments) ? body.attachments : [];
       if (!to || !subject || !html) return err("to, subject, and html are required");
@@ -2341,6 +2349,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           subject,
           html,
           text: text || undefined,
+          ...(ccList.length > 0 ? { cc: ccList } : {}),
+          ...(bccList.length > 0 ? { bcc: bccList } : {}),
           ...(resendAttachments.length > 0 ? { attachments: resendAttachments } : {}),
         }),
       });
@@ -2373,10 +2383,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         await env.DB.prepare("UPDATE email_threads SET last_message_at = ?, status = 'replied' WHERE id = ?").bind(ts, tid).run();
       }
 
-      // Save outbound message
+      // Save outbound message (with CC/BCC persisted as comma-separated strings)
       await env.DB.prepare(
-        "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at) VALUES (?, ?, 'outbound', ?, ?, ?, ?, ?, ?, ?, 'sent', ?)"
-      ).bind(msgId, tid, fromEmail, fromName, to, subject, text || "", html, resendData.id || "", ts).run();
+        "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, cc_emails, bcc_emails, sent_at) VALUES (?, ?, 'outbound', ?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?)"
+      ).bind(msgId, tid, fromEmail, fromName, to, subject, text || "", html, resendData.id || "", ccList.join(", "), bccList.join(", "), ts).run();
 
       // Persist new attachments to R2 + DB so they appear in the thread
       if (newAttachmentRecords.length > 0 && env.FILES_BUCKET) {
@@ -2408,6 +2418,109 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     }
 
     // POST /api/email/inbound (webhook — no auth required, handled above auth check)
+
+    // ─── EMAIL DRAFTS (Outlook-style server-side drafts) ───────────────
+    if (path === "/api/email/drafts" && method === "GET") {
+      try {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS email_drafts (id TEXT PRIMARY KEY, user_id TEXT NOT NULL DEFAULT '', account TEXT NOT NULL DEFAULT '', to_emails TEXT NOT NULL DEFAULT '', cc_emails TEXT NOT NULL DEFAULT '', bcc_emails TEXT NOT NULL DEFAULT '', subject TEXT NOT NULL DEFAULT '', body TEXT NOT NULL DEFAULT '', attachments_json TEXT NOT NULL DEFAULT '[]', thread_id TEXT NOT NULL DEFAULT '', reply_to_message_id TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        const sessionUser = await getSessionUser(env.DB, request);
+        const userId = sessionUser?.id || "";
+        const { results } = await env.DB.prepare(
+          "SELECT * FROM email_drafts WHERE user_id = ? ORDER BY updated_at DESC"
+        ).bind(userId).all();
+        return json(results);
+      } catch (e: any) { return json([]); }
+    }
+
+    if (path === "/api/email/drafts" && method === "POST") {
+      try {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS email_drafts (id TEXT PRIMARY KEY, user_id TEXT NOT NULL DEFAULT '', account TEXT NOT NULL DEFAULT '', to_emails TEXT NOT NULL DEFAULT '', cc_emails TEXT NOT NULL DEFAULT '', bcc_emails TEXT NOT NULL DEFAULT '', subject TEXT NOT NULL DEFAULT '', body TEXT NOT NULL DEFAULT '', attachments_json TEXT NOT NULL DEFAULT '[]', thread_id TEXT NOT NULL DEFAULT '', reply_to_message_id TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        const sessionUser = await getSessionUser(env.DB, request);
+        const userId = sessionUser?.id || "";
+        const body: any = await request.json();
+        const id = "draft-" + genId();
+        const ts = now();
+        await env.DB.prepare(
+          "INSERT INTO email_drafts (id, user_id, account, to_emails, cc_emails, bcc_emails, subject, body, attachments_json, thread_id, reply_to_message_id, updated_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ).bind(
+          id, userId,
+          body.account || "", body.to || "", body.cc || "", body.bcc || "",
+          body.subject || "", body.body || "",
+          JSON.stringify(body.attachments || []),
+          body.threadId || "", body.replyToMessageId || "",
+          ts, ts
+        ).run();
+        return json({ success: true, id });
+      } catch (e: any) { return err(e.message || "Failed to save draft", 500); }
+    }
+
+    const draftMatch = path.match(/^\/api\/email\/drafts\/([^/]+)$/);
+    if (draftMatch && method === "PATCH") {
+      const id = draftMatch[1];
+      const sessionUser = await getSessionUser(env.DB, request);
+      const userId = sessionUser?.id || "";
+      const existing: any = await env.DB.prepare("SELECT user_id FROM email_drafts WHERE id = ?").bind(id).first();
+      if (!existing) return err("Draft not found", 404);
+      if (existing.user_id && existing.user_id !== userId) return err("Access denied", 403);
+      const body: any = await request.json();
+      const updates: string[] = [];
+      const params: any[] = [];
+      const map: Record<string, string> = {
+        account: "account", to: "to_emails", cc: "cc_emails", bcc: "bcc_emails",
+        subject: "subject", body: "body", threadId: "thread_id", replyToMessageId: "reply_to_message_id",
+      };
+      for (const [k, col] of Object.entries(map)) {
+        if (body[k] !== undefined) { updates.push(`${col} = ?`); params.push(body[k]); }
+      }
+      if (body.attachments !== undefined) { updates.push("attachments_json = ?"); params.push(JSON.stringify(body.attachments)); }
+      updates.push("updated_at = ?"); params.push(now());
+      params.push(id);
+      await env.DB.prepare(`UPDATE email_drafts SET ${updates.join(", ")} WHERE id = ?`).bind(...params).run();
+      return json({ success: true });
+    }
+
+    if (draftMatch && method === "DELETE") {
+      const id = draftMatch[1];
+      const sessionUser = await getSessionUser(env.DB, request);
+      const userId = sessionUser?.id || "";
+      const existing: any = await env.DB.prepare("SELECT user_id FROM email_drafts WHERE id = ?").bind(id).first();
+      if (existing && existing.user_id && existing.user_id !== userId) return err("Access denied", 403);
+      await env.DB.prepare("DELETE FROM email_drafts WHERE id = ?").bind(id).run();
+      return json({ success: true });
+    }
+
+    // ─── EMAIL SEARCH (server-side full-text-ish search across threads) ─
+    if (path === "/api/email/search" && method === "GET") {
+      try {
+        const url = new URL(request.url);
+        const q = (url.searchParams.get("q") || "").trim();
+        if (!q) return json({ threads: [] });
+        const sessionUser = await getSessionUser(env.DB, request);
+        const userId = sessionUser?.id || "";
+        // Pull addresses this user can see
+        const { results: acctRows } = await env.DB.prepare(
+          "SELECT address FROM email_accounts WHERE owner_id = '' OR owner_id = ?"
+        ).bind(userId).all();
+        const allowed = (acctRows || []).map((r: any) => r.address as string);
+        const placeholders = allowed.length > 0 ? allowed.map(() => "?").join(",") : "''";
+        const like = `%${q.replace(/[%_]/g, "")}%`;
+        const sql = `
+          SELECT DISTINCT t.* FROM email_threads t
+          LEFT JOIN email_messages m ON m.thread_id = t.id
+          WHERE (t.email_account IN (${placeholders}) OR t.email_account IS NULL OR t.email_account = '')
+            AND (
+              t.subject LIKE ? OR t.contact_email LIKE ? OR t.contact_name LIKE ?
+              OR m.body LIKE ? OR m.from_email LIKE ? OR m.to_email LIKE ?
+              OR m.cc_emails LIKE ? OR m.subject LIKE ?
+            )
+          ORDER BY t.last_message_at DESC
+          LIMIT 50
+        `;
+        const params = [...allowed, like, like, like, like, like, like, like, like];
+        const { results } = await env.DB.prepare(sql).bind(...params).all();
+        return json({ threads: results, query: q });
+      } catch (e: any) { return json({ threads: [], error: e.message }); }
+    }
 
     // ─── ACTIVITY LOG ──────────────────────────────────────────────────
 

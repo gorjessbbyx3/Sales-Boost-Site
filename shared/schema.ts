@@ -459,7 +459,38 @@ export const emailMessages = pgTable("email_messages", {
   htmlBody: text("html_body").notNull().default(""),
   resendId: text("resend_id").notNull().default(""), // Resend message ID for tracking
   status: text("status").notNull().default("sent"), // sent | delivered | opened | bounced | failed
+  ccEmails: text("cc_emails").notNull().default(""), // comma-separated
+  bccEmails: text("bcc_emails").notNull().default(""), // comma-separated
   sentAt: text("sent_at").notNull(),
+});
+
+// ─── Email Drafts ───────────────────────────────────────────────────
+
+export const emailDrafts = pgTable("email_drafts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().default(""),
+  account: text("account").notNull().default(""),
+  toEmails: text("to_emails").notNull().default(""),
+  ccEmails: text("cc_emails").notNull().default(""),
+  bccEmails: text("bcc_emails").notNull().default(""),
+  subject: text("subject").notNull().default(""),
+  body: text("body").notNull().default(""),
+  attachmentsJson: text("attachments_json").notNull().default("[]"),
+  threadId: text("thread_id").notNull().default(""),
+  replyToMessageId: text("reply_to_message_id").notNull().default(""),
+  updatedAt: text("updated_at").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+// ─── Email Signatures (per user, per account) ───────────────────────
+
+export const emailSignatures = pgTable("email_signatures", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().default(""),
+  account: text("account").notNull().default(""),
+  html: text("html").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
 });
 
 // ─── Outreach Templates ─────────────────────────────────────────────
