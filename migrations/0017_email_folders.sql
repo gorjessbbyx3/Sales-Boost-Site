@@ -10,5 +10,5 @@ ALTER TABLE email_threads ADD COLUMN ai_priority TEXT NOT NULL DEFAULT 'normal';
 ALTER TABLE email_threads ADD COLUMN ai_sentiment TEXT NOT NULL DEFAULT 'neutral';
 
 -- Index for fast folder queries
-CREATE INDEX idx_email_threads_folder ON email_threads(folder);
-CREATE INDEX idx_email_threads_starred ON email_threads(starred);
+CREATE INDEX IF NOT EXISTS idx_email_threads_folder ON email_threads(folder);
+CREATE INDEX IF NOT EXISTS idx_email_threads_starred ON email_threads(starred);

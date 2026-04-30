@@ -36,6 +36,7 @@ Preferred communication style: Simple, everyday language.
 - **Push Command**: `npm run db:push` to sync schema to database
 - **Current Schema**: `users`, `ai_config`, `clients` (extended with activeServices, onboardingStatus, nextBillingDate, domainName, hostingProvider, credentials, clientAssets as JSON text fields), `projects` (delivery tracker with milestones JSON, type, status pipeline, client linking), `leads`, `deals`, `tasks`, `files`, `equipment`, `partners`
 - **Connection**: Requires `DATABASE_URL` environment variable
+- **D1 Migrations**: The admin app's Cloudflare D1 database (`savvy-admin`) is migrated by `.github/workflows/deploy.yml`, which runs `script/reconcile-d1-migrations.mjs` *before* `wrangler d1 migrations apply`. The reconciler auto-stamps the `d1_migrations` ledger for any pending file whose schema work is already in the live DB, so we never have to hand-edit production again when the ledger drifts. New `.sql` files should use `CREATE TABLE/INDEX IF NOT EXISTS` and `INSERT OR IGNORE` / `ON CONFLICT DO NOTHING` (D1 supports those). D1 does **not** support `ADD COLUMN IF NOT EXISTS` — that's exactly what the reconciler exists to handle. Full runbook: `migrations/README.md`.
 
 ### Project Structure
 ```

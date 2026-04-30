@@ -7,6 +7,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -24,6 +27,22 @@ jobs:
       - name: Remove _redirects (SPA handled by wrangler config)
         run: rm -f dist/public/_redirects
 
+      # Install the pinned wrangler once so the reconciler script can shell
+      # out to it (it uses `npx wrangler` under the hood). Also keeps the
+      # version aligned with the cloudflare/wrangler-action steps below.
+      - name: Install wrangler (for reconciler)
+        run: npm install --no-save --no-audit --no-fund wrangler@4.85.0
+
+      # Auto-stamp the d1_migrations ledger for any pending migration whose
+      # schema work is already present in the live database. This protects
+      # against the "ledger drifted from schema" failure mode (see
+      # migrations/README.md). It is a no-op when the ledger is in sync.
+      - name: Reconcile D1 migrations ledger
+        run: >
+          node script/reconcile-d1-migrations.mjs
+          --database savvy-admin
+          --config wrangler-workers.toml
+
       - name: Apply D1 migrations
         uses: cloudflare/wrangler-action@v3
         with:
@@ -31,6 +50,14 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4.85.0"
           command: d1 migrations apply savvy-admin --remote --config wrangler-workers.toml
+
+      - name: Verify ledger and schema agree (post-apply)
+        run: >
+          node script/reconcile-d1-migrations.mjs
+          --database savvy-admin
+          --config wrangler-workers.toml
+          --dry-run
+          --require-in-sync
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v3

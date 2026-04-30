@@ -1,5 +1,9 @@
--- Add email_account column to email_threads
-ALTER TABLE email_threads ADD COLUMN IF NOT EXISTS email_account TEXT NOT NULL DEFAULT 'contact@techsavvyhawaii.com';
+-- Add email_account column to email_threads.
+-- NOTE: D1/SQLite does NOT support `ADD COLUMN IF NOT EXISTS` — re-applying this
+-- migration would fail with "duplicate column name". The pre-deploy reconciler
+-- in `script/reconcile-d1-migrations.mjs` detects this case and stamps the
+-- ledger row instead of re-applying. See `migrations/README.md`.
+ALTER TABLE email_threads ADD COLUMN email_account TEXT NOT NULL DEFAULT 'contact@techsavvyhawaii.com';
 CREATE INDEX IF NOT EXISTS idx_email_threads_account ON email_threads(email_account);
 
 -- Email Accounts table

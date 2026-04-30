@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS partner_meetings (
 );
 
 -- Seed learning modules with payment processing education
-INSERT INTO learning_modules (id, slug, title, description, category, difficulty, duration_minutes, sort_order, content, quiz_json, points, is_published, created_at, updated_at) VALUES
+INSERT OR IGNORE INTO learning_modules (id, slug, title, description, category, difficulty, duration_minutes, sort_order, content, quiz_json, points, is_published, created_at, updated_at) VALUES
 ('mod-01', 'what-is-payment-processing', 'What is Payment Processing?', 'Learn the basics of how card payments work from swipe to settlement.', 'basics', 'beginner', 8, 1, '## How Card Payments Work
 
 Every time a customer swipes, dips, or taps a card, a complex chain of events happens in seconds.
