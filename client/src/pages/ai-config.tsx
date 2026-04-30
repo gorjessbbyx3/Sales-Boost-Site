@@ -41,6 +41,8 @@ import FollowUpTab from "./admin/FollowUpTab";
 import SocialCalendarTab from "./admin/SocialCalendarTab";
 import OutreachMapTab from "./admin/OutreachMapTab";
 import { EmailAttachmentList, ForwardDialog, type EmailAttachment } from "@/components/inbox/EmailAttachments";
+import { RichTextEditor } from "@/components/inbox/RichTextEditor";
+import { Reply, ReplyAll, Loader2, FileEdit } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -6030,6 +6032,33 @@ function InboxTab() {
 
   // Reply state
   const [replyBody, setReplyBody] = useState("");
+  const [replyCc, setReplyCc] = useState("");
+  const [replyBcc, setReplyBcc] = useState("");
+  const [replyShowCc, setReplyShowCc] = useState(false);
+  const [replyAttachments, setReplyAttachments] = useState<Array<{ filename: string; contentType: string; contentBase64: string; size: number }>>([]);
+
+  // Compose CC/BCC + attachments + draft state
+  const [composeCc, setComposeCc] = useState("");
+  const [composeBcc, setComposeBcc] = useState("");
+  const [composeShowCc, setComposeShowCc] = useState(false);
+  const [composeAttachments, setComposeAttachments] = useState<Array<{ filename: string; contentType: string; contentBase64: string; size: number }>>([]);
+  const [composeDraftId, setComposeDraftId] = useState<string | null>(null);
+  const [composeSaveStatus, setComposeSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Multi-address management state
+  const [showAddressMgr, setShowAddressMgr] = useState(false);
+  const [newAcctAddress, setNewAcctAddress] = useState("");
+  const [newAcctName, setNewAcctName] = useState("");
+  const [newAcctColor, setNewAcctColor] = useState("#3B82F6");
+
+  // File input refs (compose + reply)
+  const composeFileInputRef = useRef<HTMLInputElement>(null);
+  const replyFileInputRef = useRef<HTMLInputElement>(null);
+  const composeAutosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Forward state — store the message being forwarded
   const [forwardMsg, setForwardMsg] = useState<EmailMessage | null>(null);
@@ -6134,12 +6163,123 @@ function InboxTab() {
   });
 
   const sendMutation = useMutation({
-    mutationFn: async (data: { to: string; subject: string; html: string; threadId?: string }) => {
+    mutationFn: async (data: { to: string; subject: string; html: string; threadId?: string; cc?: string[]; bcc?: string[]; attachments?: any[]; draftId?: string; fromAlias?: string }) => {
       const res = await apiRequest("POST", "/api/email/send", data);
+      const json = await res.json();
+      // If this send was promoting a draft, delete it server-side.
+      if (data.draftId) {
+        try { await apiRequest("DELETE", `/api/email/drafts/${data.draftId}`); } catch {}
+      }
+      return json;
+    },
+    onSuccess: () => {
+      toast({ title: "Email sent" });
+      setShowCompose(false);
+      setComposeTo(""); setComposeSubject(""); setComposeBody("");
+      setComposeCc(""); setComposeBcc(""); setComposeShowCc(false);
+      setComposeAttachments([]); setComposeDraftId(null); setComposeSaveStatus("idle");
+      setReplyBody(""); setReplyCc(""); setReplyBcc(""); setReplyShowCc(false); setReplyAttachments([]);
+      refetchAll();
+      queryClient.invalidateQueries({ queryKey: ["/api/email/drafts"] });
+      if (selectedThread) refetchDetail();
+    },
+    onError: (err: Error) => toast({ title: "Send failed", description: err.message, variant: "destructive" }),
+  });
+
+  // ── Drafts query + auto-save mutation ──
+  const { data: drafts = [], refetch: refetchDrafts } = useQuery<any[]>({ queryKey: ["/api/email/drafts"] });
+
+  const saveDraftMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (data.id) {
+        const res = await apiRequest("PATCH", `/api/email/drafts/${data.id}`, data);
+        return res.json();
+      } else {
+        const res = await apiRequest("POST", "/api/email/drafts", data);
+        return res.json();
+      }
+    },
+    onSuccess: (json: any) => {
+      if (json?.id && !composeDraftId) setComposeDraftId(json.id);
+      setComposeSaveStatus("saved");
+      queryClient.invalidateQueries({ queryKey: ["/api/email/drafts"] });
+    },
+    onError: () => { setComposeSaveStatus("idle"); },
+  });
+
+  const deleteDraftMutation = useMutation({
+    mutationFn: async (id: string) => { const res = await apiRequest("DELETE", `/api/email/drafts/${id}`); return res.json(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/email/drafts"] }); refetchDrafts(); toast({ title: "Draft deleted" }); },
+  });
+
+  const aiDraftMutation = useMutation({
+    mutationFn: async (threadId: string) => {
+      const res = await apiRequest("POST", `/api/email/threads/${threadId}/auto-draft`, {});
       return res.json();
     },
-    onSuccess: () => { toast({ title: "Email sent" }); setShowCompose(false); setComposeTo(""); setComposeSubject(""); setComposeBody(""); setReplyBody(""); refetchAll(); if (selectedThread) refetchDetail(); },
-    onError: (err: Error) => toast({ title: "Send failed", description: err.message, variant: "destructive" }),
+    onSuccess: (data: any) => {
+      // Pre-fill the inline reply box with the AI body — user can edit + send.
+      if (data?.body) {
+        setReplyBody(data.body);
+        toast({ title: "AI draft ready", description: "Edit before sending" });
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/email/drafts"] });
+    },
+    onError: (err: Error) => toast({ title: "AI draft failed", description: err.message, variant: "destructive" }),
+  });
+
+  // Debounce search query (300ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // Auto-save compose draft (2s after typing stops, only if dialog open + has content)
+  useEffect(() => {
+    if (!showCompose) return;
+    const hasContent = (composeTo || composeSubject || composeBody || composeCc || composeBcc).trim().length > 0;
+    if (!hasContent) return;
+    if (composeAutosaveTimer.current) clearTimeout(composeAutosaveTimer.current);
+    composeAutosaveTimer.current = setTimeout(() => {
+      setComposeSaveStatus("saving");
+      saveDraftMutation.mutate({
+        id: composeDraftId,
+        account: composeFromAccount,
+        to: composeTo, cc: composeCc, bcc: composeBcc,
+        subject: composeSubject, body: composeBody,
+        attachments: composeAttachments,
+      });
+    }, 2000);
+    return () => { if (composeAutosaveTimer.current) clearTimeout(composeAutosaveTimer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [composeTo, composeCc, composeBcc, composeSubject, composeBody, composeAttachments, showCompose]);
+
+  // Search results query (when debouncedSearch is non-empty)
+  const { data: searchResults = [] } = useQuery<any[]>({
+    queryKey: ["/api/email/search", debouncedSearch],
+    queryFn: async () => {
+      if (!debouncedSearch) return [];
+      const res = await apiRequest("GET", `/api/email/search?q=${encodeURIComponent(debouncedSearch)}`);
+      return res.json();
+    },
+    enabled: !!debouncedSearch,
+  });
+
+  // Email account CRUD mutations (multi-address mgmt)
+  const createAccountMutation = useMutation({
+    mutationFn: async (data: any) => { const res = await apiRequest("POST", "/api/email/accounts", data); return res.json(); },
+    onSuccess: () => { toast({ title: "Address added" }); setNewAcctAddress(""); setNewAcctName(""); queryClient.invalidateQueries({ queryKey: ["/api/email/accounts"] }); },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  const updateAccountMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => { const res = await apiRequest("PATCH", `/api/email/accounts/${id}`, data); return res.json(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/email/accounts"] }); },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async (id: string) => { const res = await apiRequest("DELETE", `/api/email/accounts/${id}`); return res.json(); },
+    onSuccess: () => { toast({ title: "Address removed" }); queryClient.invalidateQueries({ queryKey: ["/api/email/accounts"] }); },
   });
 
   const configMutation = useMutation({
@@ -6247,6 +6387,7 @@ function InboxTab() {
   // ── Folder definitions ──
   const folderItems = [
     { key: "inbox", label: "Inbox", icon: Inbox },
+    { key: "drafts", label: "Drafts", icon: FileEdit, isDrafts: true },
     { key: "sent", label: "Sent", icon: Send },
     { key: "starred", label: "Starred", icon: Star, isSpecial: true },
     { key: "spam", label: "Spam", icon: ShieldAlert },
@@ -6342,6 +6483,20 @@ function InboxTab() {
                     <div>
                       <span className="text-xs font-medium">{msg.direction === "outbound" ? "TechSavvy Hawaii" : msg.fromName}</span>
                       <span className="text-[10px] text-muted-foreground ml-2">&lt;{msg.fromEmail}&gt;</span>
+                      {/* CC chips — show inline if message had CC recipients */}
+                      {(() => {
+                        const cc = ((msg as any).ccEmails || (msg as any).cc_emails || "").trim();
+                        if (!cc) return null;
+                        const list = cc.split(/[,;]/).map((s: string) => s.trim()).filter(Boolean);
+                        return (
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap" data-testid="cc-chips">
+                            <span className="text-[10px] text-muted-foreground">Cc:</span>
+                            {list.map((addr: string) => (
+                              <span key={addr} className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground">{addr}</span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                   <span className="text-[10px] text-muted-foreground">{timeAgo(msg.sentAt)}</span>
@@ -6461,7 +6616,44 @@ function InboxTab() {
         <Card className="border-border/50">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground">Reply to {threadDetail.contactEmail}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-xs font-medium text-muted-foreground">Reply to {threadDetail.contactEmail}</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 text-[10px] px-1.5 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+                  disabled={aiDraftMutation.isPending}
+                  onClick={() => aiDraftMutation.mutate(threadDetail.id)}
+                  data-testid="button-ai-draft"
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />{aiDraftMutation.isPending ? "Drafting…" : "AI Draft"}
+                </Button>
+                {(() => {
+                  // Last inbound (or last) message — used for Reply All CC seed.
+                  const msgs = (threadDetail as any).messages || [];
+                  const lastInbound = [...msgs].reverse().find((m: any) => m.direction === "inbound") || msgs[msgs.length - 1];
+                  const origCc: string = (lastInbound?.ccEmails || lastInbound?.cc_emails || "").trim();
+                  if (!origCc) return null;
+                  return (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-[10px] px-1.5"
+                      onClick={() => {
+                        setReplyShowCc(true);
+                        // Filter out our own account from CC
+                        const filtered = origCc.split(/[,;]/).map(s => s.trim()).filter(s => s && s.toLowerCase() !== composeFromAccount.toLowerCase());
+                        setReplyCc(filtered.join(", "));
+                      }}
+                      data-testid="button-reply-all"
+                    >
+                      <ReplyAll className="w-3 h-3 mr-1" />Reply All
+                    </Button>
+                  );
+                })()}
+              </div>
               {emailAccounts.length > 0 && (
                 <Select value={composeFromAccount} onValueChange={setComposeFromAccount}>
                   <SelectTrigger className="h-7 text-[10px] w-auto gap-1">
@@ -6478,15 +6670,59 @@ function InboxTab() {
                 </Select>
               )}
             </div>
-            <Textarea value={replyBody} onChange={(e) => setReplyBody(e.target.value)} placeholder="Type your reply..." rows={4} className="resize-none text-sm" />
-            <div className="flex justify-end">
+            {!replyShowCc ? (
+              <button type="button" onClick={() => setReplyShowCc(true)} className="text-[10px] text-primary hover:underline self-start" data-testid="button-reply-add-cc">+ Add Cc / Bcc</button>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <Input value={replyCc} onChange={(e) => setReplyCc(e.target.value)} placeholder="Cc" className="h-8 text-xs" data-testid="input-reply-cc" />
+                <Input value={replyBcc} onChange={(e) => setReplyBcc(e.target.value)} placeholder="Bcc" className="h-8 text-xs" data-testid="input-reply-bcc" />
+              </div>
+            )}
+            <RichTextEditor value={replyBody} onChange={setReplyBody} placeholder="Type your reply..." minHeight={140} />
+            {replyAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {replyAttachments.map((att, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/60 bg-muted/40 text-[11px]">
+                    <Paperclip className="w-3 h-3" />
+                    <span className="truncate max-w-[160px]">{att.filename}</span>
+                    <button type="button" onClick={() => setReplyAttachments(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 text-muted-foreground hover:text-destructive">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => replyFileInputRef.current?.click()} data-testid="button-reply-attach">
+                <Paperclip className="w-3.5 h-3.5 mr-1" />Attach
+              </Button>
+              <input
+                ref={replyFileInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  for (const f of files) {
+                    if (f.size > 20 * 1024 * 1024) { toast({ title: "File too large", description: `${f.name} exceeds 20 MB`, variant: "destructive" }); continue; }
+                    const buf = await f.arrayBuffer();
+                    const bytes = new Uint8Array(buf);
+                    let bin = ""; for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+                    setReplyAttachments(prev => [...prev, { filename: f.name, contentType: f.type || "application/octet-stream", contentBase64: btoa(bin), size: f.size }]);
+                  }
+                  e.target.value = "";
+                }}
+              />
               <Button size="sm" disabled={!replyBody.trim() || sendMutation.isPending} onClick={() => sendMutation.mutate({
                 to: threadDetail.contactEmail,
                 subject: `Re: ${threadDetail.subject}`,
-                html: `<p>${replyBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | ${composeFromAccount}</p></div>`,
+                cc: replyCc ? replyCc.split(/[,;]/).map(s => s.trim()).filter(Boolean) : undefined,
+                bcc: replyBcc ? replyBcc.split(/[,;]/).map(s => s.trim()).filter(Boolean) : undefined,
+                attachments: replyAttachments.length > 0 ? replyAttachments : undefined,
+                html: `${replyBody}<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | ${composeFromAccount}</p></div>`,
                 threadId: threadDetail.id,
                 ...(composeFromAccount !== "contact@techsavvyhawaii.com" ? { fromAlias: composeFromAccount } : {}),
-              } as any)}><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send Reply"}</Button>
+              } as any)} data-testid="button-reply-send"><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send Reply"}</Button>
             </div>
           </CardContent>
         </Card>
@@ -6539,14 +6775,36 @@ function InboxTab() {
         </Card>
       )}
 
+      {/* ── Search Bar ── */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search subject, body, sender, recipient, cc…"
+          className="pl-9 pr-9 h-9 text-sm"
+          data-testid="input-inbox-search"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => { setSearchQuery(""); setDebouncedSearch(""); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+            data-testid="button-clear-search"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
       <div className="flex gap-4">
         {/* ── Folder Sidebar ── */}
         <div className="w-48 shrink-0 space-y-1">
-          {folderItems.map(({ key, label, icon: Icon, isSpecial }) => {
+          {folderItems.map(({ key, label, icon: Icon, isSpecial, isDrafts }) => {
             const isActive = isSpecial ? viewStarred : (!viewStarred && activeFolder === key);
             const folderStats = stats?.folders?.[key];
-            const count = isSpecial ? (stats?.starred || 0) : (folderStats?.total || 0);
-            const unreadCount = isSpecial ? 0 : (folderStats?.unread || 0);
+            const count = isSpecial ? (stats?.starred || 0) : (isDrafts ? drafts.length : (folderStats?.total || 0));
+            const unreadCount = isSpecial || isDrafts ? 0 : (folderStats?.unread || 0);
 
             return (
               <button key={key}
@@ -6688,8 +6946,72 @@ function InboxTab() {
             </div>
           )}
 
-          {/* Thread list */}
-          {filteredThreads.length === 0 ? (
+          {/* ── Search results banner (overrides folder list when active) ── */}
+          {debouncedSearch ? (
+            <div className="space-y-1" data-testid="search-results">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">{searchResults.length} result{searchResults.length === 1 ? "" : "s"} for "{debouncedSearch}"</span>
+              </div>
+              {searchResults.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Search className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No matches</p>
+                </div>
+              ) : (
+                searchResults.map((r: any) => {
+                  const t = r.thread || r;
+                  return (
+                    <div key={t.id} className="px-3 py-2.5 rounded-lg border border-transparent hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedThread(t)} data-testid={`search-result-${t.id}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium truncate">{t.contactName || t.contact_name || ""} &lt;{t.contactEmail || t.contact_email || ""}&gt;</span>
+                        <span className="text-[10px] text-muted-foreground">{timeAgo(t.lastMessageAt || t.last_message_at)}</span>
+                      </div>
+                      <p className="text-xs truncate mt-0.5">{t.subject || "(no subject)"}</p>
+                      {r.snippet && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{r.snippet}</p>}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          ) : activeFolder === "drafts" ? (
+            /* ── Drafts list ── */
+            drafts.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <FileEdit className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No drafts</p>
+                <p className="text-xs mt-1">Start composing — drafts auto-save every 2 seconds</p>
+              </div>
+            ) : (
+              <div className="space-y-0.5" data-testid="drafts-list">
+                {drafts.map((d: any) => (
+                  <div key={d.id} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-transparent hover:bg-muted/50 cursor-pointer group" data-testid={`draft-${d.id}`} onClick={() => {
+                    // Restore draft into compose dialog
+                    setComposeDraftId(d.id);
+                    setComposeFromAccount(d.account || "contact@techsavvyhawaii.com");
+                    setComposeTo(d.to_emails || "");
+                    setComposeCc(d.cc_emails || "");
+                    setComposeBcc(d.bcc_emails || "");
+                    setComposeShowCc(!!(d.cc_emails || d.bcc_emails));
+                    setComposeSubject(d.subject || "");
+                    setComposeBody(d.body || "");
+                    try { setComposeAttachments(JSON.parse(d.attachments_json || "[]")); } catch { setComposeAttachments([]); }
+                    setComposeSaveStatus("saved");
+                    setShowCompose(true);
+                  }}>
+                    <FileEdit className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{d.subject || "(no subject)"}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{d.to_emails || "No recipient"}</p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(d.updated_at)}</span>
+                    <button className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); deleteDraftMutation.mutate(d.id); }} data-testid={`button-delete-draft-${d.id}`}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : filteredThreads.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               {activeFolder === "inbox" && <Inbox className="w-8 h-8 mx-auto mb-3 opacity-30" />}
               {activeFolder === "spam" && <ShieldAlert className="w-8 h-8 mx-auto mb-3 opacity-30" />}
@@ -6780,17 +7102,88 @@ function InboxTab() {
                 </Select>
               </div>
             )}
-            <div className="space-y-1.5"><Label className="text-xs">To</Label><Input value={composeTo} onChange={(e) => setComposeTo(e.target.value)} placeholder="recipient@email.com" /></div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">To</Label>
+                {!composeShowCc && (
+                  <button type="button" onClick={() => setComposeShowCc(true)} className="text-[10px] text-primary hover:underline" data-testid="button-compose-add-cc">+ Cc / Bcc</button>
+                )}
+              </div>
+              <Input value={composeTo} onChange={(e) => setComposeTo(e.target.value)} placeholder="recipient@email.com, another@email.com" />
+            </div>
+            {composeShowCc && (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Cc</Label>
+                  <Input value={composeCc} onChange={(e) => setComposeCc(e.target.value)} placeholder="cc@email.com" data-testid="input-compose-cc" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Bcc</Label>
+                  <Input value={composeBcc} onChange={(e) => setComposeBcc(e.target.value)} placeholder="bcc@email.com" data-testid="input-compose-bcc" />
+                </div>
+              </>
+            )}
             <div className="space-y-1.5"><Label className="text-xs">Subject</Label><Input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} placeholder="Email subject" /></div>
-            <div className="space-y-1.5"><Label className="text-xs">Message</Label><Textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} placeholder="Write your email..." rows={8} className="resize-none text-sm" /></div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Message</Label>
+              <RichTextEditor value={composeBody} onChange={setComposeBody} placeholder="Write your email..." minHeight={220} />
+            </div>
+            {/* Attachment chips */}
+            {composeAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {composeAttachments.map((att, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/60 bg-muted/40 text-[11px]">
+                    <Paperclip className="w-3 h-3" />
+                    <span className="truncate max-w-[160px]">{att.filename}</span>
+                    <span className="text-muted-foreground">({att.size < 1024 ? `${att.size} B` : att.size < 1024 * 1024 ? `${(att.size / 1024).toFixed(1)} KB` : `${(att.size / 1024 / 1024).toFixed(1)} MB`})</span>
+                    <button type="button" onClick={() => setComposeAttachments(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 text-muted-foreground hover:text-destructive">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCompose(false)}>Cancel</Button>
-            <Button disabled={!composeTo || !composeSubject || !composeBody || sendMutation.isPending} onClick={() => sendMutation.mutate({
-              to: composeTo, subject: composeSubject,
-              html: `<p>${composeBody.replace(/\n/g, "<br/>")}</p><div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | ${composeFromAccount}</p></div>`,
-              ...(composeFromAccount !== "contact@techsavvyhawaii.com" ? { fromAlias: composeFromAccount } : {}),
-            } as any)}><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send"}</Button>
+          <DialogFooter className="flex !justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => composeFileInputRef.current?.click()} data-testid="button-compose-attach">
+                <Paperclip className="w-3.5 h-3.5 mr-1" />Attach
+              </Button>
+              <input
+                ref={composeFileInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  for (const f of files) {
+                    if (f.size > 20 * 1024 * 1024) { toast({ title: "File too large", description: `${f.name} exceeds 20 MB limit`, variant: "destructive" }); continue; }
+                    const buf = await f.arrayBuffer();
+                    let binary = "";
+                    const bytes = new Uint8Array(buf);
+                    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                    const b64 = btoa(binary);
+                    setComposeAttachments(prev => [...prev, { filename: f.name, contentType: f.type || "application/octet-stream", contentBase64: b64, size: f.size }]);
+                  }
+                  e.target.value = "";
+                }}
+              />
+              {composeSaveStatus === "saving" && <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />Saving…</span>}
+              {composeSaveStatus === "saved" && <span className="text-[10px] text-emerald-500 flex items-center gap-1"><Check className="w-3 h-3" />Saved</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setShowCompose(false)}>Close</Button>
+              <Button disabled={!composeTo || !composeSubject || !composeBody || sendMutation.isPending} onClick={() => sendMutation.mutate({
+                to: composeTo,
+                subject: composeSubject,
+                cc: composeCc ? composeCc.split(/[,;]/).map(s => s.trim()).filter(Boolean) : undefined,
+                bcc: composeBcc ? composeBcc.split(/[,;]/).map(s => s.trim()).filter(Boolean) : undefined,
+                html: `${composeBody}<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | ${composeFromAccount}</p></div>`,
+                attachments: composeAttachments.length > 0 ? composeAttachments : undefined,
+                ...(composeDraftId ? { draftId: composeDraftId } : {}),
+                ...(composeFromAccount !== "contact@techsavvyhawaii.com" ? { fromAlias: composeFromAccount } : {}),
+              } as any)} data-testid="button-compose-send"><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send"}</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -6811,6 +7204,72 @@ function InboxTab() {
               <Switch checked={cfgAutoConfirm} onCheckedChange={setCfgAutoConfirm} />
             </div>
             <div className="space-y-1.5"><Label className="text-xs">Forward Copy To</Label><Input value={cfgForwardTo} onChange={(e) => setCfgForwardTo(e.target.value)} placeholder="your@email.com" /><p className="text-[10px] text-muted-foreground">Get inbound email copies on your phone</p></div>
+
+            {/* ── Email Addresses (multi-address management) ── */}
+            <div className="border-t border-border/40 pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-sm font-medium">Email Addresses</p>
+                  <p className="text-[10px] text-muted-foreground">Manage all sender addresses available in the From picker</p>
+                </div>
+              </div>
+              <div className="space-y-1.5 mb-3">
+                {emailAccounts.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground italic">No addresses configured yet.</p>
+                )}
+                {emailAccounts.map(acct => (
+                  <div key={acct.id} className="flex items-center gap-2 p-2 rounded-md border border-border/40 bg-muted/20" data-testid={`address-${acct.id}`}>
+                    <input
+                      type="color"
+                      value={acct.color}
+                      onChange={(e) => updateAccountMutation.mutate({ id: acct.id, data: { color: e.target.value } })}
+                      className="w-5 h-5 rounded cursor-pointer border border-border/40 shrink-0"
+                      title="Account color"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <Input
+                        value={acct.display_name}
+                        onChange={(e) => {
+                          // Optimistic local update via mutation; server is source of truth.
+                          updateAccountMutation.mutate({ id: acct.id, data: { displayName: e.target.value } });
+                        }}
+                        className="h-7 text-xs"
+                        placeholder="Display name"
+                      />
+                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">&lt;{acct.address}&gt;{acct.is_default ? " · Default" : ""}</p>
+                    </div>
+                    {!acct.is_default && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => { if (confirm(`Remove ${acct.address}?`)) deleteAccountMutation.mutate(acct.id); }}
+                        data-testid={`button-delete-address-${acct.id}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input value={newAcctAddress} onChange={(e) => setNewAcctAddress(e.target.value)} placeholder="new@techsavvyhawaii.com" className="h-8 text-xs" data-testid="input-new-address" />
+                <Input value={newAcctName} onChange={(e) => setNewAcctName(e.target.value)} placeholder="Display name" className="h-8 text-xs" data-testid="input-new-address-name" />
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <input type="color" value={newAcctColor} onChange={(e) => setNewAcctColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border border-border/40" />
+                <Button
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={!newAcctAddress || createAccountMutation.isPending}
+                  onClick={() => createAccountMutation.mutate({ address: newAcctAddress, displayName: newAcctName, color: newAcctColor })}
+                  data-testid="button-add-address"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />Add Address
+                </Button>
+                <p className="text-[10px] text-muted-foreground ml-auto">DNS routing must be configured separately</p>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfig(false)}>Cancel</Button>

@@ -2489,6 +2489,79 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json({ success: true });
     }
 
+    // ─── AI AUTO-DRAFT (Anthropic-backed reply generator) ───────────────
+    // POST /api/email/threads/:tid/auto-draft → generates a draft reply
+    // for the latest inbound message in the thread, using Claude. Persists
+    // to email_drafts (so it surfaces in the Drafts folder + can be edited
+    // in the composer before send). Manually triggered today; the same
+    // endpoint can be called automatically from the inbound email worker.
+    const autoDraftMatch = path.match(/^\/api\/email\/threads\/([^/]+)\/auto-draft$/);
+    if (autoDraftMatch && method === "POST") {
+      if (!env.ANTHROPIC_API_KEY) return err("AI not configured (missing ANTHROPIC_API_KEY)", 503);
+      const tid = autoDraftMatch[1];
+      const sessionUser = await getSessionUser(env.DB, request);
+      const userId = sessionUser?.id || "";
+
+      // Pull thread + last inbound message
+      const thread: any = await env.DB.prepare("SELECT * FROM email_threads WHERE id = ?").bind(tid).first();
+      if (!thread) return err("Thread not found", 404);
+      if (!(await userCanAccessEmailAccount(env.DB, request, thread.email_account as string))) {
+        return err("Access denied", 403);
+      }
+      const lastMsg: any = await env.DB.prepare(
+        "SELECT * FROM email_messages WHERE thread_id = ? AND direction = 'inbound' ORDER BY sent_at DESC LIMIT 1"
+      ).bind(tid).first();
+      if (!lastMsg) return err("No inbound message to reply to", 404);
+
+      const senderName = lastMsg.from_name || "the sender";
+      const subject = lastMsg.subject || thread.subject || "(no subject)";
+      const incomingBody = (lastMsg.body || "").slice(0, 4000);
+
+      const prompt = `You are drafting a professional email reply on behalf of TechSavvy Hawaii (a Hawaii-based merchant services + small-business technology company). Write a concise, helpful, friendly reply to the email below.\n\nSender: ${senderName} <${lastMsg.from_email}>\nSubject: ${subject}\n\n--- Original Email ---\n${incomingBody}\n--- End ---\n\nGuidelines:\n- Acknowledge what they said specifically.\n- If they asked a question, answer it directly. If you don't know, say you'll follow up.\n- Keep it under 120 words. Plain text only — no signatures, no greetings beyond "Hi <FirstName>,".\n- Match their tone (professional but warm).\n- Do NOT include a sign-off; the system appends one.\n- Output ONLY the reply body — no commentary, no JSON, no markdown.`;
+
+      try {
+        const resp = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": env.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 600,
+            messages: [{ role: "user", content: prompt }],
+          }),
+          signal: AbortSignal.timeout(45_000),
+        });
+        if (!resp.ok) {
+          const t = await resp.text().catch(() => "");
+          return err(`Anthropic error: ${resp.status} ${t.slice(0, 200)}`, 502);
+        }
+        const data: any = await resp.json();
+        const text = (data.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+        if (!text) return err("Empty AI response", 502);
+
+        // Wrap in <p> tags for the rich text editor.
+        const html = text.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, "<br/>")}</p>`).join("");
+
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS email_drafts (id TEXT PRIMARY KEY, user_id TEXT NOT NULL DEFAULT '', account TEXT NOT NULL DEFAULT '', to_emails TEXT NOT NULL DEFAULT '', cc_emails TEXT NOT NULL DEFAULT '', bcc_emails TEXT NOT NULL DEFAULT '', subject TEXT NOT NULL DEFAULT '', body TEXT NOT NULL DEFAULT '', attachments_json TEXT NOT NULL DEFAULT '[]', thread_id TEXT NOT NULL DEFAULT '', reply_to_message_id TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        const draftId = "draft-" + genId();
+        const ts = now();
+        await env.DB.prepare(
+          "INSERT INTO email_drafts (id, user_id, account, to_emails, cc_emails, bcc_emails, subject, body, attachments_json, thread_id, reply_to_message_id, updated_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ).bind(
+          draftId, userId,
+          thread.email_account || "", lastMsg.from_email || "", "", "",
+          subject.startsWith("Re:") ? subject : `Re: ${subject}`,
+          html, "[]", tid, lastMsg.id, ts, ts
+        ).run();
+        return json({ success: true, id: draftId, body: html });
+      } catch (e: any) {
+        return err(e?.message || "AI draft failed", 500);
+      }
+    }
+
     // ─── EMAIL SEARCH (server-side full-text-ish search across threads) ─
     if (path === "/api/email/search" && method === "GET") {
       try {
@@ -5943,6 +6016,8 @@ function mapMessage(row: Record<string, unknown>) {
     fromEmail: row.from_email,
     fromName: row.from_name,
     toEmail: row.to_email,
+    ccEmails: (row.cc_emails as string) || "",
+    bccEmails: (row.bcc_emails as string) || "",
     subject: row.subject,
     body: row.body,
     htmlBody: row.html_body,

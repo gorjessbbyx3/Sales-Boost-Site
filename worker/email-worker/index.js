@@ -249,6 +249,7 @@ export default {
     let textBody = "";
     let htmlBody = "";
     let attachments = [];
+    let cc = "";
     try {
       const rawEmail = await new Response(message.raw).arrayBuffer();
       const parser = new PostalMime();
@@ -256,6 +257,11 @@ export default {
       textBody = parsed.text || "";
       htmlBody = parsed.html || "";
       attachments = Array.isArray(parsed.attachments) ? parsed.attachments : [];
+      // Capture CC list — postal-mime returns either a comma-string or [{address, name}]
+      if (parsed.cc) {
+        if (typeof parsed.cc === "string") cc = parsed.cc;
+        else if (Array.isArray(parsed.cc)) cc = parsed.cc.map((c) => c.address || c).join(", ");
+      }
     } catch (err) {
       console.error("Failed to parse email body:", err);
     }
@@ -263,6 +269,7 @@ export default {
     await persistInbound(env, {
       from,
       to,
+      cc,
       subject,
       textBody,
       htmlBody,
@@ -281,6 +288,7 @@ async function persistInbound(env, opts) {
   const {
     from = "",
     to = "contact@techsavvyhawaii.com",
+    cc = "",
     subject = "(no subject)",
     textBody = "",
     htmlBody = "",
@@ -364,13 +372,26 @@ async function persistInbound(env, opts) {
       1, now, now, emailAccount
     ).run();
 
-    await env.DB.prepare(`
-      INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      messageId, threadId, "inbound", senderEmail, senderName, to, subject,
-      bodyPreview.slice(0, 5000), htmlBody.slice(0, 10000), "", "received", now
-    ).run();
+    // Best-effort cc_emails write — column added in migration 0025.
+    // Falls back to legacy insert if column doesn't yet exist on this DB.
+    try {
+      await env.DB.prepare(`
+        INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, cc_emails, bcc_emails, sent_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        messageId, threadId, "inbound", senderEmail, senderName, to, subject,
+        bodyPreview.slice(0, 5000), htmlBody.slice(0, 10000), "", "received", cc || "", "", now
+      ).run();
+    } catch (e) {
+      console.warn("cc_emails column missing, falling back:", e?.message || e);
+      await env.DB.prepare(`
+        INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        messageId, threadId, "inbound", senderEmail, senderName, to, subject,
+        bodyPreview.slice(0, 5000), htmlBody.slice(0, 10000), "", "received", now
+      ).run();
+    }
 
     console.log(`💾 → ${folder}: thread ${threadId}`);
 

@@ -115,6 +115,25 @@ script/           → Build scripts
 - DEPLOY NOTE: both the main admin worker (`mojo-luna-955c`, via `wrangler-workers.toml`) and the email worker (`tight-fog-5031`, via `worker/email-worker/wrangler.toml`) deploy automatically from `.github/workflows/deploy.yml` on every push to `main`. No manual `wrangler deploy` step is needed for either worker.
 - QA NOTE: the email worker exposes two `WORKER_KEY`-gated test endpoints — `POST /test-inbound` (inject a synthetic inbound email + attachments through the same `persistInbound()` code path used by live mail; never forwards, never auto-replies) and `POST /test-cleanup` (deletes only `source = email_inbound_test` rows + their R2 objects). End-to-end QA driver lives at `script/qa-email-attachments.mjs`; full procedure (scripted + real-SMTP fallback) is in `script/QA_EMAIL_ATTACHMENTS.md`. Run after any change to `worker/email-worker/index.js`, the `/api/email/...` handlers in `functions/api/[[route]].ts`, or `migrations/0023_email_attachments.sql`.
 
+### Outlook-Grade Inbox Upgrade (Apr 2026)
+- D1 schema additions in `migrations/0025_cc_bcc_drafts.sql`: `email_messages.cc_emails` + `bcc_emails`, `email_drafts` table, `email_signatures` table. Mirrored in `shared/schema.ts`.
+- Inbound email worker (`worker/email-worker/index.js`) now extracts CC recipients via PostalMime and writes to `email_messages.cc_emails` (with a graceful fallback if the column is missing on legacy DBs).
+- `functions/api/[[route]].ts`:
+  - `POST /api/email/send` accepts `cc[]` / `bcc[]` arrays, forwards them to Resend, and persists to `email_messages.cc_emails` / `bcc_emails`.
+  - `GET/POST/PATCH/DELETE /api/email/drafts` — full server-side draft CRUD scoped to the session user.
+  - `GET /api/email/search?q=…` — server-side search across subject, body, contact, sender, recipient, and CC, honoring per-mailbox ACL.
+  - `POST /api/email/threads/:id/auto-draft` — Anthropic-powered AI draft generator that drafts a reply for the latest inbound message (writes to `email_drafts` + returns body for inline use).
+  - `mapMessage()` now returns `ccEmails` / `bccEmails` so the read view can render CC chips.
+- Inbox UI (`client/src/pages/ai-config.tsx`):
+  - **Composer**: TipTap rich text editor (`client/src/components/inbox/RichTextEditor.tsx`), collapsible Cc/Bcc fields, multi-file attachment upload (base64, capped at 20 MB/file), 2-second debounced draft auto-save with status indicator.
+  - **Reply box**: same TipTap editor + Cc/Bcc + attachments. Adds **Reply All** button that seeds Cc with the original CC list (minus the active sender). Adds **AI Draft** button that calls the Anthropic endpoint and pre-fills the reply body for editing before send.
+  - **Read view**: each message shows inline Cc chips when the message had CC recipients.
+  - **Sidebar**: new **Drafts** folder with live count from the drafts query; clicking a draft restores it into the composer.
+  - **Search bar**: debounced (300 ms) inbox-wide search field above the folder layout, with a clear button.
+  - **Email Settings dialog**: new **Email Addresses** panel for adding/editing/deleting sender addresses, picking color, and setting display name (multi-address-per-user is enforced server-side via `email_accounts.owner_id`; the UI now lets admins manage the assignments).
+- TipTap deps: `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-link`, `@tiptap/extension-placeholder`, `@tiptap/extension-underline`.
+- Architectural note: rejected the `cloudflare/agentic-inbox` Hono + Durable Objects + Workers AI stack; only the TipTap composer pattern + auto-draft idea were lifted. Anthropic powers all AI here for parity with the rest of the platform.
+
 ### Pipeline ↔ Outreach Map Sync + Lead Enrichment (Apr 2026)
 - D1 schema additions in `migrations/0024_lead_outreach_sync.sql`: `leads.outreach_business_id` (INTEGER) and `outreach_businesses.lead_id` (TEXT) with indexes.
 - Bidirectional sync helpers in `functions/api/[[route]].ts` (`syncLeadToOutreach` / `syncOutreachToLead`):
