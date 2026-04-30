@@ -112,7 +112,7 @@ script/           → Build scripts
   - `POST /api/email/attachments/:id/sign` — accepts a signed PDF (base64), uploads to R2, registers as new attachment + admin file in "Signed Documents".
 - Frontend (`client/src/components/inbox/EmailAttachments.tsx`) renders chips with view/download/save-to-files/save-to-client/sign actions and a Forward dialog. Client-side PDF signing uses `pdf-lib` + a signature canvas pad.
 - All auth-gated attachment endpoints go through `authorizeAttachment()` which joins to the thread and enforces the same per-mailbox account ACL used by `GET /api/email/threads/:id`.
-- DEPLOY NOTE: the Pages Function deploys via the existing GitHub Actions workflow. The Cloudflare email worker is separate and must be deployed manually after edits: `cd worker/email-worker && npx wrangler deploy`.
+- DEPLOY NOTE: both the main admin worker (`mojo-luna-955c`, via `wrangler-workers.toml`) and the email worker (`tight-fog-5031`, via `worker/email-worker/wrangler.toml`) deploy automatically from `.github/workflows/deploy.yml` on every push to `main`. No manual `wrangler deploy` step is needed for either worker.
 
 ### Pipeline ↔ Outreach Map Sync + Lead Enrichment (Apr 2026)
 - D1 schema additions in `migrations/0024_lead_outreach_sync.sql`: `leads.outreach_business_id` (INTEGER) and `outreach_businesses.lead_id` (TEXT) with indexes.
