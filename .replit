@@ -54,3 +54,7 @@ expertMode = true
 
 [userenv.shared]
 VITE_ADOBE_EXPRESS_CLIENT_ID = "d80493bd5416418fae33226c08a22647"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 180000
