@@ -1,15 +1,34 @@
 /**
  * Tech Savvy Hawaii — Email Worker (tight-fog-5031)
- * 
+ *
  * Handles:
  * 1. email() — Inbound email processing, AI classification, D1 logging, forwarding
- * 2. fetch() — API for health check and manual operations
+ * 2. fetch() — API for health check, stats, and (gated) QA injection endpoints
+ *
+ * The persistence + R2 attachment logic lives in `persistInbound()` so it can
+ * be exercised from both the live email() handler and the /test-inbound
+ * endpoint used by `script/qa-email-attachments.mjs`.
  */
 
 import PostalMime from "postal-mime";
 
 const AI_WORKER_URL = "https://mojo-luna-955c.gorjessbbyx3.workers.dev";
 const FORWARD_TO = "gorjessbbyx3@icloud.com";
+
+// Per-attachment guardrails (size cap, count cap, executable blocklist).
+// Shared by the live email path and the /test-inbound injection path.
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024; // per attachment (~25MB)
+const MAX_TOTAL_BYTES = 50 * 1024 * 1024;      // per email
+const MAX_ATTACHMENT_COUNT = 20;               // per email
+const BLOCKED_EXTENSIONS = new Set([
+  "exe","scr","bat","com","cmd","vbs","vbe","js","jse","wsf","wsh",
+  "msi","dll","ps1","cpl","jar","lnk","reg","hta","sct","msc",
+]);
+
+// Rows created via the /test-inbound endpoint use this source so the
+// /test-cleanup endpoint can delete them safely without ever touching real
+// inbound mail. Do NOT change without updating qa-email-attachments.mjs.
+const TEST_SOURCE = "email_inbound_test";
 
 export default {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -21,7 +40,7 @@ export default {
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-Worker-Key",
     };
 
@@ -43,10 +62,13 @@ export default {
         forward_to: FORWARD_TO,
         ai_worker: AI_WORKER_URL,
         db_bound: !!env.DB,
+        r2_bound: !!env.FILES_BUCKET,
         endpoints: [
-          "GET  /             — Health check",
-          "GET  /stats         — Email folder stats",
-          "POST /test-classify — Test AI classification",
+          "GET    /              — Health check",
+          "GET    /stats         — Email folder stats",
+          "POST   /test-classify — Test AI classification",
+          "POST   /test-inbound  — (X-Worker-Key) Inject a synthetic inbound email + attachments for QA",
+          "POST   /test-cleanup  — (X-Worker-Key) Delete test threads + their R2 attachments",
         ],
       });
     }
@@ -88,6 +110,128 @@ export default {
       }
     }
 
+    // ━━ /test-inbound ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // Inject a synthetic inbound email + attachments so the rest of
+    // the attachment pipeline (D1 row, R2 object, admin UI listing,
+    // forward, sign) can be verified against production WITHOUT
+    // having to actually send a real SMTP message through Cloudflare
+    // Email Routing. Gated by WORKER_KEY (same secret used by the AI
+    // worker calls). Never forwards. Never auto-replies. Always tags
+    // the row with source=email_inbound_test so /test-cleanup can
+    // safely remove it.
+    if (path === "/test-inbound" && request.method === "POST") {
+      const providedKey = request.headers.get("X-Worker-Key") || "";
+      if (!env.WORKER_KEY || providedKey !== env.WORKER_KEY) {
+        return json({ error: "Unauthorized" }, 401);
+      }
+      try {
+        const body = await request.json();
+        const rawAtts = Array.isArray(body.attachments) ? body.attachments : [];
+        const attachments = rawAtts.map((a) => ({
+          filename: a.filename || "attachment.bin",
+          mimeType: a.contentType || a.mimeType || "application/octet-stream",
+          content: base64ToBytes(a.base64 || ""),
+        }));
+        const result = await persistInbound(env, {
+          from: body.from || "qa-test@example.com",
+          to: body.to || "contact@techsavvyhawaii.com",
+          subject: body.subject || "[QA TEST] Email attachment smoke test",
+          textBody: body.text || "QA inbound email test body",
+          htmlBody: body.html || "",
+          attachments,
+          // QA injection never sends real mail.
+          forward: null,
+          sendEmail: null,
+          // Skip live AI classify by default so the test is deterministic
+          // and doesn't burn a model call. Caller can override.
+          classification: body.classification || {
+            intent: "general_inquiry",
+            priority: "normal",
+            summary: body.subject || "QA test",
+            sentiment: "neutral",
+            suggestedAction: "—",
+          },
+          isTest: true,
+        });
+        return json({ success: true, ...result });
+      } catch (err) {
+        // Log internally but never leak stack/message back over the wire,
+        // even though this endpoint is WORKER_KEY-gated.
+        console.error("/test-inbound failed:", err);
+        return json({ error: "test-inbound failed" }, 500);
+      }
+    }
+
+    // ━━ /test-cleanup ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // Delete test rows + their R2 objects. Only touches threads where
+    // source=email_inbound_test (or a specific threadId that has that
+    // source) so a leaked WORKER_KEY can never destroy real inbox data.
+    if (path === "/test-cleanup" && (request.method === "POST" || request.method === "DELETE")) {
+      const providedKey = request.headers.get("X-Worker-Key") || "";
+      if (!env.WORKER_KEY || providedKey !== env.WORKER_KEY) {
+        return json({ error: "Unauthorized" }, 401);
+      }
+      if (!env.DB) return json({ error: "DB not bound" }, 500);
+      try {
+        const body = await request.json().catch(() => ({}));
+        const threadId = (body && body.threadId) || null;
+
+        // Resolve target threads (only ever those flagged as test inbound).
+        const threads = threadId
+          ? (await env.DB.prepare(
+              "SELECT id FROM email_threads WHERE id = ? AND source = ?"
+            ).bind(threadId, TEST_SOURCE).all()).results || []
+          : (await env.DB.prepare(
+              "SELECT id FROM email_threads WHERE source = ?"
+            ).bind(TEST_SOURCE).all()).results || [];
+
+        let deletedThreads = 0;
+        let deletedMessages = 0;
+        let deletedAttachments = 0;
+        let deletedR2 = 0;
+
+        for (const t of threads) {
+          const tid = t.id;
+          const atts = (await env.DB.prepare(
+            "SELECT id, r2_key FROM email_attachments WHERE thread_id = ?"
+          ).bind(tid).all()).results || [];
+          for (const a of atts) {
+            if (env.FILES_BUCKET && a.r2_key) {
+              try {
+                await env.FILES_BUCKET.delete(a.r2_key);
+                deletedR2++;
+              } catch (e) {
+                console.error("R2 delete failed for", a.r2_key, e);
+              }
+            }
+          }
+          const ar = await env.DB.prepare(
+            "DELETE FROM email_attachments WHERE thread_id = ?"
+          ).bind(tid).run();
+          const mr = await env.DB.prepare(
+            "DELETE FROM email_messages WHERE thread_id = ?"
+          ).bind(tid).run();
+          const tr = await env.DB.prepare(
+            "DELETE FROM email_threads WHERE id = ? AND source = ?"
+          ).bind(tid, TEST_SOURCE).run();
+          deletedAttachments += ar?.meta?.changes || atts.length;
+          deletedMessages += mr?.meta?.changes || 0;
+          deletedThreads += tr?.meta?.changes || 0;
+        }
+
+        return json({
+          success: true,
+          deletedThreads,
+          deletedMessages,
+          deletedAttachments,
+          deletedR2,
+        });
+      } catch (err) {
+        console.error("/test-cleanup failed:", err);
+        return json({ error: "test-cleanup failed" }, 500);
+      }
+    }
+
     return json({ error: "Not found" }, 404);
   },
 
@@ -116,22 +260,58 @@ export default {
       console.error("Failed to parse email body:", err);
     }
 
-    const bodyPreview = textBody.slice(0, 2000) || htmlBody.replace(/<[^>]*>/g, "").slice(0, 2000);
+    await persistInbound(env, {
+      from,
+      to,
+      subject,
+      textBody,
+      htmlBody,
+      attachments,
+      forward: (toAddr) => message.forward(toAddr),
+      sendEmail: env.SEND_EMAIL ? (m) => env.SEND_EMAIL.send(m) : null,
+      isTest: false,
+    });
+  },
+};
 
-    // Extract sender info
-    const nameMatch = from.match(/^([^<]+)</);
-    const senderName = nameMatch ? nameMatch[1].trim() : from.split("@")[0];
-    const senderEmail = (from.match(/<([^>]+)>/) ? from.match(/<([^>]+)>/)[1] : from).toLowerCase();
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Shared inbound-email persistence (used by email() AND /test-inbound)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function persistInbound(env, opts) {
+  const {
+    from = "",
+    to = "contact@techsavvyhawaii.com",
+    subject = "(no subject)",
+    textBody = "",
+    htmlBody = "",
+    attachments = [],
+    forward = null,
+    sendEmail = null,
+    classification: classificationOverride = null,
+    isTest = false,
+  } = opts;
 
-    // Classify via AI Worker
-    let classification = {
-      intent: "general_inquiry",
-      priority: "normal",
-      summary: subject,
-      suggestedAction: "Review and respond",
-      sentiment: "neutral",
-    };
+  const bodyPreview =
+    textBody.slice(0, 2000) || htmlBody.replace(/<[^>]*>/g, "").slice(0, 2000);
 
+  // Extract sender info
+  const nameMatch = from.match(/^([^<]+)</);
+  const senderName = nameMatch
+    ? nameMatch[1].trim()
+    : (from.split("@")[0] || "Unknown");
+  const senderEmail = (
+    from.match(/<([^>]+)>/) ? from.match(/<([^>]+)>/)[1] : from
+  ).toLowerCase();
+
+  // Classify via AI Worker (skipped if caller supplied an override).
+  let classification = classificationOverride || {
+    intent: "general_inquiry",
+    priority: "normal",
+    summary: subject,
+    suggestedAction: "Review and respond",
+    sentiment: "neutral",
+  };
+  if (!classificationOverride) {
     try {
       const classifyRes = await fetch(`${AI_WORKER_URL}/classify`, {
         method: "POST",
@@ -151,161 +331,166 @@ export default {
     } catch (err) {
       console.error("AI classify failed (non-blocking):", err);
     }
+  }
 
-    console.log(`🏷️ ${classification.intent} | ${classification.priority} | ${classification.sentiment}`);
+  console.log(`🏷️ ${classification.intent} | ${classification.priority} | ${classification.sentiment}`);
 
-    // Determine folder
-    const folder = classification.intent === "spam" ? "spam" : "inbox";
+  // Determine folder
+  const folder = classification.intent === "spam" ? "spam" : "inbox";
 
-    // Determine which email account received this (always lowercase for consistency)
-    const emailAccount = (to || "contact@techsavvyhawaii.com").toLowerCase();
+  // Determine which email account received this (always lowercase for consistency)
+  const emailAccount = (to || "contact@techsavvyhawaii.com").toLowerCase();
 
-    // Log ALL emails to D1 (including spam — goes to spam folder)
-    if (env.DB) {
+  // Log ALL emails to D1 (including spam — goes to spam folder)
+  if (!env.DB) {
+    console.warn("⚠️ DB binding missing — skipping persist");
+    return { skipped: "no DB binding" };
+  }
+
+  const now = new Date().toISOString();
+  const threadId = crypto.randomUUID();
+  const messageId = crypto.randomUUID();
+  const attachmentIds = [];
+
+  try {
+    await env.DB.prepare(`
+      INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, folder, starred, ai_intent, ai_priority, ai_sentiment, unread, last_message_at, created_at, email_account)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      threadId, subject, "", senderEmail, senderName,
+      isTest ? TEST_SOURCE : "email_inbound", "open",
+      folder, 0,
+      classification.intent || "", classification.priority || "normal", classification.sentiment || "neutral",
+      1, now, now, emailAccount
+    ).run();
+
+    await env.DB.prepare(`
+      INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      messageId, threadId, "inbound", senderEmail, senderName, to, subject,
+      bodyPreview.slice(0, 5000), htmlBody.slice(0, 10000), "", "received", now
+    ).run();
+
+    console.log(`💾 → ${folder}: thread ${threadId}`);
+
+    // Attachments — upload each to R2 + insert email_attachments row.
+    if (attachments.length > 0 && env.FILES_BUCKET) {
+      const publicBase = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
+      let total = 0;
+      let saved = 0;
+      for (const att of attachments) {
+        if (saved >= MAX_ATTACHMENT_COUNT) {
+          console.warn(`⚠️ skipping attachment "${att.filename}" — count cap reached`);
+          continue;
+        }
+        try {
+          const rawName = att.filename || "attachment";
+          const ext = (rawName.split(".").pop() || "").toLowerCase();
+          if (BLOCKED_EXTENSIONS.has(ext)) {
+            console.warn(`⛔ skipping attachment "${rawName}" — blocked extension .${ext}`);
+            continue;
+          }
+          const safeName = rawName.replace(/[^\w.\-]/g, "_").slice(0, 120);
+          const buf = att.content instanceof Uint8Array ? att.content : new Uint8Array(att.content || []);
+          if (buf.length === 0) {
+            console.warn(`⚠️ skipping empty attachment "${rawName}"`);
+            continue;
+          }
+          if (buf.length > MAX_ATTACHMENT_BYTES) {
+            console.warn(`⛔ skipping attachment "${rawName}" — ${buf.length} bytes exceeds per-file cap`);
+            continue;
+          }
+          if (total + buf.length > MAX_TOTAL_BYTES) {
+            console.warn(`⛔ skipping attachment "${rawName}" — would exceed per-email total cap`);
+            continue;
+          }
+          total += buf.length;
+
+          const attId = crypto.randomUUID();
+          const r2Key = `email-attachments/${threadId}/${attId}-${safeName}`;
+          const contentType = att.mimeType || "application/octet-stream";
+          await env.FILES_BUCKET.put(r2Key, buf, { httpMetadata: { contentType } });
+          const url = `${publicBase}/${r2Key}`;
+          await env.DB.prepare(`
+            INSERT INTO email_attachments (id, message_id, thread_id, filename, content_type, size, r2_key, url, direction, signed_of, saved_to_files, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'inbound', '', 0, ?)
+          `).bind(attId, messageId, threadId, safeName, contentType, buf.length, r2Key, url, now).run();
+          attachmentIds.push(attId);
+          saved++;
+          console.log(`📎 Saved attachment ${safeName} (${buf.length} bytes) → ${r2Key}`);
+        } catch (attErr) {
+          console.error("Failed to save attachment:", att.filename, attErr);
+        }
+      }
+    } else if (attachments.length > 0) {
+      console.warn(`⚠️ ${attachments.length} attachment(s) ignored — FILES_BUCKET binding missing`);
+    }
+
+    // Create lead if new_lead
+    if (classification.intent === "new_lead") {
+      const leadId = crypto.randomUUID();
+      await env.DB.prepare(`
+        INSERT INTO leads (id, name, email, source, status, notes, best_contact_method, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        leadId, senderName, senderEmail,
+        isTest ? TEST_SOURCE : "email_inbound", "new",
+        `[Email] ${subject}\n\n${bodyPreview.slice(0, 500)}\n\n[AI] ${classification.summary || ""}`,
+        "email", now, now
+      ).run();
+      await env.DB.prepare(`UPDATE email_threads SET lead_id = ? WHERE id = ?`).bind(leadId, threadId).run();
+      console.log(`🎯 Lead: ${leadId}`);
+    }
+  } catch (err) {
+    console.error("D1 failed:", err);
+  }
+
+  // Forward (non-spam only). Skipped when forward is null (test path).
+  if (folder !== "spam" && forward) {
+    try {
+      await forward(FORWARD_TO);
+      console.log("📨 Forwarded");
+    } catch (err) {
+      console.error("Forward failed:", err);
+    }
+  }
+
+  // Auto-reply for new leads. Skipped when sendEmail is null (test path).
+  if (sendEmail && classification.intent === "new_lead" && classification.sentiment !== "angry") {
+    try {
+      const firstName = nameMatch ? nameMatch[1].trim().split(" ")[0] : "there";
+      const autoReply = new EmailMessage("contact@techsavvyhawaii.com", senderEmail, buildAutoReplyRaw(firstName, subject));
+      await sendEmail(autoReply);
+      console.log(`✅ Auto-reply → ${senderEmail}`);
+
       try {
-        const now = new Date().toISOString();
-        const threadId = crypto.randomUUID();
-        const messageId = crypto.randomUUID();
-
-        await env.DB.prepare(`
-          INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, folder, starred, ai_intent, ai_priority, ai_sentiment, unread, last_message_at, created_at, email_account)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(
-          threadId, subject, "", senderEmail, senderName, "email_inbound", "open",
-          folder, 0,
-          classification.intent || "", classification.priority || "normal", classification.sentiment || "neutral",
-          1, now, now, emailAccount
-        ).run();
-
+        const replyTs = new Date().toISOString();
         await env.DB.prepare(`
           INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(
-          messageId, threadId, "inbound", senderEmail, senderName, to, subject,
-          bodyPreview.slice(0, 5000), htmlBody.slice(0, 10000), "", "received", now
-        ).run();
-
-        console.log(`💾 → ${folder}: thread ${threadId}`);
-
-        // Attachments — upload each to R2 + insert email_attachments row.
-        // Guardrails: size cap, count cap, and a blocklist of executable types.
-        // These limits prevent abuse / unbounded R2 spend from hostile inbound mail.
-        const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;     // per attachment (~25MB)
-        const MAX_TOTAL_BYTES = 50 * 1024 * 1024;          // per email
-        const MAX_ATTACHMENT_COUNT = 20;                   // per email
-        const BLOCKED_EXTENSIONS = new Set([
-          "exe","scr","bat","com","cmd","vbs","vbe","js","jse","wsf","wsh",
-          "msi","dll","ps1","cpl","jar","lnk","reg","hta","sct","msc",
-        ]);
-        if (attachments.length > 0 && env.FILES_BUCKET) {
-          const publicBase = (env.R2_PUBLIC_URL || "https://assets.techsavvyhawaii.com").replace(/\/$/, "");
-          let total = 0;
-          let saved = 0;
-          for (const att of attachments) {
-            if (saved >= MAX_ATTACHMENT_COUNT) {
-              console.warn(`⚠️ skipping attachment "${att.filename}" — count cap reached`);
-              continue;
-            }
-            try {
-              const rawName = att.filename || "attachment";
-              const ext = (rawName.split(".").pop() || "").toLowerCase();
-              if (BLOCKED_EXTENSIONS.has(ext)) {
-                console.warn(`⛔ skipping attachment "${rawName}" — blocked extension .${ext}`);
-                continue;
-              }
-              const safeName = rawName.replace(/[^\w.\-]/g, "_").slice(0, 120);
-              const buf = att.content instanceof Uint8Array ? att.content : new Uint8Array(att.content || []);
-              if (buf.length === 0) {
-                console.warn(`⚠️ skipping empty attachment "${rawName}"`);
-                continue;
-              }
-              if (buf.length > MAX_ATTACHMENT_BYTES) {
-                console.warn(`⛔ skipping attachment "${rawName}" — ${buf.length} bytes exceeds per-file cap`);
-                continue;
-              }
-              if (total + buf.length > MAX_TOTAL_BYTES) {
-                console.warn(`⛔ skipping attachment "${rawName}" — would exceed per-email total cap`);
-                continue;
-              }
-              total += buf.length;
-
-              const attId = crypto.randomUUID();
-              const r2Key = `email-attachments/${threadId}/${attId}-${safeName}`;
-              const contentType = att.mimeType || "application/octet-stream";
-              await env.FILES_BUCKET.put(r2Key, buf, { httpMetadata: { contentType } });
-              const url = `${publicBase}/${r2Key}`;
-              await env.DB.prepare(`
-                INSERT INTO email_attachments (id, message_id, thread_id, filename, content_type, size, r2_key, url, direction, signed_of, saved_to_files, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'inbound', '', 0, ?)
-              `).bind(attId, messageId, threadId, safeName, contentType, buf.length, r2Key, url, now).run();
-              saved++;
-              console.log(`📎 Saved attachment ${safeName} (${buf.length} bytes) → ${r2Key}`);
-            } catch (attErr) {
-              console.error("Failed to save attachment:", att.filename, attErr);
-            }
-          }
-        } else if (attachments.length > 0) {
-          console.warn(`⚠️ ${attachments.length} attachment(s) ignored — FILES_BUCKET binding missing`);
-        }
-
-        // Create lead if new_lead
-        if (classification.intent === "new_lead") {
-          const leadId = crypto.randomUUID();
-          await env.DB.prepare(`
-            INSERT INTO leads (id, name, email, source, status, notes, best_contact_method, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).bind(
-            leadId, senderName, senderEmail, "email_inbound", "new",
-            `[Email] ${subject}\n\n${bodyPreview.slice(0, 500)}\n\n[AI] ${classification.summary || ""}`,
-            "email", now, now
-          ).run();
-          await env.DB.prepare(`UPDATE email_threads SET lead_id = ? WHERE id = ?`).bind(leadId, threadId).run();
-          console.log(`🎯 Lead: ${leadId}`);
-        }
-      } catch (err) {
-        console.error("D1 failed:", err);
+        `).bind(crypto.randomUUID(), threadId, "outbound", "contact@techsavvyhawaii.com", "TechSavvy Hawaii", senderEmail, `Re: ${subject}`, `Auto-reply sent to ${firstName}`, "", "", "sent", replyTs).run();
+        await env.DB.prepare(`UPDATE email_threads SET last_message_at = ? WHERE id = ?`).bind(replyTs, threadId).run();
+      } catch (e) {
+        console.error("Auto-reply log failed:", e);
       }
+    } catch (err) {
+      console.error("Auto-reply failed:", err);
     }
+  }
 
-    // Forward (non-spam only)
-    if (folder !== "spam") {
-      try {
-        await message.forward(FORWARD_TO);
-        console.log("📨 Forwarded");
-      } catch (err) {
-        console.error("Forward failed:", err);
-      }
-    }
+  return { threadId, messageId, attachmentIds, classification, folder };
+}
 
-    // Auto-reply for new leads
-    if (env.SEND_EMAIL && classification.intent === "new_lead" && classification.sentiment !== "angry") {
-      try {
-        const firstName = nameMatch ? nameMatch[1].trim().split(" ")[0] : "there";
-        const autoReply = new EmailMessage("contact@techsavvyhawaii.com", senderEmail, buildAutoReplyRaw(firstName, subject));
-        await env.SEND_EMAIL.send(autoReply);
-        console.log(`✅ Auto-reply → ${senderEmail}`);
-
-        if (env.DB) {
-          try {
-            const thread = await env.DB.prepare(
-              `SELECT id FROM email_threads WHERE contact_email = ? AND subject = ? ORDER BY created_at DESC LIMIT 1`
-            ).bind(senderEmail, subject).first();
-            if (thread) {
-              const now = new Date().toISOString();
-              await env.DB.prepare(`
-                INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, sent_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-              `).bind(crypto.randomUUID(), thread.id, "outbound", "contact@techsavvyhawaii.com", "TechSavvy Hawaii", senderEmail, `Re: ${subject}`, `Auto-reply sent to ${firstName}`, "", "", "sent", now).run();
-              await env.DB.prepare(`UPDATE email_threads SET last_message_at = ? WHERE id = ?`).bind(now, thread.id).run();
-            }
-          } catch (e) { console.error("Auto-reply log failed:", e); }
-        }
-      } catch (err) {
-        console.error("Auto-reply failed:", err);
-      }
-    }
-  },
-};
+// Decode standard base64 (with optional `data:...;base64,` prefix) to Uint8Array.
+function base64ToBytes(b64) {
+  if (!b64) return new Uint8Array();
+  const clean = b64.replace(/^data:[^;,]+(?:;[^,]+)?,/, "").replace(/\s/g, "");
+  const bin = atob(clean);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
 
 function buildAutoReplyRaw(firstName, originalSubject) {
   const subject = `Re: ${originalSubject}`;
