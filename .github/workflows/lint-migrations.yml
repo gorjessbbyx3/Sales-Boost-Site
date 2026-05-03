@@ -1,0 +1,36 @@
+name: Lint D1 migrations
+
+# Runs the migration lint script on PRs and pushes that touch any
+# `migrations/**` file. The script enforces the authoring rules in
+# `migrations/README.md` (CREATE TABLE IF NOT EXISTS, INSERT OR IGNORE,
+# no `ADD COLUMN IF NOT EXISTS`, etc.) so risky patterns get caught
+# before they hit `main` and the deploy pipeline.
+
+on:
+  pull_request:
+    paths:
+      - "migrations/**"
+      - "script/lint-migrations.mjs"
+      - "script/reconcile-d1-migrations.mjs"
+      - ".github/workflows/lint-migrations.yml"
+  push:
+    branches: [main]
+    paths:
+      - "migrations/**"
+      - "script/lint-migrations.mjs"
+      - "script/reconcile-d1-migrations.mjs"
+      - ".github/workflows/lint-migrations.yml"
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Lint migrations
+        run: node script/lint-migrations.mjs

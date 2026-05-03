@@ -37,6 +37,15 @@ plan around. The cheat sheet:
 them.** That covers everything in a typical migration *except* `ALTER TABLE …
 ADD COLUMN`, which D1 cannot guard against duplicates at the SQL level.
 
+These rules are enforced in CI by `script/lint-migrations.mjs`, which runs
+via `.github/workflows/lint-migrations.yml` on every PR (and push to `main`)
+that touches `migrations/**`. The lint fails the build on bare
+`CREATE TABLE`, bare `CREATE INDEX`, or plain `INSERT` for seed data. It
+also emits a (non-fatal) warning if it sees `ADD COLUMN IF NOT EXISTS` —
+that syntax is invalid in D1/SQLite and would fail at apply time anyway,
+but the warning surfaces it earlier. You can run it locally with
+`node script/lint-migrations.mjs` before opening the PR.
+
 For `ADD COLUMN`, the safety net is the **pre-deploy reconciler**
 (`script/reconcile-d1-migrations.mjs`). It parses each pending migration,
 checks the live schema with `PRAGMA table_info` / `sqlite_master`, and if all
