@@ -36,21 +36,58 @@ const TEST_SOURCE = "email_inbound_test";
 // message as a finance candidate so a single-word match (e.g. "invoice"
 // in a sales email) doesn't trigger an AI extraction.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const FINANCE_KEYWORDS = /\b(invoice|receipt|statement|payment received|paid|order confirmation|tax invoice|amount due|total due|subtotal|your bill|monthly bill|payment confirmation)\b/i;
+// Tuned May 2026 after ~1 week of production traffic. Removed bare "paid"
+// (drove false positives in sales emails like "we've helped X get paid faster")
+// in favor of more specific phrases. Added Hawaii-local utility/bank/govt
+// vendors and common SaaS/payroll/wholesale billing domains that were missed
+// by the first pass. See replit.md "Auto-Import Receipts & Invoices" section
+// for the precision/recall numbers on the tuning sample.
+const FINANCE_KEYWORDS = /\b(invoice|receipt|statement|payment received|payment confirmation|payment processed|order confirmation|tax invoice|amount due|total due|amount paid|balance due|subtotal|your bill|monthly bill|your invoice|your receipt|billing statement|renewal receipt|thank you for your payment|card was charged|successful payment|auto-?pay)\b/i;
 const FINANCE_DOMAINS = new Set([
-  "stripe.com", "squareup.com", "square.com", "intuit.com", "quickbooks.intuit.com",
-  "paypal.com", "venmo.com", "zellepay.com",
+  // Payment processors & money movement
+  "stripe.com", "stripe.email", "squareup.com", "square.com", "intuit.com", "quickbooks.intuit.com",
+  "paypal.com", "venmo.com", "zellepay.com", "bill.com", "melio.com",
+  // Telecom / connectivity
   "verizonwireless.com", "verizon.com", "att.com", "tmobile.com", "spectrum.com", "frontier.com",
+  // Big-box / wholesale / retail
   "amazon.com", "amazonpayments.com", "costco.com", "costcobusiness.com",
-  "godaddy.com", "cloudflare.com", "google.com", "apple.com", "microsoft.com",
-  "hawaiianelectric.com", "hawaiiantel.com",
+  "samsclub.com", "homedepot.com", "lowes.com", "staples.com", "officedepot.com",
+  "uline.com", "quill.com",
+  // Domains / infra / SaaS billing
+  "godaddy.com", "namecheap.com", "cloudflare.com", "google.com", "apple.com", "microsoft.com",
+  "amazonaws.com", "vercel.com", "netlify.com", "linode.com", "digitalocean.com",
+  "shopify.com", "sendgrid.com", "mailchimp.com", "dropbox.com", "atlassian.com",
+  "notion.so", "slack.com", "zoom.us", "docusign.net",
+  // Accounting / payroll
+  "gusto.com", "adp.com", "paychex.com", "wave.com", "waveapps.com",
+  "xero.com", "freshbooks.com", "zoho.com",
+  // Hawaii-local utilities / govt
+  "hawaiianelectric.com", "hawaiiantel.com", "hawaiigas.com",
+  "hbws.org", "boardofwatersupply.com",
+  "honolulu.gov", "hawaii.gov",
+  // Banks (incl. Hawaii regional)
+  "boh.com", "fhb.com", "asbhawaii.com", "centralpacificbank.com",
+  "chase.com", "capitalone.com", "americanexpress.com", "discover.com",
+  "wellsfargo.com", "bankofamerica.com",
+  // Shipping / logistics
   "fedex.com", "ups.com", "usps.com",
 ]);
+function domainMatchesAllowlist(dom) {
+  if (!dom) return false;
+  if (FINANCE_DOMAINS.has(dom)) return true;
+  // Suffix match so subdomains (e.g. billing.stripe.com, email.boh.com,
+  // notifications.bill.com) hit the allowlisted root. Anchored on a dot
+  // so "notstripe.com" never matches "stripe.com".
+  for (const allowed of FINANCE_DOMAINS) {
+    if (dom.endsWith("." + allowed)) return true;
+  }
+  return false;
+}
 function detectFinanceCandidate({ fromEmail, subject, body, attachments }) {
   let signals = 0;
   const local = (fromEmail.split("@")[0] || "").toLowerCase();
   const dom = (fromEmail.split("@")[1] || "").toLowerCase();
-  if (FINANCE_DOMAINS.has(dom) || /(billing|receipts?|invoice|invoicing|payments?|noreply|no-reply)/i.test(local)) signals++;
+  if (domainMatchesAllowlist(dom) || /(billing|receipts?|invoice|invoicing|payments?|noreply|no-reply)/i.test(local)) signals++;
   if (FINANCE_KEYWORDS.test(subject || "") || FINANCE_KEYWORDS.test(body || "")) signals++;
   const hasPdf = (attachments || []).some((a) => {
     const fn = (a.filename || "").toLowerCase();
