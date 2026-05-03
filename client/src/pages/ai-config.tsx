@@ -4241,6 +4241,10 @@ interface InvoiceRecord {
   notes: string;
   fileUrl: string;
   fileName: string;
+  autoImported?: boolean;
+  sourceMessageId?: string;
+  vendor?: string;
+  confidence?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -4302,6 +4306,12 @@ function InvoicesTab() {
     onSuccess: () => { refetch(); toast({ title: "Invoice deleted" }); },
   });
 
+  const approveAutoMut = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/invoices/${id}/approve-auto`, {}),
+    onSuccess: () => { refetch(); toast({ title: "Approved", description: "Auto-imported invoice confirmed." }); },
+    onError: () => toast({ title: "Approve failed", variant: "destructive" }),
+  });
+
   const quickUpload = async (files: FileList | File[]) => {
     setUploading(true);
     let count = 0;
@@ -4352,6 +4362,7 @@ function InvoicesTab() {
   const totalPending = invoices.filter(i => i.status === "pending").reduce((s, i) => s + i.amount, 0);
   const totalPaid = invoices.filter(i => i.status === "paid").reduce((s, i) => s + i.amount, 0);
   const totalOverdue = invoices.filter(i => i.status === "overdue").reduce((s, i) => s + i.amount, 0);
+  const autoCount = invoices.filter(i => i.autoImported).length;
 
   return (
     <div className="space-y-4">
@@ -4428,10 +4439,20 @@ function InvoicesTab() {
               )}
               {filtered.map((inv) => {
                 const st = INVOICE_STATUSES[inv.status] || INVOICE_STATUSES.pending;
+                const isAuto = !!inv.autoImported;
                 return (
-                  <TableRow key={inv.id}>
+                  <TableRow key={inv.id} className={isAuto ? "bg-amber-400/5" : undefined}>
                     <TableCell className="text-sm font-medium">{inv.invoiceNumber || "—"}</TableCell>
-                    <TableCell className="text-sm">{inv.clientName || <span className="text-muted-foreground italic">No client</span>}</TableCell>
+                    <TableCell className="text-sm">
+                      <div className="flex items-center gap-2">
+                        <span>{inv.clientName || inv.vendor || <span className="text-muted-foreground italic">No client</span>}</span>
+                        {isAuto && (
+                          <Badge variant="outline" className="text-[9px] text-amber-400 bg-amber-400/10 border-amber-400/20" title={`Auto-imported from email${inv.confidence ? ` · ${Math.round(inv.confidence * 100)}% confidence` : ""}`}>
+                            <Bot className="w-2.5 h-2.5 mr-0.5" />Auto · Review
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-sm font-medium">${inv.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`text-[10px] ${st.color}`}>{st.label}</Badge>
@@ -4444,15 +4465,32 @@ function InvoicesTab() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center gap-1 justify-end">
-                        {inv.status !== "paid" && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400 hover:text-emerald-300" title="Mark Paid"
-                            onClick={() => updateMut.mutate({ id: inv.id, status: "paid", paidDate: new Date().toISOString().split("T")[0] })}>
-                            <Check className="w-3 h-3" />
-                          </Button>
+                        {isAuto && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400 hover:text-emerald-300" title="Approve auto-import"
+                              onClick={() => approveAutoMut.mutate(inv.id)} disabled={approveAutoMut.isPending}>
+                              <Check className="w-3 h-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-300" title="Reject (delete) auto-import"
+                              onClick={() => { if (confirm("Reject this auto-imported invoice? It will be deleted.")) deleteMut.mutate(inv.id); }}>
+                              <X className="w-3 h-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)} title="Edit"><Edit3 className="w-3 h-3" /></Button>
+                          </>
                         )}
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)}><Edit3 className="w-3 h-3" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-300"
-                          onClick={() => { if (confirm("Delete this invoice?")) deleteMut.mutate(inv.id); }}><Trash2 className="w-3 h-3" /></Button>
+                        {!isAuto && (
+                          <>
+                            {inv.status !== "paid" && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400 hover:text-emerald-300" title="Mark Paid"
+                                onClick={() => updateMut.mutate({ id: inv.id, status: "paid", paidDate: new Date().toISOString().split("T")[0] })}>
+                                <Check className="w-3 h-3" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)}><Edit3 className="w-3 h-3" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-300"
+                              onClick={() => { if (confirm("Delete this invoice?")) deleteMut.mutate(inv.id); }}><Trash2 className="w-3 h-3" /></Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

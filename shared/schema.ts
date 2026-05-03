@@ -461,6 +461,8 @@ export const emailMessages = pgTable("email_messages", {
   status: text("status").notNull().default("sent"), // sent | delivered | opened | bounced | failed
   ccEmails: text("cc_emails").notNull().default(""), // comma-separated
   bccEmails: text("bcc_emails").notNull().default(""), // comma-separated
+  financeCandidate: integer("finance_candidate").notNull().default(0),
+  financeExtractedJson: text("finance_extracted_json").notNull().default(""),
   sentAt: text("sent_at").notNull(),
 });
 
@@ -650,6 +652,10 @@ export const invoices = pgTable("invoices", {
   notes: text("notes").notNull().default(""),
   fileUrl: text("file_url").notNull().default(""),
   fileName: text("file_name").notNull().default(""),
+  autoImported: integer("auto_imported").notNull().default(0),
+  sourceMessageId: text("source_message_id").notNull().default(""),
+  vendor: text("vendor").notNull().default(""),
+  confidence: real("confidence").notNull().default(1.0),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

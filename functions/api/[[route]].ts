@@ -6051,6 +6051,196 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
     }
 
+    // ─── FINANCE: EXTRACT FROM EMAIL (worker-key gated) ─────────────────
+    // Called by the inbound email worker after Stage-1 detector tags a
+    // message as a finance candidate. Loads the message + first PDF
+    // attachment, asks Claude for a strict JSON extraction, and (when
+    // confidence is high enough) inserts a row into invoices with
+    // auto_imported=1 + source_message_id. Idempotent on (source_message_id).
+    if (path === "/api/finance/extract-from-message" && method === "POST") {
+      if (!env.WORKER_KEY || request.headers.get("X-Worker-Key") !== env.WORKER_KEY) {
+        return err("Unauthorized", 401);
+      }
+      if (!env.ANTHROPIC_API_KEY) return err("ANTHROPIC_API_KEY not configured", 500);
+      const body: any = await request.json().catch(() => ({}));
+      const messageId: string = String(body.messageId || "");
+      if (!messageId) return err("messageId required");
+
+      // Idempotency: skip if we already imported one for this message.
+      try {
+        const existing = await env.DB.prepare(
+          "SELECT id FROM invoices WHERE source_message_id = ? LIMIT 1"
+        ).bind(messageId).first();
+        if (existing) return json({ skipped: "already imported", invoiceId: existing.id });
+      } catch {}
+
+      const msg: any = await env.DB.prepare(
+        "SELECT id, thread_id, from_email, from_name, subject, body, sent_at FROM email_messages WHERE id = ?"
+      ).bind(messageId).first();
+      if (!msg) return err("Message not found", 404);
+
+      // Pull the first PDF attachment (if any) directly from R2 so we can
+      // ship its bytes to Claude as a base64 document block.
+      let pdfBase64 = "";
+      let pdfFilename = "";
+      try {
+        const att: any = await env.DB.prepare(
+          "SELECT id, filename, content_type, r2_key FROM email_attachments WHERE message_id = ? AND (content_type LIKE '%pdf%' OR filename LIKE '%.pdf') LIMIT 1"
+        ).bind(messageId).first();
+        if (att && env.FILES_BUCKET) {
+          const obj = await env.FILES_BUCKET.get(att.r2_key as string);
+          if (obj) {
+            const buf = new Uint8Array(await obj.arrayBuffer());
+            // Chunked base64 encode (binary-safe, no btoa stack-blowup).
+            let bin = "";
+            const CHUNK = 0x8000;
+            for (let i = 0; i < buf.length; i += CHUNK) {
+              bin += String.fromCharCode.apply(null, Array.from(buf.subarray(i, i + CHUNK)));
+            }
+            pdfBase64 = btoa(bin);
+            pdfFilename = String(att.filename || "");
+          }
+        }
+      } catch (e: any) {
+        console.error("PDF fetch failed:", e?.message || e);
+      }
+
+      const prompt = `You are extracting structured finance data from an email that may be a receipt, paid invoice, statement, or unpaid invoice/bill.
+
+Return STRICT JSON ONLY (no prose, no markdown fences) with this exact shape:
+{
+  "kind": "invoice" | "receipt" | "statement" | "not_finance",
+  "vendor": string,
+  "amount_cents": integer,
+  "currency": "USD" | string,
+  "invoice_number": string,
+  "issue_date": "YYYY-MM-DD" | "",
+  "due_date": "YYYY-MM-DD" | "",
+  "paid": boolean,
+  "confidence": number between 0 and 1,
+  "summary": string (max 120 chars)
+}
+
+Rules:
+- "kind" = "receipt" if it confirms a payment was made (most automated billing emails).
+- "kind" = "invoice" if it's a bill the recipient owes.
+- "kind" = "statement" if it's an account summary without a single charge to act on.
+- "kind" = "not_finance" if this isn't actually a bill/receipt — confidence MUST be < 0.5.
+- amount_cents must be a positive integer; if you only see "$142.99" then 14299.
+- vendor is the BUSINESS sending the bill (e.g. "Verizon Wireless", "Stripe", "Costco"), not their email address.
+- Use empty string for unknown date/number fields.
+- confidence ≥ 0.85 means you're sure.`;
+
+      const userContent: any[] = [];
+      if (pdfBase64) {
+        userContent.push({
+          type: "document",
+          source: { type: "base64", media_type: "application/pdf", data: pdfBase64 },
+        });
+      }
+      userContent.push({
+        type: "text",
+        text: `From: ${msg.from_name || ""} <${msg.from_email || ""}>\nSubject: ${msg.subject || ""}\nDate: ${msg.sent_at || ""}\n\nBody:\n${String(msg.body || "").slice(0, 8000)}\n\n${pdfFilename ? `(PDF attachment: ${pdfFilename})\n\n` : ""}${prompt}`,
+      });
+
+      let extracted: any = null;
+      try {
+        const resp = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": env.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 600,
+            messages: [{ role: "user", content: userContent }],
+          }),
+          signal: AbortSignal.timeout(60_000),
+        });
+        if (!resp.ok) {
+          const t = await resp.text().catch(() => "");
+          return err(`Anthropic error: ${resp.status} ${t.slice(0, 300)}`, 502);
+        }
+        const data: any = await resp.json();
+        const raw = (data.content || [])
+          .filter((b: any) => b.type === "text")
+          .map((b: any) => b.text)
+          .join("\n")
+          .trim()
+          .replace(/^```(?:json)?\s*/i, "")
+          .replace(/```\s*$/i, "");
+        extracted = JSON.parse(raw);
+      } catch (e: any) {
+        return err(`Extraction failed: ${e?.message || e}`, 500);
+      }
+
+      // Persist the raw extraction on the message regardless of outcome
+      // so the UI can show a "Reviewed by AI" trail and the cron never
+      // re-bills the same message.
+      try {
+        await env.DB.prepare("UPDATE email_messages SET finance_extracted_json = ? WHERE id = ?")
+          .bind(JSON.stringify(extracted), messageId).run();
+      } catch {}
+
+      const confidence = Number(extracted?.confidence) || 0;
+      const kind = String(extracted?.kind || "not_finance");
+      const amountCents = parseInt(extracted?.amount_cents) || 0;
+
+      // Refuse to insert garbage. Worker still flagged the email so a
+      // human can manually use the existing record-finance dialog if
+      // they disagree.
+      if (kind === "not_finance" || confidence < 0.5 || amountCents <= 0) {
+        return json({ skipped: "low confidence or non-finance", extracted });
+      }
+
+      // Pull the linked attachment URL (if any) for the invoice file_url.
+      let fileUrl = ""; let fileName = "";
+      try {
+        const att: any = await env.DB.prepare(
+          "SELECT filename, url FROM email_attachments WHERE message_id = ? ORDER BY created_at ASC LIMIT 1"
+        ).bind(messageId).first();
+        if (att) { fileUrl = String(att.url || ""); fileName = String(att.filename || ""); }
+      } catch {}
+
+      const id = genId();
+      const ts = now();
+      const status = (kind === "receipt" || extracted?.paid === true) ? "paid" : "pending";
+      const paidDate = status === "paid" ? (String(extracted?.issue_date || "").slice(0, 10) || ts.slice(0, 10)) : "";
+      const vendor = String(extracted?.vendor || "").slice(0, 200);
+      const invoiceNumber = String(extracted?.invoice_number || "").slice(0, 100);
+      const dueDate = String(extracted?.due_date || "").slice(0, 10);
+      const amountDollars = Math.round(amountCents / 100);
+      const summary = String(extracted?.summary || "").slice(0, 200);
+      const noteText = `Auto-imported from email · ${summary}\n[Source message: ${messageId}]${pdfFilename ? `\n[PDF: ${pdfFilename}]` : ""}`;
+
+      try {
+        await env.DB.prepare(
+          "INSERT INTO invoices (id, invoice_number, client_name, amount, status, due_date, paid_date, notes, file_url, file_name, auto_imported, source_message_id, vendor, confidence, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)"
+        ).bind(
+          id, invoiceNumber, vendor, amountDollars, status, dueDate, paidDate,
+          noteText, fileUrl, fileName, messageId, vendor, confidence, ts, ts
+        ).run();
+      } catch (e: any) {
+        return err(`Insert failed (run migration 0027?): ${e?.message || e}`, 500);
+      }
+
+      return json({ success: true, invoiceId: id, kind, status, amountDollars, vendor, confidence });
+    }
+
+    // ─── FINANCE: APPROVE AUTO-IMPORTED INVOICE (clears review badge) ───
+    const approveMatch = path.match(/^\/api\/invoices\/([^/]+)\/approve-auto$/);
+    if (approveMatch && method === "POST") {
+      const approver = await getSessionUser(env.DB, request);
+      if (!approver?.id) return err("Unauthorized", 401);
+      await env.DB.prepare("UPDATE invoices SET auto_imported = 0, updated_at = ? WHERE id = ?")
+        .bind(now(), approveMatch[1]).run();
+      const row = await env.DB.prepare("SELECT * FROM invoices WHERE id = ?").bind(approveMatch[1]).first();
+      if (!row) return err("Invoice not found", 404);
+      return json(mapInvoice(row));
+    }
+
     // ─── GLOBAL SEARCH (across leads, clients, threads, tasks) ──────────
     // Powers the Cmd-K command palette. ACL-aware for inbox threads.
     if (path === "/api/search/global" && method === "GET") {
@@ -6387,7 +6577,17 @@ function mapEquipment(row: Record<string, unknown>) {
 }
 
 function mapInvoice(row: Record<string, unknown>) {
-  return { id: row.id, invoiceNumber: row.invoice_number, clientName: row.client_name, amount: row.amount, status: row.status, dueDate: row.due_date, paidDate: row.paid_date || "", notes: row.notes, fileUrl: row.file_url, fileName: row.file_name, createdAt: row.created_at, updatedAt: row.updated_at };
+  return {
+    id: row.id, invoiceNumber: row.invoice_number, clientName: row.client_name,
+    amount: row.amount, status: row.status, dueDate: row.due_date,
+    paidDate: row.paid_date || "", notes: row.notes,
+    fileUrl: row.file_url, fileName: row.file_name,
+    autoImported: !!row.auto_imported,
+    sourceMessageId: row.source_message_id || "",
+    vendor: row.vendor || "",
+    confidence: typeof row.confidence === "number" ? row.confidence : 1,
+    createdAt: row.created_at, updatedAt: row.updated_at,
+  };
 }
 
 function mapResource(row: Record<string, unknown>) {

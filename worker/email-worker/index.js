@@ -30,6 +30,37 @@ const BLOCKED_EXTENSIONS = new Set([
 // inbound mail. Do NOT change without updating qa-email-attachments.mjs.
 const TEST_SOURCE = "email_inbound_test";
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Stage-1 finance detector. Cheap heuristics: sender domain, subject/body
+// keywords, PDF-ish attachments. We require ≥2 of 3 signals to mark a
+// message as a finance candidate so a single-word match (e.g. "invoice"
+// in a sales email) doesn't trigger an AI extraction.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const FINANCE_KEYWORDS = /\b(invoice|receipt|statement|payment received|paid|order confirmation|tax invoice|amount due|total due|subtotal|your bill|monthly bill|payment confirmation)\b/i;
+const FINANCE_DOMAINS = new Set([
+  "stripe.com", "squareup.com", "square.com", "intuit.com", "quickbooks.intuit.com",
+  "paypal.com", "venmo.com", "zellepay.com",
+  "verizonwireless.com", "verizon.com", "att.com", "tmobile.com", "spectrum.com", "frontier.com",
+  "amazon.com", "amazonpayments.com", "costco.com", "costcobusiness.com",
+  "godaddy.com", "cloudflare.com", "google.com", "apple.com", "microsoft.com",
+  "hawaiianelectric.com", "hawaiiantel.com",
+  "fedex.com", "ups.com", "usps.com",
+]);
+function detectFinanceCandidate({ fromEmail, subject, body, attachments }) {
+  let signals = 0;
+  const local = (fromEmail.split("@")[0] || "").toLowerCase();
+  const dom = (fromEmail.split("@")[1] || "").toLowerCase();
+  if (FINANCE_DOMAINS.has(dom) || /(billing|receipts?|invoice|invoicing|payments?|noreply|no-reply)/i.test(local)) signals++;
+  if (FINANCE_KEYWORDS.test(subject || "") || FINANCE_KEYWORDS.test(body || "")) signals++;
+  const hasPdf = (attachments || []).some((a) => {
+    const fn = (a.filename || "").toLowerCase();
+    const ct = (a.mimeType || a.contentType || "").toLowerCase();
+    return ct.includes("pdf") || /\.pdf$/.test(fn) || /(invoice|receipt|statement|bill)/i.test(fn);
+  });
+  if (hasPdf) signals++;
+  return signals >= 2;
+}
+
 export default {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // SCHEDULED Handler — runs every minute (per wrangler.toml triggers)
@@ -469,6 +500,30 @@ async function persistInbound(env, opts) {
       }
     } else if (attachments.length > 0) {
       console.warn(`⚠️ ${attachments.length} attachment(s) ignored — FILES_BUCKET binding missing`);
+    }
+
+    // ━━ Stage 1: flag finance-looking emails for AI extraction ━━━━━━━━━━
+    // We only flag here; the actual Anthropic call happens on the Pages
+    // app (which already has ANTHROPIC_API_KEY) via a worker-key gated
+    // endpoint. Fire-and-forget so inbound processing isn't blocked by AI.
+    if (!isTest && detectFinanceCandidate({ fromEmail: senderEmail, subject, body: bodyPreview, attachments })) {
+      try {
+        await env.DB.prepare("UPDATE email_messages SET finance_candidate = 1 WHERE id = ?").bind(messageId).run();
+        console.log(`💰 Finance candidate flagged: ${messageId}`);
+      } catch (e) {
+        console.warn("finance_candidate column missing (run migration 0027):", e?.message || e);
+      }
+      const apiBase = env.INTERNAL_API_URL || "https://admin.techsavvyhawaii.com";
+      if (env.WORKER_KEY) {
+        // Don't await — let it run in the background.
+        fetch(`${apiBase}/api/finance/extract-from-message`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY },
+          body: JSON.stringify({ messageId }),
+        }).then((r) => {
+          if (!r.ok) console.error("finance extract non-200:", r.status);
+        }).catch((e) => console.error("finance extract trigger failed:", e?.message || e));
+      }
     }
 
     // Create lead if new_lead
