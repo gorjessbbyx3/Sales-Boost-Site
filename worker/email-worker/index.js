@@ -292,7 +292,7 @@ export default {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // EMAIL Handler — Inbound email processing
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  async email(message, env, ctx) {
+  async email(message, env, eventCtx) {
     const from = message.from;
     const to = message.to;
     const subject = message.headers.get("subject") || "(no subject)";
@@ -331,6 +331,7 @@ export default {
       forward: (toAddr) => message.forward(toAddr),
       sendEmail: env.SEND_EMAIL ? (m) => env.SEND_EMAIL.send(m) : null,
       isTest: false,
+      eventCtx,
     });
   },
 };
@@ -351,6 +352,7 @@ async function persistInbound(env, opts) {
     sendEmail = null,
     classification: classificationOverride = null,
     isTest = false,
+    eventCtx = null,
   } = opts;
 
   const bodyPreview =
@@ -515,14 +517,24 @@ async function persistInbound(env, opts) {
       }
       const apiBase = env.INTERNAL_API_URL || "https://admin.techsavvyhawaii.com";
       if (env.WORKER_KEY) {
-        // Don't await — let it run in the background.
-        fetch(`${apiBase}/api/finance/extract-from-message`, {
+        // Use ctx.waitUntil so the runtime keeps the request alive past the
+        // email handler return — otherwise the fire-and-forget fetch can be
+        // canceled mid-dispatch and we silently drop extractions.
+        const extractPromise = fetch(`${apiBase}/api/finance/extract-from-message`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-Worker-Key": env.WORKER_KEY },
           body: JSON.stringify({ messageId }),
+          signal: AbortSignal.timeout(75_000),
         }).then((r) => {
           if (!r.ok) console.error("finance extract non-200:", r.status);
         }).catch((e) => console.error("finance extract trigger failed:", e?.message || e));
+        if (eventCtx && typeof eventCtx.waitUntil === "function") {
+          eventCtx.waitUntil(extractPromise);
+        } else {
+          // Fallback for /test-inbound (no event ctx) — await inline so the
+          // QA driver still observes the result.
+          await extractPromise;
+        }
       }
     }
 

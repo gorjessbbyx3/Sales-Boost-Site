@@ -6143,7 +6143,18 @@ Rules:
         text: `From: ${msg.from_name || ""} <${msg.from_email || ""}>\nSubject: ${msg.subject || ""}\nDate: ${msg.sent_at || ""}\n\nBody:\n${String(msg.body || "").slice(0, 8000)}\n\n${pdfFilename ? `(PDF attachment: ${pdfFilename})\n\n` : ""}${prompt}`,
       });
 
+      // Helper that always writes the outcome (success OR failure) to
+      // finance_extracted_json so we never re-bill the same message and
+      // a human can audit what the AI returned even on parse failures.
+      const persistOutcome = async (payload: unknown) => {
+        try {
+          await env.DB.prepare("UPDATE email_messages SET finance_extracted_json = ? WHERE id = ?")
+            .bind(JSON.stringify(payload), messageId).run();
+        } catch {}
+      };
+
       let extracted: any = null;
+      let raw = "";
       try {
         const resp = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
@@ -6161,28 +6172,37 @@ Rules:
         });
         if (!resp.ok) {
           const t = await resp.text().catch(() => "");
+          await persistOutcome({ error: "anthropic_http", status: resp.status, body: t.slice(0, 500) });
           return err(`Anthropic error: ${resp.status} ${t.slice(0, 300)}`, 502);
         }
         const data: any = await resp.json();
-        const raw = (data.content || [])
+        raw = (data.content || [])
           .filter((b: any) => b.type === "text")
           .map((b: any) => b.text)
           .join("\n")
           .trim()
           .replace(/^```(?:json)?\s*/i, "")
           .replace(/```\s*$/i, "");
-        extracted = JSON.parse(raw);
+        // Robust JSON recovery: try strict parse first; if Claude added
+        // any prose before/after, slice from the first `{` to the last `}`.
+        try {
+          extracted = JSON.parse(raw);
+        } catch {
+          const first = raw.indexOf("{");
+          const last = raw.lastIndexOf("}");
+          if (first >= 0 && last > first) {
+            extracted = JSON.parse(raw.slice(first, last + 1));
+          } else {
+            throw new Error("no JSON object in model response");
+          }
+        }
       } catch (e: any) {
+        await persistOutcome({ error: "parse_or_network", message: String(e?.message || e), raw: raw.slice(0, 500) });
         return err(`Extraction failed: ${e?.message || e}`, 500);
       }
 
-      // Persist the raw extraction on the message regardless of outcome
-      // so the UI can show a "Reviewed by AI" trail and the cron never
-      // re-bills the same message.
-      try {
-        await env.DB.prepare("UPDATE email_messages SET finance_extracted_json = ? WHERE id = ?")
-          .bind(JSON.stringify(extracted), messageId).run();
-      } catch {}
+      // Always cache the parsed extraction (success path).
+      await persistOutcome(extracted);
 
       const confidence = Number(extracted?.confidence) || 0;
       const kind = String(extracted?.kind || "not_finance");
@@ -6211,17 +6231,31 @@ Rules:
       const vendor = String(extracted?.vendor || "").slice(0, 200);
       const invoiceNumber = String(extracted?.invoice_number || "").slice(0, 100);
       const dueDate = String(extracted?.due_date || "").slice(0, 10);
-      const amountDollars = Math.round(amountCents / 100);
+      // Preserve cents. SQLite/D1 columns have type affinity (not strict
+      // types) so a REAL value stored in an INTEGER-affinity column keeps
+      // its decimal precision. The UI already renders with 2 decimals.
+      const amountDollars = amountCents / 100;
       const summary = String(extracted?.summary || "").slice(0, 200);
       const noteText = `Auto-imported from email · ${summary}\n[Source message: ${messageId}]${pdfFilename ? `\n[PDF: ${pdfFilename}]` : ""}`;
 
       try {
-        await env.DB.prepare(
-          "INSERT INTO invoices (id, invoice_number, client_name, amount, status, due_date, paid_date, notes, file_url, file_name, auto_imported, source_message_id, vendor, confidence, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)"
+        // INSERT OR IGNORE leans on the partial-unique index on
+        // source_message_id (migration 0027) to make concurrent retries
+        // race-safe — a second insert for the same message becomes a no-op.
+        const ins = await env.DB.prepare(
+          "INSERT OR IGNORE INTO invoices (id, invoice_number, client_name, amount, status, due_date, paid_date, notes, file_url, file_name, auto_imported, source_message_id, vendor, confidence, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)"
         ).bind(
           id, invoiceNumber, vendor, amountDollars, status, dueDate, paidDate,
           noteText, fileUrl, fileName, messageId, vendor, confidence, ts, ts
         ).run();
+        if (!ins.meta?.changes) {
+          // Another concurrent call won the race — fetch the winner so the
+          // caller still gets a useful response.
+          const winner: any = await env.DB.prepare(
+            "SELECT id FROM invoices WHERE source_message_id = ? LIMIT 1"
+          ).bind(messageId).first();
+          return json({ skipped: "race-deduped", invoiceId: winner?.id || null });
+        }
       } catch (e: any) {
         return err(`Insert failed (run migration 0027?): ${e?.message || e}`, 500);
       }
@@ -6585,7 +6619,7 @@ function mapInvoice(row: Record<string, unknown>) {
     autoImported: !!row.auto_imported,
     sourceMessageId: row.source_message_id || "",
     vendor: row.vendor || "",
-    confidence: typeof row.confidence === "number" ? row.confidence : 1,
+    confidence: row.confidence !== undefined && row.confidence !== null && !isNaN(Number(row.confidence)) ? Number(row.confidence) : 1,
     createdAt: row.created_at, updatedAt: row.updated_at,
   };
 }

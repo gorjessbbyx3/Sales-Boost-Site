@@ -22,4 +22,10 @@ ALTER TABLE invoices ADD COLUMN confidence REAL NOT NULL DEFAULT 1.0;
 
 CREATE INDEX IF NOT EXISTS idx_email_messages_finance ON email_messages(finance_candidate);
 CREATE INDEX IF NOT EXISTS idx_invoices_auto ON invoices(auto_imported);
-CREATE INDEX IF NOT EXISTS idx_invoices_source_msg ON invoices(source_message_id);
+
+-- DB-level idempotency for auto-import: a non-empty source_message_id must be
+-- unique. Empty string is allowed many times so legacy/manual rows aren't
+-- affected. SQLite partial index gives us this without changing the column
+-- type. The extract endpoint relies on this for race-safe retries.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_source_msg_unique
+  ON invoices(source_message_id) WHERE source_message_id != '';

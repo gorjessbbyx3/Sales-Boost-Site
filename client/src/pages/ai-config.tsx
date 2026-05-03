@@ -4304,6 +4304,7 @@ function InvoicesTab() {
   const deleteMut = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/invoices/${id}`),
     onSuccess: () => { refetch(); toast({ title: "Invoice deleted" }); },
+    onError: () => toast({ title: "Delete failed", description: "Refresh and try again.", variant: "destructive" }),
   });
 
   const approveAutoMut = useMutation({
