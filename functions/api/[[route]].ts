@@ -5867,6 +5867,248 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return json(await r.json());
     }
 
+    // ─── EMAIL: SCHEDULE SEND (writes a draft with scheduled_for) ───────
+    // POST /api/email/schedule { to, subject, html, cc?, bcc?, attachments?,
+    //   threadId?, scheduledFor (ISO) } → creates an email_drafts row with
+    //   scheduled_status='pending'. Cron worker flushes it.
+    if (path === "/api/email/schedule" && method === "POST") {
+      const sessionUser = await getSessionUser(env.DB, request);
+      if (!sessionUser?.id) return err("Unauthorized", 401);
+      const body: any = await request.json().catch(() => ({}));
+      const { to, subject, html, threadId, scheduledFor } = body;
+      if (!to || !subject || !html || !scheduledFor) return err("to, subject, html, scheduledFor required");
+      const when = new Date(scheduledFor);
+      if (isNaN(when.getTime())) return err("Invalid scheduledFor");
+      if (when.getTime() <= Date.now() + 30_000) return err("scheduledFor must be at least 30 seconds in the future");
+
+      const userId = sessionUser.id;
+      const ccList = Array.isArray(body.cc) ? body.cc.join(", ") : (body.cc || "");
+      const bccList = Array.isArray(body.bcc) ? body.bcc.join(", ") : (body.bcc || "");
+      const attachmentsJson = JSON.stringify(Array.isArray(body.attachments) ? body.attachments : []);
+
+      const id = "sched-" + genId();
+      const ts = now();
+      const account = body.fromAlias || "";
+      await env.DB.prepare(
+        "INSERT INTO email_drafts (id, user_id, account, to_emails, cc_emails, bcc_emails, subject, body, attachments_json, thread_id, reply_to_message_id, scheduled_for, scheduled_status, updated_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)"
+      ).bind(id, userId, account, to, ccList, bccList, subject, html, attachmentsJson, threadId || "", "", when.toISOString(), ts, ts).run();
+      return json({ success: true, id, scheduledFor: when.toISOString() });
+    }
+
+    // ─── EMAIL: FLUSH SCHEDULED (worker-key gated, called by cron) ──────
+    if (path === "/api/email/flush-scheduled" && method === "POST") {
+      if (!env.WORKER_KEY || request.headers.get("X-Worker-Key") !== env.WORKER_KEY) {
+        return err("Unauthorized", 401);
+      }
+      const apiKey = env.RESEND_API_KEY;
+      if (!apiKey) return err("RESEND_API_KEY not configured", 500);
+      const nowIso = new Date().toISOString();
+      let due: any[] = [];
+      try {
+        const r = await env.DB.prepare(
+          "SELECT * FROM email_drafts WHERE scheduled_status = 'pending' AND scheduled_for != '' AND scheduled_for <= ? LIMIT 25"
+        ).bind(nowIso).all();
+        due = r.results || [];
+      } catch {
+        return json({ flushed: 0, note: "scheduled columns not present yet" });
+      }
+
+      let sent = 0; let failed = 0;
+      for (const d of due) {
+        try {
+          // Mark in-flight to avoid double-send.
+          const lock = await env.DB.prepare(
+            "UPDATE email_drafts SET scheduled_status = 'sending' WHERE id = ? AND scheduled_status = 'pending'"
+          ).bind(d.id).run();
+          if (!lock.meta?.changes) continue;
+
+          const ccList = String(d.cc_emails || "").split(/[,;]+/).map((s: string) => s.trim()).filter(Boolean);
+          const bccList = String(d.bcc_emails || "").split(/[,;]+/).map((s: string) => s.trim()).filter(Boolean);
+          let attachments: any[] = [];
+          try { attachments = JSON.parse(d.attachments_json || "[]"); } catch {}
+          const fromEmail = d.account || "contact@techsavvyhawaii.com";
+          const fromName = "TechSavvy Hawaii";
+
+          // Resend payload (only base64 attachments — re-uploads/url not supported here).
+          const resendAttachments = attachments
+            .filter((a: any) => a && a.contentBase64)
+            .map((a: any) => ({
+              filename: a.filename || "attachment",
+              content: stripDataUrlPrefix(String(a.contentBase64)),
+              content_type: a.contentType || "application/octet-stream",
+            }));
+
+          const resendRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+            body: JSON.stringify({
+              from: `${fromName} <${fromEmail}>`,
+              to: [d.to_emails],
+              subject: d.subject,
+              html: d.body,
+              ...(ccList.length ? { cc: ccList } : {}),
+              ...(bccList.length ? { bcc: bccList } : {}),
+              ...(resendAttachments.length ? { attachments: resendAttachments } : {}),
+            }),
+          });
+          if (!resendRes.ok) {
+            const errTxt = await resendRes.text().catch(() => "");
+            await env.DB.prepare("UPDATE email_drafts SET scheduled_status = 'failed', body = body WHERE id = ?").bind(d.id).run();
+            console.error("Scheduled send failed", d.id, errTxt);
+            failed++;
+            continue;
+          }
+          const resendData: any = await resendRes.json();
+
+          // Persist as outbound message + thread (mirror of /api/email/send).
+          const ts = now();
+          let tid = d.thread_id;
+          if (!tid) {
+            tid = genId();
+            await env.DB.prepare(
+              "INSERT INTO email_threads (id, subject, lead_id, contact_email, contact_name, source, status, unread, last_message_at, created_at, email_account) VALUES (?, ?, '', ?, ?, 'direct', 'open', 0, ?, ?, ?)"
+            ).bind(tid, d.subject || "(no subject)", d.to_emails, d.to_emails, ts, ts, fromEmail).run();
+          } else {
+            await env.DB.prepare("UPDATE email_threads SET last_message_at = ?, status = 'replied' WHERE id = ?").bind(ts, tid).run();
+          }
+          const msgId = genId();
+          await env.DB.prepare(
+            "INSERT INTO email_messages (id, thread_id, direction, from_email, from_name, to_email, subject, body, html_body, resend_id, status, cc_emails, bcc_emails, sent_at) VALUES (?, ?, 'outbound', ?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?)"
+          ).bind(msgId, tid, fromEmail, fromName, d.to_emails, d.subject, "", d.body, resendData.id || "", ccList.join(", "), bccList.join(", "), ts).run();
+
+          // Mark as sent. Keep the row so the user can see send history.
+          await env.DB.prepare("UPDATE email_drafts SET scheduled_status = 'sent', updated_at = ? WHERE id = ?").bind(ts, d.id).run();
+          sent++;
+        } catch (e) {
+          console.error("flush-scheduled item error:", d.id, e);
+          try { await env.DB.prepare("UPDATE email_drafts SET scheduled_status = 'failed' WHERE id = ?").bind(d.id).run(); } catch {}
+          failed++;
+        }
+      }
+      return json({ flushed: sent, failed, total: due.length });
+    }
+
+    // ─── AI: STATEMENT REVIEW (Anthropic) ───────────────────────────────
+    // POST /api/ai/statement-review { text?, pdfBase64?, businessName? }
+    //  → returns { html, summary } — a drafted analysis email body the
+    //    user can paste into the composer.
+    if (path === "/api/ai/statement-review" && method === "POST") {
+      const reviewer = await getSessionUser(env.DB, request);
+      if (!reviewer?.id) return err("Unauthorized", 401);
+      if (!env.ANTHROPIC_API_KEY) return err("AI not configured (missing ANTHROPIC_API_KEY)", 503);
+      const body: any = await request.json().catch(() => ({}));
+      const text: string = String(body.text || "").slice(0, 60_000);
+      const pdfBase64: string = stripDataUrlPrefix(String(body.pdfBase64 || ""));
+      const businessName: string = String(body.businessName || "your business").slice(0, 200);
+      const contactName: string = String(body.contactName || "").slice(0, 100);
+      if (!text && !pdfBase64) return err("Provide text or pdfBase64");
+
+      const userPrompt = `You are a TechSavvy Hawaii payments expert reviewing a merchant's processing statement for ${businessName}${contactName ? ` (contact: ${contactName})` : ""}.\n\nWrite a concise, professional analysis email (250-350 words, plain HTML — <p>, <ul>, <li>, <strong> only).\n\nStructure:\n1. Greeting (Hi ${contactName ? contactName.split(/\s+/)[0] : "there"},)\n2. One sentence summary of what their current processor is charging.\n3. 3-5 bullet points: effective rate, monthly fees that stand out, any non-qualified surcharges, PCI fees, statement fees.\n4. One paragraph: estimated monthly savings range with TechSavvy Hawaii's zero-fee program (be specific if numbers are clear; otherwise give a range).\n5. Clear next step ("Want me to put together a side-by-side proposal? I can have it ready in 24 hours.")\n6. Sign off as "Mike" (no extra signature — system appends one).\n\nTone: warm, direct, locally-rooted (Hawaii). No filler, no caveats about needing more info unless the statement is truly unreadable.\n\nOutput ONLY the email body as HTML. No JSON, no commentary, no <html>/<body> wrapper.`;
+
+      const userContent: any[] = [];
+      if (pdfBase64) {
+        userContent.push({
+          type: "document",
+          source: { type: "base64", media_type: "application/pdf", data: pdfBase64 },
+        });
+      }
+      if (text) {
+        userContent.push({ type: "text", text: `Statement text:\n${text}` });
+      }
+      userContent.push({ type: "text", text: userPrompt });
+
+      try {
+        const resp = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": env.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1500,
+            messages: [{ role: "user", content: userContent }],
+          }),
+          signal: AbortSignal.timeout(90_000),
+        });
+        if (!resp.ok) {
+          const t = await resp.text().catch(() => "");
+          return err(`Anthropic error: ${resp.status} ${t.slice(0, 300)}`, 502);
+        }
+        const data: any = await resp.json();
+        const html = (data.content || [])
+          .filter((b: any) => b.type === "text")
+          .map((b: any) => b.text)
+          .join("\n")
+          .trim()
+          .replace(/^```html\s*/i, "")
+          .replace(/```\s*$/i, "");
+        if (!html) return err("Empty AI response", 502);
+        return json({ success: true, html, subject: `Your ${businessName} statement review` });
+      } catch (e: any) {
+        return err(e?.message || "Statement review failed", 500);
+      }
+    }
+
+    // ─── GLOBAL SEARCH (across leads, clients, threads, tasks) ──────────
+    // Powers the Cmd-K command palette. ACL-aware for inbox threads.
+    if (path === "/api/search/global" && method === "GET") {
+      const searcher = await getSessionUser(env.DB, request);
+      if (!searcher?.id) return err("Unauthorized", 401);
+      const q = (new URL(request.url).searchParams.get("q") || "").trim();
+      if (!q || q.length < 2) return json({ leads: [], clients: [], threads: [], tasks: [] });
+      const like = `%${q.replace(/[%_]/g, "")}%`;
+
+      const leadsRes = await env.DB.prepare(
+        "SELECT id, name, business, status FROM leads WHERE name LIKE ? OR business LIKE ? OR email LIKE ? OR phone LIKE ? ORDER BY updated_at DESC LIMIT 6"
+      ).bind(like, like, like, like).all();
+
+      let clientsRes: any = { results: [] };
+      try {
+        clientsRes = await env.DB.prepare(
+          "SELECT id, name, business FROM clients WHERE name LIKE ? OR business LIKE ? OR email LIKE ? ORDER BY created_at DESC LIMIT 6"
+        ).bind(like, like, like).all();
+      } catch {}
+
+      // Threads: respect per-mailbox ACL.
+      let threadsOut: any[] = [];
+      try {
+        const userId = searcher.id;
+        const { results: acctRows } = await env.DB.prepare(
+          "SELECT address FROM email_accounts WHERE owner_id = '' OR owner_id = ?"
+        ).bind(userId).all();
+        const allowed = (acctRows || []).map((r: any) => r.address as string);
+        if (allowed.length > 0) {
+          const placeholders = allowed.map(() => "?").join(",");
+          const sql = `SELECT id, subject, contact_name, contact_email FROM email_threads
+            WHERE (email_account IN (${placeholders}) OR email_account IS NULL OR email_account = '')
+              AND (subject LIKE ? OR contact_name LIKE ? OR contact_email LIKE ?)
+            ORDER BY last_message_at DESC LIMIT 6`;
+          const r = await env.DB.prepare(sql).bind(...allowed, like, like, like).all();
+          threadsOut = (r.results || []).map((t: any) => ({
+            id: t.id, subject: t.subject, contactName: t.contact_name, contactEmail: t.contact_email,
+          }));
+        }
+      } catch {}
+
+      let tasksRes: any = { results: [] };
+      try {
+        tasksRes = await env.DB.prepare(
+          "SELECT id, title, assignee, due_date FROM tasks WHERE title LIKE ? OR description LIKE ? ORDER BY created_at DESC LIMIT 6"
+        ).bind(like, like).all();
+      } catch {}
+
+      return json({
+        leads: leadsRes.results || [],
+        clients: clientsRes.results || [],
+        threads: threadsOut,
+        tasks: (tasksRes.results || []).map((t: any) => ({
+          id: t.id, title: t.title, assignee: t.assignee, dueDate: t.due_date,
+        })),
+      });
+    }
+
     // ─── CATCH-ALL ──────────────────────────────────────────────────────
 
     return err("Not found", 404);

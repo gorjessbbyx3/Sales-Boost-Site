@@ -27,8 +27,9 @@ import {
   ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, GraduationCap, X, Menu, Eye,
   Download, LayoutList, LayoutGrid, Image, FileSpreadsheet, Monitor,
   Inbox, Archive, ArchiveX, ShieldAlert, MailOpen, MoreHorizontal, ChevronDown, Palette,
-  FolderKanban, KeyRound, Server,
+  FolderKanban, KeyRound, Server, Command, FileSearch, CalendarClock,
 } from "lucide-react";
+import { CommandPalette } from "@/components/CommandPalette";
 import type { AiConfig } from "@shared/schema";
 import { PdfViewer, PdfThumbnail } from "@/components/pdf-viewer";
 import { useTheme } from "@/hooks/use-theme";
@@ -777,8 +778,25 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     setSidebarOpen(false);
   };
 
+  // ─── Cmd-K Command Palette ─────────────────────────────────────
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen(o => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const paletteNavigate = (tab: string, _recordId?: string) => {
+    handleTabChange(tab);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} onNavigate={paletteNavigate} />
       {/* Top bar */}
       <div className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="px-4 sm:px-6">
@@ -6042,6 +6060,18 @@ function InboxTab() {
   const [composeBcc, setComposeBcc] = useState("");
   const [composeShowCc, setComposeShowCc] = useState(false);
   const [composeAttachments, setComposeAttachments] = useState<Array<{ filename: string; contentType: string; contentBase64: string; size: number }>>([]);
+  // Send Later
+  const [showSendLater, setShowSendLater] = useState(false);
+  const defaultSendLater = () => { const d = new Date(Date.now() + 60 * 60 * 1000); d.setSeconds(0, 0); return d.toISOString().slice(0, 16); };
+  const [sendLaterAt, setSendLaterAt] = useState<string>(defaultSendLater());
+  // AI Statement Review
+  const [showStatementReview, setShowStatementReview] = useState(false);
+  const [reviewBusinessName, setReviewBusinessName] = useState("");
+  const [reviewContactName, setReviewContactName] = useState("");
+  const [reviewText, setReviewText] = useState("");
+  const [reviewPdfBase64, setReviewPdfBase64] = useState("");
+  const [reviewPdfName, setReviewPdfName] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
   const [composeDraftId, setComposeDraftId] = useState<string | null>(null);
   const [composeSaveStatus, setComposeSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
@@ -6073,6 +6103,62 @@ function InboxTab() {
   const [templateBody, setTemplateBody] = useState("");
   const [templateCategory, setTemplateCategory] = useState<"cold" | "follow-up" | "confirmation">("cold");
   const resetTemplateForm = () => { setTemplateName(""); setTemplateSubject(""); setTemplateBody(""); setTemplateCategory("cold"); };
+
+  // ─── Merge tag substitution ──────────────────────────────────────
+  // Looks up a lead by email (lowercased) so {{name}} / {{firstName}} /
+  // {{business}} / {{vertical}} can be filled in from CRM data when a
+  // template is loaded. Falls back to the email's local-part for the name.
+  const mergeCtxFor = (email: string) => {
+    const e = (email || "").trim().toLowerCase();
+    const lead = (leads || []).find((l: any) => (l.email || "").toLowerCase() === e);
+    const localPart = e.includes("@") ? e.split("@")[0].replace(/[._]+/g, " ") : "";
+    const fullName = lead?.name || (localPart ? localPart.replace(/\b\w/g, c => c.toUpperCase()) : "");
+    return {
+      name: fullName,
+      firstName: (fullName || "").split(/\s+/)[0] || "",
+      business: lead?.business || "",
+      vertical: lead?.vertical || "",
+    };
+  };
+  const applyMergeTags = (s: string, ctx: ReturnType<typeof mergeCtxFor>) => {
+    if (!s) return s;
+    return s
+      .replace(/\{\{\s*(name|fullname)\s*\}\}/gi, ctx.name || "")
+      .replace(/\{\{\s*(firstname|first_name|first)\s*\}\}/gi, ctx.firstName || "")
+      .replace(/\{\{\s*business(name)?\s*\}\}/gi, ctx.business || "")
+      .replace(/\{\{\s*vertical\s*\}\}/gi, ctx.vertical || "");
+  };
+
+  // ─── Send Later mutation ─────────────────────────────────────────
+  const scheduleMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await apiRequest("POST", "/api/email/schedule", payload);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Scheduled", description: "Your email will be sent at the chosen time." });
+      setShowSendLater(false);
+      setShowCompose(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/email/drafts"] });
+    },
+    onError: (e: any) => toast({ title: "Schedule failed", description: e?.message || "Try again", variant: "destructive" }),
+  });
+
+  // ─── AI Statement Review mutation ────────────────────────────────
+  const statementReviewMutation = useMutation({
+    mutationFn: async (payload: { businessName: string; contactName: string; text: string; pdfBase64: string }) => {
+      const res = await apiRequest("POST", "/api/ai/statement-review", payload);
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      if (data?.html) setComposeBody(data.html);
+      if (data?.subject && !composeSubject) setComposeSubject(data.subject);
+      setShowStatementReview(false);
+      setReviewLoading(false);
+      toast({ title: "Draft ready", description: "Statement analysis loaded into the composer." });
+    },
+    onError: (e: any) => { setReviewLoading(false); toast({ title: "Review failed", description: e?.message || "Try again", variant: "destructive" }); },
+  });
 
   // ── Queries ──
   const accountParam = activeAccount !== "all" ? `&account=${encodeURIComponent(activeAccount)}` : "";
@@ -6388,6 +6474,7 @@ function InboxTab() {
   const folderItems = [
     { key: "inbox", label: "Inbox", icon: Inbox },
     { key: "drafts", label: "Drafts", icon: FileEdit, isDrafts: true },
+    { key: "scheduled", label: "Scheduled", icon: CalendarClock, isScheduled: true },
     { key: "sent", label: "Sent", icon: Send },
     { key: "starred", label: "Starred", icon: Star, isSpecial: true },
     { key: "spam", label: "Spam", icon: ShieldAlert },
@@ -6800,11 +6887,12 @@ function InboxTab() {
       <div className="flex gap-4">
         {/* ── Folder Sidebar ── */}
         <div className="w-48 shrink-0 space-y-1">
-          {folderItems.map(({ key, label, icon: Icon, isSpecial, isDrafts }) => {
+          {folderItems.map(({ key, label, icon: Icon, isSpecial, isDrafts, isScheduled }) => {
             const isActive = isSpecial ? viewStarred : (!viewStarred && activeFolder === key);
             const folderStats = stats?.folders?.[key];
-            const count = isSpecial ? (stats?.starred || 0) : (isDrafts ? drafts.length : (folderStats?.total || 0));
-            const unreadCount = isSpecial || isDrafts ? 0 : (folderStats?.unread || 0);
+            const scheduledList = (drafts || []).filter((d: any) => d.scheduled_status === "pending" && d.scheduled_for);
+            const count = isSpecial ? (stats?.starred || 0) : (isDrafts ? drafts.filter((d: any) => !d.scheduled_status).length : (isScheduled ? scheduledList.length : (folderStats?.total || 0)));
+            const unreadCount = isSpecial || isDrafts || isScheduled ? 0 : (folderStats?.unread || 0);
 
             return (
               <button key={key}
@@ -6973,17 +7061,53 @@ function InboxTab() {
                 })
               )}
             </div>
+          ) : activeFolder === "scheduled" ? (
+            /* ── Scheduled drafts list ── */
+            (() => {
+              const sched = (drafts || []).filter((d: any) => d.scheduled_status === "pending" && d.scheduled_for);
+              if (sched.length === 0) {
+                return (
+                  <div className="text-center py-16 text-muted-foreground">
+                    <CalendarClock className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Nothing scheduled</p>
+                    <p className="text-xs mt-1">Use Send Later in the composer to queue an email for the future</p>
+                  </div>
+                );
+              }
+              return (
+                <div className="space-y-0.5" data-testid="scheduled-list">
+                  {sched.sort((a: any, b: any) => String(a.scheduled_for).localeCompare(String(b.scheduled_for))).map((d: any) => (
+                    <div key={d.id} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-transparent hover:bg-muted/50 cursor-pointer group" data-testid={`scheduled-${d.id}`}>
+                      <CalendarClock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{d.subject || "(no subject)"}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">To: {d.to_emails || "—"}</p>
+                      </div>
+                      <span className="text-[10px] text-amber-500 shrink-0">{new Date(d.scheduled_for).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+                      <button className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); deleteDraftMutation.mutate(d.id); }} data-testid={`button-cancel-scheduled-${d.id}`} title="Cancel scheduled send">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
           ) : activeFolder === "drafts" ? (
-            /* ── Drafts list ── */
-            drafts.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <FileEdit className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No drafts</p>
-                <p className="text-xs mt-1">Start composing — drafts auto-save every 2 seconds</p>
-              </div>
-            ) : (
+            /* ── Drafts list (excludes scheduled) ── */
+            (() => {
+              const visibleDrafts = (drafts || []).filter((d: any) => !d.scheduled_status || d.scheduled_status === "");
+              if (visibleDrafts.length === 0) {
+                return (
+                  <div className="text-center py-16 text-muted-foreground">
+                    <FileEdit className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">No drafts</p>
+                    <p className="text-xs mt-1">Start composing — drafts auto-save every 2 seconds</p>
+                  </div>
+                );
+              }
+              return (
               <div className="space-y-0.5" data-testid="drafts-list">
-                {drafts.map((d: any) => (
+                {visibleDrafts.map((d: any) => (
                   <div key={d.id} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-transparent hover:bg-muted/50 cursor-pointer group" data-testid={`draft-${d.id}`} onClick={() => {
                     // Restore draft into compose dialog
                     setComposeDraftId(d.id);
@@ -7010,7 +7134,8 @@ function InboxTab() {
                   </div>
                 ))}
               </div>
-            )
+              );
+            })()
           ) : filteredThreads.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               {activeFolder === "inbox" && <Inbox className="w-8 h-8 mx-auto mb-3 opacity-30" />}
@@ -7071,7 +7196,7 @@ function InboxTab() {
             <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
               <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
               <span className="text-[10px] text-muted-foreground shrink-0">Load template:</span>
-              <Select onValueChange={(id) => { const t = templates.find(tpl => tpl.id === id); if (t) { setComposeSubject(t.subject); setComposeBody(t.body); } }}>
+              <Select onValueChange={(id) => { const t = templates.find(tpl => tpl.id === id); if (t) { const ctx = mergeCtxFor(composeTo); setComposeSubject(applyMergeTags(t.subject, ctx)); setComposeBody(applyMergeTags(t.body, ctx)); } }}>
                 <SelectTrigger className="h-7 text-[10px] flex-1"><SelectValue placeholder="Choose a template..." /></SelectTrigger>
                 <SelectContent>
                   {templates.map(t => <SelectItem key={t.id} value={t.id} className="text-xs">{t.name} ({TEMPLATE_CATEGORIES[t.category]?.label || t.category})</SelectItem>)}
@@ -7172,6 +7297,12 @@ function InboxTab() {
               {composeSaveStatus === "saved" && <span className="text-[10px] text-emerald-500 flex items-center gap-1"><Check className="w-3 h-3" />Saved</span>}
             </div>
             <div className="flex items-center gap-2">
+              <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setReviewBusinessName(""); setReviewContactName(""); setReviewText(""); setReviewPdfBase64(""); setReviewPdfName(""); setShowStatementReview(true); }} data-testid="button-compose-ai-review">
+                <Sparkles className="w-3.5 h-3.5 mr-1" />AI Statement Review
+              </Button>
+              <Button type="button" variant="outline" size="sm" className="h-8 text-xs" disabled={!composeTo || !composeSubject || !composeBody} onClick={() => { setSendLaterAt(defaultSendLater()); setShowSendLater(true); }} data-testid="button-compose-send-later">
+                <CalendarClock className="w-3.5 h-3.5 mr-1" />Send Later
+              </Button>
               <Button variant="outline" onClick={() => setShowCompose(false)}>Close</Button>
               <Button disabled={!composeTo || !composeSubject || !composeBody || sendMutation.isPending} onClick={() => sendMutation.mutate({
                 to: composeTo,
@@ -7184,6 +7315,118 @@ function InboxTab() {
                 ...(composeFromAccount !== "contact@techsavvyhawaii.com" ? { fromAlias: composeFromAccount } : {}),
               } as any)} data-testid="button-compose-send"><Send className="w-4 h-4 mr-1" />{sendMutation.isPending ? "Sending..." : "Send"}</Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Later Dialog */}
+      <Dialog open={showSendLater} onOpenChange={setShowSendLater}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><CalendarClock className="w-4 h-4" />Send Later</DialogTitle>
+            <DialogDescription>Schedule this email to be sent automatically at a future time.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Send at</Label>
+              <Input type="datetime-local" value={sendLaterAt} onChange={e => setSendLaterAt(e.target.value)} min={defaultSendLater()} data-testid="input-send-later-datetime" />
+              <p className="text-[10px] text-muted-foreground">Times are in your local timezone. Must be at least 30 seconds in the future.</p>
+            </div>
+            <div className="text-xs bg-muted/40 rounded p-2 space-y-0.5">
+              <p><span className="text-muted-foreground">To:</span> {composeTo}</p>
+              <p><span className="text-muted-foreground">Subject:</span> {composeSubject}</p>
+              {composeAttachments.length > 0 && <p><span className="text-muted-foreground">Attachments:</span> {composeAttachments.length}</p>}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSendLater(false)}>Cancel</Button>
+            <Button disabled={scheduleMutation.isPending || !sendLaterAt} onClick={() => {
+              const iso = new Date(sendLaterAt).toISOString();
+              scheduleMutation.mutate({
+                to: composeTo,
+                subject: composeSubject,
+                cc: composeCc ? composeCc.split(/[,;]/).map(s => s.trim()).filter(Boolean) : undefined,
+                bcc: composeBcc ? composeBcc.split(/[,;]/).map(s => s.trim()).filter(Boolean) : undefined,
+                html: `${composeBody}<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;"><p style="font-size:14px;color:#374151;font-weight:600;">TechSavvy Hawaii</p><p style="font-size:14px;color:#6b7280;">(808) 767-5460 | ${composeFromAccount}</p></div>`,
+                attachments: composeAttachments.length > 0 ? composeAttachments : undefined,
+                scheduledFor: iso,
+                ...(composeFromAccount !== "contact@techsavvyhawaii.com" ? { fromAlias: composeFromAccount } : {}),
+              });
+            }} data-testid="button-confirm-send-later"><CalendarClock className="w-4 h-4 mr-1" />{scheduleMutation.isPending ? "Scheduling…" : "Schedule"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Statement Review Dialog */}
+      <Dialog open={showStatementReview} onOpenChange={(o) => { if (!reviewLoading) setShowStatementReview(o); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" />AI Statement Review</DialogTitle>
+            <DialogDescription>Drop in a merchant processing statement (PDF or pasted text) — Claude drafts the analysis email.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Business name</Label>
+                <Input value={reviewBusinessName} onChange={e => setReviewBusinessName(e.target.value)} placeholder="Acme Cafe" data-testid="input-review-business" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Contact name (optional)</Label>
+                <Input value={reviewContactName} onChange={e => setReviewContactName(e.target.value)} placeholder="Jane" data-testid="input-review-contact" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center justify-between">
+                <span>Statement (PDF or text)</span>
+                {reviewPdfName && <span className="text-[10px] text-emerald-500 font-normal">Loaded: {reviewPdfName}</span>}
+              </Label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="ai-review-pdf"
+                  type="file"
+                  accept="application/pdf"
+                  hidden
+                  onChange={async e => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    if (f.size > 20 * 1024 * 1024) { toast({ title: "File too large", description: "Max 20 MB", variant: "destructive" }); return; }
+                    const buf = await f.arrayBuffer();
+                    let bin = ""; const bytes = new Uint8Array(buf);
+                    for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+                    setReviewPdfBase64(btoa(bin));
+                    setReviewPdfName(f.name);
+                    e.target.value = "";
+                  }}
+                />
+                <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => document.getElementById("ai-review-pdf")?.click()}>
+                  <Upload className="w-3.5 h-3.5 mr-1" />{reviewPdfName ? "Replace PDF" : "Upload PDF"}
+                </Button>
+                {reviewPdfName && (
+                  <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setReviewPdfBase64(""); setReviewPdfName(""); }}>
+                    <X className="w-3.5 h-3.5 mr-1" />Remove
+                  </Button>
+                )}
+              </div>
+              <Textarea value={reviewText} onChange={e => setReviewText(e.target.value)} placeholder="…or paste statement text here" rows={6} className="text-xs" data-testid="textarea-review-text" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" disabled={reviewLoading} onClick={() => setShowStatementReview(false)}>Cancel</Button>
+            <Button
+              disabled={reviewLoading || (!reviewText.trim() && !reviewPdfBase64)}
+              onClick={() => {
+                setReviewLoading(true);
+                statementReviewMutation.mutate({
+                  businessName: reviewBusinessName.trim() || "your business",
+                  contactName: reviewContactName.trim(),
+                  text: reviewText.trim(),
+                  pdfBase64: reviewPdfBase64,
+                });
+              }}
+              data-testid="button-run-review"
+            >
+              {reviewLoading ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Analyzing…</> : <><Sparkles className="w-4 h-4 mr-1" />Draft Analysis Email</>}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -7404,7 +7647,7 @@ function InboxTab() {
                           <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{t.body || "(no body)"}</p>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setComposeSubject(t.subject); setComposeBody(t.body); setShowTemplates(false); setShowCompose(true); }}><Copy className="w-3 h-3 mr-1" />Use</Button>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { const ctx = mergeCtxFor(composeTo); setComposeSubject(applyMergeTags(t.subject, ctx)); setComposeBody(applyMergeTags(t.body, ctx)); setShowTemplates(false); setShowCompose(true); }}><Copy className="w-3 h-3 mr-1" />Use</Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingTemplate(t); setTemplateName(t.name); setTemplateSubject(t.subject); setTemplateBody(t.body); setTemplateCategory(t.category); setShowTemplateForm(true); }}><Edit3 className="w-3 h-3" /></Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400" onClick={() => deleteTemplateMutation.mutate(t.id)}><Trash2 className="w-3 h-3" /></Button>
                         </div>

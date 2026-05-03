@@ -21,6 +21,13 @@ bucket_name = "techsavvy-assets"
 # ─── Public R2 URL (for browser download/view links) ──────
 [vars]
 R2_PUBLIC_URL = "https://assets.techsavvyhawaii.com"
+# Pages site that hosts /api/email/flush-scheduled — called by the cron handler.
+INTERNAL_API_URL = "https://admin.techsavvyhawaii.com"
+
+# ─── Cron Triggers ────────────────────────────────────────
+# Every minute: flush any drafts whose scheduled_for has passed.
+[triggers]
+crons = ["* * * * *"]
 
 # ─── Send Email Binding (for auto-replies) ────────────────
 # This lets the worker send emails FROM contact@techsavvyhawaii.com

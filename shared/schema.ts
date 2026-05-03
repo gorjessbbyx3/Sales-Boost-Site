@@ -478,6 +478,8 @@ export const emailDrafts = pgTable("email_drafts", {
   attachmentsJson: text("attachments_json").notNull().default("[]"),
   threadId: text("thread_id").notNull().default(""),
   replyToMessageId: text("reply_to_message_id").notNull().default(""),
+  scheduledFor: text("scheduled_for").notNull().default(""),
+  scheduledStatus: text("scheduled_status").notNull().default(""),
   updatedAt: text("updated_at").notNull(),
   createdAt: text("created_at").notNull(),
 });

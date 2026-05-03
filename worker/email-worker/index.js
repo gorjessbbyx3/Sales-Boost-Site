@@ -32,6 +32,29 @@ const TEST_SOURCE = "email_inbound_test";
 
 export default {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // SCHEDULED Handler — runs every minute (per wrangler.toml triggers)
+  // Calls the Pages site's flush-scheduled endpoint, which sends any
+  // email_drafts whose scheduled_for has passed. Worker-key gated.
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  async scheduled(event, env, ctx) {
+    const apiBase = env.INTERNAL_API_URL || "https://admin.techsavvyhawaii.com";
+    try {
+      const res = await fetch(`${apiBase}/api/email/flush-scheduled`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Worker-Key": env.WORKER_KEY || "",
+        },
+      });
+      if (!res.ok) {
+        console.error("flush-scheduled non-200:", res.status, await res.text().catch(() => ""));
+      }
+    } catch (e) {
+      console.error("flush-scheduled call failed:", e?.message || e);
+    }
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // FETCH Handler — API endpoints
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   async fetch(request, env, ctx) {
