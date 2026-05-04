@@ -6628,7 +6628,7 @@ function InboxTab() {
                   <span className="text-[10px] text-muted-foreground">{timeAgo(msg.sentAt)}</span>
                 </div>
                 {msg.htmlBody ? (
-                  <div className="text-sm prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: msg.htmlBody }} />
+                  <div className="email-html-body text-sm prose prose-sm dark:prose-invert max-w-none overflow-x-auto" dangerouslySetInnerHTML={{ __html: msg.htmlBody }} />
                 ) : (
                   <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
                 )}

@@ -322,6 +322,32 @@
     inset: -1px;
   }
 
+  /* Constrain HTML email content — override inline styles from senders */
+  .email-html-body img {
+    max-width: 100% !important;
+    height: auto !important;
+    width: auto !important;
+  }
+  .email-html-body table {
+    max-width: 100% !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+  .email-html-body td,
+  .email-html-body th {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    word-break: break-word !important;
+  }
+  .email-html-body * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .email-html-body {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
   /* Hide scrollbar but keep scrollability */
   .scrollbar-none {
     -ms-overflow-style: none;
