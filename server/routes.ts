@@ -102,6 +102,32 @@ function deserializeLead(row: typeof schema.leads.$inferSelect) {
   return { ...row, attachments, statementData, techStack };
 }
 
+function normalizePipelineStage(status: string) {
+  switch (status) {
+    case "contacted":
+      return "researched";
+    case "qualified":
+      return "contact-attempted";
+    case "discovery-call":
+      return "connected";
+    case "statement-requested":
+      return "pain-identified";
+    case "statement-received":
+    case "analysis-delivered":
+      return "savings-presented";
+    case "negotiation":
+    case "nurture":
+      return "follow-up";
+    case "proposal-sent":
+    case "new":
+    case "won":
+    case "lost":
+      return status;
+    default:
+      return "new";
+  }
+}
+
 function deserializeIntegration(row: typeof schema.integrations.$inferSelect) {
   let config: Record<string, any> = {};
   try { config = JSON.parse(row.config || "{}"); } catch {}
@@ -1435,7 +1461,7 @@ RULES:
     // Check if folder already has files (i.e. exists)
     const rows = await db.select({ folder: schema.adminFiles.folder }).from(schema.adminFiles);
     const existing = new Set(rows.map(r => r.folder).filter(Boolean));
-    const allKnown = new Set([...DEFAULT_FOLDERS, ...existing]);
+    const allKnown = new Set([...DEFAULT_FOLDERS, ...Array.from(existing)]);
     if (allKnown.has(fullPath)) return res.status(409).json({ error: "Folder already exists" });
     // Create a hidden marker entry so the folder persists
     const id = randomUUID();
@@ -1915,18 +1941,20 @@ RULES:
     const sources = ["referral", "networking", "social", "direct", "lead-magnet"];
 
     const scorecard = sources.map((src) => {
-      const srcLeads = allLeads.filter((l) => l.source === src);
+      const srcLeads = allLeads
+        .filter((l) => l.source === src)
+        .map((l) => ({ ...l, normalizedStatus: normalizePipelineStage(l.status) }));
       const total = srcLeads.length;
-      const contacted = srcLeads.filter((l) => l.status !== "new").length;
-      const qualified = srcLeads.filter((l) => !["new", "contacted"].includes(l.status)).length;
-      const stmtRequested = srcLeads.filter((l) => ["statement-requested", "statement-received", "analysis-delivered", "proposal-sent", "negotiation", "won"].includes(l.status)).length;
-      const stmtReceived = srcLeads.filter((l) => ["statement-received", "analysis-delivered", "proposal-sent", "negotiation", "won"].includes(l.status)).length;
-      const proposalSent = srcLeads.filter((l) => ["proposal-sent", "negotiation", "won"].includes(l.status)).length;
-      const won = srcLeads.filter((l) => l.status === "won").length;
-      const lost = srcLeads.filter((l) => l.status === "lost").length;
+      const contacted = srcLeads.filter((l) => !["new", "researched"].includes(l.normalizedStatus)).length;
+      const qualified = srcLeads.filter((l) => ["contact-attempted", "connected", "pain-identified", "savings-presented", "proposal-sent", "follow-up", "won"].includes(l.normalizedStatus)).length;
+      const stmtRequested = srcLeads.filter((l) => ["pain-identified", "savings-presented", "proposal-sent", "follow-up", "won"].includes(l.normalizedStatus)).length;
+      const stmtReceived = srcLeads.filter((l) => ["savings-presented", "proposal-sent", "follow-up", "won"].includes(l.normalizedStatus)).length;
+      const proposalSent = srcLeads.filter((l) => ["proposal-sent", "follow-up", "won"].includes(l.normalizedStatus)).length;
+      const won = srcLeads.filter((l) => l.normalizedStatus === "won").length;
+      const lost = srcLeads.filter((l) => l.normalizedStatus === "lost").length;
       const closed = won + lost;
 
-      const wonLeads = srcLeads.filter((l) => l.status === "won");
+      const wonLeads = srcLeads.filter((l) => l.normalizedStatus === "won");
       const avgTimeToClose = wonLeads.length > 0
         ? wonLeads.reduce((sum, l) => sum + (new Date(l.updatedAt).getTime() - new Date(l.createdAt).getTime()), 0) / wonLeads.length / 86400000
         : 0;
@@ -1960,7 +1988,7 @@ RULES:
 
     const overall = {
       totalLeads: allLeads.length,
-      activeLeads: allLeads.filter((l) => !["won", "lost", "nurture"].includes(l.status)).length,
+      activeLeads: allLeads.filter((l) => !["won", "lost"].includes(normalizePipelineStage(l.status))).length,
       totalWon: allLeads.filter((l) => l.status === "won").length,
       totalLost: allLeads.filter((l) => l.status === "lost").length,
     };
@@ -2222,20 +2250,20 @@ RULES:
 
     // Stale leads: active pipeline leads with no update in 7+ days
     const staleLeads = allLeads.filter(l => {
-      if (["won", "lost", "nurture"].includes(l.status)) return false;
+      if (["won", "lost"].includes(normalizePipelineStage(l.status))) return false;
       const updated = new Date(l.updatedAt);
       return updated < sevenDaysAgo;
     }).map(l => ({ id: l.id, name: l.name, business: l.business, status: l.status, daysSinceUpdate: Math.floor((now.getTime() - new Date(l.updatedAt).getTime()) / (1000 * 60 * 60 * 24)), nextStep: l.nextStepDate }));
 
     // Leads with next step due today or overdue
     const followUpsDue = allLeads.filter(l => {
-      if (["won", "lost"].includes(l.status)) return false;
+      if (["won", "lost"].includes(normalizePipelineStage(l.status))) return false;
       return l.nextStepDate && l.nextStepDate <= todayStr;
     }).map(l => ({ id: l.id, name: l.name, business: l.business, status: l.status, nextStep: l.nextStepDate, overdue: l.nextStepDate < todayStr }));
 
     // Upcoming follow-ups (next 3 days)
     const upcomingFollowUps = allLeads.filter(l => {
-      if (["won", "lost"].includes(l.status)) return false;
+      if (["won", "lost"].includes(normalizePipelineStage(l.status))) return false;
       return l.nextStepDate && l.nextStepDate > todayStr && l.nextStepDate <= threeDaysFromNow;
     }).map(l => ({ id: l.id, name: l.name, business: l.business, status: l.status, nextStep: l.nextStepDate }));
 
@@ -2265,12 +2293,12 @@ RULES:
 
     // Pipeline summary
     const pipeline = {
-      new: allLeads.filter(l => l.status === "new").length,
-      contacted: allLeads.filter(l => l.status === "contacted").length,
-      qualified: allLeads.filter(l => l.status === "qualified").length,
-      proposalSent: allLeads.filter(l => l.status === "proposal-sent").length,
-      negotiation: allLeads.filter(l => l.status === "negotiation").length,
-      totalActive: allLeads.filter(l => !["won", "lost", "nurture"].includes(l.status)).length,
+      new: allLeads.filter(l => normalizePipelineStage(l.status) === "new").length,
+      contacted: allLeads.filter(l => normalizePipelineStage(l.status) === "contact-attempted").length,
+      qualified: allLeads.filter(l => normalizePipelineStage(l.status) === "connected").length,
+      proposalSent: allLeads.filter(l => normalizePipelineStage(l.status) === "proposal-sent").length,
+      negotiation: allLeads.filter(l => normalizePipelineStage(l.status) === "follow-up").length,
+      totalActive: allLeads.filter(l => !["won", "lost"].includes(normalizePipelineStage(l.status))).length,
       wonThisMonth: allLeads.filter(l => { const d = new Date(l.updatedAt); return l.status === "won" && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).length,
     };
 

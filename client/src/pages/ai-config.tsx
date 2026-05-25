@@ -77,6 +77,8 @@ interface Lead {
   notes: string;
   assignedTo: string;
   checklist: Array<{ label: string; done: boolean; doneAt?: string }>;
+  leadScore: number;
+  leadScoreReason: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -332,7 +334,7 @@ interface EmailThread {
   leadId: string;
   contactEmail: string;
   contactName: string;
-  source: "direct" | "contact-form" | "outreach" | "outreach-reply" | "email_inbound" | "statement-review" | "lead-magnet";
+  source: "direct" | "contact-form" | "outreach" | "outreach-reply" | "email_inbound" | "statement-review" | "lead-magnet" | "partner-referral" | "partner-meeting" | "partner-agreement";
   status: "open" | "replied" | "closed";
   folder: string;
   starred: boolean;
@@ -443,19 +445,60 @@ function formatBytes(b: number) {
 
 // ─── Constants ───────────────────────────────────────────────────────
 
-const PIPELINE_CONFIG: Record<PipelineStage, { label: string; color: string; bg: string; short: string }> = {
+type DisplayPipelineStage = "new" | "researched" | "contact-attempted" | "connected" | "pain-identified" | "savings-presented" | "proposal-sent" | "follow-up" | "won" | "lost";
+
+const DISPLAY_PIPELINE_CONFIG: Record<DisplayPipelineStage, { label: string; color: string; bg: string; short: string }> = {
   new:                  { label: "New Lead", color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20", short: "New" },
-  contacted:            { label: "Contacted", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20", short: "Contacted" },
-  qualified:            { label: "Qualified", color: "text-cyan-400", bg: "bg-cyan-400/10 border-cyan-400/20", short: "Qualified" },
-  "discovery-call":     { label: "Discovery Call", color: "text-teal-400", bg: "bg-teal-400/10 border-teal-400/20", short: "Discovery" },
-  "statement-requested":{ label: "Stmt Requested", color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20", short: "Stmt Req" },
-  "statement-received": { label: "Stmt Received", color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20", short: "Stmt Recv" },
-  "analysis-delivered": { label: "Analysis Sent", color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/20", short: "Analysis" },
+  researched:           { label: "Researched", color: "text-indigo-400", bg: "bg-indigo-400/10 border-indigo-400/20", short: "Research" },
+  "contact-attempted":  { label: "Contact Attempted", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20", short: "Attempt" },
+  connected:            { label: "Connected", color: "text-cyan-400", bg: "bg-cyan-400/10 border-cyan-400/20", short: "Connected" },
+  "pain-identified":    { label: "Pain Identified", color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20", short: "Pain" },
+  "savings-presented":  { label: "Savings Presented", color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20", short: "Savings" },
   "proposal-sent":      { label: "Proposal Sent", color: "text-purple-400", bg: "bg-purple-400/10 border-purple-400/20", short: "Proposal" },
-  negotiation:          { label: "Negotiation", color: "text-pink-400", bg: "bg-pink-400/10 border-pink-400/20", short: "Negotiation" },
-  won:                  { label: "Won", color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20", short: "Won" },
-  lost:                 { label: "Lost", color: "text-red-400", bg: "bg-red-400/10 border-red-400/20", short: "Lost" },
-  nurture:              { label: "Nurture", color: "text-violet-400", bg: "bg-violet-400/10 border-violet-400/20", short: "Nurture" },
+  "follow-up":          { label: "Follow-Up", color: "text-pink-400", bg: "bg-pink-400/10 border-pink-400/20", short: "Follow-Up" },
+  won:                  { label: "Closed Won", color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20", short: "Won" },
+  lost:                 { label: "Closed Lost", color: "text-red-400", bg: "bg-red-400/10 border-red-400/20", short: "Lost" },
+};
+
+function normalizePipelineStage(status: string): DisplayPipelineStage {
+  switch (status) {
+    case "contacted":
+      return "researched";
+    case "qualified":
+      return "contact-attempted";
+    case "discovery-call":
+      return "connected";
+    case "statement-requested":
+      return "pain-identified";
+    case "statement-received":
+    case "analysis-delivered":
+      return "savings-presented";
+    case "negotiation":
+    case "nurture":
+      return "follow-up";
+    case "proposal-sent":
+    case "new":
+    case "won":
+    case "lost":
+      return status;
+    default:
+      return "new";
+  }
+}
+
+const PIPELINE_CONFIG: Record<PipelineStage, { label: string; color: string; bg: string; short: string }> = {
+  new: DISPLAY_PIPELINE_CONFIG.new,
+  contacted: DISPLAY_PIPELINE_CONFIG.researched,
+  qualified: DISPLAY_PIPELINE_CONFIG["contact-attempted"],
+  "discovery-call": DISPLAY_PIPELINE_CONFIG.connected,
+  "statement-requested": DISPLAY_PIPELINE_CONFIG["pain-identified"],
+  "statement-received": DISPLAY_PIPELINE_CONFIG["savings-presented"],
+  "analysis-delivered": DISPLAY_PIPELINE_CONFIG["savings-presented"],
+  "proposal-sent": DISPLAY_PIPELINE_CONFIG["proposal-sent"],
+  negotiation: DISPLAY_PIPELINE_CONFIG["follow-up"],
+  won: DISPLAY_PIPELINE_CONFIG.won,
+  lost: DISPLAY_PIPELINE_CONFIG.lost,
+  nurture: DISPLAY_PIPELINE_CONFIG["follow-up"],
 };
 
 const SOURCE_CONFIG: Record<LeadSource, { label: string; color: string; icon: string }> = {
@@ -1091,26 +1134,24 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
   const winRate = closedLeads > 0 ? Math.round((wonLeads / closedLeads) * 100) : 0;
 
   // Active pipeline leads (not won/lost/nurture) for the pipeline section
-  const activeLeads = leads.filter(l => !["won", "lost", "nurture"].includes(l.status));
+  const activeLeads = leads.filter(l => !["won", "lost"].includes(normalizePipelineStage(l.status)));
 
   // AI-recommended quick actions per lead
   const getAiActions = (lead: Lead): { label: string; icon: React.ElementType; action: string }[] => {
     const actions: { label: string; icon: React.ElementType; action: string }[] = [];
     const daysSinceUpdate = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / 86400000);
-    if (lead.status === "new") {
+    const stage = normalizePipelineStage(lead.status);
+    if (stage === "new" || stage === "researched") {
       actions.push({ label: "Call", icon: Phone, action: "leads" });
       actions.push({ label: "Email", icon: Mail, action: "inbox" });
-    } else if (lead.status === "contacted" || lead.status === "qualified") {
-      actions.push({ label: "Book Discovery", icon: Calendar, action: "leads" });
+    } else if (stage === "contact-attempted" || stage === "connected") {
+      actions.push({ label: "Identify Pain", icon: FileText, action: "leads" });
       if (daysSinceUpdate > 3) actions.push({ label: "Follow Up", icon: Phone, action: "leads" });
-    } else if (lead.status === "discovery-call") {
+    } else if (stage === "pain-identified") {
+      actions.push({ label: "Present Savings", icon: TrendingUp, action: "leads" });
+    } else if (stage === "savings-presented") {
       actions.push({ label: "Send Proposal", icon: Send, action: "leads" });
-      actions.push({ label: "Request Statement", icon: FileText, action: "leads" });
-    } else if (lead.status === "statement-requested") {
-      actions.push({ label: "Check Status", icon: Phone, action: "leads" });
-    } else if (lead.status === "statement-received" || lead.status === "analysis-delivered") {
-      actions.push({ label: "Send Proposal", icon: Send, action: "leads" });
-    } else if (lead.status === "proposal-sent" || lead.status === "negotiation") {
+    } else if (stage === "proposal-sent" || stage === "follow-up") {
       actions.push({ label: "Follow Up", icon: Phone, action: "leads" });
       actions.push({ label: "Close Deal", icon: CheckCircle, action: "leads" });
     }
@@ -1250,7 +1291,7 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
             ) : (
               <div className="space-y-1">
                 {activeLeads.slice(0, 10).map(lead => {
-                  const cfg = PIPELINE_CONFIG[lead.status as PipelineStage];
+                  const cfg = DISPLAY_PIPELINE_CONFIG[normalizePipelineStage(lead.status)];
                   const actions = getAiActions(lead);
                   const daysSinceUpdate = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / 86400000);
                   return (
@@ -1259,7 +1300,7 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium truncate">{lead.business || lead.name}</span>
-                          <Badge variant="outline" className={`text-[9px] px-1 py-0 shrink-0 ${cfg?.color || ""}`}>{cfg?.short || lead.status}</Badge>
+                          <Badge variant="outline" className={`text-[9px] px-1 py-0 shrink-0 ${cfg?.color || ""}`}>{cfg?.short || normalizePipelineStage(lead.status)}</Badge>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-[10px] text-muted-foreground">{lead.name}{lead.vertical ? ` · ${VERTICAL_CONFIG[lead.vertical] || lead.vertical}` : ""}</span>
@@ -1575,7 +1616,7 @@ function LeadsTab() {
   });
 
   const filteredLeads = useMemo(() => leads
-    .filter((l) => filterStatus === "all" || l.status === filterStatus)
+    .filter((l) => filterStatus === "all" || normalizePipelineStage(l.status) === normalizePipelineStage(filterStatus))
     .filter((l) => filterSource === "all" || l.source === filterSource)
     .filter((l) => filterAssigned === "all" || (filterAssigned === "autopilot" ? !l.assignedTo : l.assignedTo === filterAssigned))
     .filter((l) => !search || [l.name, l.business, l.email, l.phone, l.currentProcessor].some((f) => f?.toLowerCase().includes(search.toLowerCase())))
@@ -1648,7 +1689,7 @@ function LeadsTab() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold">Lead Pipeline</h2>
-          <p className="text-xs text-muted-foreground">{leads.length} total — {leads.filter((l) => !["won", "lost", "nurture"].includes(l.status)).length} active pipeline{missingEmailCount > 0 ? ` — ${missingEmailCount} missing email` : ""}</p>
+          <p className="text-xs text-muted-foreground">{leads.length} total — {leads.filter((l) => !["won", "lost"].includes(normalizePipelineStage(l.status))).length} active pipeline{missingEmailCount > 0 ? ` — ${missingEmailCount} missing email` : ""}</p>
         </div>
         <div className="flex items-center gap-2">
           {missingEmailCount > 0 && (
@@ -1753,9 +1794,23 @@ function LeadsTab() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
                     <span className="font-semibold text-sm">{lead.business || lead.name}</span>
-                    <Badge variant="outline" className={`text-[10px] ${PIPELINE_CONFIG[lead.status]?.bg || ""} ${PIPELINE_CONFIG[lead.status]?.color || ""}`}>{PIPELINE_CONFIG[lead.status]?.short || lead.status}</Badge>
+                    <Badge variant="outline" className={`text-[10px] ${DISPLAY_PIPELINE_CONFIG[normalizePipelineStage(lead.status)]?.bg || ""} ${DISPLAY_PIPELINE_CONFIG[normalizePipelineStage(lead.status)]?.color || ""}`}>{DISPLAY_PIPELINE_CONFIG[normalizePipelineStage(lead.status)]?.short || normalizePipelineStage(lead.status)}</Badge>
                     <Badge variant="outline" className={`text-[10px] ${SOURCE_CONFIG[lead.source]?.color || ""}`}>{SOURCE_CONFIG[lead.source]?.label || lead.source}</Badge>
                     <Badge variant="outline" className={`text-[10px] ${PACKAGE_CONFIG[lead.package as PackageType]?.color || ""}`}>{PACKAGE_CONFIG[lead.package as PackageType]?.label || lead.package}</Badge>
+                    {lead.leadScore > 0 && (
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${
+                          lead.leadScore >= 80
+                            ? "text-emerald-400 border-emerald-400/20 bg-emerald-400/10"
+                            : lead.leadScore >= 60
+                              ? "text-amber-400 border-amber-400/20 bg-amber-400/10"
+                              : "text-muted-foreground border-border bg-muted/20"
+                        }`}
+                      >
+                        Lead Score {lead.leadScore}
+                      </Badge>
+                    )}
                   </div>
                   {lead.business && lead.name && <p className="text-xs text-muted-foreground">{lead.name}{lead.decisionMakerName ? ` — DM: ${lead.decisionMakerName}${lead.decisionMakerRole ? ` (${lead.decisionMakerRole})` : ""}` : ""}</p>}
                   <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
@@ -1834,13 +1889,13 @@ function LeadsTab() {
                 </div>
                 <div className="flex flex-col items-end gap-1.5 shrink-0 self-end sm:self-start">
                   <div className="flex items-center gap-1">
-                    {!["won", "lost"].includes(lead.status) && (
+                    {!["won", "lost"].includes(normalizePipelineStage(lead.status)) && (
                       <Select value={lead.status} onValueChange={(v) => updateMutation.mutate({ id: lead.id, status: v } as any)}>
                         <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue /></SelectTrigger>
                         <SelectContent>{(Object.keys(PIPELINE_CONFIG) as PipelineStage[]).map((s) => <SelectItem key={s} value={s} className="text-xs">{PIPELINE_CONFIG[s].short}</SelectItem>)}</SelectContent>
                       </Select>
                     )}
-                    {!["won", "lost"].includes(lead.status) && (
+                    {!["won", "lost"].includes(normalizePipelineStage(lead.status)) && (
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => convertMutation.mutate(lead)} title="Convert to client"><CheckCircle className="w-3.5 h-3.5" /></Button>
                     )}
                     {(!lead.address || !lead.phone || !lead.vertical || lead.vertical === "other") && (

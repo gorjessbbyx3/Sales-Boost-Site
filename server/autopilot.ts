@@ -219,6 +219,11 @@ export async function autoEnrichLead(leadId: string): Promise<void> {
         });
         if (scoreResp.ok) {
           const scoreData = await scoreResp.json() as { score: number; grade: string; recommendation: string };
+          await db.update(schema.leads).set({
+            leadScore: scoreData.score,
+            leadScoreReason: `${scoreData.grade}: ${scoreData.recommendation}`,
+            updatedAt: new Date().toISOString(),
+          }).where(eq(schema.leads.id, leadId));
           await db.insert(schema.leadActivities).values({
             id: randomUUID(),
             leadId,

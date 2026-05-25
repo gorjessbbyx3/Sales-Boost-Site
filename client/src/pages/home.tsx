@@ -5,7 +5,7 @@ import { motion, useInView } from "framer-motion";
 import {
   Check, ArrowRight, ChevronDown, DollarSign, TrendingUp, Star,
   Phone, Headphones, MapPin, Sparkles, Calculator, ShieldCheck,
-  AlertTriangle, Clock, Users,
+  AlertTriangle, Clock, Users, Search, Globe,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
@@ -49,12 +49,12 @@ function HeroSection() {
         <div className="max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div variants={staggerContainer} initial="hidden" animate="visible">
             <motion.h1 className="text-2xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold tracking-tight leading-[1.08] mb-4" variants={fadeUp}>
-              Stop Paying Credit Card Fees.{" "}
-              <span className="text-primary">Keep Every Dollar.</span>
+              Recover Revenue.{" "}
+              <span className="text-primary">Modernize the Business.</span>
             </motion.h1>
 
             <motion.p className="text-sm sm:text-lg lg:text-xl text-muted-foreground mb-5 max-w-xl lg:max-w-2xl mx-auto leading-relaxed" variants={fadeUp}>
-              Hawaii businesses save <span className="text-foreground font-semibold">$500–$3,000+ every month</span> with our compliant cash discount program. No contracts. No processing fees. Free equipment.
+              TechSavvy Hawai'i helps businesses stop revenue leaks, modernize payments, and tighten follow-up. Payment processing is the entry point. The real win is a stronger operation with lower fees, better retention, and hands-on support.
             </motion.p>
 
             {/* Social proof */}
@@ -70,7 +70,7 @@ function HeroSection() {
             <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-5" variants={fadeUp}>
               <Button size="lg" className="text-base px-8 py-6 w-full sm:w-auto lg:text-lg lg:px-10" asChild>
                 <a href="/statement-review">
-                  See How Much You're Losing — Free
+                  Get My Free Growth Audit
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </Button>
@@ -84,7 +84,7 @@ function HeroSection() {
 
             {/* Trust line */}
             <motion.p className="text-xs lg:text-sm text-muted-foreground" variants={fadeUp}>
-              ✓ 100% legal  ·  ✓ Setup in 3–7 days  ·  ✓ Cancel anytime  ·  ✓ Locally owned in Honolulu
+              AI-powered business growth audit  ·  zero-fee processing for qualified merchants  ·  locally owned in Honolulu
             </motion.p>
           </motion.div>
         </div>
@@ -114,20 +114,20 @@ function HowItWorks() {
               {
                 num: "1",
                 icon: ShieldCheck,
-                title: "We set up your payment system",
-                desc: "Quick application, fast approval. Our local team installs your new terminal, sets up signage, and trains your staff. You don't touch a thing.",
+                title: "We audit the business",
+                desc: "We review your processing setup, website, customer journey, and visible revenue leaks so you can see where money is being lost.",
               },
               {
                 num: "2",
-                icon: Users,
-                title: "Customers pay normally",
-                desc: "Customers can still use all cards — Visa, Mastercard, Amex, Apple Pay. Your posted prices reflect a cash discount, and card users simply pay the standard listed price.",
+                icon: TrendingUp,
+                title: "We present the recovery plan",
+                desc: "That can include zero-fee processing, better equipment, website improvements, automation opportunities, and a tighter follow-up system.",
               },
               {
                 num: "3",
-                icon: DollarSign,
-                title: "Processing costs disappear",
-                desc: "With our cash discount program, you keep 100% of every sale. No processing fees, no hidden charges. You keep 100% of every sale. Funds deposited next business day.",
+                icon: Users,
+                title: "You run leaner and convert better",
+                desc: "Once deployed, you keep more revenue, operate with better support, and have a stronger system for turning customer activity into repeat business.",
               },
             ].map((step) => (
               <motion.div key={step.num} variants={fadeUp}>
@@ -149,12 +149,59 @@ function HowItWorks() {
 
           <motion.div className="text-center" variants={fadeUp}>
             <Button size="lg" asChild>
-              <a href="/apply">
-                Apply Now — Takes 3 Minutes
+              <a href="/statement-review">
+                Start With the Audit
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
           </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function GrowthAuditSection() {
+  const audits = [
+    { icon: Globe, title: "Website Audit", desc: "Mobile readiness, speed, trust signals, forms, and booking gaps." },
+    { icon: Star, title: "Reputation Audit", desc: "Review volume, star rating, owner responses, and visible complaints." },
+    { icon: DollarSign, title: "Fee & Savings Audit", desc: "Processing costs, likely overpay, and where zero-fee processing fits." },
+    { icon: Search, title: "Automation Audit", desc: "Follow-up, retention, and operational tasks that should not still be manual." },
+  ];
+
+  return (
+    <section className="py-16 sm:py-24 lg:py-32 relative">
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-card/40 via-transparent to-card/40" />
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
+          <motion.div className="text-center mb-10 sm:mb-14" variants={fadeUp}>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/5">
+              <Sparkles className="w-3 h-3 mr-1" />
+              Audit Engine
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-3">
+              Start the conversation with a real audit.
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-lg max-w-2xl mx-auto">
+              Instead of pitching a terminal first, we show where revenue is leaking and where the fastest improvements are.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+            {audits.map((item) => (
+              <motion.div key={item.title} variants={fadeUp}>
+                <Card className="h-full border-border/50 hover:border-primary/30 transition-colors">
+                  <CardContent className="p-6">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                      <item.icon className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>
@@ -873,6 +920,7 @@ export default function Home() {
       <SavingsCalculator />
       <CompareSection />
       <TestimonialSection />
+      <GrowthAuditSection />
       <HowItWorks />
       <WhoWeWorkWith />
       <QualifySection />
